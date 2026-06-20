@@ -47,7 +47,7 @@ const SURAH_REGISTRY = [
     color: "#1e40af",
     emoji: "🌙",
     file: null,
-    available: true
+    available: false
   },
   {
     id: "al-bayyina",
