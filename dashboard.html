@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة جمعية مواهب المنان - دار القرآن والحديث - لوحة الطالب</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script src="registry.js"></script>
+
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
+        .quran-font { font-family: 'Amiri', serif; }
+        .surah-card { transition: transform 0.25s ease, box-shadow 0.25s ease; cursor: pointer; }
+        .surah-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px -6px rgba(0,0,0,0.15); }
+        .surah-card-locked { opacity: 0.55; cursor: not-allowed; filter: grayscale(0.3); }
+        .header-bg { background: linear-gradient(135deg, #1a3c34 0%, #0c4a3b 40%, #14532d 100%); }
+    </style>
+</head>
+<body>
+<div class="flex justify-center mb-4 mt-2">
+    <img src="logo.webp" alt="مواهب المنان" class="h-24 object-contain drop-shadow-md">
+</div>
+
+    <script>Auth.requireAuth('login.html');</script>
+
+    <header class="header-bg text-white py-6 px-4 shadow-xl">
+       <div id="messages-container" class="max-w-5xl mx-auto mb-6 hidden"></div>
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-4">
+                <div class="w-16 h-16 rounded-2xl overflow-hidden border border-white/20 shadow-inner bg-white/10 flex items-center justify-center">
+                    <span class="text-3xl">📖</span>
+                </div>
+                <div>
+                    <h1 class="text-xl md:text-3xl font-black leading-tight">مرحباً بك، <span id="student-name" class="text-emerald-300"></span> ! </h1>
+                    <p class="text-emerald-100 font-semibold mt-1 text-sm">اختر السورة التي تود دراستها ومراجعتها اليوم</p>
+                </div>
+            </div>
+            <button onclick="Auth.logout(); window.location.href='login.html'" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/20 transition text-sm">
+الخروج            </button>
+        </div>
+    </header>
+  
+<a href="profil.html" class="flex items-center gap-2 px-5 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-sm rounded-xl border border-blue-200 transition">
+    <span> ملفي الشخصي </span>
+</a>
+<!-- Zone des devoirs (Générée par JS) -->
+<div id="zone-devoirs" class="mb-8 space-y-3">
+    <!-- Les devoirs s'afficheront ici -->
+</div>
+    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6 flex items-center justify-between max-w-4xl mx-auto mt-6">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-2xl shadow-inner">
+                📅
+            </div>
+            <div>
+                <h2 class="text-sm text-gray-500 font-bold mb-1"> توقيت الحصص </h2>
+                <p id="student-schedule" class="text-lg text-blue-900 font-extrabold quran-font"></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-4 mt-6">
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-4">
+            <div class="flex-grow">
+                <div class="flex justify-between text-sm mb-2 font-bold text-gray-700">
+                    <span>تقدمك العام</span>
+                    <span id="student-progress-label">0 / 0 سورة</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-3 shadow-inner overflow-hidden">
+                    <div id="student-progress-fill" class="bg-emerald-500 h-3 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="text-3xl">🏆</div>
+        </div>
+    </div>
+
+    <main class="max-w-4xl mx-auto px-4 py-6">
+        <h2 class="text-lg font-black text-gray-700 mb-4 flex items-center gap-2">
+            <span class="w-2 h-6 bg-emerald-500 rounded-full inline-block"></span>
+            السور المتاحة للتعلم
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10" id="available-grid"></div>
+
+        <h2 class="text-lg font-black text-gray-700 mb-4 flex items-center gap-2">
+            <span class="w-2 h-6 bg-gray-300 rounded-full inline-block"></span>
+            السور القادمة قريباً
+        </h2>
+        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="locked-grid"></div>
+    </main>
+
+    <script>
+        function toArabicNum(n) { return String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]); }
+        // Ajoute ceci dans la fonction d'initialisation de ta page (ex: window.onload)
+async function chargerDevoirs() {
+            const session = Auth.getSession();
+            if (!session) return;
+            const devoirs = await Auth.getDevoirs('student', session.username);
+            const devoirsEnAttente = devoirs.filter(d => d.statut === 'en_attente');
+            
+            const zoneDevoirs = document.getElementById('zone-devoirs');
+            if (devoirsEnAttente.length > 0) {
+                let html = '<h2 class="text-xl font-black text-rose-600 mb-3">🚨 واجبات جديدة </h2>';
+                devoirsEnAttente.forEach(devoir => {
+                    html += `<div class="bg-rose-50 border border-rose-200 p-4 rounded-xl mb-3">
+                        <p class="text-sm text-rose-800 font-bold mb-1"> من الأستاذ(ة): ${devoir.prof_name}</p>
+                        <h3 class="text-lg font-black text-gray-800">سورة ${devoir.surate} : من الآية ${devoir.aya_debut} إلى الآية ${devoir.aya_fin}</h3>
+                        <p class="text-sm text-gray-600 mt-1">⏳ آخر أجل : ${devoir.date_limite}</p>
+                        <button onclick="validerDevoir('${devoir.id}')" class="mt-2 bg-rose-600 text-white px-4 py-1 rounded font-bold">حفظت الواجب ✅</button>
+                    </div>`;
+                });
+                zoneDevoirs.innerHTML = html;
+            } else {
+                zoneDevoirs.innerHTML = `<div class="text-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm mb-4"><div class="text-4xl mb-3 opacity-50">📚</div><p class="text-gray-600 text-lg font-bold" dir="rtl">لا يوجد أي واجب حالياً.</p></div>`;
+            }
+        }
+
+        async function validerDevoir(devoirId) {
+            if(confirm("هل أنت متأكد أنك حفظت هذا الواجب؟ ")) {
+                await Auth.marquerDevoirTermine(devoirId);
+                chargerDevoirs(); alert("ممتاز! بارك الله فيك ");
+            }
+        }
+
+        async function buildStudentDashboard() {
+            const session = Auth.getSession();
+            if (!session) return;
+            
+            // 1. Affichage des messages administratifs
+            const userMessages = await Auth.getMessages(session.username);
+            const msgContainer = document.getElementById('messages-container');
+            if (userMessages.length > 0) {
+                msgContainer.classList.remove('hidden');
+                msgContainer.innerHTML = userMessages.map(m => `
+                    <div class="bg-blue-50 border-r-4 border-blue-500 p-4 rounded-xl mb-3 shadow-sm flex justify-between items-center">
+                        <div><h4 class="font-bold text-blue-800 text-sm">رسالة من الإدارة 📢 :</h4><p class="text-blue-900 mt-1 text-lg font-semibold">${m.text}</p></div>
+                        <button onclick="Auth.clearMessages('${session.username}'); window.location.reload();" class="bg-white text-blue-500 px-3 py-1 rounded-lg text-sm font-bold shadow-sm">إخفاء ✓</button>
+                    </div>`).join('');
+            }
+
+            // 2. Affichage des infos de l'élève
+            document.getElementById('student-schedule').innerText = await Auth.getSchedule(session.username);
+            document.getElementById('student-name').innerText = session.prenom;
+            
+            // 3. Récupération de la progression
+            const progressData = await Auth.getProgress(session.username);
+            
+            // 4. GÉNÉRATION DES SOURATES (C'est ce qui te manquait !)
+            const availableGrid = document.getElementById('available-grid');
+            const lockedGrid = document.getElementById('locked-grid');
+            availableGrid.innerHTML = '';
+            lockedGrid.innerHTML = '';
+
+            let availableCount = 0;
+            let completedCount = 0;
+
+            SURAH_REGISTRY.forEach(surah => {
+                if (surah.available) {
+                    availableCount++;
+                    const pData = progressData[surah.id] || {};
+                    const isCompleted = !!pData.completedAt;
+                    const score = pData.globalScore || 0;
+                    
+                    if (isCompleted) completedCount++;
+
+                    const statusBadge = isCompleted 
+                        ? `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded font-bold">مكتملة ✅ (${score}%)</span>`
+                        : `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded font-bold">قيد الدراسة ⏳</span>`;
+
+                    availableGrid.innerHTML += `
+                        <div onclick="window.location.href='${surah.file}'" class="surah-card bg-white rounded-2xl p-5 border-2 border-transparent flex items-center justify-between group hover:shadow-md" style="--hover-border: ${surah.color};" onmouseover="this.style.borderColor='${surah.color}'" onmouseout="this.style.borderColor='transparent'">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-2xl shadow-inner" style="background-color: ${surah.color}15; color: ${surah.color}">
+                                    ${surah.emoji}
+                                </div>
+                                <div>
+                                    <h3 class="font-black text-xl text-gray-800 mb-1 quran-font">${surah.nameAr}</h3>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-xs font-bold text-gray-500">${surah.type} • ${toArabicNum(surah.ayat)} آيات</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-end gap-2">
+                                <span class="text-sm font-black text-gray-300">﴿${toArabicNum(surah.num)}﴾</span>
+                                ${statusBadge}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    lockedGrid.innerHTML += `
+                        <div class="surah-card-locked bg-gray-50 rounded-xl p-4 border border-gray-200 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center text-lg grayscale">
+                                ${surah.emoji}
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-600 quran-font">${surah.nameAr}</h3>
+                                <span class="text-[10px] font-bold text-gray-400">قريباً إن شاء الله</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            // 5. Mise à jour de la barre de progression globale
+            document.getElementById('student-progress-label').innerText = `${completedCount} / ${availableCount} سورة`;
+            const progressPercent = availableCount === 0 ? 0 : Math.round((completedCount / availableCount) * 100);
+            document.getElementById('student-progress-fill').style.width = `${progressPercent}%`;
+        }
+
+        chargerDevoirs();
+        buildStudentDashboard();
+    </script>
+</body>
+</html>

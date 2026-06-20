@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المشرف - جمعية مواهب المنان - دار القرآن والحديث</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script src="registry.js"></script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<div class="flex justify-center mb-4 mt-2">
+    <img src="logo.webp" alt="مواهب المنان" class="h-24 object-contain drop-shadow-md">
+</div>
+
+<div class="max-w-6xl mx-auto space-y-6">
+
+    <header class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-black text-emerald-900">لوحة تحكم الإدارة</h1>
+            <p class="text-sm text-gray-500 font-bold mt-1">متابعة حسابات وإنجازات الطلاب</p>
+        </div>
+        <a href="login.html" onclick="Auth.logout()" class="px-4 py-2 bg-rose-50 text-rose-600 font-bold rounded-xl hover:bg-rose-100 transition">الخروج</a>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- إنشاء حساب طالب -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-1 h-fit">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">إنشاء حساب طالب</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-600 mb-1">الاسم الشخصي</label>
+                    <input id="new-prenom" type="text" class="w-full p-3 border rounded-xl bg-gray-50 focus:border-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-600 mb-1">الاسم العائلي</label>
+                    <input id="new-nom" type="text" class="w-full p-3 border rounded-xl bg-gray-50 focus:border-emerald-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-600 mb-1">كلمة المرور</label>
+                    <input id="new-pass" type="password" class="w-full p-3 border rounded-xl bg-gray-50 focus:border-emerald-500 outline-none" placeholder="4 أحرف على الأقل">
+                </div>
+                <button onclick="createStudent()" id="btn-create" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition">
+                    إضافة الطالب ✔️
+                </button>
+                <div id="admin-msg" class="text-center text-sm font-bold mt-2 hidden p-2 rounded"></div>
+            </div>
+        </div>
+
+        <!-- قائمة الطلاب -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 lg:col-span-2 overflow-hidden">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2 flex justify-between items-center">
+                <span>قائمة الطلاب والتقدم</span>
+                <span id="total-students" class="text-sm bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full"></span>
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-right text-sm">
+                    <thead class="bg-gray-50 text-gray-600">
+                        <tr>
+                            <th class="p-3 rounded-r-xl">اسم الطالب</th>
+                            <th class="p-3">اسم المستخدم</th>
+                            <th class="p-3">السور المنجزة</th>
+                            <th class="p-3 text-center rounded-l-xl">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="students-table-body" class="divide-y divide-gray-100">
+                        <tr><td colspan="4" class="p-6 text-center text-gray-400">جاري التحميل...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- إدارة الأساتذة -->
+<div class="max-w-6xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mt-8">
+    <h2 class="text-xl font-black text-gray-800 mb-4">إدارة الأساتذة</h2>
+
+    <div class="flex gap-2 mb-6 p-4 bg-gray-50 rounded-xl flex-wrap">
+        <input type="text" id="new-prof-prenom" placeholder="اسم الأستاذ" class="px-3 py-2 rounded-xl border flex-1 min-w-[120px]">
+        <input type="text" id="new-prof-classe" placeholder="القسم" class="px-3 py-2 rounded-xl border flex-1 min-w-[100px]">
+        <input type="text" id="new-prof-pass" placeholder="كلمة المرور" class="px-3 py-2 rounded-xl border flex-1 min-w-[120px]">
+        <button onclick="creerProf()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-blue-700">+ إضافة</button>
+    </div>
+
+    <div class="flex items-center gap-4 mb-6 bg-emerald-50 p-4 rounded-xl border border-emerald-100 flex-wrap">
+        <span class="font-bold text-emerald-800">ربط تلميذ بأستاذ :</span>
+        <select id="select-student" class="p-2 border rounded-lg flex-1 min-w-[150px]"></select>
+        <span class="text-gray-400">←</span>
+        <select id="select-prof" class="p-2 border rounded-lg flex-1 min-w-[150px]"></select>
+        <button onclick="assignerEleve()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl font-bold hover:bg-emerald-700">ربط</button>
+    </div>
+
+    <div id="liste-profs-container" class="space-y-4">
+        <p class="text-gray-400 text-center">جاري التحميل...</p>
+    </div>
+</div>
+
+<!-- نافذة الملف الإداري -->
+<div id="profile-modal" class="hidden fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+    <div class="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl relative max-h-[90vh] overflow-y-auto">
+        <button onclick="closeProfileModal()" class="absolute top-4 left-4 text-gray-500 hover:text-gray-800 font-bold text-xl">✕</button>
+        <h2 class="text-xl font-bold text-emerald-900 mb-4 border-b pb-2">الملف الإداري: <span id="modal-student-name" class="text-emerald-600"></span></h2>
+        <input type="hidden" id="modal-username">
+        <div class="space-y-4">
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <h3 class="font-bold text-gray-700 mb-2">الوثائق المقدمة</h3>
+                <label class="flex items-center gap-2 cursor-pointer mb-2">
+                    <input type="checkbox" id="modal-cin" class="w-5 h-5 text-emerald-600 rounded">
+                    <span class="text-sm font-bold text-gray-600">نسخة من بطاقة التعريف للأب أو الأم</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="modal-birthcert" class="w-5 h-5 text-emerald-600 rounded">
+                    <span class="text-sm font-bold text-gray-600">عقد الازدياد</span>
+                </label>
+            </div>
+            <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-bold text-gray-700">الأداءات الشهرية</h3>
+                    <button onclick="addPaymentRow()" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold hover:bg-blue-200">+ إضافة شهر</button>
+                </div>
+                <table class="w-full text-sm text-right">
+                    <thead class="text-gray-500 border-b">
+                        <tr>
+                            <th class="pb-1 w-1/2">الشهر</th>
+                            <th class="pb-1">الحالة</th>
+                            <th class="pb-1 text-center">حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-payments-body"></tbody>
+                </table>
+            </div>
+            <button onclick="saveAdminProfile()" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition">
+                حفظ التغييرات ✔️
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  حماية الصفحة بكلمة مرور
+// ══════════════════════════════════════════
+const ADMIN_PASSWORD = 'admin1234';
+if (localStorage.getItem('adminAuth') !== 'true') {
+    const pwd = prompt("الرجاء إدخال رمز الإدارة:");
+    if (pwd === ADMIN_PASSWORD) {
+        localStorage.setItem('adminAuth', 'true');
+    } else {
+        alert("رمز غير صحيح!");
+        document.body.innerHTML = "";
+        window.location.replace("login.html");
+    }
+}
+
+// ══════════════════════════════════════════
+//  عرض قائمة الطلاب
+// ══════════════════════════════════════════
+async function renderStudents() {
+    const tbody = document.getElementById('students-table-body');
+    tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-400">جاري التحميل...</td></tr>';
+
+    const students = await Auth.getAllStudents();
+    document.getElementById('total-students').innerText = students.length + ' طلاب';
+    tbody.innerHTML = '';
+
+    if (students.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-6 text-center text-gray-400">لا يوجد طلاب بعد</td></tr>';
+        return;
+    }
+
+    students.forEach(student => {
+        const progressKeys = Object.keys(student.progress || {});
+        const completedSurahs = progressKeys.filter(id => student.progress[id] && student.progress[id].completedAt);
+
+        let surahsHtml = '';
+        if (completedSurahs.length === 0) {
+            surahsHtml = '<span class="text-gray-400 text-xs">لم ينجز أي سورة بعد</span>';
+        } else {
+            surahsHtml = completedSurahs.map(function(id) {
+                const surahName = (SURAH_REGISTRY.find(function(s) { return s.id === id; }) || {}).nameAr || id;
+                const score = student.progress[id].globalScore != null ? student.progress[id].globalScore : 100;
+                return '<span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded m-1 inline-block border border-green-200 font-bold">✅ ' + surahName + ' (' + score + '%)</span>';
+            }).join('');
+        }
+
+        const suspendedBadge = student.isSuspended
+            ? '<span class="inline-block bg-red-100 text-red-700 text-[10px] font-bold px-2 py-0.5 rounded-full">🚫 موقوف</span>'
+            : '<span class="inline-block bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">✅ نشط</span>';
+
+        const msgs = student.messages || [];
+        const msgsHtml = msgs.map(function(m) {
+            return '<div class="flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-2 py-1 mt-1 text-xs">' +
+                '<span class="text-blue-800 font-semibold">' + m.text + ' <span class="text-blue-400">(' + m.date + ')</span></span>' +
+                '<button onclick="deleteMessage(\'' + m.id + '\')" class="mr-2 text-rose-500 hover:text-rose-700 font-bold text-sm">✕</button>' +
+                '</div>';
+        }).join('');
+
+        const suspendBtn = student.isSuspended
+            ? '<button onclick="toggleUserSuspension(\'' + student.username + '\')" class="px-3 py-1 text-xs font-bold rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200">🔄 تفعيل</button>'
+            : '<button onclick="toggleUserSuspension(\'' + student.username + '\')" class="px-3 py-1 text-xs font-bold rounded bg-amber-100 text-amber-700 hover:bg-amber-200">🚫 إيقاف</button>';
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-gray-50 transition align-top";
+        tr.innerHTML =
+            '<td class="p-3"><span class="font-bold text-gray-800">' + student.prenom + ' ' + student.nom + '</span><div class="mt-1">' + suspendedBadge + '</div></td>' +
+            '<td class="p-3"><span class="font-mono text-gray-500 text-xs bg-gray-100 rounded px-2 py-1">' + student.username + '</span></td>' +
+            '<td class="p-3">' + surahsHtml + '</td>' +
+            '<td class="p-3"><div class="flex flex-wrap gap-1.5 justify-center">' +
+                '<button onclick="openProfileModal(\'' + student.username + '\', \'' + student.prenom + ' ' + student.nom + '\')" class="bg-purple-100 text-purple-700 px-3 py-1 rounded hover:bg-purple-200 font-bold text-xs">📂 الملف</button>' +
+                '<button onclick="editSchedule(\'' + student.username + '\')" class="bg-blue-100 text-blue-600 px-3 py-1 rounded hover:bg-blue-200 font-bold text-xs">📅 الجدول</button>' +
+                '<button onclick="sendMsg(\'' + student.username + '\')" class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded hover:bg-indigo-200 font-bold text-xs">✉️ رسالة</button>' +
+                suspendBtn +
+                '<button onclick="removeStudent(\'' + student.username + '\')" class="bg-rose-100 text-rose-600 px-3 py-1 rounded hover:bg-rose-200 font-bold text-xs">🗑️ حذف</button>' +
+            '</div>' + msgsHtml + '</td>';
+        tbody.appendChild(tr);
+    });
+}
+
+// ══════════════════════════════════════════
+//  إنشاء حساب طالب
+// ══════════════════════════════════════════
+async function createStudent() {
+    const prenom = document.getElementById('new-prenom').value.trim();
+    const nom    = document.getElementById('new-nom').value.trim();
+    const pass   = document.getElementById('new-pass').value.trim();
+    const btn    = document.getElementById('btn-create');
+
+    if (!prenom || !nom || !pass) { showAdminMsg('يرجى ملء جميع الخانات', false); return; }
+
+    btn.disabled = true;
+    btn.innerText = 'جاري الإضافة...';
+
+    // bypassSession = true حتى لا يتغير الجلسة الإدارية
+    const res = await Auth.register(prenom, nom, pass, true);
+
+    btn.disabled = false;
+    btn.innerText = 'إضافة الطالب ✔️';
+
+    if (res.ok) {
+        showAdminMsg('✅ تم إنشاء حساب ' + prenom + ' ' + nom + ' بنجاح!', true);
+        document.getElementById('new-prenom').value = '';
+        document.getElementById('new-nom').value    = '';
+        document.getElementById('new-pass').value   = '';
+        await renderStudents();
+        await chargerGestionProfs();
+    } else {
+        showAdminMsg('❌ ' + res.error, false);
+    }
+}
+
+function showAdminMsg(text, ok) {
+    const msgBox = document.getElementById('admin-msg');
+    msgBox.classList.remove('hidden');
+    msgBox.innerText = text;
+    msgBox.className = 'text-center text-sm font-bold mt-2 p-2 rounded ' + (ok ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50');
+    setTimeout(function() { msgBox.classList.add('hidden'); }, 4000);
+}
+
+// ══════════════════════════════════════════
+//  إجراءات الطلاب
+// ══════════════════════════════════════════
+async function removeStudent(username) {
+    if (confirm('هل أنت متأكد من حذف هذا الطالب نهائياً؟')) {
+        await Auth.deleteStudent(username);
+        await renderStudents();
+        await chargerGestionProfs();
+    }
+}
+
+async function editSchedule(username) {
+    const current = await Auth.getSchedule(username);
+    const placeholder = current === 'لم يتم تحديد أوقات الحصص بعد.' ? '' : current;
+    const newSched = prompt('أدخل أيام وأوقات الحصص:\n(مثال: الإثنين 17:00 والخميس 18:00)', placeholder);
+    if (newSched !== null && newSched.trim() !== '') {
+        await Auth.setSchedule(username, newSched.trim());
+        alert('تم حفظ الجدول بنجاح!');
+    }
+}
+
+async function toggleUserSuspension(username) {
+    if (confirm('هل أنت متأكد من تغيير حالة هذا الحساب؟')) {
+        await Auth.toggleSuspension(username);
+        await renderStudents();
+    }
+}
+
+async function sendMsg(username) {
+    const msg = prompt('اكتب رسالتك لهذا الطالب:');
+    if (msg !== null && msg.trim() !== '') {
+        await Auth.sendMessage(username, msg.trim());
+        alert('تم إرسال الرسالة بنجاح!');
+        await renderStudents();
+    }
+}
+
+async function deleteMessage(msgId) {
+    if (confirm('هل تريد حذف هذه الرسالة؟')) {
+        await Auth.deleteMessageById(msgId);
+        await renderStudents();
+    }
+}
+
+// ══════════════════════════════════════════
+//  الملف الإداري
+// ══════════════════════════════════════════
+async function openProfileModal(username, fullName) {
+    document.getElementById('modal-username').value = username;
+    document.getElementById('modal-student-name').innerText = fullName;
+
+    const profile = await Auth.getProfile(username);
+    document.getElementById('modal-cin').checked = profile.cinProvided;
+    document.getElementById('modal-birthcert').checked = profile.birthCertProvided;
+
+    const tbody = document.getElementById('modal-payments-body');
+    tbody.innerHTML = '';
+    (profile.payments || []).forEach(function(p) { addPaymentRow(p.month, p.status); });
+
+    document.getElementById('profile-modal').classList.remove('hidden');
+}
+
+function closeProfileModal() {
+    document.getElementById('profile-modal').classList.add('hidden');
+}
+
+function addPaymentRow(month, status) {
+    month  = month  || '';
+    status = status || 'en attente';
+    const tbody = document.getElementById('modal-payments-body');
+    const tr = document.createElement('tr');
+    tr.className = 'payment-row border-b border-gray-100';
+    const colorClass = status === 'payé' ? 'text-emerald-600' : 'text-amber-600';
+    tr.innerHTML =
+        '<td class="py-2 pr-1"><input type="text" class="month-input w-full p-1 border rounded text-sm bg-white" value="' + month + '"></td>' +
+        '<td class="py-2 px-1"><select class="status-input w-full p-1 border rounded text-sm bg-white font-bold ' + colorClass + '">' +
+            '<option value="en attente"' + (status !== 'payé' ? ' selected' : '') + '>⏳ في الانتظار</option>' +
+            '<option value="payé"' + (status === 'payé' ? ' selected' : '') + '>✅ خالص</option>' +
+        '</select></td>' +
+        '<td class="py-2 text-center"><button onclick="this.closest(\'tr\').remove()" class="text-rose-500 font-bold hover:text-rose-700">✕</button></td>';
+    tr.querySelector('.status-input').addEventListener('change', function() {
+        this.className = 'status-input w-full p-1 border rounded text-sm bg-white font-bold ' + (this.value === 'payé' ? 'text-emerald-600' : 'text-amber-600');
+    });
+    tbody.appendChild(tr);
+}
+
+async function saveAdminProfile() {
+    const username = document.getElementById('modal-username').value;
+    const cinProvided = document.getElementById('modal-cin').checked;
+    const birthCertProvided = document.getElementById('modal-birthcert').checked;
+    const payments = [];
+    document.querySelectorAll('.payment-row').forEach(function(row) {
+        const month = row.querySelector('.month-input').value.trim();
+        const status = row.querySelector('.status-input').value;
+        if (month) payments.push({ month: month, status: status });
+    });
+    await Auth.updateProfile(username, { cinProvided: cinProvided, birthCertProvided: birthCertProvided, payments: payments });
+    alert('تم حفظ الملف الإداري بنجاح!');
+    closeProfileModal();
+    await renderStudents();
+}
+
+// ══════════════════════════════════════════
+//  إدارة الأساتذة
+// ══════════════════════════════════════════
+async function chargerGestionProfs() {
+    const profsData = await Auth.getProfs();
+    const usersData = await Auth.getAllUsers();
+
+    const selectStudent = document.getElementById('select-student');
+    const selectProf    = document.getElementById('select-prof');
+
+    selectStudent.innerHTML = Object.entries(usersData).map(function(entry) {
+        return '<option value="' + entry[0] + '">' + entry[1].prenom + ' ' + entry[1].nom + '</option>';
+    }).join('');
+
+    selectProf.innerHTML = Object.entries(profsData).map(function(entry) {
+        return '<option value="' + entry[0] + '">' + entry[1].prenom + ' (' + entry[1].classe + ')</option>';
+    }).join('');
+
+    const container = document.getElementById('liste-profs-container');
+    const profEntries = Object.entries(profsData);
+    if (profEntries.length === 0) {
+        container.innerHTML = '<p class="text-gray-400 text-center">لا يوجد أساتذة بعد</p>';
+        return;
+    }
+
+    container.innerHTML = profEntries.map(function(entry) {
+        const username = entry[0];
+        const data = entry[1];
+        const students = data.students || [];
+        const studentsHtml = students.length === 0
+            ? '<span class="text-xs text-gray-400">لا يوجد تلميذ</span>'
+            : students.map(function(eleveId) {
+                const u = usersData[eleveId];
+                const nom = u ? (u.prenom + ' ' + u.nom) : eleveId;
+                return '<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded font-bold flex items-center gap-1">' +
+                    nom + ' <button onclick="retirerEleve(\'' + username + '\',\'' + eleveId + '\')" class="text-red-500 hover:text-red-700 font-bold ml-1">×</button></span>';
+              }).join('');
+
+        return '<div class="border border-gray-200 p-4 rounded-xl bg-white shadow-sm flex justify-between items-start">' +
+            '<div><h3 class="font-black text-lg text-blue-900">' + data.prenom + ' <span class="text-sm font-normal text-gray-500 bg-gray-100 px-2 rounded">قسم: ' + data.classe + '</span></h3>' +
+            '<p class="text-sm text-gray-600 mt-2"><strong>التلاميذ :</strong></p>' +
+            '<div class="flex flex-wrap gap-2 mt-1">' + studentsHtml + '</div></div>' +
+            '<button onclick="supprimerProf(\'' + username + '\')" class="text-red-500 hover:bg-red-50 px-3 py-1 rounded text-sm font-bold">🗑️ حذف</button>' +
+            '</div>';
+    }).join('');
+}
+
+async function creerProf() {
+    const p = document.getElementById('new-prof-prenom').value.trim();
+    const c = document.getElementById('new-prof-classe').value.trim();
+    const m = document.getElementById('new-prof-pass').value.trim();
+    if (!p || !c || !m) { alert('المرجو ملء جميع الخانات'); return; }
+
+    const res = await Auth.registerProf(p, c, m);
+    if (res.ok) {
+        document.getElementById('new-prof-prenom').value = '';
+        document.getElementById('new-prof-classe').value = '';
+        document.getElementById('new-prof-pass').value   = '';
+        await chargerGestionProfs();
+        alert('تم إضافة الأستاذ بنجاح ✅');
+    } else {
+        alert('❌ ' + res.error);
+    }
+}
+
+async function supprimerProf(username) {
+    if (confirm('هل أنت متأكد من حذف هذا الأستاذ؟')) {
+        await Auth.deleteProf(username);
+        await chargerGestionProfs();
+    }
+}
+
+async function assignerEleve() {
+    const studentId = document.getElementById('select-student').value;
+    const profId    = document.getElementById('select-prof').value;
+    if (!studentId || !profId) { alert('المرجو اختيار التلميذ والأستاذ أولاً'); return; }
+    await Auth.assignStudentToProf(profId, studentId);
+    await chargerGestionProfs();
+    alert('✅ تم ربط التلميذ بالأستاذ بنجاح!');
+}
+
+async function retirerEleve(profId, studentId) {
+    await Auth.removeStudentFromProf(profId, studentId);
+    await chargerGestionProfs();
+}
+
+// ══════════════════════════════════════════
+//  التهيئة
+// ══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', async function() {
+    await renderStudents();
+    await chargerGestionProfs();
+});
+</script>
+</body>
+</html>

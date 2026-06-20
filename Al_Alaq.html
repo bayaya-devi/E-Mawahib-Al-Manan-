@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة مواهب المنان - سورة العلق</title>
+    <!-- Tailwind CSS pour un design adaptatif -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Librairie de confettis -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f0f7f4;
+            user-select: none;
+        }
+        .quran-text {
+            font-family: 'Amiri', serif;
+            line-height: 2.2;
+        }
+        button {
+            touch-action: manipulation;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .blank-space {
+            display: inline-block;
+            min-width: 80px;
+            border-bottom: 3px dashed #10b981;
+            margin: 0 5px;
+            color: #059669;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 md:p-6 bg-[#f4fbf7]">
+<div class="flex justify-center mb-4 mt-2">
+    <img src="logo.webp" alt="مواهب المنان" class="h-24 object-contain drop-shadow-md">
+</div>
+    <!-- En-tête principal -->
+    <header class="w-full max-w-4xl mx-auto bg-white shadow-md rounded-2xl p-4 mb-6 border border-emerald-100/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4 text-right">
+            <div class="relative w-20 h-20 bg-emerald-50 rounded-xl overflow-hidden flex items-center justify-center border border-emerald-100 shadow-inner shrink-0">
+                <img src="logo.jpg" alt="Logo" class="w-full h-full object-cover" onerror="this.outerHTML='<span class=\'text-3xl\'>📖</span>'">
+            </div>
+            <div>
+                <h1 class="text-lg md:text-2xl font-black text-[#0c4a3b] leading-tight">جمعية مواهب المنان</h1>
+                <p class="text-xs md:text-sm text-emerald-700 font-bold mt-1">دار القرآن والحديث • عين العودة</p>
+                <p class="text-[10px] text-gray-400 font-semibold">منصة سورة العلق التفاعلية للطلاب</p>
+            </div>
+        </div>
+        <!-- زر العودة للرئيسية -->
+<a href="dashboard.html"
+   class="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm rounded-xl border border-emerald-200 transition shrink-0">
+    <span>🏠 لوحتي</span>
+</a>
+    </header>
+
+    <!-- Conteneur central -->
+    <main class="w-full max-w-4xl mx-auto bg-white shadow-lg rounded-3xl p-5 md:p-8 flex-grow flex flex-col justify-between border border-emerald-50 relative">
+        
+        <!-- الأقسام الأربعة للسورة -->
+        <div>
+            <div class="grid grid-cols-4 gap-2 mb-6 text-center">
+                <div id="tab-0" class="py-3 rounded-xl font-bold transition text-xs md:text-base border-b-4 border-emerald-600 bg-emerald-50 text-emerald-800">
+                    <span class="block text-lg">١</span>الربع الأول
+                </div>
+                <div id="tab-1" class="py-3 rounded-xl font-bold transition text-xs md:text-base border-b-4 border-gray-200 bg-gray-50 text-gray-400">
+                    <span class="block text-lg">٢</span>الربع الثاني
+                </div>
+                <div id="tab-2" class="py-3 rounded-xl font-bold transition text-xs md:text-base border-b-4 border-gray-200 bg-gray-50 text-gray-400">
+                    <span class="block text-lg">٣</span>الربع الثالث
+                </div>
+                <div id="tab-3" class="py-3 rounded-xl font-bold transition text-xs md:text-base border-b-4 border-gray-200 bg-gray-50 text-gray-400">
+                    <span class="block text-lg">٤</span>الربع الرابع
+                </div>
+            </div>
+
+            <!-- مؤشر الأنشطة (استماع، لعبة 1، لعبة 2) -->
+            <div class="flex items-center justify-between mb-6 px-2">
+                <div class="flex gap-2" id="activity-dots">
+                    <span id="dot-0" class="w-4 h-4 rounded-full inline-block transition duration-200 bg-emerald-600 scale-125 shadow-sm"></span>
+                    <span id="dot-1" class="w-4 h-4 rounded-full inline-block transition duration-200 bg-gray-200"></span>
+                    <span id="dot-2" class="w-4 h-4 rounded-full inline-block transition duration-200 bg-gray-200"></span>
+                </div>
+                <span class="text-xs md:text-sm font-bold text-emerald-800 bg-emerald-100/50 px-3 py-1.5 rounded-full" id="activity-title">استماع وقراءة</span>
+            </div>
+        </div>
+
+        <!-- ================= Espace d'affichage des écrans ================= -->
+        <div class="flex-grow flex flex-col justify-center py-4 min-h-[300px]">
+            
+            <!-- الشاشة الأولى: استماع حقيقي (Audio) -->
+            <div id="screen-0" class="space-y-6">
+                <p class="text-sm md:text-base text-gray-500 font-bold mb-1 text-center">استمع للآيات الكريمة بصوت واضح ثم رددها</p>
+                <div class="quran-text text-xl md:text-3xl text-right py-6 px-5 bg-emerald-50/40 rounded-2xl text-emerald-950 font-bold border border-emerald-100/50 shadow-inner max-h-[300px] overflow-y-auto space-y-4" id="audio-verses-box">
+                    <!-- Audio verses generated via JS -->
+                </div>
+                <div class="flex justify-center">
+                    <button onclick="playFullQuarter()" class="px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm md:text-lg rounded-2xl shadow-md transition flex items-center gap-2">
+                        <span>🔊 استمع للمقدار كاملاً المتصل</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- الشاشة الثانية: اللعبة الأولى (ترتيب الكلمات) -->
+            <div id="screen-1" class="hidden space-y-6">
+                <p class="text-sm md:text-base text-gray-500 font-bold mb-1 text-center">اللعبة الأولى: رتب الكلمات التالية لتكوين الآية الكريمة</p>
+                <div class="quran-text text-xl md:text-3xl text-center py-6 px-4 bg-amber-50/50 rounded-2xl text-amber-950 font-bold border-2 border-amber-100 min-h-[90px] flex justify-center items-center gap-2 flex-wrap" id="reconstructed-box">
+                    <!-- Zone de reconstruction -->
+                </div>
+                <div class="flex flex-wrap justify-center gap-3 py-2" id="scrambled-words-box">
+                    <!-- Cartes de mots cliquables -->
+                </div>
+                <div class="flex justify-center">
+                    <button onclick="resetReconstruction()" class="px-5 py-2 text-sm bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition">
+                        إعادة المحاولة
+                    </button>
+                </div>
+            </div>
+
+            <!-- الشاشة الثالثة: اللعبة الثانية (أكمل الفراغ) -->
+            <div id="screen-2" class="hidden space-y-6">
+                <p class="text-sm md:text-base text-gray-500 font-bold mb-1 text-center">اللعبة الثانية: اختر الكلمة الصحيحة لإكمال الفراغ</p>
+                <div class="quran-text text-2xl md:text-4xl text-center py-8 px-4 bg-blue-50/50 rounded-2xl text-blue-950 font-bold border-2 border-blue-100" id="quiz-question-box">
+                    <!-- Question avec espace vide -->
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6" id="quiz-options-box">
+                    <!-- Options de quiz générées ici -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- رسائل التحفيز -->
+        <div id="feedback-message" class="hidden p-4 rounded-xl text-center text-sm md:text-base font-bold transition duration-200 my-4"></div>
+
+        <!-- Pied de page : Boutons de navigation -->
+        <div class="flex justify-between items-center mt-6 pt-4 border-t border-gray-100">
+            <button id="back-btn" onclick="goBack()" class="px-5 py-3.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition text-sm flex items-center gap-1 opacity-40 cursor-not-allowed" disabled>
+                ➡️ رجوع
+            </button>
+            <button id="next-btn" onclick="validateCurrentScreen()" class="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm md:text-base rounded-xl shadow-md transition flex items-center gap-1">
+                <span id="next-btn-text">متابعة ✔️</span>
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        // Data Structure : 4 Quarters, each with 2 Interactive Games
+        const surahData = [
+            {
+                title: "الربع الأول (١ - ٥)",
+                verses: [
+                    { num: 1, text: "اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ", audio: "096001" },
+                    { num: 2, text: "خَلَقَ الْإِنْسَانَ مِنْ عَلَقٍ", audio: "096002" },
+                    { num: 3, text: "اقْرَأْ وَرَبُّكَ الْأَكْرَمُ", audio: "096003" },
+                    { num: 4, text: "الَّذِي عَلَّمَ بِالْقَلَمِ", audio: "096004" },
+                    { num: 5, text: "عَلَّمَ الْإِنْسَانَ مَا لَمْ يَعْلَمْ", audio: "096005" }
+                ],
+                game1: {
+                    words: ["عَلَّمَ", "الْإِنْسَانَ", "مَا", "لَمْ", "يَعْلَمْ"],
+                    correct: "عَلَّمَ الْإِنْسَانَ مَا لَمْ يَعْلَمْ"
+                },
+                game2: {
+                    question: "خَلَقَ الْإِنْسَانَ مِنْ <span class='blank-space' id='blank-space'>.......</span> ۝",
+                    options: ["طِينٍ", "عَلَقٍ", "مَاءٍ"],
+                    correct: "عَلَقٍ"
+                }
+            },
+            {
+                title: "الربع الثاني (٦ - ١٠)",
+                verses: [
+                    { num: 6, text: "كَلَّا إِنَّ الْإِنْسَانَ لَيَطْغَىٰ", audio: "096006" },
+                    { num: 7, text: "أَنْ رَآهُ اسْتَغْنَىٰ", audio: "096007" },
+                    { num: 8, text: "إِنَّ إِلَىٰ رَبِّكَ الرُّجْعَىٰ", audio: "096008" },
+                    { num: 9, text: "أَرَأَيْتَ الَّذِي يَنْهَىٰ", audio: "096009" },
+                    { num: 10, text: "عَبْدًا إِذَا صَلَّىٰ", audio: "096010" }
+                ],
+                game1: {
+                    words: ["إِنَّ", "إِلَىٰ", "رَبِّكَ", "الرُّجْعَىٰ"],
+                    correct: "إِنَّ إِلَىٰ رَبِّكَ الرُّجْعَىٰ"
+                },
+                game2: {
+                    question: "أَرَأَيْتَ الَّذِي يَنْهَىٰ ۝ عَبْدًا إِذَا <span class='blank-space' id='blank-space'>.......</span> ۝",
+                    options: ["زَكَّىٰ", "صَلَّىٰ", "دَعَا"],
+                    correct: "صَلَّىٰ"
+                }
+            },
+            {
+                title: "الربع الثالث (١١ - ١٤)",
+                verses: [
+                    { num: 11, text: "أَرَأَيْتَ إِنْ كَانَ عَلَى الْهُدَىٰ", audio: "096011" },
+                    { num: 12, text: "أَوْ أَمَرَ بِالتَّقْوَىٰ", audio: "096012" },
+                    { num: 13, text: "أَرَأَيْتَ إِنْ كَذَّبَ وَتَوَلَّىٰ", audio: "096013" },
+                    { num: 14, text: "أَلَمْ يَعْلَمْ بِأَنَّ اللَّهَ يَرَىٰ", audio: "096014" }
+                ],
+                game1: {
+                    words: ["أَلَمْ", "يَعْلَمْ", "بِأَنَّ", "اللَّهَ", "يَرَىٰ"],
+                    correct: "أَلَمْ يَعْلَمْ بِأَنَّ اللَّهَ يَرَىٰ"
+                },
+                game2: {
+                    question: "أَرَأَيْتَ إِنْ كَانَ عَلَى الْهُدَىٰ ۝ أَوْ أَمَرَ بـ <span class='blank-space' id='blank-space'>.......</span> ۝",
+                    options: ["بِالْخَيْرِ", "بِالْمَعْرُوفِ", "بِالتَّقْوَىٰ"],
+                    correct: "بِالتَّقْوَىٰ"
+                }
+            },
+            {
+                title: "الربع الرابع والأخير (١٥ - ١٩)",
+                verses: [
+                    { num: 15, text: "كَلَّا لَئِنْ لَمْ يَنْتَهِ لَنَسْفَعًا بِالنَّاصِيَةِ", audio: "096015" },
+                    { num: 16, text: "نَاصِيَةٍ كَاذِبَةٍ خَاطِئَةٍ", audio: "096016" },
+                    { num: 17, text: "فَلْيَدْعُ نَادِيَهُ", audio: "096017" },
+                    { num: 18, text: "سَنَدْعُ الزَّبَانِيَةَ", audio: "096018" },
+                    { num: 19, text: "كَلَّا لَا تُطِعْهُ وَاسْجُدْ وَاقْتَرِبْ", audio: "096019" }
+                ],
+                game1: {
+                    words: ["كَلَّا", "لَا", "تُطِعْهُ", "وَاسْجُدْ", "وَاقْتَرِبْ"],
+                    correct: "كَلَّا لَا تُطِعْهُ وَاسْجُدْ وَاقْتَرِبْ"
+                },
+                game2: {
+                    question: "فَلْيَدْعُ نَادِيَهُ ۝ سَنَدْعُ <span class='blank-space' id='blank-space'>.......</span> ۝",
+                    options: ["الْمَلَائِكَةَ", "الزَّبَانِيَةَ", "النَّاسَ"],
+                    correct: "الزَّبَانِيَةَ"
+                }
+            }
+        ];
+
+        // Global State
+        let currentQuarterIndex = 0; // 0 to 3
+        let currentActivityIndex = 0; // 0 (Audio), 1 (Game 1), 2 (Game 2)
+        
+        // Game 1 State
+        let selectedWordsList = [];
+        
+        // Game 2 State
+        let game2Passed = false;
+
+        // Audio System
+        let currentAudioPlayer = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderView();
+        });
+
+        function playSingleAudio(audioCode, btnElement) {
+            stopAudio();
+            currentAudioPlayer = new Audio(`https://everyayah.com/data/Alafasy_128kbps/${audioCode}.mp3`);
+            
+            // UI Feedback
+            const allBtns = document.querySelectorAll('.verse-play-btn');
+            allBtns.forEach(b => b.classList.remove('bg-emerald-200', 'animate-pulse'));
+            if(btnElement) btnElement.classList.add('bg-emerald-200', 'animate-pulse');
+
+            currentAudioPlayer.onended = () => {
+                if(btnElement) btnElement.classList.remove('bg-emerald-200', 'animate-pulse');
+            };
+            currentAudioPlayer.play().catch(e => console.log("Audio play prevented by browser:", e));
+        }
+
+        function playFullQuarter() {
+            stopAudio();
+            const verses = surahData[currentQuarterIndex].verses;
+            let index = 0;
+
+            function playNextInSequence() {
+                if (index < verses.length) {
+                    currentAudioPlayer = new Audio(`https://everyayah.com/data/Alafasy_128kbps/${verses[index].audio}.mp3`);
+                    currentAudioPlayer.onended = playNextInSequence;
+                    currentAudioPlayer.play().catch(e => console.log("Audio sequence error:", e));
+                    index++;
+                }
+            }
+            playNextInSequence();
+        }
+
+        function stopAudio() {
+            if (currentAudioPlayer) {
+                currentAudioPlayer.pause();
+                currentAudioPlayer.currentTime = 0;
+            }
+        }
+
+        function renderView() {
+            stopAudio();
+            hideFeedback();
+            
+            // 1. Update Quarter Tabs
+            for (let i = 0; i < 4; i++) {
+                const tab = document.getElementById(`tab-${i}`);
+                if (i === currentQuarterIndex) {
+                    tab.className = "py-3 rounded-xl font-bold transition text-xs md:text-base border-b-4 border-emerald-600 bg-emerald-50 text-emerald-800";
+                } else if (i < currentQuarterIndex) {
+                    tab.className = "py-3 rounded-xl font-bold transition text-xs md:text-base border-b-4 border-teal-500 bg-teal-50 text-teal-700";
+                } else {
+                    tab.className = "py-3 rounded-xl font-bold transition text-xs md:text-base border-b-4 border-gray-200 bg-gray-50 text-gray-400";
+                }
+            }
+
+            // 2. Update Activity Dots
+            const titles = ["استماع وقراءة", "اللعبة الأولى: ترتيب الآية", "اللعبة الثانية: أكمل الفراغ"];
+            document.getElementById('activity-title').innerText = titles[currentActivityIndex];
+            
+            for(let i=0; i<3; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                dot.className = `w-4 h-4 rounded-full inline-block transition duration-200 ${i === currentActivityIndex ? 'bg-emerald-600 scale-125 shadow-sm' : i < currentActivityIndex ? 'bg-teal-500' : 'bg-gray-200'}`;
+            }
+
+            // 3. Toggle Screens
+            document.getElementById('screen-0').classList.add('hidden');
+            document.getElementById('screen-1').classList.add('hidden');
+            document.getElementById('screen-2').classList.add('hidden');
+            document.getElementById(`screen-${currentActivityIndex}`).classList.remove('hidden');
+
+            // 4. Setup Content based on Activity
+            if (currentActivityIndex === 0) setupAudioScreen();
+            else if (currentActivityIndex === 1) setupGame1();
+            else if (currentActivityIndex === 2) setupGame2();
+
+            // 5. Setup Nav Buttons
+            const backBtn = document.getElementById('back-btn');
+            if (currentQuarterIndex === 0 && currentActivityIndex === 0) {
+                backBtn.disabled = true;
+                backBtn.classList.add('opacity-40', 'cursor-not-allowed');
+            } else {
+                backBtn.disabled = false;
+                backBtn.classList.remove('opacity-40', 'cursor-not-allowed');
+            }
+            
+            document.getElementById('next-btn-text').innerText = (currentQuarterIndex === 3 && currentActivityIndex === 2) ? "إنهاء" : "متابعة ✔️";
+        }
+
+        // --- Activity Setup Functions ---
+
+        function setupAudioScreen() {
+            const container = document.getElementById('audio-verses-box');
+            container.innerHTML = '';
+            const verses = surahData[currentQuarterIndex].verses;
+            
+            verses.forEach(v => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-emerald-50 verse-play-btn cursor-pointer hover:bg-emerald-50 transition";
+                div.onclick = (e) => playSingleAudio(v.audio, div);
+                
+                div.innerHTML = `
+                    <button class="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center shrink-0 shadow-inner hover:bg-emerald-200 transition">
+                        ▶️
+                    </button>
+                    <span class="flex-grow text-right pr-4">${v.text} <span class="text-sm text-emerald-600 font-sans font-bold">﴿${v.num}﴾</span></span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function setupGame1() {
+            selectedWordsList = [];
+            document.getElementById('reconstructed-box').innerHTML = '<span class="text-gray-400 text-base">اضغط الكلمات بالأسفل لترتيبها هنا...</span>';
+            
+            const gameData = surahData[currentQuarterIndex].game1;
+            const scrambledWords = [...gameData.words].sort(() => Math.random() - 0.5);
+            
+            const scrambledBox = document.getElementById('scrambled-words-box');
+            scrambledBox.innerHTML = '';
+            
+            scrambledWords.forEach(word => {
+                const btn = document.createElement('button');
+                btn.className = "px-5 py-3 bg-white border-2 border-amber-200 text-amber-950 font-bold text-lg rounded-xl shadow-sm hover:bg-amber-100/50 transition active:scale-95";
+                btn.innerText = word;
+                btn.onclick = () => selectWord(word, btn);
+                scrambledBox.appendChild(btn);
+            });
+        }
+
+        function selectWord(word, btn) {
+            selectedWordsList.push(word);
+            btn.classList.add('opacity-0', 'pointer-events-none'); // Hide the word from options
+            
+            const reconstructedBox = document.getElementById('reconstructed-box');
+            if(selectedWordsList.length === 1) reconstructedBox.innerHTML = ''; // clear placeholder
+            
+            const span = document.createElement('span');
+            span.className = "px-4 py-2 bg-amber-100 text-amber-900 rounded-lg border border-amber-300 text-xl font-bold shadow-sm animate-fade-in";
+            span.innerText = word;
+            reconstructedBox.appendChild(span);
+        }
+
+        function resetReconstruction() {
+            setupGame1();
+            hideFeedback();
+        }
+
+        function setupGame2() {
+            game2Passed = false;
+            const gameData = surahData[currentQuarterIndex].game2;
+            
+            document.getElementById('quiz-question-box').innerHTML = gameData.question;
+            
+            const optionsBox = document.getElementById('quiz-options-box');
+            optionsBox.innerHTML = '';
+            
+            const shuffledOptions = [...gameData.options].sort(() => Math.random() - 0.5);
+
+            shuffledOptions.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "p-5 bg-white border-4 border-blue-100 text-blue-800 font-bold text-xl rounded-2xl shadow-sm hover:border-blue-300 hover:bg-blue-50 transition transform hover:-translate-y-1";
+                btn.innerText = opt;
+                btn.onclick = () => checkGame2Answer(opt, btn);
+                optionsBox.appendChild(btn);
+            });
+        }
+
+        function checkGame2Answer(selectedOpt, btnElement) {
+            const gameData = surahData[currentQuarterIndex].game2;
+            const allBtns = document.getElementById('quiz-options-box').getElementsByTagName('button');
+            
+            if(selectedOpt === gameData.correct) {
+                game2Passed = true;
+                
+                // Success styling
+                btnElement.className = "p-5 bg-emerald-100 border-4 border-emerald-400 text-emerald-900 font-bold text-xl rounded-2xl shadow-md";
+                document.getElementById('blank-space').innerText = gameData.correct;
+                document.getElementById('blank-space').style.borderBottom = "none";
+                
+                for(let b of allBtns) if(b !== btnElement) b.disabled = true;
+                
+                showFeedback("إجابة صحيحة! بطل رائع", "success");
+            } else {
+                // Try again styling
+                btnElement.className = "p-5 bg-rose-50 border-4 border-rose-200 text-rose-400 font-bold text-xl rounded-2xl cursor-not-allowed opacity-50";
+                btnElement.disabled = true;
+                showFeedback("حاول مرة أخرى لتجد الكلمة الصحيحة ", "error");
+            }
+        }
+
+        // --- Navigation Logic ---
+
+function validateCurrentScreen() {
+    if (currentActivityIndex === 0) {
+        // Écoute : score automatique 100
+        if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') Auth.recordActivity('al-alaq', `q${currentQuarterIndex}_listening`, 100);
+        goNext();
+    } 
+    else if (currentActivityIndex === 1) {
+        const gameData = surahData[currentQuarterIndex].game1;
+        const constructedText = selectedWordsList.join(' ');
+        if (constructedText === gameData.correct) {
+            if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') Auth.recordActivity('al-alaq', `q${currentQuarterIndex}_game1`, 100);
+            showFeedback("الترتيب ممتاز! أحسنت.", "success");
+            setTimeout(goNext, 1000);
+        } else {
+            if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') Auth.recordActivity('al-alaq', `q${currentQuarterIndex}_game1`, 50);
+            showFeedback("الترتيب غير مكتمل أو غير صحيح، يرجى المحاولة.", "error");
+        }
+    }
+    else if (currentActivityIndex === 2) {
+        if (game2Passed) {
+            if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') Auth.recordActivity('al-alaq', `q${currentQuarterIndex}_game2`, 100);
+            if (currentQuarterIndex === 3) {
+                triggerCelebration();
+            } else {
+                goNext();
+            }
+        } else {
+            showFeedback("الرجاء اختيار الإجابة الصحيحة أولاً للانتقال.", "error");
+        }
+    }
+}
+
+        function goNext() {
+            if (currentActivityIndex < 2) {
+                currentActivityIndex++;
+            } else {
+                if (currentQuarterIndex < 3) {
+                    currentQuarterIndex++;
+                    currentActivityIndex = 0;
+                }
+            }
+            renderView();
+        }
+
+        function goBack() {
+            if (currentActivityIndex > 0) {
+                currentActivityIndex--;
+            } else {
+                if (currentQuarterIndex > 0) {
+                    currentQuarterIndex--;
+                    currentActivityIndex = 2; // Go to last activity of previous quarter
+                }
+            }
+            renderView();
+        }
+
+        // --- Helpers & Celebration ---
+
+        function showFeedback(msg, type) {
+            const fb = document.getElementById('feedback-message');
+            fb.innerText = msg;
+            fb.classList.remove('hidden', 'bg-emerald-100', 'text-emerald-800', 'bg-rose-100', 'text-rose-800', 'border-emerald-200', 'border-rose-200');
+            
+            if (type === 'success') {
+                fb.classList.add('bg-emerald-100', 'text-emerald-800', 'border', 'border-emerald-200');
+            } else if (type === 'error') {
+                fb.classList.add('bg-rose-100', 'text-rose-800', 'border', 'border-rose-200');
+            }
+        }
+
+        function hideFeedback() {
+            document.getElementById('feedback-message').classList.add('hidden');
+        }
+
+        function triggerCelebration() {
+    stopAudio();
+    let duration = 5 * 1000;
+    let end = Date.now() + duration;
+
+    (function frame() {
+        confetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0 } });
+        confetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1 } });
+        if (Date.now() < end) requestAnimationFrame(frame);
+    }());
+    Auth.markSurahCompleted('al-alaq');
+    const mainContainer = document.querySelector('main');
+    mainContainer.innerHTML = `
+        <div class="text-center py-10 space-y-6">
+            <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-100 shadow-sm">
+                <span class="text-5xl">🏆</span>
+            </div>
+            <h2 class="text-3xl md:text-5xl font-black text-emerald-800">أنت بطل مميز جداً!</h2>
+            <p class="text-lg md:text-2xl text-gray-600 max-w-lg mx-auto font-bold">
+                ما شاء الله! لقد أتممت حفظ ومراجعة سورة العلق كاملة (١٩ آية) بنجاح رائع.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+                <button onclick="window.location.reload()" class="px-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-lg rounded-2xl shadow transition">
+                    🔄 العب من جديد
+                </button>
+                <a href="dashboard.html" class="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-lg rounded-2xl shadow-xl transition">
+                    🏠 العودة للوحتي
+                </a>
+            </div>
+        </div>
+    `;
+    
+    // Vérification sécurisée ici aussi
+    if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') Auth.completeSurah('al-alaq');
+}
+    </script>
+</body>
+</html>

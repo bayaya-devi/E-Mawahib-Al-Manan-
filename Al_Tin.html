@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة سورة التين التفاعلية</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Confetti Library for Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --fig-purple: #4A148C; /* لون التين العميق */
+            --fig-light: #F3E5F5;
+            --olive-green: #558B2F; /* لون الزيتون */
+            --olive-light: #F1F8E9;
+        }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #faf7fc;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .quran-text {
+            font-family: 'Amiri', serif;
+            line-height: 2.2;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--fig-light); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #ce93d8; border-radius: 10px; }
+
+        .blank-space {
+            display: inline-block;
+            min-width: 80px;
+            border-bottom: 3px dashed var(--fig-purple);
+            margin: 0 5px;
+            color: var(--fig-purple);
+        }
+
+        /* Animations */
+        @keyframes pop {
+            0% { transform: scale(0.95); opacity: 0; }
+            40% { transform: scale(1.02); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+            animation: pop 0.4s ease-out forwards;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .animate-shake {
+            animation: shake 0.3s ease-in-out;
+        }
+
+        /* Matching Game Styles */
+        .match-btn {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .match-btn.selected {
+            background-color: #E1BEE7;
+            border-color: var(--fig-purple);
+            transform: scale(1.05);
+            box-shadow: 0 0 0 3px rgba(74, 20, 140, 0.3);
+        }
+        .match-btn.matched {
+            background-color: var(--olive-light);
+            border-color: var(--olive-green);
+            color: var(--olive-green);
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: scale(0.95);
+        }
+
+        /* Puzzle Game Styles */
+        .puzzle-piece {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .puzzle-piece:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+</head>
+<body class="min-h-screen flex flex-col justify-between p-3 md:p-6">
+<div class="flex justify-center mb-4 mt-2">
+    <img src="logo.webp" alt="مواهب المنان" class="h-24 object-contain drop-shadow-md">
+</div>
+    <header class="w-full max-w-4xl mx-auto bg-white shadow-md rounded-2xl p-4 mb-6 border-t-4 border-purple-800 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <div class="flex items-center gap-4 text-right">
+            <!-- شعار الجمعية -->
+            <div class="relative w-20 h-20 rounded-xl overflow-hidden flex items-center justify-center border border-purple-100 shadow-inner shrink-0 bg-white">
+                <img src="logo.jpg" alt="جمعية مواهب المنان" class="w-full h-full object-contain p-1"
+                     onerror="this.outerHTML='<span class=\'text-3xl\'>📖</span>'">
+            </div>
+            <div>
+                <h1 class="text-xl md:text-3xl font-black text-purple-900 leading-tight">سورة التين</h1>
+                <p class="text-sm md:text-base text-purple-600 font-bold mt-1">رحلة الحفظ التفاعلية • دار القرآن</p>
+                <div class="mt-2 inline-flex gap-2">
+                    <span class="text-[10px] md:text-xs font-bold bg-purple-100 text-purple-800 px-2 py-1 rounded-md">8 آيات</span>
+                    <span class="text-[10px] md:text-xs font-bold bg-green-100 text-green-800 px-2 py-1 rounded-md">مكية</span>
+                    <span class="text-[10px] md:text-xs font-bold bg-amber-100 text-amber-800 px-2 py-1 rounded-md">رواية ورش</span>
+                </div>
+            </div>
+        </div>
+        <!-- زر العودة للرئيسية -->
+<a href="dashboard.html"
+   class="flex items-center gap-2 px-4 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-sm rounded-xl border border-purple-200 transition shrink-0">
+    <span>🏠 لوحتي</span>
+</a>
+    </header>
+
+    <main class="w-full max-w-4xl mx-auto bg-white shadow-xl rounded-3xl p-5 md:p-8 flex-grow flex flex-col justify-between border border-purple-50 relative">
+        
+        <div>
+            <!-- التبويبات (قسمين) -->
+            <div class="grid grid-cols-2 gap-3 mb-6 text-center">
+                <button id="tab-0" class="py-4 rounded-2xl font-bold transition text-sm md:text-lg border-b-4 border-purple-800 bg-purple-50 text-purple-900 shadow-sm" onclick="switchPart(0)">
+                    <span class="block text-xl md:text-2xl mb-1">١</span>النصف الأول (1-4)
+                </button>
+                <button id="tab-1" class="py-4 rounded-2xl font-bold transition text-sm md:text-lg border-b-4 border-gray-200 bg-gray-50 text-gray-400" onclick="switchPart(1)" disabled>
+                    <span class="block text-xl md:text-2xl mb-1">٢</span>النصف الثاني (5-8)
+                </button>
+            </div>
+
+            <div class="flex flex-col md:flex-row items-center justify-between mb-6 px-2 gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <div class="flex gap-3" id="activity-dots">
+                    <span id="dot-0" class="w-5 h-5 rounded-full inline-block transition-all duration-300 bg-purple-700 scale-125 shadow-md flex items-center justify-center text-white text-[10px]">1</span>
+                    <span id="dot-1" class="w-5 h-5 rounded-full inline-block transition-all duration-300 bg-gray-300 flex items-center justify-center text-gray-500 text-[10px]">2</span>
+                    <span id="dot-2" class="w-5 h-5 rounded-full inline-block transition-all duration-300 bg-gray-300 flex items-center justify-center text-gray-500 text-[10px]">3</span>
+                    <span id="dot-3" class="w-5 h-5 rounded-full inline-block transition-all duration-300 bg-gray-300 flex items-center justify-center text-gray-500 text-[10px]">4</span>
+                </div>
+                <span class="text-sm md:text-base font-bold text-purple-800 bg-purple-100/50 px-4 py-2 rounded-lg border border-purple-200" id="activity-title">استماع وقراءة</span>
+            </div>
+        </div>
+
+        <div class="flex-grow flex flex-col py-2 min-h-[350px]">
+            
+            <!-- الشاشة 0: استماع حقيقي (Audio) -->
+            <div id="screen-0" class="space-y-4 animate-pop">
+                <p class="text-sm md:text-base text-gray-500 font-bold text-center">استمع للآيات الكريمة بصوت واضح وكرر مع القارئ</p>
+                <div class="quran-text text-xl md:text-3xl text-right py-6 px-5 bg-purple-50/50 rounded-2xl text-purple-950 font-bold border border-purple-100/50 shadow-inner space-y-4" id="audio-verses-box">
+                    <!-- Audio verses -->
+                </div>
+                <div class="flex justify-center pt-4">
+                    <button id="play-full-btn" onclick="playFullPart()" class="px-8 py-4 bg-purple-700 hover:bg-purple-800 text-white font-bold text-base md:text-lg rounded-2xl shadow-lg transition flex items-center gap-3">
+                        <span class="text-2xl">🔊</span> استمع للمقطع كاملاً
+                    </button>
+                </div>
+                <p class="text-center text-xs text-gray-400 mt-2">🎙️ إبراهيم الدوسري — رواية ورش عن نافع</p>
+            </div>
+
+            <!-- الشاشة 1: لعبة الربط (Matching) -->
+            <div id="screen-1" class="hidden space-y-4 animate-pop">
+                <p class="text-sm md:text-base text-gray-500 font-bold text-center bg-blue-50 py-2 rounded-lg">تمرين الربط: اضغط على بداية الآية (يمين) ثم اضغط على نهايتها (يسار)</p>
+                
+                <div class="grid grid-cols-2 gap-4 md:gap-8 mt-6">
+                    <!-- العمود الأيمن (بداية الآية) -->
+                    <div class="flex flex-col gap-3" id="match-right-col"></div>
+                    
+                    <!-- العمود الأيسر (نهاية الآية) -->
+                    <div class="flex flex-col gap-3" id="match-left-col"></div>
+                </div>
+            </div>
+
+            <!-- الشاشة 2: لغز الترتيب (Puzzle) -->
+            <div id="screen-2" class="hidden space-y-4 animate-pop">
+                <p class="text-sm md:text-base text-gray-500 font-bold text-center bg-green-50 py-2 rounded-lg">لغز الترتيب: استخدم الأسهم (أعلى/أسفل) لترتيب الآيات بالشكل الصحيح</p>
+                
+                <div class="flex flex-col gap-3 mt-4" id="puzzle-container">
+                    <!-- Puzzle Pieces generated via JS -->
+                </div>
+                
+                <div class="flex justify-center mt-6 pt-4 border-t border-gray-100">
+                    <button onclick="verifyPuzzle()" class="px-8 py-3 bg-[#558B2F] hover:bg-[#33691E] text-white font-bold text-lg rounded-xl shadow-md transition">
+                        تحقق من الترتيب ✔️
+                    </button>
+                </div>
+            </div>
+
+            <!-- الشاشة 3: أكمل الفراغ -->
+            <div id="screen-3" class="hidden space-y-4 animate-pop">
+                <p class="text-sm md:text-base text-gray-500 font-bold text-center">التحدي الأخير: اختر الكلمة الصحيحة لإكمال الفراغ</p>
+                <div class="quran-text text-2xl md:text-4xl text-center py-10 px-4 bg-orange-50/50 rounded-2xl text-orange-950 font-bold border-2 border-orange-100 shadow-inner my-6" id="quiz-question-box">
+                    <!-- Question -->
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="quiz-options-box">
+                    <!-- Options -->
+                </div>
+            </div>
+
+        </div>
+
+        <!-- رسائل التحفيز -->
+        <div id="feedback-message" class="hidden p-4 rounded-xl text-center text-sm md:text-lg font-bold transition duration-300 my-4 shadow-sm"></div>
+
+        <!-- أزرار التنقل -->
+        <div class="flex justify-between items-center mt-8 pt-6 border-t-2 border-gray-100">
+            <button id="back-btn" onclick="goBack()" class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition text-sm flex items-center gap-2 opacity-50 cursor-not-allowed" disabled>
+                رجوع
+            </button>
+            <button id="next-btn" onclick="validateCurrentScreen()" class="px-8 py-3.5 bg-purple-700 hover:bg-purple-800 text-white font-bold text-sm md:text-lg rounded-xl shadow-lg transition flex items-center gap-2 transform hover:scale-105">
+                <span id="next-btn-text">التالي ✔️</span>
+            </button>
+        </div>
+
+    </main>
+
+    <script>
+        // =====================================================
+        // Audio Helper — رواية ورش عن نافع
+        // Source 1 : Ibrahim Al-Dosary (Warsh) 128kbps — everyayah.com
+        // Source 2 : Yassin Al-Jazaery (Warsh) 64kbps  — fallback
+        // Format fichier : 095001.mp3 … 095008.mp3
+        // =====================================================
+        function getAudioUrl(code) {
+            return `https://everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps/${code}.mp3`;
+        }
+        function getFallbackUrl(code) {
+            return `https://everyayah.com/data/warsh/warsh_yassin_al_jazaery_64kbps/${code}.mp3`;
+        }
+
+        // Data Structure for Surat Al-Tin
+        const surahTinData = [
+            {
+                title: "النصف الأول",
+                verses: [
+                    { num: 1, text: "وَالتِّينِ وَالزَّيْتُونِ", audio: "095001" },
+                    { num: 2, text: "وَطُورِ سِينِينَ", audio: "095002" },
+                    { num: 3, text: "وَهَٰذَا الْبَلَدِ الْأَمِينِ", audio: "095003" },
+                    { num: 4, text: "لَقَدْ خَلَقْنَا الْإِنسَانَ فِي أَحْسَنِ تَقْوِيمٍ", audio: "095004" }
+                ],
+                matchGame: [
+                    { id: 1, right: "وَالتِّينِ", left: "وَالزَّيْتُونِ" },
+                    { id: 2, right: "وَطُورِ", left: "سِينِينَ" },
+                    { id: 3, right: "وَهَٰذَا الْبَلَدِ", left: "الْأَمِينِ" },
+                    { id: 4, right: "لَقَدْ خَلَقْنَا الْإِنسَانَ", left: "فِي أَحْسَنِ تَقْوِيمٍ" }
+                ],
+                puzzleGame: [
+                    "وَطُورِ سِينِينَ",
+                    "لَقَدْ خَلَقْنَا الْإِنسَانَ فِي أَحْسَنِ تَقْوِيمٍ",
+                    "وَالتِّينِ وَالزَّيْتُونِ",
+                    "وَهَٰذَا الْبَلَدِ الْأَمِينِ"
+                ],
+                fillBlank: {
+                    question: "وَهَٰذَا الْبَلَدِ <span class='blank-space' id='blank-space'>.......</span> ۝",
+                    options: ["الْأَمِينِ", "الْعَظِيمِ", "الْكَرِيمِ"],
+                    correct: "الْأَمِينِ"
+                }
+            },
+            {
+                title: "النصف الثاني",
+                verses: [
+                    { num: 5, text: "ثُمَّ رَدَدْنَاهُ أَسْفَلَ سَافِلِينَ", audio: "095005" },
+                    { num: 6, text: "إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ فَلَهُمْ أَجْرٌ غَيْرُ مَمْنُونٍ", audio: "095006" },
+                    { num: 7, text: "فَمَا يُكَذِّبُكَ بَعْدُ بِالدِّينِ", audio: "095007" },
+                    { num: 8, text: "أَلَيْسَ اللَّهُ بِأَحْكَمِ الْحَاكِمِينَ", audio: "095008" }
+                ],
+                matchGame: [
+                    { id: 5, right: "ثُمَّ رَدَدْنَاهُ", left: "أَسْفَلَ سَافِلِينَ" },
+                    { id: 6, right: "إِلَّا الَّذِينَ آمَنُوا", left: "وَعَمِلُوا الصَّالِحَاتِ" },
+                    { id: 7, right: "فَمَا يُكَذِّبُكَ بَعْدُ", left: "بِالدِّينِ" },
+                    { id: 8, right: "أَلَيْسَ اللَّهُ", left: "بِأَحْكَمِ الْحَاكِمِينَ" }
+                ],
+                puzzleGame: [
+                    "أَلَيْسَ اللَّهُ بِأَحْكَمِ الْحَاكِمِينَ",
+                    "فَمَا يُكَذِّبُكَ بَعْدُ بِالدِّينِ",
+                    "ثُمَّ رَدَدْنَاهُ أَسْفَلَ سَافِلِينَ",
+                    "إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ فَلَهُمْ أَجْرٌ غَيْرُ مَمْنُونٍ"
+                ],
+                fillBlank: {
+                    question: "أَلَيْسَ اللَّهُ بِأَحْكَمِ <span class='blank-space' id='blank-space'>.......</span> ۝",
+                    options: ["الْعَالَمِينَ", "الْحَاكِمِينَ", "الْقَادِرِينَ"],
+                    correct: "الْحَاكِمِينَ"
+                }
+            }
+        ];
+
+        // Global State
+        let currentPart = 0; // 0 or 1
+        let currentScreen = 0; // 0 to 3
+        
+        // Audio State
+        let currentAudioPlayer = null;
+
+        // Match Game State
+        let selectedRight = null;
+        let selectedLeft = null;
+        let matchedPairs = 0;
+
+        // Puzzle Game State
+        let currentPuzzleOrder = [];
+
+        // Quiz State
+        let quizPassed = false;
+
+        // Init
+        window.addEventListener('DOMContentLoaded', () => {
+            renderView();
+        });
+
+        function createAudioWithFallback(code, onEnded) {
+            const primaryUrl = getAudioUrl(code);
+            const fallbackUrl = getFallbackUrl(code);
+            const audio = new Audio(primaryUrl);
+            audio.preload = "auto";
+
+            // Si la source principale échoue → fallback automatique
+            audio.onerror = () => {
+                let triedFallback = false; console.warn(`Warsh source failed (${code}), trying fallback.`);
+                audio.src = fallbackUrl;
+                audio.load();
+                audio.play().catch(e => console.log("Fallback audio error:", e));
+            };
+
+            if (onEnded) audio.onended = onEnded;
+            return audio;
+        }
+
+        function playSingleAudio(code, btnElement) {
+            stopAudio();
+            currentAudioPlayer = createAudioWithFallback(code, () => {
+                if(btnElement) {
+                    btnElement.classList.remove('bg-purple-100', 'border-purple-300');
+                    btnElement.querySelector('.play-icon').textContent = '▶️';
+                }
+            });
+            
+            document.querySelectorAll('.verse-play-btn').forEach(b => {
+                b.classList.remove('bg-purple-100', 'border-purple-300');
+                const ic = b.querySelector('.play-icon');
+                if(ic) ic.textContent = '▶️';
+            });
+            if(btnElement) {
+                btnElement.classList.add('bg-purple-100', 'border-purple-300');
+                btnElement.querySelector('.play-icon').textContent = '⏸️';
+            }
+
+            currentAudioPlayer.play().catch(e => console.log("Audio play prevented:", e));
+        }
+
+        // État du bouton lecture complète
+        let isPlayingFull = false;
+
+        function updateFullPartBtn(playing) {
+            isPlayingFull = playing;
+            const btn = document.getElementById('play-full-btn');
+            if (!btn) return;
+            if (playing) {
+                btn.innerHTML = '<span class="text-2xl">⏹️</span> إيقاف';
+                btn.classList.replace('bg-purple-700', 'bg-red-600');
+                btn.classList.replace('hover:bg-purple-800', 'hover:bg-red-700');
+            } else {
+                btn.innerHTML = '<span class="text-2xl">🔊</span> استمع للمقطع كاملاً';
+                btn.classList.replace('bg-red-600', 'bg-purple-700');
+                btn.classList.replace('hover:bg-red-700', 'hover:bg-purple-800');
+            }
+        }
+
+        function playFullPart() {
+            if (isPlayingFull) {
+                stopAudio();
+                updateFullPartBtn(false);
+                // Remove any verse highlighting
+                const allDivs = document.getElementById('audio-verses-box').children;
+                for(let i=0; i<allDivs.length; i++) allDivs[i].classList.remove('bg-purple-100', 'ring-2', 'ring-purple-400');
+                return;
+            }
+
+            stopAudio();
+            updateFullPartBtn(true);
+            const verses = surahTinData[currentPart].verses;
+            let index = 0;
+
+            function playNext() {
+                if (index < verses.length) {
+                    const v = verses[index];
+                    const allDivs = document.getElementById('audio-verses-box').children;
+                    for(let i=0; i<allDivs.length; i++) allDivs[i].classList.remove('bg-purple-100', 'ring-2', 'ring-purple-400');
+                    if(allDivs[index]) {
+                        allDivs[index].classList.add('bg-purple-100', 'ring-2', 'ring-purple-400');
+                        allDivs[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }
+
+                    currentAudioPlayer = createAudioWithFallback(v.audio, () => {
+                        if(allDivs[index]) allDivs[index].classList.remove('bg-purple-100', 'ring-2', 'ring-purple-400');
+                        index++;
+                        playNext();
+                    });
+                    currentAudioPlayer.play().catch(e => console.log("Audio sequence error:", e));
+                } else {
+                    updateFullPartBtn(false);
+                }
+            }
+            playNext();
+        }
+
+        function stopAudio() {
+            if (currentAudioPlayer) {
+                currentAudioPlayer.onended = null;
+                currentAudioPlayer.onerror = null;
+                currentAudioPlayer.pause();
+                currentAudioPlayer.currentTime = 0;
+                currentAudioPlayer = null;
+            }
+            isPlayingFull = false;
+        }
+
+        function renderView() {
+            stopAudio();
+            hideFeedback();
+            isPlayingFull = false;
+            
+            // 1. Update Tabs
+            for (let i = 0; i < 2; i++) {
+                const tab = document.getElementById(`tab-${i}`);
+                if (i === currentPart) {
+                    tab.className = "py-4 rounded-2xl font-bold transition text-sm md:text-lg border-b-4 border-purple-800 bg-purple-50 text-purple-900 shadow-sm";
+                    tab.disabled = false;
+                } else if (i < currentPart) {
+                    tab.className = "py-4 rounded-2xl font-bold transition text-sm md:text-lg border-b-4 border-green-600 bg-green-50 text-green-800";
+                    tab.disabled = false;
+                } else {
+                    tab.className = "py-4 rounded-2xl font-bold transition text-sm md:text-lg border-b-4 border-gray-200 bg-gray-50 text-gray-400 opacity-70";
+                    tab.disabled = true;
+                }
+            }
+
+            // 2. Update Dots & Title
+            const titles = ["استماع وقراءة", "لعبة الربط: وصل الآيات", "لغز الترتيب العمودي", "أكمل الفراغ"];
+            document.getElementById('activity-title').innerText = titles[currentScreen];
+            
+            for(let i=0; i<4; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                if (i === currentScreen) {
+                    dot.className = "w-6 h-6 rounded-full inline-flex transition-all duration-300 bg-purple-700 scale-110 shadow-md items-center justify-center text-white text-xs font-bold ring-4 ring-purple-200";
+                } else if (i < currentScreen) {
+                    dot.className = "w-6 h-6 rounded-full inline-flex transition-all duration-300 bg-green-500 items-center justify-center text-white text-xs font-bold";
+                    dot.innerHTML = "✓";
+                } else {
+                    dot.className = "w-6 h-6 rounded-full inline-flex transition-all duration-300 bg-gray-200 items-center justify-center text-gray-500 text-xs";
+                    dot.innerHTML = i + 1;
+                }
+            }
+
+            // 3. Toggle Screens
+            for(let i=0; i<4; i++) {
+                document.getElementById(`screen-${i}`).classList.add('hidden');
+                document.getElementById(`screen-${i}`).classList.remove('animate-pop'); // reset animation
+            }
+            const activeScreen = document.getElementById(`screen-${currentScreen}`);
+            activeScreen.classList.remove('hidden');
+            // Trigger reflow to restart animation
+            void activeScreen.offsetWidth; 
+            activeScreen.classList.add('animate-pop');
+
+            // 4. Setup Content based on Screen
+            if (currentScreen === 0) setupAudioScreen();
+            else if (currentScreen === 1) setupMatchGame();
+            else if (currentScreen === 2) setupPuzzleGame();
+            else if (currentScreen === 3) setupQuizGame();
+
+            // 5. Setup Nav Buttons
+            const backBtn = document.getElementById('back-btn');
+            if (currentPart === 0 && currentScreen === 0) {
+                backBtn.disabled = true;
+                backBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                backBtn.disabled = false;
+                backBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            
+            document.getElementById('next-btn-text').innerText = (currentPart === 1 && currentScreen === 3) ? "إنهاء" : "التالي ✔️";
+        }
+
+        function setupAudioScreen() {
+            const container = document.getElementById('audio-verses-box');
+            container.innerHTML = '';
+            const verses = surahTinData[currentPart].verses;
+            
+            verses.forEach(v => {
+                const div = document.createElement('div');
+                div.className = "flex justify-between items-center bg-white p-3 md:p-4 rounded-xl shadow-sm border border-transparent hover:border-purple-200 verse-play-btn cursor-pointer transition-all";
+                div.onclick = () => playSingleAudio(v.audio, div);
+                
+                div.innerHTML = `
+                    <button class="w-10 h-10 bg-purple-100 text-purple-700 rounded-full flex items-center justify-center shrink-0 shadow-inner hover:bg-purple-200 transition">
+                        <span class="play-icon text-sm">▶️</span>
+                    </button>
+                    <span class="flex-grow text-right pr-4 text-xl md:text-2xl">${v.text} <span class="text-sm md:text-base text-purple-500 font-sans font-bold">﴿${v.num}﴾</span></span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // --- Match Game Logic ---
+        function setupMatchGame() {
+            matchedPairs = 0;
+            selectedRight = null;
+            selectedLeft = null;
+            
+            const matchData = surahTinData[currentPart].matchGame;
+            
+            // Create shuffled arrays
+            const rightItems = [...matchData].map(d => ({id: d.id, text: d.right})).sort(() => Math.random() - 0.5);
+            const leftItems = [...matchData].map(d => ({id: d.id, text: d.left})).sort(() => Math.random() - 0.5);
+
+            const rightCol = document.getElementById('match-right-col');
+            const leftCol = document.getElementById('match-left-col');
+            rightCol.innerHTML = ''; leftCol.innerHTML = '';
+
+            rightItems.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = "match-btn w-full p-4 bg-white border-2 border-purple-200 text-purple-900 font-bold text-lg md:text-xl rounded-xl text-right quran-text";
+                btn.innerText = item.text;
+                btn.onclick = () => handleMatchClick('right', item.id, btn);
+                rightCol.appendChild(btn);
+            });
+
+            leftItems.forEach(item => {
+                const btn = document.createElement('button');
+                btn.className = "match-btn w-full p-4 bg-white border-2 border-blue-200 text-blue-900 font-bold text-lg md:text-xl rounded-xl text-right quran-text";
+                btn.innerText = item.text;
+                btn.onclick = () => handleMatchClick('left', item.id, btn);
+                leftCol.appendChild(btn);
+            });
+        }
+
+        function handleMatchClick(side, id, btn) {
+            if (btn.classList.contains('matched')) return;
+
+            // Clear previous selection on same side
+            const colId = side === 'right' ? 'match-right-col' : 'match-left-col';
+            const allBtns = document.getElementById(colId).children;
+            for(let b of allBtns) if(!b.classList.contains('matched')) b.classList.remove('selected');
+
+            btn.classList.add('selected');
+
+            if (side === 'right') {
+                selectedRight = { id, btn };
+            } else {
+                selectedLeft = { id, btn };
+            }
+
+            checkMatchPair();
+        }
+
+        function checkMatchPair() {
+            if (selectedRight && selectedLeft) {
+                if (selectedRight.id === selectedLeft.id) {
+                    // Correct Match
+                    selectedRight.btn.classList.replace('selected', 'matched');
+                    selectedLeft.btn.classList.replace('selected', 'matched');
+                    
+                    // Add checkmark visual
+                    selectedRight.btn.innerHTML += ' <span class="text-green-600 float-left">✔️</span>';
+                    selectedLeft.btn.innerHTML += ' <span class="text-green-600 float-left">✔️</span>';
+
+                    matchedPairs++;
+                    showFeedback("توصيل صحيح! رائع", "success", 1500);
+                    
+                    selectedRight = null; selectedLeft = null;
+                } else {
+                    // Wrong Match
+                    const rBtn = selectedRight.btn;
+                    const lBtn = selectedLeft.btn;
+                    
+                    rBtn.classList.remove('selected');
+                    lBtn.classList.remove('selected');
+                    
+                    rBtn.classList.add('animate-shake', 'border-red-400', 'bg-red-50');
+                    lBtn.classList.add('animate-shake', 'border-red-400', 'bg-red-50');
+                    
+                    setTimeout(() => {
+                        rBtn.classList.remove('animate-shake', 'border-red-400', 'bg-red-50');
+                        lBtn.classList.remove('animate-shake', 'border-red-400', 'bg-red-50');
+                    }, 500);
+
+                    showFeedback("حاول مرة أخرى، الرابط غير صحيح.", "error", 1500);
+                    selectedRight = null; selectedLeft = null;
+                }
+            }
+        }
+
+        // --- Puzzle Game Logic ---
+        function setupPuzzleGame() {
+            // Initial scramble (ensure it's not the correct order initially)
+            let original = surahTinData[currentPart].verses.map(v => v.text);
+            currentPuzzleOrder = [...surahTinData[currentPart].puzzleGame];
+            
+            renderPuzzleGrid();
+        }
+
+        function renderPuzzleGrid() {
+            const container = document.getElementById('puzzle-container');
+            container.innerHTML = '';
+            
+            currentPuzzleOrder.forEach((text, index) => {
+                const div = document.createElement('div');
+                div.className = "puzzle-piece flex items-center justify-between bg-white border-2 border-green-200 p-3 md:p-4 rounded-xl shadow-sm quran-text text-xl md:text-2xl text-green-900 font-bold";
+                
+                // Controls
+                const controls = document.createElement('div');
+                controls.className = "flex flex-col gap-1 shrink-0 ml-4";
+                
+                const btnUp = document.createElement('button');
+                btnUp.className = `p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`;
+                btnUp.innerHTML = '🔼';
+                btnUp.onclick = () => movePuzzlePiece(index, -1);
+                btnUp.disabled = index === 0;
+
+                const btnDown = document.createElement('button');
+                btnDown.className = `p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition ${index === currentPuzzleOrder.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}`;
+                btnDown.innerHTML = '🔽';
+                btnDown.onclick = () => movePuzzlePiece(index, 1);
+                btnDown.disabled = index === currentPuzzleOrder.length - 1;
+
+                controls.appendChild(btnUp);
+                controls.appendChild(btnDown);
+
+                const textSpan = document.createElement('span');
+                textSpan.className = "flex-grow text-right";
+                textSpan.innerText = text;
+
+                div.appendChild(controls);
+                div.appendChild(textSpan);
+                container.appendChild(div);
+            });
+        }
+
+        function movePuzzlePiece(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= currentPuzzleOrder.length) return;
+
+            // Swap
+            [currentPuzzleOrder[index], currentPuzzleOrder[newIndex]] = [currentPuzzleOrder[newIndex], currentPuzzleOrder[index]];
+            renderPuzzleGrid();
+        }
+
+        function verifyPuzzle() {
+            const correctOrder = surahTinData[currentPart].verses.map(v => v.text);
+            const isCorrect = JSON.stringify(currentPuzzleOrder) === JSON.stringify(correctOrder);
+
+            if (isCorrect) {
+                // visual feedback on all pieces
+                const pieces = document.getElementById('puzzle-container').children;
+                for(let p of pieces) {
+                    p.classList.replace('border-green-200', 'border-green-500');
+                    p.classList.add('bg-green-50');
+                }
+                showFeedback("ترتيب ممتاز ومثالي! بطل", "success", 3000);
+            } else {
+                showFeedback("الترتيب غير صحيح بعد، راجع حفظك وحاول التعديل بالأسهم.", "error", 3000);
+            }
+        }
+
+        // --- Quiz Game Logic ---
+        function setupQuizGame() {
+            quizPassed = false;
+            const qData = surahTinData[currentPart].fillBlank;
+            
+            document.getElementById('quiz-question-box').innerHTML = qData.question;
+            const optionsBox = document.getElementById('quiz-options-box');
+            optionsBox.innerHTML = '';
+            
+            const shuffled = [...qData.options].sort(() => Math.random() - 0.5);
+
+            shuffled.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "p-5 bg-white border-4 border-orange-100 text-orange-800 font-bold text-xl rounded-2xl shadow-sm hover:border-orange-300 hover:bg-orange-50 transition transform hover:-translate-y-1";
+                btn.innerText = opt;
+                btn.onclick = () => checkQuizAnswer(opt, btn);
+                optionsBox.appendChild(btn);
+            });
+        }
+
+        function checkQuizAnswer(selected, btn) {
+            const qData = surahTinData[currentPart].fillBlank;
+            const allBtns = document.getElementById('quiz-options-box').getElementsByTagName('button');
+            
+            if(selected === qData.correct) {
+                quizPassed = true;
+                btn.className = "p-5 bg-green-100 border-4 border-green-500 text-green-900 font-bold text-xl rounded-2xl shadow-md";
+                document.getElementById('blank-space').innerText = qData.correct;
+                document.getElementById('blank-space').style.borderBottom = "none";
+                
+                for(let b of allBtns) if(b !== btn) b.disabled = true;
+                showFeedback("إجابة صحيحة! بارك الله فيك", "success", 2000);
+            } else {
+                btn.className = "p-5 bg-red-50 border-4 border-red-200 text-red-400 font-bold text-xl rounded-2xl cursor-not-allowed opacity-50";
+                btn.disabled = true;
+                showFeedback("حاول مرة أخرى لاختيار الكلمة المناسبة.", "error", 2000);
+            }
+        }
+
+function validateCurrentScreen() {
+    if (currentScreen === 0) {
+        // Écoute : score automatique 100
+        if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') Auth.recordActivity('al-tin', `p${currentPart}_listening`, 100);
+        goNext();
+    } 
+    else if (currentScreen === 1) {
+        const totalPairs = surahTinData[currentPart].matchGame.length;
+        if (matchedPairs === totalPairs) {
+            if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') Auth.recordActivity('al-tin', `p${currentPart}_matching`, 100);
+            goNext();
+        } else {
+            showFeedback("الرجاء إكمال جميع التوصيلات أولاً.", "error");
+        }
+    }
+    else if (currentScreen === 2) {
+        const correctOrder = surahTinData[currentPart].verses.map(v => v.text);
+        const isCorrect = JSON.stringify(currentPuzzleOrder) === JSON.stringify(correctOrder);
+        if (isCorrect) {
+            if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') Auth.recordActivity('al-tin', `p${currentPart}_puzzle`, 100);
+            goNext();
+        } else {
+            showFeedback("الرجاء ترتيب الآيات بشكل صحيح ثم الضغط على (تحقق من الترتيب).", "error");
+        }
+    }
+    else if (currentScreen === 3) {
+        if (quizPassed) {
+            if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') Auth.recordActivity('al-tin', `p${currentPart}_quiz`, 100);
+            if (currentPart === 1) {
+                triggerCelebration();
+            } else {
+                currentPart = 1;
+                currentScreen = 0;
+                renderView();
+            }
+        } else {
+            showFeedback("الرجاء اختيار الكلمة الصحيحة للانتقال.", "error");
+        }
+    }
+}
+
+        function goNext() {
+            if (currentScreen < 3) {
+                currentScreen++;
+                renderView();
+            }
+        }
+
+        function goBack() {
+            if (currentScreen > 0) {
+                currentScreen--;
+            } else if (currentPart > 0) {
+                currentPart--;
+                currentScreen = 3;
+            }
+            renderView();
+        }
+
+        // Helpers
+        let feedbackTimeout;
+        function showFeedback(msg, type, autoHideMs = null) {
+            clearTimeout(feedbackTimeout);
+            const fb = document.getElementById('feedback-message');
+            fb.innerText = msg;
+            fb.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'border', 'border-green-300', 'border-red-300');
+            
+            if (type === 'success') {
+                fb.classList.add('bg-green-100', 'text-green-800', 'border', 'border-green-300');
+            } else {
+                fb.classList.add('bg-red-100', 'text-red-800', 'border', 'border-red-300');
+            }
+
+            if (autoHideMs) {
+                feedbackTimeout = setTimeout(hideFeedback, autoHideMs);
+            }
+        }
+
+        function hideFeedback() {
+            document.getElementById('feedback-message').classList.add('hidden');
+        }
+
+        // Switch Parts manually from Tabs
+        function switchPart(partIndex) {
+            if(partIndex <= currentPart) {
+                currentPart = partIndex;
+                currentScreen = 0;
+                renderView();
+            }
+        }
+
+  function triggerCelebration() {
+    stopAudio();
+    let duration = 5 * 1000;
+    let end = Date.now() + duration;
+
+    (function frame() {
+        confetti({ particleCount: 6, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#4A148C', '#558B2F', '#FFD700'] });
+        confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#4A148C', '#558B2F', '#FFD700'] });
+        if (Date.now() < end) requestAnimationFrame(frame);
+    }());
+    Auth.markSurahCompleted('al-tin');
+    const mainContainer = document.querySelector('main');
+    mainContainer.innerHTML = `
+        <div class="text-center py-12 space-y-6 animate-pop">
+            <div class="w-28 h-28 bg-purple-50 rounded-full flex items-center justify-center mx-auto border-4 border-purple-200 shadow-lg">
+                <span class="text-6xl">🌿</span>
+            </div>
+            <h2 class="text-3xl md:text-5xl font-black text-purple-900">مبارك لك يا بطل!</h2>
+            <p class="text-xl md:text-2xl text-gray-700 max-w-lg mx-auto font-bold leading-relaxed">
+                لقد أتممت حفظ ومراجعة سورة التين بنجاح.<br>
+                <span class="text-green-600">أنت في أحسن تقويم!</span>
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+                <button onclick="window.location.reload()" class="px-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-xl rounded-2xl shadow transition">
+                    🔄 العب من جديد
+                </button>
+                <a href="dashboard.html" class="px-8 py-4 bg-purple-700 hover:bg-purple-800 text-white font-extrabold text-xl rounded-2xl shadow-xl transition">
+                    🏠 العودة للوحتي
+                </a>
+            </div>
+        </div>
+    `;
+    
+    // Vérification sécurisée
+    if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') Auth.completeSurah('al-tin');
+}
+    </script>
+</body>
+</html>

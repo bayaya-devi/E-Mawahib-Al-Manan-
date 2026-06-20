@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة دار القرآن مواهب المنان — تسجيل الدخول</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #0c4a3b 0%, #1a3c34 50%, #14532d 100%);
+            min-height: 100vh;
+        }
+        .quran-font { font-family: 'Amiri', serif; }
+
+        .card {
+            background: rgba(255,255,255,0.97);
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+        }
+
+        .tab-active {
+            background: #059669;
+            color: white;
+            border-radius: 10px;
+        }
+        .tab-inactive {
+            color: #6b7280;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 8px 12px; /* Réduit pour affiner les champs */
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-family: 'Cairo', sans-serif;
+            font-size: 13px; /* Police légèrement plus petite */
+            transition: border-color 0.2s;
+            outline: none;
+            direction: rtl;
+        }
+        .input-field:focus { border-color: #059669; }
+
+        .btn-primary {
+            width: 100%;
+            padding: 10px; /* Bouton plus fin */
+            background: #059669;
+            color: white;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 700;
+            font-size: 14px; /* Police réduite */
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover  { background: #047857; }
+        .btn-primary:active { transform: scale(0.98); }
+
+        .error-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 12px;
+            font-weight: 700;
+            display: none;
+        }
+
+        /* Décor arabesque subtil */
+        .deco-circle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.07;
+            background: white;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.4s ease; }
+    </style>
+</head>
+<body class="flex items-center justify-center p-4 relative overflow-hidden">
+
+
+    <!-- Décors de fond -->
+    <div class="deco-circle w-96 h-96 -top-20 -left-20"></div>
+    <div class="deco-circle w-64 h-64 bottom-10 right-10"></div>
+
+    <!-- CARTE PRINCIPALE : Le logo est maintenant DANS la carte pour être sûr qu'il ne soit pas caché -->
+    <div class="card w-full max-w-sm p-6 relative fade-in z-20">
+
+        <!-- Logo + titre (Intégrés dans la carte) -->
+        <div class="text-center mb-5">
+            <!-- Logo principal en haut de la carte -->
+            <img src="logo.webp" alt="مواهب المنان" class="h-16 mx-auto mb-4 object-contain">
+            
+            
+            <h1 class="text-xl font-black text-gray-800">منصة دار القرآن</h1>
+            <p class="text-xs text-emerald-700 font-semibold mt-1">جمعية مواهب المنان • عين العودة</p>
+        </div>
+        
+        <!-- ... (بقية الكود يتبع هنا كما هو في الرسالة السابقة) ... -->
+
+        <div class="flex bg-gray-100 rounded-xl p-1 mb-5 gap-1">
+          
+        </div>
+
+        <div id="error-box" class="error-box mb-4"></div>
+
+        <div id="form-login" class="space-y-3">
+            
+            <div class="flex justify-center gap-4 mb-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="role" value="student" checked onchange="toggleRoleUI()" class="w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500">
+                    <span class="font-bold text-gray-700 text-xs">تلميذ </span>
+                </label>
+                <label class="flex items-center gap-1.5 cursor-pointer">
+                    <input type="radio" name="role" value="prof" onchange="toggleRoleUI()" class="w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500">
+                    <span class="font-bold text-gray-700 text-xs">أستاذ </span>
+                </label>
+            </div>
+
+            <div>
+              <label class="block text-xs font-bold text-gray-600 mb-1">الاسم :</label>
+                <input id="login-prenom" type="text" class="input-field" >
+            </div>
+            
+            <div id="container-nom">
+                <label class="block text-xs font-bold text-gray-600 mb-1">الاسم العائلي :</label>
+                <input id="login-nom" type="text" class="input-field">
+            </div>
+
+            <div id="container-classe" class="hidden">
+                <label class="block text-xs font-bold text-gray-600 mb-1">القسم :</label>
+                <input type="text" id="login-classe" class="input-field" placeholder="ex: 1A, 2B...">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">كلمة المرور :</label>
+                <input id="login-password" type="password" class="input-field" placeholder="••••••"
+                       onkeydown="if(event.key==='Enter') doLogin()">
+            </div>
+            <button class="btn-primary mt-3" onclick="doLogin()">دخول</button>
+        </div>
+
+        <div id="form-register" class="space-y-3 hidden">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">الاسم</label>
+                <input id="reg-prenom" type="text" class="input-field" >
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">اللقب</label>
+                <input id="reg-nom" type="text" class="input-field" >
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-600 mb-1">كلمة المرور</label>
+                 <input id="reg-password" type="password" class="input-field" placeholder="4 أحرف على الأقل"
+                       onkeydown="if(event.key==='Enter') doRegister()">
+            </div>
+            <button class="btn-primary mt-3" onclick="doRegister()">إنشاء الحساب</button>
+         </div>
+     </div>
+    
+    <script>
+        // Rediriger si déjà connecté
+        if (Auth.getSession()) window.location.href = 'dashboard.html';
+
+        function showTab(tab) {
+            const isLogin = tab === 'login';
+            document.getElementById('form-login').classList.toggle('hidden', !isLogin);
+            document.getElementById('form-register').classList.toggle('hidden', isLogin);
+            document.getElementById('tab-login').className    = `flex-1 py-1.5 font-bold text-xs ${isLogin ? 'tab-active' : 'tab-inactive'} transition-all`;
+            // Le bouton d'inscription a été retiré visuellement dans le HTML pour l'instant
+            hideError();
+        }
+
+        function showError(msg) {
+            const box = document.getElementById('error-box');
+            box.textContent = msg;
+            box.style.display = 'block';
+        }
+        function hideError() {
+            document.getElementById('error-box').style.display = 'none';
+        }
+
+        async function doRegister() {
+            const prenom   = document.getElementById('reg-prenom').value;
+            const nom      = document.getElementById('reg-nom').value;
+            const password = document.getElementById('reg-password').value;
+            
+            // Ajout du "await"
+            const result   = await Auth.register(prenom, nom, password);
+            
+            if (result.ok) {
+                window.location.href = 'dashboard.html';
+            } else {
+                showError(result.error);
+            }
+        }
+
+        function toggleRoleUI() {
+            const role = document.querySelector('input[name="role"]:checked').value;
+            const containerNom = document.getElementById('container-nom');
+            const containerClasse = document.getElementById('container-classe');
+
+            if (role === 'prof') {
+                containerNom.classList.add('hidden');
+                containerClasse.classList.remove('hidden');
+            } else {
+                containerNom.classList.remove('hidden');
+                containerClasse.classList.add('hidden');
+            }
+        }
+
+        async function doLogin() {
+            const role = document.querySelector('input[name="role"]:checked').value;
+            const prenom = document.getElementById('login-prenom').value;
+            const password = document.getElementById('login-password').value;
+
+            if (role === 'prof') {
+                const classe = document.getElementById('login-classe').value;
+                const result = await Auth.loginProf(prenom, classe, password); // AWAIT ajouté ici !
+                if (result.ok) { window.location.href = 'dashboard_prof.html'; } 
+                else { showError(result.error); }
+            } else {
+                const nom = document.getElementById('login-nom').value;
+                const result = await Auth.login(prenom, nom, password);
+                if (result.ok) { window.location.href = 'dashboard.html'; } 
+                else { showError(result.error); }
+            }
+        }
+    </script>
+</body>
+</html>

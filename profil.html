@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title> ملفي الشخصي - جمعية مواهب المنان - دار القرآن والحديث</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Logo tel que demandé -->
+    <div class="flex justify-center mb-6 mt-2">
+        <img src="logo.webp" alt="مواهب المنان" class="h-24 object-contain drop-shadow-md">
+    </div>
+
+    <div class="max-w-3xl mx-auto space-y-6">
+        
+        <!-- En-tête -->
+        <header class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-black text-blue-900">الملف الإداري </h1>
+                <p class="text-sm text-gray-500 font-bold mt-1" id="student-fullname">جاري التحميل...</p>
+            </div>
+            <a href="dashboard.html" class="px-5 py-2 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">🏠 رجوع</a>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <!-- Informations Personnelles & Documents -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
+                <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">الوثائق المطلوبة (Documents)</h2>
+                
+                <ul class="space-y-4">
+                    <li class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <span class="font-bold text-gray-600 text-sm">نسخة من بطاقة التعريف للأب أو الام<br><span class="text-xs text-gray-400"></span></span>                        
+                        <span id="badge-cin" class="px-3 py-1 text-xs font-black rounded-full">جاري التحميل...</span>
+                    </li>
+                    <li class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <span class="font-bold text-gray-600 text-sm">عقد الازدياد<br><span class="text-xs text-gray-400"></span></span>
+                        <span id="badge-birthcert" class="px-3 py-1 text-xs font-black rounded-full">جاري التحميل...</span>
+                    </li>
+                </ul>
+                <p class="text-xs text-gray-400 mt-4 text-center">يتم تحديث هذه المعلومات من طرف الإدارة</p>
+            </div>
+
+            <!-- Situation Financière -->
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">الأداءات الشهرية </h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-right text-sm">
+                        <thead class="bg-gray-50 text-gray-600">
+                            <tr>
+                                <th class="p-3 rounded-r-xl">الشهر </th>
+                                <th class="p-3 rounded-l-xl text-left">الحالة </th>
+                            </tr>
+                        </thead>
+                        <tbody id="payments-table-body" class="divide-y divide-gray-100">
+                            <!-- Généré via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            const session = Auth.getSession();
+            if (!session) {
+                window.location.href = "login.html";
+                return;
+            }
+
+            // Afficher le nom
+            document.getElementById('student-fullname').innerText = session.prenom + " " + session.nom;
+
+            // 🔧 CORRECTION : Ajoute 'await' car getProfile() est async
+            const profile = await Auth.getProfile(session.username);
+
+            // Gérer l'affichage des badges de documents
+            const badgeCin = document.getElementById('badge-cin');
+            if(profile.cinProvided) {
+                badgeCin.innerText = "مُسلَّم ✅";
+                badgeCin.className = "px-3 py-1 text-xs font-black rounded-full bg-emerald-100 text-emerald-700";
+            } else {
+                badgeCin.innerText = "غير مُسلَّم  ❌";
+                badgeCin.className = "px-3 py-1 text-xs font-black rounded-full bg-rose-100 text-rose-700";
+            }
+
+            const badgeBirth = document.getElementById('badge-birthcert');
+            if(profile.birthCertProvided) {
+                badgeBirth.innerText = "مُسلَّم  ✅";
+                badgeBirth.className = "px-3 py-1 text-xs font-black rounded-full bg-emerald-100 text-emerald-700";
+            } else {
+                badgeBirth.innerText = "غير مُسلَّم  ❌";
+                badgeBirth.className = "px-3 py-1 text-xs font-black rounded-full bg-rose-100 text-rose-700";
+            }
+
+            // Gérer le tableau des paiements
+            const tbody = document.getElementById('payments-table-body');
+            if(!profile.payments || profile.payments.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-gray-400 font-bold text-xs">لا توجد سجلات أداء حالياً </td></tr>`;
+            } else {
+                profile.payments.forEach(p => {
+                    const tr = document.createElement('tr');
+                    
+                    let statusHtml = '';
+                    if(p.status === 'payé') {
+                        statusHtml = `<span class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded font-bold text-xs">خالص ✅</span>`;
+                    } else {
+                        statusHtml = `<span class="bg-amber-100 text-amber-700 px-2 py-1 rounded font-bold text-xs">في الانتظار ⏳</span>`;
+                    }
+
+                    tr.innerHTML = `
+                        <td class="p-3 font-bold text-gray-700">${p.month}</td>
+                        <td class="p-3 text-left">${statusHtml}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
