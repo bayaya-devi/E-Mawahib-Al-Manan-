@@ -140,6 +140,7 @@ const SURAH_REGISTRY = [
     file: "surah-humaza.html",
     available: true
   },
+  // ── Prochaines sourates ── ajouter ici quand prêtes ──────────────────────
   {
     id: "al-fil",
     num: 105,
