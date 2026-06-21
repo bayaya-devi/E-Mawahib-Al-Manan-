@@ -156,9 +156,30 @@ async function chargerDevoirs() {
             SURAH_REGISTRY.forEach(surah => {
                 if (surah.available) {
                     availableCount++;
-                    const pData = progressData[surah.id] || {};
-                    const isCompleted = !!pData.completedAt;
-                    const score = pData.globalScore || 0;
+
+                    
+// --- DÉBUT DE LA CORRECTION ---
+let pData = {};
+
+// 1. Gérer le format des données (Si Supabase renvoie une liste/tableau)
+if (Array.isArray(progressData)) {
+    pData = progressData.find(p => 
+        p.surah_id === surah.id || 
+        p.surah_id === surah.id.replace('_', '-') // Corrige la différence al_qadr / al-qadr
+    ) || {};
+} 
+// 2. Gérer le format Objet (Dictionnaire)
+else if (progressData) {
+    pData = progressData[surah.id] || progressData[surah.id.replace('_', '-')] || {};
+}
+
+// 3. Gérer les noms exacts des colonnes dans ta base de données Supabase
+const isCompleted = pData.is_completed === true || !!pData.completed_at || !!pData.completedAt || pData.status === 'completed';
+const score = pData.score || pData.global_score || pData.globalScore || 0;
+// --- FIN DE LA CORRECTION ---
+
+
+
                     
                     if (isCompleted) completedCount++;
 
