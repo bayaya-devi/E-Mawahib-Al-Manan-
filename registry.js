@@ -72,8 +72,8 @@ const SURAH_REGISTRY = [
     type: "مدنية",
     color: "#be123c",
     emoji: "⚡",
-    file: null,
-    available: false
+    file: "surah-zalzalah.html",
+    available: true
   },
   {
     id: "al-adiyat",
@@ -85,8 +85,8 @@ const SURAH_REGISTRY = [
     type: "مكية",
     color: "#0e7490",
     emoji: "⚔️",
-    file: null,
-    available: false
+    file: "surah-adiyat.html",
+    available: true
   },
   {
     id: "al-qaria",
@@ -111,8 +111,8 @@ const SURAH_REGISTRY = [
     type: "مكية",
     color: "#065f46",
     emoji: "💰",
-    file: null,
-    available: false
+    file: "surah-takathur.html",
+    available: true
   },
   {
     id: "al-asr",
@@ -124,8 +124,8 @@ const SURAH_REGISTRY = [
     type: "مكية",
     color: "#92400e",
     emoji: "⏳",
-    file: null,
-    available: false
+    file: "surah-asr.html",
+    available: true
   },
   {
     id: "al-humaza",
@@ -137,8 +137,8 @@ const SURAH_REGISTRY = [
     type: "مكية",
     color: "#3f3f46",
     emoji: "⚠️",
-    file: null,
-    available: false
+    file: "surah-humaza.html",
+    available: true
   },
   {
     id: "al-fil",
