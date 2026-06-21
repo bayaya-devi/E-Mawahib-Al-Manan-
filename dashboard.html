@@ -119,12 +119,7 @@ async function chargerDevoirs() {
             }
         }
 
-        async function validerDevoir(devoirId) {
-            if(confirm("هل أنت متأكد أنك حفظت هذا الواجب؟ ")) {
-                await Auth.marquerDevoirTermine(devoirId);
-                chargerDevoirs(); alert("ممتاز! بارك الله فيك ");
-            }
-        }
+        
 
         async function buildStudentDashboard() {
             const session = Auth.getSession();
