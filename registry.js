@@ -59,8 +59,8 @@ const SURAH_REGISTRY = [
     type: "مدنية",
     color: "#b45309",
     emoji: "📜",
-    file: null,
-    available: false
+    file: "bayina.html",
+    available: true
   },
   {
     id: "al-zalzala",
