@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة مواهب المنان - سورة الزلزلة</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+  body { font-family:'Cairo',sans-serif; background: linear-gradient(135deg,#f0f4ff 0%,#e8f5e9 100%); min-height:100vh; user-select:none; }
+  .quran-text { font-family:'Amiri',serif; line-height:2.2; }
+
+  /* FLIP CARD STYLES */
+  .flip-card { perspective: 800px; cursor: pointer; }
+  .flip-card-inner { position:relative; width:100%; height:100%; transition: transform 0.5s cubic-bezier(.4,2,.6,1); transform-style:preserve-3d; }
+  .flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+  .flip-card-front, .flip-card-back {
+    position:absolute; width:100%; height:100%; backface-visibility:hidden;
+    border-radius:16px; display:flex; align-items:center; justify-content:center;
+    padding: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .flip-card-front { background: linear-gradient(135deg, #1e3a5f 0%, #2d5a8e 100%); }
+  .flip-card-back { background: linear-gradient(135deg, #065f46 0%, #059669 100%); transform: rotateY(180deg); }
+  .card-matched .flip-card-front { background: linear-gradient(135deg, #059669, #10b981) !important; }
+  .card-matched .flip-card-back { background: linear-gradient(135deg, #059669, #10b981) !important; }
+  .card-shake { animation: shake 0.4s ease; }
+  @keyframes shake { 0%,100%{transform:rotateY(180deg) translateX(0)} 25%{transform:rotateY(180deg) translateX(-8px)} 75%{transform:rotateY(180deg) translateX(8px)} }
+
+  .tab-active { border-bottom: 4px solid #059669; background: #ecfdf5; color: #065f46; }
+  .tab-done { border-bottom: 4px solid #10b981; background: #f0fdf4; color: #047857; }
+  .tab-inactive { border-bottom: 4px solid #e5e7eb; background: #f9fafb; color: #9ca3af; }
+
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:10px; }
+</style>
+</head>
+<body class="p-3 md:p-6">
+
+<div class="flex justify-center mb-4 mt-2">
+  <img src="logo.webp" alt="مواهب المنان" class="h-20 object-contain drop-shadow-md" onerror="this.style.display='none'">
+</div>
+
+<header class="w-full max-w-4xl mx-auto bg-white shadow-md rounded-2xl p-4 mb-5 border border-emerald-100/50 flex flex-col sm:flex-row justify-between items-center gap-3">
+  <div class="flex items-center gap-3 text-right">
+    <div class="w-16 h-16 bg-emerald-50 rounded-xl overflow-hidden flex items-center justify-center border border-emerald-100 shrink-0">
+      <img src="logo.jpg" alt="Logo" class="w-full h-full object-cover" onerror="this.outerHTML='<span class=\'text-3xl\'>📖</span>'">
+    </div>
+    <div>
+      <h1 class="text-lg md:text-xl font-black text-[#0c4a3b]">جمعية مواهب المنان</h1>
+      <p class="text-xs text-emerald-700 font-bold">دار القرآن والحديث • عين العودة</p>
+      <p class="text-[10px] text-gray-400 font-semibold">سورة الزلزلة التفاعلية</p>
+    </div>
+  </div>
+  <a href="dashboard.html" class="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm rounded-xl border border-emerald-200 transition shrink-0">🏠 لوحتي</a>
+</header>
+
+<div class="w-full max-w-4xl mx-auto mb-5">
+  <div class="bg-gradient-to-l from-indigo-700 to-blue-800 rounded-2xl p-5 text-white text-center shadow-lg">
+    <h2 class="text-2xl md:text-4xl font-black quran-text mb-1">سورة الزَّلْزَلَة</h2>
+    <p class="text-indigo-200 text-sm font-bold">٨ آيات • مدنية • الجزء الثلاثون</p>
+  </div>
+</div>
+
+<div class="w-full max-w-4xl mx-auto mb-5">
+  <div class="grid grid-cols-3 gap-2 text-center">
+    <div id="tab-0" class="py-3 rounded-xl font-bold text-xs md:text-sm tab-active cursor-pointer"><span class="block text-base">🎧</span>استماع وقراءة</div>
+    <div id="tab-1" class="py-3 rounded-xl font-bold text-xs md:text-sm tab-inactive cursor-pointer"><span class="block text-base">🃏</span>لعبة البطاقات</div>
+    <div id="tab-2" class="py-3 rounded-xl font-bold text-xs md:text-sm tab-inactive cursor-pointer"><span class="block text-base">🔗</span>صِل الآيات</div>
+  </div>
+</div>
+
+<main class="w-full max-w-4xl mx-auto bg-white shadow-lg rounded-3xl p-5 md:p-8 border border-emerald-50">
+
+  <!-- PHASE 0: AUDIO -->
+  <div id="phase-0">
+    <p class="text-center text-gray-500 font-bold text-sm mb-5">🎧 استمع لكل آية بالضغط عليها</p>
+    <div class="space-y-2" id="audio-list"></div>
+    <div class="flex justify-center mt-5">
+      <button onclick="playAll()" class="px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-md transition flex items-center gap-2 text-sm">🔊 استمع للسورة كاملة</button>
+    </div>
+    <div class="flex justify-end mt-6">
+      <button onclick="goToPhase(1)" class="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition">متابعة ✔️</button>
+    </div>
+  </div>
+
+  <!-- PHASE 1: MEMORY FLIP CARDS -->
+  <div id="phase-1" class="hidden">
+    <p class="text-center text-gray-500 font-bold text-sm mb-2">🃏 اقلب البطاقات وابحث عن كل آية ورقمها المتطابق</p>
+    <p class="text-center text-xs text-indigo-600 font-bold mb-4">اضغط على بطاقتين للمطابقة • <span id="pairs-left">٨ أزواج</span> متبقية</p>
+    <div class="grid grid-cols-4 gap-3" id="memory-grid" style="min-height: 320px;"></div>
+    <div id="memory-feedback" class="hidden p-3 rounded-xl text-center font-bold text-sm mt-4"></div>
+    <div class="flex justify-between mt-4">
+      <button onclick="buildMemoryGame()" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm">🔄 إعادة</button>
+      <span class="text-sm text-gray-400 font-bold self-center">المحاولات: <span id="attempts">0</span></span>
+    </div>
+  </div>
+
+  <!-- PHASE 2: MATCH (connect) -->
+  <div id="phase-2" class="hidden">
+    <p class="text-center text-gray-500 font-bold text-sm mb-5">🔗 صِل كل آية بتكملتها الصحيحة</p>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div>
+        <p class="text-xs text-gray-400 font-bold text-center mb-2">بداية الآية</p>
+        <div id="left-col" class="space-y-2"></div>
+      </div>
+      <div>
+        <p class="text-xs text-gray-400 font-bold text-center mb-2">نهاية الآية</p>
+        <div id="right-col" class="space-y-2"></div>
+      </div>
+    </div>
+    <div id="match-feedback" class="hidden p-3 rounded-xl text-center font-bold text-sm my-2"></div>
+    <div class="flex justify-between mt-4">
+      <button onclick="buildMatchGame()" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm">🔄 إعادة</button>
+      <button onclick="checkMatch()" class="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition">إنهاء 🏆</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const verses = [
+  { num: 1, text: "إِذَا زُلْزِلَتِ ٱلْأَرْضُ زِلْزَالَهَا", audio: "099001" },
+  { num: 2, text: "وَأَخْرَجَتِ ٱلْأَرْضُ أَثْقَالَهَا", audio: "099002" },
+  { num: 3, text: "وَقَالَ ٱلْإِنسَٰنُ مَا لَهَا", audio: "099003" },
+  { num: 4, text: "يَوْمَئِذٍ تُحَدِّثُ أَخْبَارَهَا", audio: "099004" },
+  { num: 5, text: "بِأَنَّ رَبَّكَ أَوْحَىٰ لَهَا", audio: "099005" },
+  { num: 6, text: "يَوْمَئِذٍ يَصْدُرُ ٱلنَّاسُ أَشْتَاتًا لِّيُرَوْا۟ أَعْمَٰلَهُمْ", audio: "099006" },
+  { num: 7, text: "فَمَن يَعْمَلْ مِثْقَالَ ذَرَّةٍ خَيْرًا يَرَهُۥ", audio: "099007" },
+  { num: 8, text: "وَمَن يَعْمَلْ مِثْقَالَ ذَرَّةٍ شَرًّا يَرَهُۥ", audio: "099008" }
+];
+
+// Match pairs: [start, end]
+const matchPairs = [
+  { id: 0, left: "إِذَا زُلْزِلَتِ ٱلْأَرْضُ", right: "زِلْزَالَهَا" },
+  { id: 1, left: "وَأَخْرَجَتِ ٱلْأَرْضُ", right: "أَثْقَالَهَا" },
+  { id: 2, left: "يَوْمَئِذٍ تُحَدِّثُ", right: "أَخْبَارَهَا" },
+  { id: 3, left: "بِأَنَّ رَبَّكَ", right: "أَوْحَىٰ لَهَا" },
+  { id: 4, left: "فَمَن يَعْمَلْ مِثْقَالَ ذَرَّةٍ خَيْرًا", right: "يَرَهُۥ" },
+  { id: 5, left: "وَمَن يَعْمَلْ مِثْقَالَ ذَرَّةٍ", right: "شَرًّا يَرَهُۥ" }
+];
+
+let audioPlayer = null;
+// Memory game state
+let flippedCards = [];
+let matchedPairs = 0;
+let totalPairs = verses.length;
+let attempts = 0;
+let canFlip = true;
+// Match game state
+let selectedLeft = null;
+let matchAnswers = {};
+
+// ===== AUDIO =====
+function buildAudioScreen() {
+  const list = document.getElementById('audio-list');
+  list.innerHTML = '';
+  verses.forEach(v => {
+    const div = document.createElement('div');
+    div.className = "flex items-center gap-3 p-3 bg-white border border-indigo-100 rounded-xl shadow-sm cursor-pointer hover:bg-indigo-50 transition";
+    div.onclick = () => playVerse(v.audio, div);
+    div.innerHTML = `
+      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-600 text-white text-xs font-black shrink-0">${v.num}</span>
+      <span class="quran-text text-xl md:text-2xl text-indigo-950 font-bold flex-grow text-right">${v.text}</span>
+      <button class="w-9 h-9 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center text-sm hover:bg-indigo-200 shrink-0">▶️</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function playVerse(code, el) {
+  stopAudio();
+  document.querySelectorAll('#audio-list > div').forEach(d => d.style.background = '');
+  audioPlayer = new Audio(`https://everyayah.com/data/Alafasy_128kbps/${code}.mp3`);
+  if (el) el.style.background = '#e0e7ff';
+  audioPlayer.onended = () => { if(el) el.style.background = ''; };
+  audioPlayer.play().catch(()=>{});
+}
+
+function playAll() {
+  stopAudio(); let i = 0;
+  function next() {
+    if (i < verses.length) {
+      audioPlayer = new Audio(`https://everyayah.com/data/Alafasy_128kbps/${verses[i].audio}.mp3`);
+      audioPlayer.onended = next; audioPlayer.play().catch(()=>{}); i++;
+    }
+  }
+  next();
+}
+
+function stopAudio() {
+  if (audioPlayer) { audioPlayer.pause(); audioPlayer.currentTime = 0; }
+}
+
+// ===== MEMORY GAME =====
+function buildMemoryGame() {
+  flippedCards = []; matchedPairs = 0; attempts = 0; canFlip = true;
+  document.getElementById('attempts').textContent = '0';
+  document.getElementById('pairs-left').textContent = `${toArabicNum(verses.length)} أزواج`;
+  document.getElementById('memory-feedback').classList.add('hidden');
+
+  // Create pairs: one card for number, one for text
+  let cards = [];
+  verses.forEach(v => {
+    cards.push({ id: `n${v.num}`, pairId: v.num, type: 'num', content: `﴿${v.num}﴾` });
+    cards.push({ id: `t${v.num}`, pairId: v.num, type: 'text', content: v.text });
+  });
+  cards = cards.sort(() => Math.random() - 0.5);
+
+  const grid = document.getElementById('memory-grid');
+  grid.innerHTML = '';
+  cards.forEach(card => {
+    const fc = document.createElement('div');
+    fc.className = "flip-card";
+    fc.style.height = '80px';
+    fc.dataset.pairId = card.pairId;
+    fc.dataset.cardId = card.id;
+    fc.innerHTML = `
+      <div class="flip-card-inner">
+        <div class="flip-card-front">
+          <span class="text-white text-3xl">📖</span>
+        </div>
+        <div class="flip-card-back p-2 text-center">
+          ${card.type === 'num' 
+            ? `<span class="text-white font-black text-2xl quran-text">${card.content}</span>`
+            : `<span class="text-white font-bold text-xs quran-text leading-tight">${card.content}</span>`
+          }
+        </div>
+      </div>
+    `;
+    fc.onclick = () => flipCard(fc);
+    grid.appendChild(fc);
+  });
+}
+
+function flipCard(card) {
+  if (!canFlip) return;
+  if (card.classList.contains('flipped') || card.classList.contains('card-matched')) return;
+  
+  card.classList.add('flipped');
+  flippedCards.push(card);
+
+  if (flippedCards.length === 2) {
+    canFlip = false;
+    attempts++;
+    document.getElementById('attempts').textContent = attempts;
+    checkMemoryMatch();
+  }
+}
+
+function checkMemoryMatch() {
+  const [c1, c2] = flippedCards;
+  if (c1.dataset.pairId === c2.dataset.pairId) {
+    // Match!
+    matchedPairs++;
+    const left = verses.length - matchedPairs;
+    document.getElementById('pairs-left').textContent = `${toArabicNum(left)} أزواج`;
+    c1.classList.add('card-matched'); c2.classList.add('card-matched');
+    flippedCards = []; canFlip = true;
+    if (matchedPairs === totalPairs) {
+      showFb('memory-feedback', `🎉 أحسنت! وجدت جميع الأزواج في ${attempts} محاولة!`, 'success');
+      setTimeout(() => goToPhase(2), 2000);
+    }
+  } else {
+    // No match
+    setTimeout(() => {
+      c1.classList.remove('flipped'); c2.classList.remove('flipped');
+      flippedCards = []; canFlip = true;
+    }, 1000);
+  }
+}
+
+function toArabicNum(n) {
+  return n.toString().replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+}
+
+// ===== MATCH GAME =====
+function buildMatchGame() {
+  selectedLeft = null;
+  matchAnswers = {};
+  document.getElementById('match-feedback').classList.add('hidden');
+
+  const leftCol = document.getElementById('left-col');
+  const rightCol = document.getElementById('right-col');
+
+  const shuffledLeft = [...matchPairs].sort(() => Math.random() - 0.5);
+  const shuffledRight = [...matchPairs].sort(() => Math.random() - 0.5);
+
+  leftCol.innerHTML = '';
+  rightCol.innerHTML = '';
+
+  shuffledLeft.forEach(p => {
+    const btn = document.createElement('button');
+    btn.id = `left-${p.id}`;
+    btn.dataset.id = p.id;
+    btn.className = "w-full p-3 bg-white border-2 border-indigo-200 text-indigo-900 font-bold quran-text text-sm text-right rounded-xl hover:border-indigo-400 hover:bg-indigo-50 transition";
+    btn.textContent = p.left;
+    btn.onclick = () => selectLeft(p.id, btn);
+    leftCol.appendChild(btn);
+  });
+
+  shuffledRight.forEach(p => {
+    const btn = document.createElement('button');
+    btn.id = `right-${p.id}`;
+    btn.dataset.id = p.id;
+    btn.className = "w-full p-3 bg-white border-2 border-emerald-200 text-emerald-900 font-bold quran-text text-sm text-right rounded-xl hover:border-emerald-400 hover:bg-emerald-50 transition";
+    btn.textContent = p.right;
+    btn.onclick = () => selectRight(p.id, btn);
+    rightCol.appendChild(btn);
+  });
+}
+
+function selectLeft(id, btn) {
+  // Deselect previous
+  document.querySelectorAll('#left-col button').forEach(b => b.classList.remove('border-indigo-600', 'bg-indigo-100'));
+  selectedLeft = id;
+  btn.classList.add('border-indigo-600', 'bg-indigo-100');
+}
+
+function selectRight(rightId, btn) {
+  if (selectedLeft === null) { showFb('match-feedback', 'اختر أولاً البداية من العمود الأيمن', 'error'); return; }
+  
+  // Store the match: leftId matched with rightId
+  matchAnswers[selectedLeft] = rightId;
+  
+  // Visual feedback
+  const leftBtn = document.getElementById(`left-${selectedLeft}`);
+  const color = matchAnswers[selectedLeft] === selectedLeft ? 'emerald' : 'indigo';
+  if (leftBtn) leftBtn.className = `w-full p-3 bg-indigo-50 border-2 border-indigo-400 text-indigo-900 font-bold quran-text text-sm text-right rounded-xl transition`;
+  btn.className = `w-full p-3 bg-emerald-50 border-2 border-emerald-400 text-emerald-900 font-bold quran-text text-sm text-right rounded-xl transition`;
+  
+  selectedLeft = null;
+  document.querySelectorAll('#left-col button').forEach(b => b.classList.remove('border-indigo-600', 'bg-indigo-100'));
+  showFb('match-feedback', `تم ربط الإجابة`, 'success');
+}
+
+function checkMatch() {
+  if (Object.keys(matchAnswers).length < matchPairs.length) {
+    showFb('match-feedback', 'يرجى ربط جميع الأزواج أولاً', 'error'); return;
+  }
+  let score = 0;
+  matchPairs.forEach(p => {
+    const leftBtn = document.getElementById(`left-${p.id}`);
+    const rightBtn = document.getElementById(`right-${p.id}`);
+    if (matchAnswers[p.id] === p.id) {
+      score++;
+      if (leftBtn) leftBtn.className = "w-full p-3 bg-emerald-100 border-2 border-emerald-500 text-emerald-900 font-bold quran-text text-sm text-right rounded-xl";
+      if (rightBtn) rightBtn.className = "w-full p-3 bg-emerald-100 border-2 border-emerald-500 text-emerald-900 font-bold quran-text text-sm text-right rounded-xl";
+    } else {
+      if (leftBtn) leftBtn.className = "w-full p-3 bg-rose-100 border-2 border-rose-400 text-rose-900 font-bold quran-text text-sm text-right rounded-xl";
+    }
+  });
+
+  if (score === matchPairs.length) {
+    showFb('match-feedback', '🏆 ممتاز! ربطت جميع الأزواج بشكل صحيح!', 'success');
+    triggerCelebration();
+  } else {
+    showFb('match-feedback', `${score} من ${matchPairs.length} صحيحة. حاول مجدداً!`, 'error');
+  }
+}
+
+// ===== NAVIGATION =====
+function goToPhase(n) {
+  stopAudio();
+  [0,1,2].forEach(i => {
+    document.getElementById(`phase-${i}`).classList.add('hidden');
+    const tab = document.getElementById(`tab-${i}`);
+    tab.className = `py-3 rounded-xl font-bold text-xs md:text-sm cursor-pointer ${i < n ? 'tab-done' : i === n ? 'tab-active' : 'tab-inactive'}`;
+  });
+  document.getElementById(`phase-${n}`).classList.remove('hidden');
+  if (n === 1) buildMemoryGame();
+  if (n === 2) buildMatchGame();
+}
+
+function showFb(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = `p-3 rounded-xl text-center font-bold text-sm my-2 ${type==='success'?'bg-emerald-100 text-emerald-800 border border-emerald-200':'bg-rose-100 text-rose-800 border border-rose-200'}`;
+  el.classList.remove('hidden');
+}
+
+function triggerCelebration() {
+  stopAudio();
+  let end = Date.now() + 5000;
+  (function frame() {
+    confetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0 } });
+    confetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1 } });
+    if (Date.now() < end) requestAnimationFrame(frame);
+  }());
+  setTimeout(() => {
+    document.querySelector('main').innerHTML = `
+      <div class="text-center py-10 space-y-6">
+        <span class="text-6xl block">🏆</span>
+        <h2 class="text-3xl md:text-4xl font-black text-emerald-800">ما شاء الله!</h2>
+        <p class="quran-text text-2xl text-indigo-900 font-bold">فَمَن يَعْمَلْ مِثْقَالَ ذَرَّةٍ خَيْرًا يَرَهُۥ</p>
+        <p class="text-lg text-gray-600 font-bold">لقد أتممت مراجعة سورة الزلزلة بنجاح 🌟</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+          <button onclick="window.location.reload()" class="px-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-lg rounded-2xl shadow transition">🔄 العب من جديد</button>
+          <a href="dashboard.html" class="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-lg rounded-2xl shadow-xl transition">🏠 العودة للوحتي</a>
+        </div>
+      </div>`;
+  }, 2000);
+}
+
+buildAudioScreen();
+</script>
+</body>
+</html>

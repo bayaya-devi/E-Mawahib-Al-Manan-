@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة مواهب المنان - سورة العاديات</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+  body { font-family:'Cairo',sans-serif; background: linear-gradient(135deg,#f0fdf9 0%,#ecfdf5 100%); min-height:100vh; user-select:none; }
+  .quran-text { font-family:'Amiri',serif; line-height:2.4; }
+  
+  /* DRAG WORDS */
+  .word-chip {
+    cursor: grab; display:inline-block; padding:6px 14px;
+    border-radius:12px; font-weight:800; transition:all 0.15s;
+    border:2px solid #6ee7b7; background:white; color:#064e3b;
+  }
+  .word-chip:active { cursor:grabbing; transform:scale(1.08); box-shadow:0 6px 16px rgba(16,185,129,0.25); }
+  .word-chip.used { opacity:0.3; pointer-events:none; }
+  .word-chip.dragging { opacity:0.5; }
+
+  .blank-slot {
+    display:inline-block; min-width:100px; min-height:38px;
+    border-radius:10px; border:2.5px dashed #10b981;
+    padding:4px 10px; margin:0 4px;
+    vertical-align:middle; text-align:center;
+    transition:all 0.2s; cursor:pointer;
+    position:relative;
+  }
+  .blank-slot.drag-over { background:#d1fae5; border-color:#059669; transform:scale(1.04); }
+  .blank-slot.filled { border-style:solid; background:#f0fdf4; border-color:#34d399; }
+  .blank-slot.correct { border-color:#059669; background:#dcfce7 !important; color:#065f46; }
+  .blank-slot.wrong { border-color:#ef4444; background:#fee2e2 !important; color:#991b1b; animation:shake 0.4s; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+
+  .tab-active { border-bottom: 4px solid #059669; background: #ecfdf5; color: #065f46; }
+  .tab-done { border-bottom: 4px solid #10b981; background: #f0fdf4; color: #047857; }
+  .tab-inactive { border-bottom: 4px solid #e5e7eb; background: #f9fafb; color: #9ca3af; }
+
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-thumb { background:#6ee7b7; border-radius:10px; }
+</style>
+</head>
+<body class="p-3 md:p-6">
+
+<div class="flex justify-center mb-4 mt-2">
+  <img src="logo.webp" alt="مواهب المنان" class="h-20 object-contain drop-shadow-md" onerror="this.style.display='none'">
+</div>
+
+<header class="w-full max-w-4xl mx-auto bg-white shadow-md rounded-2xl p-4 mb-5 border border-teal-100/50 flex flex-col sm:flex-row justify-between items-center gap-3">
+  <div class="flex items-center gap-3 text-right">
+    <div class="w-16 h-16 bg-teal-50 rounded-xl overflow-hidden flex items-center justify-center border border-teal-100 shrink-0">
+      <img src="logo.jpg" alt="Logo" class="w-full h-full object-cover" onerror="this.outerHTML='<span class=\'text-3xl\'>📖</span>'">
+    </div>
+    <div>
+      <h1 class="text-lg md:text-xl font-black text-[#0c4a3b]">جمعية مواهب المنان</h1>
+      <p class="text-xs text-teal-700 font-bold">دار القرآن والحديث • عين العودة</p>
+      <p class="text-[10px] text-gray-400 font-semibold">سورة العاديات التفاعلية</p>
+    </div>
+  </div>
+  <a href="dashboard.html" class="flex items-center gap-2 px-4 py-2.5 bg-teal-50 hover:bg-teal-100 text-teal-700 font-bold text-sm rounded-xl border border-teal-200 transition shrink-0">🏠 لوحتي</a>
+</header>
+
+<div class="w-full max-w-4xl mx-auto mb-5">
+  <div class="bg-gradient-to-l from-teal-700 to-emerald-800 rounded-2xl p-5 text-white text-center shadow-lg">
+    <h2 class="text-2xl md:text-4xl font-black quran-text mb-1">سورة الْعَادِيَات</h2>
+    <p class="text-teal-200 text-sm font-bold">١١ آية • مكية • الجزء الثلاثون</p>
+  </div>
+</div>
+
+<div class="w-full max-w-4xl mx-auto mb-5">
+  <div class="grid grid-cols-3 gap-2 text-center">
+    <div id="tab-0" class="py-3 rounded-xl font-bold text-xs md:text-sm tab-active cursor-pointer"><span class="block text-base">🎧</span>استماع</div>
+    <div id="tab-1" class="py-3 rounded-xl font-bold text-xs md:text-sm tab-inactive cursor-pointer"><span class="block text-base">🧩</span>أكمل الفراغات</div>
+    <div id="tab-2" class="py-3 rounded-xl font-bold text-xs md:text-sm tab-inactive cursor-pointer"><span class="block text-base">🔀</span>رتّب الآيات</div>
+  </div>
+</div>
+
+<main class="w-full max-w-4xl mx-auto bg-white shadow-lg rounded-3xl p-5 md:p-8 border border-teal-50">
+
+  <!-- PHASE 0: AUDIO -->
+  <div id="phase-0">
+    <p class="text-center text-gray-500 font-bold text-sm mb-5">🎧 استمع للآيات واضغط لتكرار أي آية</p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2" id="audio-list"></div>
+    <div class="flex justify-center mt-5">
+      <button onclick="playAll()" class="px-6 py-4 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl shadow-md transition flex items-center gap-2 text-sm">🔊 استمع للسورة كاملة</button>
+    </div>
+    <div class="flex justify-end mt-6">
+      <button onclick="goToPhase(1)" class="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition">متابعة ✔️</button>
+    </div>
+  </div>
+
+  <!-- PHASE 1: DRAG WORDS TO BLANKS -->
+  <div id="phase-1" class="hidden">
+    <p class="text-center text-gray-500 font-bold text-sm mb-2">🧩 اسحب الكلمة الصحيحة وضعها في الفراغ المناسب</p>
+    <p class="text-center text-xs text-teal-600 font-bold mb-4">يمكنك أيضاً الضغط على الكلمة ثم الضغط على الفراغ</p>
+
+    <!-- Word bank -->
+    <div class="bg-teal-50 border-2 border-teal-100 rounded-2xl p-4 mb-5">
+      <p class="text-xs text-teal-600 font-bold text-center mb-3">بنك الكلمات</p>
+      <div class="flex flex-wrap gap-2 justify-center" id="word-bank"></div>
+    </div>
+
+    <!-- Verses with blanks -->
+    <div class="space-y-4 quran-text text-xl md:text-2xl" id="blank-verses"></div>
+
+    <div id="fill-feedback" class="hidden p-3 rounded-xl text-center font-bold text-sm my-3"></div>
+
+    <div class="flex justify-between mt-5">
+      <button onclick="resetFillGame()" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm">🔄 إعادة</button>
+      <button onclick="checkFillGame()" class="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition">تحقق ✔️</button>
+    </div>
+  </div>
+
+  <!-- PHASE 2: CLICK-ORDER (tap to select sequence) -->
+  <div id="phase-2" class="hidden">
+    <p class="text-center text-gray-500 font-bold text-sm mb-2">🔀 اضغط على الآيات بالترتيب الصحيح من ١ إلى ١١</p>
+    <p class="text-center text-xs text-teal-600 font-bold mb-5">ابدأ بالآية الأولى ثم اضغط على التالية بالترتيب</p>
+    
+    <div class="grid grid-cols-1 gap-2" id="click-order-verses"></div>
+    
+    <div id="order-progress" class="mt-4 bg-teal-50 rounded-xl p-3 text-center">
+      <p class="text-sm font-bold text-teal-700">آية <span id="order-current">١</span> من ١١ — اختر الآية التالية في الترتيب</p>
+    </div>
+    
+    <div id="order-feedback" class="hidden p-3 rounded-xl text-center font-bold text-sm my-3"></div>
+
+    <div class="flex justify-between mt-4">
+      <button onclick="buildClickOrder()" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm">🔄 إعادة</button>
+      <span class="text-sm text-gray-400 font-bold self-center">النقاط: <span id="order-score" class="text-teal-600">0</span></span>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const verses = [
+  { num: 1, text: "وَٱلْعَٰدِيَٰتِ ضَبْحًا", audio: "100001" },
+  { num: 2, text: "فَٱلْمُورِيَٰتِ قَدْحًا", audio: "100002" },
+  { num: 3, text: "فَٱلْمُغِيرَٰتِ صُبْحًا", audio: "100003" },
+  { num: 4, text: "فَأَثَرْنَ بِهِۦ نَقْعًا", audio: "100004" },
+  { num: 5, text: "فَوَسَطْنَ بِهِۦ جَمْعًا", audio: "100005" },
+  { num: 6, text: "إِنَّ ٱلْإِنسَٰنَ لِرَبِّهِۦ لَكَنُودٌ", audio: "100006" },
+  { num: 7, text: "وَإِنَّهُۥ عَلَىٰ ذَٰلِكَ لَشَهِيدٌ", audio: "100007" },
+  { num: 8, text: "وَإِنَّهُۥ لِحُبِّ ٱلْخَيْرِ لَشَدِيدٌ", audio: "100008" },
+  { num: 9, text: "أَفَلَا يَعْلَمُ إِذَا بُعْثِرَ مَا فِى ٱلْقُبُورِ", audio: "100009" },
+  { num: 10, text: "وَحُصِّلَ مَا فِى ٱلصُّدُورِ", audio: "100010" },
+  { num: 11, text: "إِنَّ رَبَّهُم بِهِمْ يَوْمَئِذٍ لَّخَبِيرٌ", audio: "100011" }
+];
+
+// Fill-blank exercises: [verse num, text with blank marker, answer, all words at positions]
+const fillExercises = [
+  { verseNum: 1, template: "وَٱلْعَٰدِيَٰتِ ___", answer: "ضَبْحًا", blanks: ["ضَبْحًا"] },
+  { verseNum: 3, template: "فَٱلْمُغِيرَٰتِ ___", answer: "صُبْحًا", blanks: ["صُبْحًا"] },
+  { verseNum: 6, template: "إِنَّ ٱلْإِنسَٰنَ لِرَبِّهِۦ ___", answer: "لَكَنُودٌ", blanks: ["لَكَنُودٌ"] },
+  { verseNum: 8, template: "وَإِنَّهُۥ لِحُبِّ ٱلْخَيْرِ ___", answer: "لَشَدِيدٌ", blanks: ["لَشَدِيدٌ"] },
+  { verseNum: 9, template: "أَفَلَا يَعْلَمُ إِذَا بُعْثِرَ مَا فِى ___", answer: "ٱلْقُبُورِ", blanks: ["ٱلْقُبُورِ"] },
+  { verseNum: 11, template: "إِنَّ رَبَّهُم بِهِمْ يَوْمَئِذٍ ___", answer: "لَّخَبِيرٌ", blanks: ["لَّخَبِيرٌ"] }
+];
+
+// Distractors (wrong words to add to bank)
+const distractors = ["نَقْعًا", "جَمْعًا", "قَدْحًا", "لَشَهِيدٌ", "ٱلصُّدُورِ"];
+
+let audioPlayer = null;
+let fillSlotAnswers = {};
+let selectedChip = null;
+// Click order game
+let clickOrderExpected = 1;
+let clickOrderScore = 0;
+let clickOrderDone = false;
+
+// ===== AUDIO =====
+function buildAudioScreen() {
+  const list = document.getElementById('audio-list');
+  list.innerHTML = '';
+  verses.forEach(v => {
+    const div = document.createElement('div');
+    div.className = "flex items-center gap-2 p-3 bg-white border-2 border-teal-100 rounded-xl cursor-pointer hover:bg-teal-50 transition";
+    div.onclick = () => playVerse(v.audio, div);
+    div.innerHTML = `
+      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-teal-600 text-white text-xs font-black shrink-0">${v.num}</span>
+      <span class="quran-text text-lg text-teal-950 font-bold flex-grow text-right">${v.text}</span>
+      <button class="w-8 h-8 bg-teal-100 text-teal-700 rounded-full flex items-center justify-center text-xs hover:bg-teal-200 shrink-0">▶️</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function playVerse(code, el) {
+  stopAudio();
+  document.querySelectorAll('#audio-list > div, #audio-list > *').forEach(d => d.style.background='');
+  audioPlayer = new Audio(`https://everyayah.com/data/Alafasy_128kbps/${code}.mp3`);
+  if (el) el.style.background = '#ccfbf1';
+  audioPlayer.onended = () => { if(el) el.style.background=''; };
+  audioPlayer.play().catch(()=>{});
+}
+
+function playAll() {
+  stopAudio(); let i = 0;
+  function next() {
+    if (i < verses.length) {
+      audioPlayer = new Audio(`https://everyayah.com/data/Alafasy_128kbps/${verses[i].audio}.mp3`);
+      audioPlayer.onended = next; audioPlayer.play().catch(()=>{}); i++;
+    }
+  }
+  next();
+}
+
+function stopAudio() {
+  if (audioPlayer) { audioPlayer.pause(); audioPlayer.currentTime = 0; }
+}
+
+// ===== FILL BLANKS (DRAG & CLICK) =====
+function buildFillGame() {
+  fillSlotAnswers = {};
+  selectedChip = null;
+  document.getElementById('fill-feedback').classList.add('hidden');
+
+  // Build word bank
+  const correctWords = fillExercises.map(e => e.answer);
+  const allWords = [...correctWords, ...distractors].sort(() => Math.random() - 0.5);
+  
+  const bank = document.getElementById('word-bank');
+  bank.innerHTML = '';
+  allWords.forEach(w => {
+    const chip = document.createElement('span');
+    chip.className = "word-chip quran-text text-lg";
+    chip.id = `chip-${w}`;
+    chip.textContent = w;
+    chip.draggable = true;
+    chip.ondragstart = (e) => { e.dataTransfer.setData('word', w); chip.classList.add('dragging'); };
+    chip.ondragend = () => chip.classList.remove('dragging');
+    chip.onclick = () => selectChipForClick(w, chip);
+    bank.appendChild(chip);
+  });
+
+  // Build verses with blanks
+  const versesBox = document.getElementById('blank-verses');
+  versesBox.innerHTML = '';
+  fillExercises.forEach((ex, idx) => {
+    const div = document.createElement('div');
+    div.className = "flex items-center gap-2 p-3 bg-white border-2 border-teal-100 rounded-xl";
+    
+    const numSpan = document.createElement('span');
+    numSpan.className = "inline-flex items-center justify-center w-8 h-8 rounded-full bg-teal-600 text-white text-xs font-black shrink-0";
+    numSpan.textContent = ex.verseNum;
+    
+    const textDiv = document.createElement('div');
+    textDiv.className = "quran-text text-xl text-right text-teal-950 font-bold flex-grow leading-loose";
+    
+    const slotId = `slot-${idx}`;
+    const parts = ex.template.split('___');
+    textDiv.innerHTML = `${parts[0]}<span class="blank-slot" id="${slotId}" data-idx="${idx}"
+      ondragover="event.preventDefault();this.classList.add('drag-over')"
+      ondragleave="this.classList.remove('drag-over')"
+      ondrop="dropWord(event,this)"
+      onclick="clickSlot(this)">
+      <span class="text-teal-300 text-sm">_ _ _</span>
+    </span>${parts[1] || ''}`;
+    
+    div.appendChild(numSpan);
+    div.appendChild(textDiv);
+    versesBox.appendChild(div);
+  });
+}
+
+function selectChipForClick(word, chip) {
+  // Deselect previous
+  document.querySelectorAll('.word-chip').forEach(c => c.style.outline='');
+  selectedChip = word;
+  chip.style.outline = '3px solid #059669';
+  chip.style.outlineOffset = '2px';
+}
+
+function clickSlot(slot) {
+  if (!selectedChip) return;
+  const idx = parseInt(slot.dataset.idx);
+  // Remove from previous slot if word was placed elsewhere
+  Object.keys(fillSlotAnswers).forEach(k => {
+    if (fillSlotAnswers[k] === selectedChip && parseInt(k) !== idx) {
+      delete fillSlotAnswers[k];
+      const prevSlot = document.getElementById(`slot-${k}`);
+      if (prevSlot) { prevSlot.innerHTML = '<span class="text-teal-300 text-sm">_ _ _</span>'; prevSlot.classList.remove('filled'); }
+    }
+  });
+  
+  fillSlotAnswers[idx] = selectedChip;
+  slot.innerHTML = `<span class="quran-text text-lg font-bold text-teal-800">${selectedChip}</span>`;
+  slot.classList.add('filled');
+  slot.classList.remove('drag-over', 'wrong', 'correct');
+  
+  // Mark chip as used
+  const chip = document.getElementById(`chip-${selectedChip}`);
+  if (chip) chip.classList.add('used');
+
+  selectedChip = null;
+  document.querySelectorAll('.word-chip').forEach(c => { c.style.outline=''; c.style.outlineOffset=''; });
+}
+
+function dropWord(e, slot) {
+  e.preventDefault();
+  slot.classList.remove('drag-over');
+  const word = e.dataTransfer.getData('word');
+  if (!word) return;
+  const idx = parseInt(slot.dataset.idx);
+  
+  fillSlotAnswers[idx] = word;
+  slot.innerHTML = `<span class="quran-text text-lg font-bold text-teal-800">${word}</span>`;
+  slot.classList.add('filled');
+  slot.classList.remove('wrong', 'correct');
+  
+  const chip = document.getElementById(`chip-${word}`);
+  if (chip) chip.classList.add('used');
+}
+
+function checkFillGame() {
+  let allFilled = Object.keys(fillSlotAnswers).length === fillExercises.length;
+  if (!allFilled) { showFb('fill-feedback','يرجى ملء جميع الفراغات أولاً','error'); return; }
+  
+  let score = 0;
+  fillExercises.forEach((ex, idx) => {
+    const slot = document.getElementById(`slot-${idx}`);
+    if (!slot) return;
+    if (fillSlotAnswers[idx] === ex.answer) {
+      score++; slot.classList.add('correct'); slot.classList.remove('filled','wrong');
+    } else {
+      slot.classList.add('wrong'); slot.classList.remove('filled','correct');
+    }
+  });
+
+  if (score === fillExercises.length) {
+    showFb('fill-feedback', `🌟 ممتاز! جميع الإجابات صحيحة!`, 'success');
+    setTimeout(() => goToPhase(2), 1500);
+  } else {
+    showFb('fill-feedback', `${score} من ${fillExercises.length} صحيحة. حاول مجدداً للفراغات الخاطئة!`, 'error');
+  }
+}
+
+function resetFillGame() { buildFillGame(); }
+
+// ===== CLICK ORDER GAME =====
+function buildClickOrder() {
+  clickOrderExpected = 1;
+  clickOrderScore = 0;
+  clickOrderDone = false;
+  document.getElementById('order-feedback').classList.add('hidden');
+  document.getElementById('order-current').textContent = '١';
+  document.getElementById('order-score').textContent = '0';
+
+  const shuffled = [...verses].sort(() => Math.random() - 0.5);
+  const container = document.getElementById('click-order-verses');
+  container.innerHTML = '';
+
+  shuffled.forEach(v => {
+    const btn = document.createElement('button');
+    btn.id = `order-v-${v.num}`;
+    btn.dataset.num = v.num;
+    btn.className = "w-full text-right p-3 bg-white border-2 border-teal-200 text-teal-900 font-bold quran-text text-lg rounded-xl hover:border-teal-400 hover:bg-teal-50 transition flex items-center gap-3";
+    btn.innerHTML = `
+      <span id="order-badge-${v.num}" class="w-8 h-8 rounded-full bg-gray-200 text-gray-400 text-xs font-black flex items-center justify-center shrink-0">؟</span>
+      <span>${v.text}</span>
+    `;
+    btn.onclick = () => handleClickOrder(v.num, btn);
+    container.appendChild(btn);
+  });
+}
+
+const arabicNums = ['','١','٢','٣','٤','٥','٦','٧','٨','٩','١٠','١١'];
+
+function handleClickOrder(num, btn) {
+  if (clickOrderDone) return;
+  
+  if (num === clickOrderExpected) {
+    // Correct!
+    btn.disabled = true;
+    const badge = document.getElementById(`order-badge-${num}`);
+    badge.textContent = arabicNums[num];
+    badge.className = "w-8 h-8 rounded-full bg-teal-600 text-white text-xs font-black flex items-center justify-center shrink-0";
+    btn.className = btn.className.replace('border-teal-200','border-teal-400').replace('bg-white','bg-teal-50');
+    
+    clickOrderScore++;
+    clickOrderExpected++;
+    document.getElementById('order-score').textContent = clickOrderScore;
+    document.getElementById('order-current').textContent = arabicNums[Math.min(clickOrderExpected, verses.length)];
+    
+    if (clickOrderExpected > verses.length) {
+      clickOrderDone = true;
+      showFb('order-feedback', `🏆 مذهل! رتّبت جميع الآيات الأحد عشر بشكل صحيح! (${clickOrderScore} نقطة)`, 'success');
+      triggerCelebration();
+    }
+  } else {
+    // Wrong — flash red briefly
+    btn.classList.add('border-red-400', 'bg-red-50');
+    setTimeout(() => {
+      btn.classList.remove('border-red-400', 'bg-red-50');
+      btn.classList.add('border-teal-200', 'bg-white');
+    }, 600);
+    showFb('order-feedback', `هذه ليست الآية رقم ${arabicNums[clickOrderExpected]} ، حاول مجدداً!`, 'error');
+  }
+}
+
+// ===== NAVIGATION =====
+function goToPhase(n) {
+  stopAudio();
+  [0,1,2].forEach(i => {
+    document.getElementById(`phase-${i}`).classList.add('hidden');
+    const tab = document.getElementById(`tab-${i}`);
+    tab.className = `py-3 rounded-xl font-bold text-xs md:text-sm cursor-pointer ${i < n ? 'tab-done' : i === n ? 'tab-active' : 'tab-inactive'}`;
+  });
+  document.getElementById(`phase-${n}`).classList.remove('hidden');
+  if (n === 1) buildFillGame();
+  if (n === 2) buildClickOrder();
+}
+
+function showFb(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = `p-3 rounded-xl text-center font-bold text-sm my-2 ${type==='success'?'bg-emerald-100 text-emerald-800 border border-emerald-200':'bg-rose-100 text-rose-800 border border-rose-200'}`;
+  el.classList.remove('hidden');
+}
+
+function triggerCelebration() {
+  stopAudio();
+  let end = Date.now() + 5000;
+  (function frame() {
+    confetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0 } });
+    confetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1 } });
+    if (Date.now() < end) requestAnimationFrame(frame);
+  }());
+  setTimeout(() => {
+    document.querySelector('main').innerHTML = `
+      <div class="text-center py-10 space-y-6">
+        <span class="text-6xl block">🏆</span>
+        <h2 class="text-3xl md:text-4xl font-black text-teal-800">ما شاء الله!</h2>
+        <p class="quran-text text-2xl text-teal-900 font-bold">وَٱلْعَٰدِيَٰتِ ضَبْحًا</p>
+        <p class="text-lg text-gray-600 font-bold">لقد أتممت مراجعة سورة العاديات بنجاح تام! 🌟</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+          <button onclick="window.location.reload()" class="px-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-lg rounded-2xl shadow transition">🔄 العب من جديد</button>
+          <a href="dashboard.html" class="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-lg rounded-2xl shadow-xl transition">🏠 العودة للوحتي</a>
+        </div>
+      </div>`;
+  }, 2000);
+}
+
+buildAudioScreen();
+</script>
+</body>
+</html>

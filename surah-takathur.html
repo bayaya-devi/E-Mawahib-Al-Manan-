@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة مواهب المنان - سورة التكاثر</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+  body { font-family: 'Cairo', sans-serif; background: linear-gradient(135deg, #f0f7f4 0%, #e8f5e9 100%); min-height: 100vh; user-select: none; }
+  .quran-text { font-family: 'Amiri', serif; line-height: 2.4; }
+  .verse-card {
+    cursor: grab;
+    transition: all 0.2s ease;
+    border: 3px solid transparent;
+  }
+  .verse-card:active { cursor: grabbing; transform: scale(1.03) rotate(1deg); }
+  .verse-card.dragging { opacity: 0.5; border-color: #10b981; background: #d1fae5; }
+  .drop-zone {
+    min-height: 68px;
+    border: 2.5px dashed #10b981;
+    border-radius: 14px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .drop-zone.drag-over { background: #d1fae5; border-color: #059669; transform: scale(1.02); }
+  .drop-zone.filled { border: 2.5px solid #10b981; background: #f0fdf4; }
+  .drop-zone.correct { border-color: #059669; background: #dcfce7; animation: pulse-green 0.5s ease; }
+  .drop-zone.wrong { border-color: #ef4444; background: #fef2f2; animation: shake 0.4s ease; }
+  @keyframes pulse-green { 0%,100%{transform:scale(1)} 50%{transform:scale(1.03)} }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .verse-num { 
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #059669; color: white; font-size: 12px; font-weight: 900;
+    flex-shrink: 0;
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  .phase-badge {
+    display: inline-block; padding: 4px 14px; border-radius: 20px;
+    font-size: 12px; font-weight: 800;
+  }
+  .tab-active { border-bottom: 4px solid #059669; background: #ecfdf5; color: #065f46; }
+  .tab-done { border-bottom: 4px solid #10b981; background: #f0fdf4; color: #047857; }
+  .tab-inactive { border-bottom: 4px solid #e5e7eb; background: #f9fafb; color: #9ca3af; }
+</style>
+</head>
+<body class="p-3 md:p-6">
+
+<!-- Logo -->
+<div class="flex justify-center mb-4 mt-2">
+  <img src="logo.webp" alt="مواهب المنان" class="h-20 object-contain drop-shadow-md" onerror="this.style.display='none'">
+</div>
+
+<!-- Header -->
+<header class="w-full max-w-4xl mx-auto bg-white shadow-md rounded-2xl p-4 mb-5 border border-emerald-100/50 flex flex-col sm:flex-row justify-between items-center gap-3">
+  <div class="flex items-center gap-3 text-right">
+    <div class="w-16 h-16 bg-emerald-50 rounded-xl overflow-hidden flex items-center justify-center border border-emerald-100 shadow-inner shrink-0">
+      <img src="logo.jpg" alt="Logo" class="w-full h-full object-cover" onerror="this.outerHTML='<span class=\'text-3xl\'>📖</span>'">
+    </div>
+    <div>
+      <h1 class="text-lg md:text-xl font-black text-[#0c4a3b]">جمعية مواهب المنان</h1>
+      <p class="text-xs text-emerald-700 font-bold">دار القرآن والحديث • عين العودة</p>
+      <p class="text-[10px] text-gray-400 font-semibold">سورة التكاثر التفاعلية</p>
+    </div>
+  </div>
+  <a href="dashboard.html" class="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm rounded-xl border border-emerald-200 transition shrink-0">
+    🏠 لوحتي
+  </a>
+</header>
+
+<!-- Title Banner -->
+<div class="w-full max-w-4xl mx-auto mb-5">
+  <div class="bg-gradient-to-l from-emerald-700 to-teal-800 rounded-2xl p-5 text-white text-center shadow-lg">
+    <h2 class="text-2xl md:text-4xl font-black quran-text mb-1">سورة التَّكاثُر</h2>
+    <p class="text-emerald-200 text-sm font-bold">٨ آيات • مكية • الجزء الثلاثون</p>
+  </div>
+</div>
+
+<!-- Phase Tabs -->
+<div class="w-full max-w-4xl mx-auto mb-5">
+  <div class="grid grid-cols-3 gap-2 text-center">
+    <div id="tab-0" class="py-3 rounded-xl font-bold text-xs md:text-sm tab-active cursor-pointer">
+      <span class="block text-base">🎧</span>استماع وقراءة
+    </div>
+    <div id="tab-1" class="py-3 rounded-xl font-bold text-xs md:text-sm tab-inactive cursor-pointer">
+      <span class="block text-base">🃏</span>رتّب الآيات
+    </div>
+    <div id="tab-2" class="py-3 rounded-xl font-bold text-xs md:text-sm tab-inactive cursor-pointer">
+      <span class="block text-base">✍️</span>أكمل الفراغ
+    </div>
+  </div>
+</div>
+
+<!-- Main Content -->
+<main class="w-full max-w-4xl mx-auto bg-white shadow-lg rounded-3xl p-5 md:p-8 border border-emerald-50">
+
+  <!-- PHASE 0: AUDIO -->
+  <div id="phase-0">
+    <p class="text-center text-gray-500 font-bold text-sm mb-5">🎧 استمع لكل آية واضغط عليها لتسمعها مجدداً</p>
+    <div class="space-y-3 quran-text" id="audio-list"></div>
+    <div class="flex justify-center mt-6">
+      <button onclick="playAll()" class="px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-md transition flex items-center gap-2 text-sm">
+        🔊 استمع للسورة كاملة
+      </button>
+    </div>
+    <div class="flex justify-end mt-6">
+      <button onclick="goToPhase(1)" class="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition">متابعة ✔️</button>
+    </div>
+  </div>
+
+  <!-- PHASE 1: DRAG & DROP ORDER -->
+  <div id="phase-1" class="hidden">
+    <p class="text-center text-gray-500 font-bold text-sm mb-2">🃏 رتّب الآيات بالسحب والإفلات بالترتيب الصحيح</p>
+    <p class="text-center text-xs text-emerald-600 font-bold mb-5">اسحب كل آية من المنطقة السفلية وضعها في مكانها الصحيح</p>
+
+    <!-- Drop zones -->
+    <div class="grid grid-cols-1 gap-2 mb-6" id="drop-zones"></div>
+
+    <!-- Scrambled cards -->
+    <div class="bg-amber-50 border-2 border-amber-100 rounded-2xl p-4 mb-4">
+      <p class="text-xs text-amber-700 font-bold text-center mb-3">الآيات المتاحة (اسحب منها)</p>
+      <div class="grid grid-cols-1 gap-2" id="drag-cards"></div>
+    </div>
+
+    <div id="game1-feedback" class="hidden p-3 rounded-xl text-center font-bold text-sm my-2"></div>
+
+    <div class="flex justify-between mt-4">
+      <button onclick="resetGame1()" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm">🔄 إعادة</button>
+      <button onclick="checkGame1()" class="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition">تحقق ✔️</button>
+    </div>
+  </div>
+
+  <!-- PHASE 2: FILL BLANKS -->
+  <div id="phase-2" class="hidden">
+    <p class="text-center text-gray-500 font-bold text-sm mb-5">✍️ اضغط على الكلمة الصحيحة لإكمال كل آية</p>
+    <div id="fill-questions" class="space-y-5"></div>
+    <div id="fill-feedback" class="hidden p-3 rounded-xl text-center font-bold text-sm my-3"></div>
+    <div class="flex justify-between mt-6">
+      <button onclick="resetGame2()" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl text-sm">🔄 إعادة</button>
+      <button onclick="checkGame2()" class="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition">إنهاء 🏆</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const verses = [
+  { num: 1, text: "أَلْهَاكُمُ ٱلتَّكَاثُرُ", audio: "102001" },
+  { num: 2, text: "حَتَّىٰ زُرْتُمُ ٱلْمَقَابِرَ", audio: "102002" },
+  { num: 3, text: "كَلَّا سَوْفَ تَعْلَمُونَ", audio: "102003" },
+  { num: 4, text: "ثُمَّ كَلَّا سَوْفَ تَعْلَمُونَ", audio: "102004" },
+  { num: 5, text: "كَلَّا لَوْ تَعْلَمُونَ عِلْمَ ٱلْيَقِينِ", audio: "102005" },
+  { num: 6, text: "لَتَرَوُنَّ ٱلْجَحِيمَ", audio: "102006" },
+  { num: 7, text: "ثُمَّ لَتَرَوُنَّهَا عَيْنَ ٱلْيَقِينِ", audio: "102007" },
+  { num: 8, text: "ثُمَّ لَتُسْـَٔلُنَّ يَوْمَئِذٍ عَنِ ٱلنَّعِيمِ", audio: "102008" }
+];
+
+const fillBlanks = [
+  { full: "أَلْهَاكُمُ ٱلتَّكَاثُرُ", blank: "أَلْهَاكُمُ ___", answer: "ٱلتَّكَاثُرُ", options: ["ٱلتَّكَاثُرُ", "ٱلْمَقَابِرَ", "ٱلْجَحِيمَ"] },
+  { full: "حَتَّىٰ زُرْتُمُ ٱلْمَقَابِرَ", blank: "حَتَّىٰ زُرْتُمُ ___", answer: "ٱلْمَقَابِرَ", options: ["ٱلدُّنْيَا", "ٱلْمَقَابِرَ", "ٱلْجَحِيمَ"] },
+  { full: "كَلَّا لَوْ تَعْلَمُونَ عِلْمَ ٱلْيَقِينِ", blank: "كَلَّا لَوْ تَعْلَمُونَ عِلْمَ ___", answer: "ٱلْيَقِينِ", options: ["ٱلظَّنِّ", "ٱلْيَقِينِ", "ٱلْعَقِيدَةِ"] },
+  { full: "ثُمَّ لَتُسْـَٔلُنَّ يَوْمَئِذٍ عَنِ ٱلنَّعِيمِ", blank: "ثُمَّ لَتُسْـَٔلُنَّ يَوْمَئِذٍ عَنِ ___", answer: "ٱلنَّعِيمِ", options: ["ٱلنَّعِيمِ", "ٱلذُّنُوبِ", "ٱلْأَعْمَالِ"] }
+];
+
+let audioPlayer = null;
+let draggedEl = null;
+let draggedVerse = null;
+let dropAnswers = new Array(verses.length).fill(null);
+let fillAnswers = new Array(fillBlanks.length).fill(null);
+
+// ======= AUDIO =======
+function buildAudioScreen() {
+  const list = document.getElementById('audio-list');
+  list.innerHTML = '';
+  verses.forEach(v => {
+    const div = document.createElement('div');
+    div.className = "flex items-center gap-3 p-3 bg-white border border-emerald-100 rounded-xl shadow-sm cursor-pointer hover:bg-emerald-50 transition verse-card";
+    div.onclick = () => playVerse(v.audio, div);
+    div.innerHTML = `
+      <span class="verse-num">${v.num}</span>
+      <span class="quran-text text-xl md:text-2xl text-emerald-950 font-bold flex-grow text-right">${v.text}</span>
+      <button class="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-sm hover:bg-emerald-200 shrink-0">▶️</button>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function playVerse(audioCode, el) {
+  stopAudio();
+  document.querySelectorAll('.verse-card').forEach(c => c.style.background = '');
+  audioPlayer = new Audio(`https://everyayah.com/data/Alafasy_128kbps/${audioCode}.mp3`);
+  if (el) el.style.background = '#d1fae5';
+  audioPlayer.onended = () => { if(el) el.style.background = ''; };
+  audioPlayer.play().catch(()=>{});
+}
+
+function playAll() {
+  stopAudio();
+  let i = 0;
+  function next() {
+    if (i < verses.length) {
+      audioPlayer = new Audio(`https://everyayah.com/data/Alafasy_128kbps/${verses[i].audio}.mp3`);
+      audioPlayer.onended = next;
+      audioPlayer.play().catch(()=>{});
+      i++;
+    }
+  }
+  next();
+}
+
+function stopAudio() {
+  if (audioPlayer) { audioPlayer.pause(); audioPlayer.currentTime = 0; }
+}
+
+// ======= GAME 1: DRAG & DROP =======
+function buildGame1() {
+  dropAnswers = new Array(verses.length).fill(null);
+  
+  // Build drop zones
+  const dz = document.getElementById('drop-zones');
+  dz.innerHTML = '';
+  verses.forEach((v, i) => {
+    const row = document.createElement('div');
+    row.className = "flex items-center gap-2";
+    row.innerHTML = `
+      <span class="verse-num shrink-0">${v.num}</span>
+      <div class="drop-zone flex-grow px-3 text-right quran-text text-lg text-emerald-900 font-bold"
+           id="dz-${i}" data-index="${i}"
+           ondragover="onDragOver(event,this)" ondragleave="onDragLeave(this)" ondrop="onDrop(event,this)">
+        <span class="text-gray-300 text-sm quran-text">← اسحب الآية هنا</span>
+      </div>
+    `;
+    dz.appendChild(row);
+  });
+
+  // Build scrambled cards
+  const cards = document.getElementById('drag-cards');
+  cards.innerHTML = '';
+  const shuffled = [...verses].sort(() => Math.random() - 0.5);
+  shuffled.forEach(v => {
+    const card = document.createElement('div');
+    card.className = "verse-card p-3 bg-white border-2 border-amber-200 rounded-xl quran-text text-lg text-amber-900 font-bold text-right cursor-grab";
+    card.draggable = true;
+    card.id = `card-${v.num}`;
+    card.dataset.verse = v.num;
+    card.textContent = v.text;
+    card.ondragstart = (e) => onDragStart(e, v, card);
+    card.ondragend = () => onDragEnd(card);
+    cards.appendChild(card);
+  });
+
+  document.getElementById('game1-feedback').classList.add('hidden');
+}
+
+function onDragStart(e, verse, el) {
+  draggedEl = el;
+  draggedVerse = verse;
+  el.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onDragEnd(el) { el.classList.remove('dragging'); }
+function onDragOver(e, dz) { e.preventDefault(); dz.classList.add('drag-over'); }
+function onDragLeave(dz) { dz.classList.remove('drag-over'); }
+
+function onDrop(e, dz) {
+  e.preventDefault();
+  dz.classList.remove('drag-over');
+  const index = parseInt(dz.dataset.index);
+  
+  // If zone already filled, swap back old card
+  if (dropAnswers[index]) {
+    const oldVNum = dropAnswers[index].num;
+    const oldCard = document.getElementById(`card-${oldVNum}`);
+    if (oldCard) { oldCard.style.opacity = '1'; oldCard.style.pointerEvents = 'auto'; }
+  }
+  
+  dropAnswers[index] = draggedVerse;
+  dz.innerHTML = `<span class="quran-text text-lg text-emerald-900 font-bold">${draggedVerse.text}</span>`;
+  dz.classList.add('filled');
+  
+  if (draggedEl) { draggedEl.style.opacity = '0.3'; draggedEl.style.pointerEvents = 'none'; }
+  draggedEl = null; draggedVerse = null;
+}
+
+function checkGame1() {
+  let allFilled = dropAnswers.every(a => a !== null);
+  if (!allFilled) { showFb('game1-feedback', 'يرجى وضع جميع الآيات في أماكنها أولاً', 'error'); return; }
+  
+  let correct = true;
+  verses.forEach((v, i) => {
+    const dz = document.getElementById(`dz-${i}`);
+    if (dropAnswers[i] && dropAnswers[i].num === v.num) {
+      dz.classList.remove('filled'); dz.classList.add('correct');
+    } else {
+      correct = false;
+      dz.classList.remove('filled'); dz.classList.add('wrong');
+    }
+  });
+
+  if (correct) {
+    showFb('game1-feedback', '🌟 رائع! لقد رتّبت الآيات بشكل صحيح تماماً!', 'success');
+    setTimeout(() => goToPhase(2), 1500);
+  } else {
+    showFb('game1-feedback', '❌ بعض الآيات في غير مكانها، حاول مجدداً!', 'error');
+  }
+}
+
+function resetGame1() { buildGame1(); }
+
+// ======= GAME 2: FILL BLANKS =======
+function buildGame2() {
+  fillAnswers = new Array(fillBlanks.length).fill(null);
+  const container = document.getElementById('fill-questions');
+  container.innerHTML = '';
+
+  fillBlanks.forEach((q, qi) => {
+    const card = document.createElement('div');
+    card.className = "bg-blue-50 border-2 border-blue-100 rounded-2xl p-5";
+    
+    const questionText = q.blank.replace('___', `<span id="blank-${qi}" class="inline-block min-w-[100px] border-b-3 border-dashed border-blue-400 text-blue-700 font-bold px-2">_____</span>`);
+    
+    const optHtml = q.options.sort(()=>Math.random()-0.5).map(opt => 
+      `<button onclick="selectFill(${qi},'${opt}',this)" id="fill-btn-${qi}-${opt}" 
+        class="px-4 py-2.5 bg-white border-2 border-blue-200 text-blue-900 font-bold rounded-xl quran-text text-lg hover:bg-blue-100 transition">
+        ${opt}
+      </button>`
+    ).join('');
+
+    card.innerHTML = `
+      <p class="quran-text text-xl md:text-2xl text-right text-slate-800 font-bold mb-4 leading-loose">${questionText}</p>
+      <div class="flex flex-wrap gap-2 justify-center">${optHtml}</div>
+    `;
+    container.appendChild(card);
+  });
+  document.getElementById('fill-feedback').classList.add('hidden');
+}
+
+function selectFill(qi, opt, btn) {
+  // Clear previous selection for this question
+  fillBlanks[qi].options.forEach(o => {
+    const b = document.getElementById(`fill-btn-${qi}-${o}`);
+    if (b) b.className = "px-4 py-2.5 bg-white border-2 border-blue-200 text-blue-900 font-bold rounded-xl quran-text text-lg hover:bg-blue-100 transition";
+  });
+  fillAnswers[qi] = opt;
+  btn.className = "px-4 py-2.5 bg-blue-600 border-2 border-blue-600 text-white font-bold rounded-xl quran-text text-lg transition";
+  
+  const blank = document.getElementById(`blank-${qi}`);
+  if (blank) blank.textContent = opt;
+}
+
+function checkGame2() {
+  let allAnswered = fillAnswers.every(a => a !== null);
+  if (!allAnswered) { showFb('fill-feedback', 'يرجى الإجابة على جميع الأسئلة أولاً', 'error'); return; }
+
+  let score = 0;
+  fillBlanks.forEach((q, qi) => {
+    const blank = document.getElementById(`blank-${qi}`);
+    if (fillAnswers[qi] === q.answer) {
+      score++;
+      if (blank) { blank.style.color = '#059669'; blank.style.borderColor = '#059669'; }
+    } else {
+      if (blank) { blank.style.color = '#ef4444'; blank.style.borderColor = '#ef4444'; }
+    }
+  });
+
+  if (score === fillBlanks.length) {
+    showFb('fill-feedback', `🏆 ممتاز! لقد أجبت على جميع الأسئلة بشكل صحيح!`, 'success');
+    triggerCelebration();
+  } else {
+    showFb('fill-feedback', `أجبت على ${score} من ${fillBlanks.length} بشكل صحيح. حاول مجدداً!`, 'error');
+  }
+}
+
+function resetGame2() { buildGame2(); }
+
+// ======= NAVIGATION =======
+function goToPhase(n) {
+  stopAudio();
+  [0,1,2].forEach(i => {
+    document.getElementById(`phase-${i}`).classList.add('hidden');
+    const tab = document.getElementById(`tab-${i}`);
+    tab.className = `py-3 rounded-xl font-bold text-xs md:text-sm cursor-pointer ${i < n ? 'tab-done' : i === n ? 'tab-active' : 'tab-inactive'}`;
+  });
+  document.getElementById(`phase-${n}`).classList.remove('hidden');
+  document.getElementById(`tab-${n}`).className = `py-3 rounded-xl font-bold text-xs md:text-sm cursor-pointer tab-active`;
+  
+  if (n === 1) buildGame1();
+  if (n === 2) buildGame2();
+}
+
+// ======= HELPERS =======
+function showFb(id, msg, type) {
+  const el = document.getElementById(id);
+  el.textContent = msg;
+  el.className = `p-3 rounded-xl text-center font-bold text-sm my-2 ${type === 'success' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'}`;
+  el.classList.remove('hidden');
+}
+
+function triggerCelebration() {
+  stopAudio();
+  let end = Date.now() + 5000;
+  (function frame() {
+    confetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0 } });
+    confetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1 } });
+    if (Date.now() < end) requestAnimationFrame(frame);
+  }());
+  
+  setTimeout(() => {
+    document.querySelector('main').innerHTML = `
+      <div class="text-center py-10 space-y-6">
+        <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto border-2 border-emerald-100 shadow-sm">
+          <span class="text-5xl">🏆</span>
+        </div>
+        <h2 class="text-3xl md:text-4xl font-black text-emerald-800">ما شاء الله!</h2>
+        <p class="quran-text text-2xl text-emerald-900 font-bold">أَلْهَاكُمُ ٱلتَّكَاثُرُ</p>
+        <p class="text-lg text-gray-600 font-bold max-w-md mx-auto">لقد أتممت مراجعة سورة التكاثر بنجاح رائع! بطل مميز 🌟</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center mt-6">
+          <button onclick="window.location.reload()" class="px-8 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-extrabold text-lg rounded-2xl shadow transition">🔄 العب من جديد</button>
+          <a href="dashboard.html" class="px-8 py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-lg rounded-2xl shadow-xl transition">🏠 العودة للوحتي</a>
+        </div>
+      </div>`;
+  }, 2000);
+}
+
+// Init
+buildAudioScreen();
+</script>
+</body>
+</html>
