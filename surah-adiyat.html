@@ -191,7 +191,7 @@ function buildAudioScreen() {
 function playVerse(code, el) {
   stopAudio();
   document.querySelectorAll('#audio-list > div, #audio-list > *').forEach(d => d.style.background='');
-  audioPlayer = new Audio(`https://everyayah.com/data/Alafasy_128kbps/${code}.mp3`);
+  audioPlayer = new Audio(`https://everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps/${code}.mp3`);
   if (el) el.style.background = '#ccfbf1';
   audioPlayer.onended = () => { if(el) el.style.background=''; };
   audioPlayer.play().catch(()=>{});
@@ -201,7 +201,7 @@ function playAll() {
   stopAudio(); let i = 0;
   function next() {
     if (i < verses.length) {
-      audioPlayer = new Audio(`https://everyayah.com/data/Alafasy_128kbps/${verses[i].audio}.mp3`);
+      audioPlayer = `https://everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps/${verses[i].audio}.mp3`;
       audioPlayer.onended = next; audioPlayer.play().catch(()=>{}); i++;
     }
   }
