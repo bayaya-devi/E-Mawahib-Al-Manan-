@@ -57,7 +57,118 @@ body { padding-bottom: 80px; }
     </header>
 
     <main class="max-w-4xl mx-auto px-4 py-6">
-        <!-- La suite du tableau de bord (Section Mes Enfants, Paiements) viendra ici -->
+        <!-- قسم التقييم في صفحة الوالدين -->
+<div id="feedback-section" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+    <h2 class="text-xl font-black text-gray-800 mb-2">استبيان رضا أولياء الأمور</h2>
+    <p class="text-gray-500 text-sm mb-6 font-bold">رأيكم يهمنا لتطوير خدماتنا. يرجى تقييم النقاط التالية من 0 (ضعيف جدا) إلى 10 (ممتاز).</p>
+
+    <form id="feedback-form" onsubmit="submitFeedback(event)" class="space-y-6">
+        
+        <!-- سؤال 1 -->
+        <div>
+            <label class="block font-bold text-gray-700 mb-3">جودة التعليم</label>
+            <div class="flex flex-wrap gap-1 justify-between" id="rating-q1">
+                <!-- سيتم توليد الأزرار عبر جافاسكريبت للاختصار -->
+            </div>
+            <input type="hidden" id="q1-val" required>
+        </div>
+
+        <!-- سؤال 2 -->
+        <div>
+            <label class="block font-bold text-gray-700 mb-3">التنظيم العام وتوقيت الحصص</label>
+            <div class="flex flex-wrap gap-1 justify-between" id="rating-q2"></div>
+            <input type="hidden" id="q2-val" required>
+        </div>
+
+        <!-- سؤال 3 -->
+        <div>
+            <label class="block font-bold text-gray-700 mb-3">تواصل الإدارة مع أولياء الأمور</label>
+            <div class="flex flex-wrap gap-1 justify-between" id="rating-q3"></div>
+            <input type="hidden" id="q3-val" required>
+        </div>
+
+        <!-- سؤال 4 -->
+        <div>
+            <label class="block font-bold text-gray-700 mb-3">سهولة استخدام هذه المنصة</label>
+            <div class="flex flex-wrap gap-1 justify-between" id="rating-q4"></div>
+            <input type="hidden" id="q4-val" required>
+        </div>
+
+        <!-- سؤال 5 (ملاحظات) -->
+        <div>
+            <label class="block font-bold text-gray-700 mb-3">ملاحظات أو اقتراحات</label>
+            <textarea id="feedback-comments" rows="3" class="w-full border border-gray-200 rounded-xl p-3 bg-gray-50 focus:bg-white focus:border-blue-500 outline-none transition" placeholder="اكتب ملاحظاتك هنا..."></textarea>
+        </div>
+
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-md">
+            إرسال التقييم
+        </button>
+    </form>
+    
+    <!-- رسالة النجاح -->
+    <div id="feedback-success" class="hidden text-center py-8">
+        <div class="text-4xl mb-3">✅</div>
+        <h3 class="text-xl font-black text-emerald-600 mb-1">شكرا لك</h3>
+        <p class="text-gray-600 font-bold">تم إرسال تقييمك بنجاح، نقدر وقتك.</p>
+    </div>
+</div>
+
+<script>
+    // توليد أزرار التقييم من 0 إلى 10
+    const questions = ['q1', 'q2', 'q3', 'q4'];
+    questions.forEach(q => {
+        const container = document.getElementById(`rating-${q}`);
+        let html = '';
+        for(let i = 0; i <= 10; i++) {
+            html += `<button type="button" onclick="selectRating('${q}', ${i})" id="btn-${q}-${i}" class="w-8 h-8 sm:w-10 sm:h-10 rounded-lg border border-gray-200 text-gray-600 font-bold hover:bg-blue-50 hover:border-blue-300 transition text-sm sm:text-base">${i}</button>`;
+        }
+        container.innerHTML = html;
+    });
+
+    function selectRating(question, value) {
+        // تحديث القيمة المخفية
+        document.getElementById(`${question}-val`).value = value;
+        // إعادة تعيين الألوان
+        for(let i = 0; i <= 10; i++) {
+            const btn = document.getElementById(`btn-${question}-${i}`);
+            btn.classList.remove('bg-blue-600', 'text-white', 'border-blue-600');
+            btn.classList.add('border-gray-200', 'text-gray-600');
+        }
+        // تلوين الزر المختار
+        const selectedBtn = document.getElementById(`btn-${question}-${value}`);
+        selectedBtn.classList.remove('border-gray-200', 'text-gray-600');
+        selectedBtn.classList.add('bg-blue-600', 'text-white', 'border-blue-600');
+    }
+
+    async function submitFeedback(e) {
+        e.preventDefault();
+        const session = Auth.getSession();
+        if (!session) return;
+
+        const data = {
+            parent_id: session.username,
+            q1_enseignement: document.getElementById('q1-val').value,
+            q2_organisation: document.getElementById('q2-val').value,
+            q3_communication: document.getElementById('q3-val').value,
+            q4_plateforme: document.getElementById('q4-val').value,
+            commentaires: document.getElementById('feedback-comments').value,
+            date_soumission: new Date().toISOString()
+        };
+
+        // إرسال البيانات إلى Supabase (يجب إنشاء جدول parent_feedback)
+        const { error } = await supabaseClient
+            .from('parent_feedback')
+            .insert([data]);
+
+        if (error) {
+            alert('حدث خطأ أثناء الإرسال');
+            console.error(error);
+        } else {
+            document.getElementById('feedback-form').classList.add('hidden');
+            document.getElementById('feedback-success').classList.remove('hidden');
+        }
+    }
+</script>
     </main>
 
     <script>
