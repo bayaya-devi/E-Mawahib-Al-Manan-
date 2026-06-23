@@ -251,7 +251,7 @@
 
         function playSingleAudio(audioCode, btnElement) {
             stopAudio();
-            currentAudioPlayer = new Audio(`https://everyayah.com/data/Alafasy_128kbps/${audioCode}.mp3`);
+            currentAudioPlayer = new Audio(`https://everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps/${audioCode}.mp3`);
             
             // UI Feedback
             const allBtns = document.querySelectorAll('.verse-play-btn');
@@ -271,7 +271,7 @@
 
             function playNextInSequence() {
                 if (index < verses.length) {
-                    currentAudioPlayer = new Audio(`https://everyayah.com/data/Alafasy_128kbps/${verses[index].audio}.mp3`);
+                    currentAudioPlayer = new Audio(`https://everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps/${verses[index].audio}.mp3`);
                     currentAudioPlayer.onended = playNextInSequence;
                     currentAudioPlayer.play().catch(e => console.log("Audio sequence error:", e));
                     index++;
