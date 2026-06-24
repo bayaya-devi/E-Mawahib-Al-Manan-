@@ -283,6 +283,9 @@ const Auth = (() => {
         if (error) logError('marquerDevoirTermine', error);
     }
 
+    // Expose le client Supabase pour les pages qui en ont besoin directement (ex: parent.html)
+    function getSupabaseClient() { return supabase; }
+
     // EXPORTATION
     return {
         register, login, registerProf, loginProf, logout, getSession, requireAuth,
@@ -290,6 +293,7 @@ const Auth = (() => {
         assignStudentToProf, removeStudentFromProf,
         getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages,
         getProfile, updateProfile, getProgress, recordActivity, completeSurah,
-        ajouterDevoir, getDevoirs, annulerDevoir, marquerDevoirTermine
+        ajouterDevoir, getDevoirs, annulerDevoir, marquerDevoirTermine,
+        getSupabaseClient
     };
 })();
