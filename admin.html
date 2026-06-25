@@ -453,7 +453,7 @@ function buildStudentRow(student) {
     row.className = 'student-row';
 
     const completedSurahs = Object.entries(student.progress || {})
-        .filter(([id, p]) => p && p.completedAt).length;
+        .filter(([id, p]) => p && p.completedAt && Object.keys(p.activities || {}).length > 0).length;
 
     const statusColor = student.isSuspended
         ? 'bg-red-100 text-red-700'
@@ -603,21 +603,47 @@ async function loadStudentProgress() {
     const progress = student.progress || {};
     const entries  = Object.entries(progress);
     if (entries.length === 0) {
-        container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لم يُنجز أي سورة بعد</p>';
+        container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لم يبدأ أي سورة بعد</p>';
         return;
     }
 
-    container.innerHTML = entries.map(([id, p]) => {
-        const name  = (SURAH_REGISTRY.find(s => s.id === id) || {}).nameAr || id;
-        const score = p.globalScore != null ? p.globalScore : 100;
-        const date  = p.completedAt ? new Date(p.completedAt).toLocaleDateString('ar') : '—';
-        const color = score >= 80 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800';
-        return `
-            <div class="flex items-center justify-between ${color} rounded-xl px-3 py-2 text-sm font-bold">
+    // سورة مكتملة = completedAt موجود + activities غير فارغ
+    const completed  = entries.filter(([id, p]) => p && p.completedAt && Object.keys(p.activities || {}).length > 0);
+    const inProgress = entries.filter(([id, p]) => !p.completedAt || Object.keys(p.activities || {}).length === 0);
+
+    let html = '';
+
+    if (completed.length > 0) {
+        html += `<p class="text-xs font-bold text-gray-400 mb-1">السور المنجزة (${completed.length})</p>`;
+        html += completed.map(([id, p]) => {
+            const name  = (SURAH_REGISTRY.find(s => s.id === id) || {}).nameAr || id;
+            const score = p.globalScore != null ? p.globalScore : 100;
+            const date  = new Date(p.completedAt).toLocaleDateString('ar');
+            const color = score >= 80 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800';
+            return `<div class="flex items-center justify-between ${color} rounded-xl px-3 py-2 text-sm font-bold mb-1">
                 <span>✅ ${name}</span>
                 <span>${score}% &nbsp;·&nbsp; ${date}</span>
             </div>`;
-    }).join('');
+        }).join('');
+    }
+
+    if (inProgress.length > 0) {
+        html += `<p class="text-xs font-bold text-gray-400 mt-3 mb-1">قيد التعلم (${inProgress.length})</p>`;
+        html += inProgress.map(([id, p]) => {
+            const name       = (SURAH_REGISTRY.find(s => s.id === id) || {}).nameAr || id;
+            const actCount   = Object.keys(p.activities || {}).length;
+            return `<div class="flex items-center justify-between bg-blue-50 text-blue-800 rounded-xl px-3 py-2 text-sm font-bold mb-1">
+                <span>📖 ${name}</span>
+                <span>${actCount} نشاط مكتمل</span>
+            </div>`;
+        }).join('');
+    }
+
+    if (completed.length === 0 && inProgress.length === 0) {
+        html = '<p class="text-gray-400 text-sm text-center py-4">لم يبدأ أي سورة بعد</p>';
+    }
+
+    container.innerHTML = html;
 }
 
 /* ══════════════════════════════════════════════════════════
