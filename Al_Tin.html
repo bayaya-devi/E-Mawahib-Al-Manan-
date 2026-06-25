@@ -806,7 +806,7 @@ function validateCurrentScreen() {
         confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#4A148C', '#558B2F', '#FFD700'] });
         if (Date.now() < end) requestAnimationFrame(frame);
     }());
-    Auth.markSurahCompleted('al-tin');
+    if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') Auth.completeSurah('al-tin');
     const mainContainer = document.querySelector('main');
     mainContainer.innerHTML = `
         <div class="text-center py-12 space-y-6 animate-pop">
