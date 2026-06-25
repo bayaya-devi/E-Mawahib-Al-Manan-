@@ -42,6 +42,9 @@
   .score-ring::before { content:''; position:absolute; width:60px; height:60px; background:white; border-radius:50%; }
   .score-ring-inner { position:relative; z-index:1; font-weight:900; font-size:18px; color:#4c1d95; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+<script src="registry.js"></script>
 </head>
 <body class="p-3 md:p-6">
 
@@ -378,6 +381,13 @@ function showResults() {
     </div>`;
   
   if (pct >= 75) {
+    // ✅ Enregistrement de la progression dans Supabase
+    if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') {
+      Auth.recordActivity('al-humaza', 'quiz_completion', pct);
+    }
+    if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') {
+      Auth.completeSurah('al-humaza');
+    }
     let end = Date.now() + 4000;
     (function frame() {
       confetti({ particleCount: 5, angle: 60, spread: 60, origin: { x: 0 } });
