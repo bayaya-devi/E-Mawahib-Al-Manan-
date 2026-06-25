@@ -48,6 +48,9 @@
   .tab-done { border-bottom: 4px solid #10b981; background: #f0fdf4; color: #047857; }
   .tab-inactive { border-bottom: 4px solid #e5e7eb; background: #f9fafb; color: #9ca3af; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+<script src="registry.js"></script>
 </head>
 <body class="p-3 md:p-6">
 
@@ -402,6 +405,13 @@ function showFb(id, msg, type) {
 }
 
 function triggerCelebration() {
+  // ✅ Enregistrement de la progression dans Supabase
+  if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') {
+    Auth.recordActivity('al-takathur', 'completion', 100);
+  }
+  if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') {
+    Auth.completeSurah('al-takathur');
+  }
   stopAudio();
   let end = Date.now() + 5000;
   (function frame() {
@@ -432,3 +442,4 @@ buildAudioScreen();
 </script>
 </body>
 </html>
+
