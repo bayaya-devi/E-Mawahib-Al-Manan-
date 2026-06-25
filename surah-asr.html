@@ -32,6 +32,9 @@
   #mic-btn { transition: all 0.2s; }
   .progress-bar { transition: width 0.5s ease; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+<script src="registry.js"></script>
 </head>
 <body class="p-3 md:p-6">
 
@@ -448,6 +451,13 @@ function showFb(id, msg, type) {
 }
 
 function triggerCelebration() {
+  // ✅ Enregistrement de la progression dans Supabase
+  if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') {
+    Auth.recordActivity('al-asr', 'completion', 100);
+  }
+  if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') {
+    Auth.completeSurah('al-asr');
+  }
   stopAudio();
   let end = Date.now() + 5000;
   (function frame() {
