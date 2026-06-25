@@ -1,6 +1,5 @@
-// auth.js - VERSION CORRIGÉE
+// auth.js - VERSION CORRIGÉE (trim anti-espaces)
 const Auth = (() => {
-    // 1. Initialisation de Supabase À L'INTÉRIEUR du module pour éviter les conflits
     const supabaseUrl = 'https://mdgofogpghlwesaduxrq.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kZ29mb2dwZ2hsd2VzYWR1eHJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NjIwNjksImV4cCI6MjA5NzQzODA2OX0.DpBoUIZbxzKjOOWw4r-7Vhtupva_fIg5cEhcKgb19ic';
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -9,7 +8,7 @@ const Auth = (() => {
 
     // --- GESTION DE LA SESSION LOCALE ---
     function getSession() {
-        try { return JSON.parse(localStorage.getItem(SESSION_KEY)); } 
+        try { return JSON.parse(localStorage.getItem(SESSION_KEY)); }
         catch { return null; }
     }
 
@@ -26,40 +25,54 @@ const Auth = (() => {
         return true;
     }
 
+    // ✅ _genId : trim() sur les deux paramètres pour éviter les espaces parasites
     function _genId(str1, str2) {
-        return (str1 + '.' + str2).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_');
+        return (str1.trim() + '.' + str2.trim())
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/\s+/g, '_');
     }
 
-    // 🔧 FONCTION D'AIDE : Log les erreurs Supabase
     function logError(context, error) {
         console.error(`[${context}]`, error);
     }
 
     // --- 1. ÉLÈVES ---
     async function register(prenom, nom, password, bypassSession = false) {
+        // ✅ trim() en entrée de fonction
+        prenom   = prenom.trim();
+        nom      = nom.trim();
+        password = password.trim();
+
         if (!prenom || !nom || !password) return { ok: false, error: 'يرجى ملء جميع الحقول' };
         if (password.length < 4) return { ok: false, error: 'كلمة المرور يجب أن تكون 4 أحرف على الأقل' };
-        
+
         const username = _genId(prenom, nom);
-        const { error } = await supabase.from('eleves').insert([{ 
-            username, prenom, nom, password: btoa(password), is_suspended: false 
+        const { error } = await supabase.from('eleves').insert([{
+            username, prenom, nom, password: btoa(password), is_suspended: false
         }]);
 
-        if (error) { 
+        if (error) {
             logError('register', error);
             return { ok: false, error: error.code === '23505' ? 'هذا الاسم مستخدم بالفعل' : 'خطأ في التسجيل: ' + error.message };
         }
-        
+
         if (!bypassSession) _setSession(username, prenom, nom, 'student');
         return { ok: true, username };
     }
 
     async function login(prenom, nom, password) {
+        // ✅ trim() en entrée de fonction
+        prenom   = prenom.trim();
+        nom      = nom.trim();
+        password = password.trim();
+
         if (!prenom || !nom || !password) return { ok: false, error: 'يرجى ملء جميع الحقول' };
         const username = _genId(prenom, nom);
         const { data, error } = await supabase.from('eleves').select('*').eq('username', username).single();
 
-        if (error) { 
+        if (error) {
             logError('login', error);
             return { ok: false, error: 'خطأ: ' + (error.message || 'فشل الاتصال بالخادم') };
         }
@@ -73,13 +86,18 @@ const Auth = (() => {
 
     // --- 2. PROFESSEURS ---
     async function registerProf(prenom, classe, password) {
+        // ✅ trim() en entrée de fonction
+        prenom   = prenom.trim();
+        classe   = classe.trim();
+        password = password.trim();
+
         if (!prenom || !classe || !password) return { ok: false, error: 'يرجى ملء جميع الحقول' };
         const username = _genId(prenom, classe);
-        const { error } = await supabase.from('profs').insert([{ 
-            username, prenom, classe, password: btoa(password), students: [] 
+        const { error } = await supabase.from('profs').insert([{
+            username, prenom, classe, password: btoa(password), students: []
         }]);
 
-        if (error) { 
+        if (error) {
             logError('registerProf', error);
             return { ok: false, error: 'هذا الأستاذ مسجل بالفعل أو حدث خطأ' };
         }
@@ -87,16 +105,21 @@ const Auth = (() => {
     }
 
     async function loginProf(prenom, classe, password) {
+        // ✅ trim() en entrée de fonction
+        prenom   = prenom.trim();
+        classe   = classe.trim();
+        password = password.trim();
+
         const username = _genId(prenom, classe);
         const { data, error } = await supabase.from('profs').select('*').eq('username', username).single();
-        
-        if (error) { 
+
+        if (error) {
             logError('loginProf', error);
             return { ok: false, error: 'خطأ في الاتصال: ' + error.message };
         }
         if (!data) return { ok: false, error: 'لم يتم العثور على حساب الأستاذ' };
         if (data.password !== btoa(password)) return { ok: false, error: 'كلمة المرور غير صحيحة' };
-        
+
         _setSession(username, data.prenom, data.classe, 'prof');
         return { ok: true, username };
     }
@@ -104,19 +127,25 @@ const Auth = (() => {
     // --- 3. FONCTIONS ADMINISTRATEUR ---
     async function getAllStudents() {
         const { data: eleves, error: e1 } = await supabase.from('eleves').select('*');
-        const { data: progs, error: e2 } = await supabase.from('progressions').select('*');
-        const { data: msgs, error: e3 } = await supabase.from('messages').select('*');
+        const { data: progs,  error: e2 } = await supabase.from('progressions').select('*');
+        const { data: msgs,   error: e3 } = await supabase.from('messages').select('*');
 
         if (e1 || e2 || e3) logError('getAllStudents', { e1, e2, e3 });
 
         return (eleves || []).map(e => {
             const userProgs = (progs || []).filter(p => p.username === e.username);
             const progressDict = {};
-            userProgs.forEach(p => progressDict[p.surah_id] = { activities: p.activities || {}, completedAt: p.completed_at, globalScore: p.global_score });
-            
+            userProgs.forEach(p => progressDict[p.surah_id] = {
+                activities: p.activities || {},
+                completedAt: p.completed_at,
+                globalScore: p.global_score
+            });
             const userMsgs = (msgs || []).filter(m => m.username === e.username);
-
-            return { username: e.username, prenom: e.prenom, nom: e.nom, isSuspended: e.is_suspended, createdAt: e.created_at, progress: progressDict, messages: userMsgs };
+            return {
+                username: e.username, prenom: e.prenom, nom: e.nom,
+                isSuspended: e.is_suspended, createdAt: e.created_at,
+                progress: progressDict, messages: userMsgs
+            };
         });
     }
 
@@ -214,13 +243,18 @@ const Auth = (() => {
     // --- 7. PROFILS ADMINISTRATIFS ---
     async function getProfile(username) {
         const { data, error } = await supabase.from('profils_admin').select('*').eq('username', username).single();
-        if (error && error.code !== 'PGRST116') logError('getProfile', error); // PGRST116 = no rows
-        return data ? { cinProvided: data.cin_provided, birthCertProvided: data.birth_cert_provided, payments: data.payments || [] } : { cinProvided: false, birthCertProvided: false, payments: [] };
+        if (error && error.code !== 'PGRST116') logError('getProfile', error);
+        return data
+            ? { cinProvided: data.cin_provided, birthCertProvided: data.birth_cert_provided, payments: data.payments || [] }
+            : { cinProvided: false, birthCertProvided: false, payments: [] };
     }
 
     async function updateProfile(username, profileData) {
         const { error } = await supabase.from('profils_admin').upsert([{
-            username, cin_provided: profileData.cinProvided, birth_cert_provided: profileData.birthCertProvided, payments: profileData.payments
+            username,
+            cin_provided: profileData.cinProvided,
+            birth_cert_provided: profileData.birthCertProvided,
+            payments: profileData.payments
         }]);
         if (error) logError('updateProfile', error);
     }
@@ -230,13 +264,18 @@ const Auth = (() => {
         const { data, error } = await supabase.from('progressions').select('*').eq('username', username);
         if (error) logError('getProgress', error);
         const res = {};
-        (data || []).forEach(p => res[p.surah_id] = { activities: p.activities || {}, completedAt: p.completed_at, globalScore: p.global_score });
+        (data || []).forEach(p => res[p.surah_id] = {
+            activities: p.activities || {},
+            completedAt: p.completed_at,
+            globalScore: p.global_score
+        });
         return res;
     }
 
     async function recordActivity(surahId, activityKey, score) {
         const session = getSession(); if (!session) return;
-        const { data, error } = await supabase.from('progressions').select('activities').eq('username', session.username).eq('surah_id', surahId).single();
+        const { data, error } = await supabase.from('progressions').select('activities')
+            .eq('username', session.username).eq('surah_id', surahId).single();
         if (error && error.code !== 'PGRST116') logError('recordActivity', error);
         let activities = data?.activities || {};
         if (!activities[activityKey] || score > activities[activityKey].score) {
@@ -247,20 +286,26 @@ const Auth = (() => {
 
     async function completeSurah(surahId) {
         const session = getSession(); if (!session) return;
-        const { data, error } = await supabase.from('progressions').select('activities').eq('username', session.username).eq('surah_id', surahId).single();
+        const { data, error } = await supabase.from('progressions').select('activities')
+            .eq('username', session.username).eq('surah_id', surahId).single();
         if (error && error.code !== 'PGRST116') logError('completeSurah', error);
         const activities = data?.activities || {};
         const scores = Object.values(activities).map(a => a.score);
-        const globalScore = scores.length ? Math.round(scores.reduce((a,b)=>a+b,0)/scores.length) : 100;
-        await supabase.from('progressions').upsert([{ username: session.username, surah_id: surahId, activities, completed_at: new Date().toISOString(), global_score: globalScore }]);
+        const globalScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 100;
+        await supabase.from('progressions').upsert([{
+            username: session.username, surah_id: surahId, activities,
+            completed_at: new Date().toISOString(), global_score: globalScore
+        }]);
     }
 
     // --- 9. DEVOIRS ---
     async function ajouterDevoir(studentId, profName, surate, ayaDebut, ayaFin, dateLimite) {
         const session = getSession();
-        const id = 'dev_' + Date.now() + Math.floor(Math.random()*1000);
+        const id = 'dev_' + Date.now() + Math.floor(Math.random() * 1000);
         const { error } = await supabase.from('devoirs').insert([{
-            id, student_id: studentId, prof_name: profName, surate, aya_debut: ayaDebut, aya_fin: ayaFin, date_limite: dateLimite, statut: 'en_attente', prof_id: session.username
+            id, student_id: studentId, prof_name: profName,
+            surate, aya_debut: ayaDebut, aya_fin: ayaFin,
+            date_limite: dateLimite, statut: 'en_attente', prof_id: session.username
         }]);
         if (error) { logError('ajouterDevoir', error); return { ok: false, error: error.message }; }
         return { ok: true };
@@ -283,10 +328,8 @@ const Auth = (() => {
         if (error) logError('marquerDevoirTermine', error);
     }
 
-    // Expose le client Supabase pour les pages qui en ont besoin directement (ex: parent.html)
     function getSupabaseClient() { return supabase; }
 
-    // EXPORTATION
     return {
         register, login, registerProf, loginProf, logout, getSession, requireAuth,
         getAllStudents, getAllUsers, getProfs, deleteStudent, deleteProf, toggleSuspension,
