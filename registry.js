@@ -98,8 +98,8 @@ const SURAH_REGISTRY = [
     type: "مكية",
     color: "#7c3aed",
     emoji: "🌪️",
-    file: null,
-    available: false
+    file: "qaria.html",
+    available: true
   },
   {
     id: "al-takathur",
@@ -151,8 +151,8 @@ const SURAH_REGISTRY = [
     type: "مكية",
     color: "#6b7280",
     emoji: "🏔️",
-    file: null,
-    available: false
+    file: "fil.html",
+    available: true
   },
   {
     id: "quraysh",
