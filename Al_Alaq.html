@@ -532,7 +532,7 @@ function validateCurrentScreen() {
         confetti({ particleCount: 5, angle: 120, spread: 60, origin: { x: 1 } });
         if (Date.now() < end) requestAnimationFrame(frame);
     }());
-    Auth.markSurahCompleted('al-alaq');
+    if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') Auth.completeSurah('al-alaq');
     const mainContainer = document.querySelector('main');
     mainContainer.innerHTML = `
         <div class="text-center py-10 space-y-6">
@@ -554,8 +554,6 @@ function validateCurrentScreen() {
         </div>
     `;
     
-    // Vérification sécurisée ici aussi
-    if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') Auth.completeSurah('al-alaq');
 }
     </script>
 </body>
