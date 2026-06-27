@@ -618,7 +618,7 @@ const STATS_REFRESH_MS = 3 * 60 * 1000; // 3 minutes
 ══════════════════════════════════════════════════════════ */
 const ALL_TABS = ['classes','stats','parents','add-student','add-prof'];
 
-function switchTab(name) {
+async function switchTab(name) {
     ALL_TABS.forEach(t => {
         document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
     });
