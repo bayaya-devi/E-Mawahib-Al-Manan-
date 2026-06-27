@@ -48,6 +48,81 @@
                          background: rgba(0,0,0,.45); z-index: 50;
                          align-items: center; justify-content: center; }
         .modal-overlay.open { display: flex; }
+
+        /* ── Stats ── */
+        .stat-card {
+            border-radius: 18px; padding: 18px 20px;
+            display: flex; flex-direction: column; gap: 6px;
+            position: relative; overflow: hidden;
+        }
+        .stat-card::after {
+            content: attr(data-icon);
+            position: absolute; left: -4px; bottom: -8px;
+            font-size: 56px; opacity: .12; line-height: 1;
+        }
+        .stat-card .stat-num { font-size: 2rem; font-weight: 900; line-height: 1; }
+        .stat-card .stat-label { font-size: .75rem; font-weight: 700; opacity: .8; }
+
+        .stat-purple { background: linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; }
+        .stat-blue   { background: linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; }
+        .stat-green  { background: linear-gradient(135deg,#059669,#047857); color:#fff; }
+        .stat-orange { background: linear-gradient(135deg,#d97706,#b45309); color:#fff; }
+        .stat-rose   { background: linear-gradient(135deg,#e11d48,#be123c); color:#fff; }
+        .stat-teal   { background: linear-gradient(135deg,#0d9488,#0f766e); color:#fff; }
+
+        /* ── Progress bar ── */
+        .prog-track { background: rgba(0,0,0,.08); border-radius: 99px; height: 8px; overflow: hidden; }
+        .prog-fill  { height: 100%; border-radius: 99px; transition: width .6s ease; }
+
+        /* ── Donut ── */
+        .donut-wrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+        .donut-wrap svg { transform: rotate(-90deg); }
+        .donut-label { position:absolute; inset:0; display:flex; flex-direction:column;
+                       align-items:center; justify-content:center; }
+
+        /* ── Alert card ── */
+        .alert-card { border-radius: 14px; padding: 10px 14px; display: flex;
+                      align-items: flex-start; gap: 10px; border-width: 1.5px; }
+
+        /* ── Top student row ── */
+        .top-row { display: flex; align-items: center; gap: 10px;
+                   padding: 8px 12px; border-radius: 12px; background: #f8f7ff;
+                   border: 1px solid #ede9fe; margin-bottom: 6px; }
+
+        /* ── Section heading ── */
+        .section-heading {
+            font-size: .7rem; font-weight: 900; letter-spacing: .08em;
+            text-transform: uppercase; color: #9ca3af; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-heading::after {
+            content: ''; flex: 1; height: 1px; background: #e5e7eb;
+        }
+
+        /* ── Refresh badge ── */
+        #refresh-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: .7rem; font-weight: 700; color: #7c3aed;
+            background: #ede9fe; padding: 3px 10px; border-radius: 99px;
+            cursor: pointer; transition: background .2s;
+        }
+        #refresh-badge:hover { background: #ddd6fe; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Parents tab ── */
+        .parent-link-card {
+            background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+            border-radius: 20px; padding: 36px 28px;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 16px; text-align: center; color: #fff;
+            box-shadow: 0 8px 32px rgba(124,58,237,.25);
+        }
+
+        /* ── Activity feed ── */
+        .feed-item { display: flex; align-items: center; gap: 10px;
+                     padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+        .feed-item:last-child { border-bottom: none; }
     </style>
 </head>
 <body class="p-4 md:p-6">
@@ -72,16 +147,249 @@
     </div>
 
     <!-- ══ TABS ══════════════════════════════════════════════ -->
-    <div class="flex gap-6 border-b border-gray-200 mb-6 px-1">
-        <button class="tab-btn active pb-3 text-sm text-gray-600" onclick="switchTab('classes')">🏫 الأقسام والطلاب</button>
-        <button class="tab-btn pb-3 text-sm text-gray-600" onclick="switchTab('add-student')">➕ إضافة طالب</button>
-        <button class="tab-btn pb-3 text-sm text-gray-600" onclick="switchTab('add-prof')">👤 إضافة أستاذ</button>
+    <div class="flex gap-4 border-b border-gray-200 mb-6 px-1 overflow-x-auto">
+        <button class="tab-btn active pb-3 text-sm text-gray-600 whitespace-nowrap" onclick="switchTab('classes')">🏫 الأقسام والطلاب</button>
+        <button class="tab-btn pb-3 text-sm text-gray-600 whitespace-nowrap" onclick="switchTab('stats')">📊 الإحصاءات</button>
+        <button class="tab-btn pb-3 text-sm text-gray-600 whitespace-nowrap" onclick="switchTab('parents')">👨‍👩‍👧 الأولياء</button>
+        <button class="tab-btn pb-3 text-sm text-gray-600 whitespace-nowrap" onclick="switchTab('add-student')">➕ إضافة طالب</button>
+        <button class="tab-btn pb-3 text-sm text-gray-600 whitespace-nowrap" onclick="switchTab('add-prof')">👤 إضافة أستاذ</button>
     </div>
 
     <!-- ══ TAB: CLASSES ══════════════════════════════════════ -->
     <div id="tab-classes">
         <div id="classes-container">
             <p class="text-center text-gray-400 py-12">جاري التحميل...</p>
+        </div>
+    </div>
+
+    <!-- ══ TAB: STATS ════════════════════════════════════════ -->
+    <div id="tab-stats" class="hidden">
+        <div class="flex items-center justify-between mb-5">
+            <h2 class="text-base font-black text-purple-900">الإحصاءات العامة</h2>
+            <span id="refresh-badge" onclick="refreshStats()">
+                <span id="refresh-icon">🔄</span>
+                <span id="refresh-label">تحديث</span>
+            </span>
+        </div>
+
+        <!-- ── KPI cards row 1 ── -->
+        <div id="stats-kpi" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+            <!-- injected by JS -->
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+            <!-- Donut: actifs vs suspendus -->
+            <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm">
+                <p class="section-heading">نشاط الطلاب</p>
+                <div class="flex items-center gap-6">
+                    <div class="donut-wrap">
+                        <svg viewBox="0 0 36 36" width="110" height="110">
+                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#ede9fe" stroke-width="3.2"/>
+                            <circle id="donut-active" cx="18" cy="18" r="15.9" fill="none"
+                                    stroke="#7c3aed" stroke-width="3.2"
+                                    stroke-dasharray="0 100" stroke-linecap="round"/>
+                        </svg>
+                        <div class="donut-label">
+                            <span id="donut-pct" class="text-xl font-black text-purple-700">—</span>
+                            <span class="text-[10px] text-gray-400 font-bold">نشطون</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1">
+                                <span class="text-purple-700">✅ نشط</span>
+                                <span id="lbl-active" class="text-gray-600">—</span>
+                            </div>
+                            <div class="prog-track"><div id="bar-active" class="prog-fill bg-purple-500" style="width:0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1">
+                                <span class="text-rose-600">🚫 موقوف</span>
+                                <span id="lbl-suspended" class="text-gray-600">—</span>
+                            </div>
+                            <div class="prog-track"><div id="bar-suspended" class="prog-fill bg-rose-400" style="width:0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1">
+                                <span class="text-slate-500">👥 بدون قسم</span>
+                                <span id="lbl-unassigned" class="text-gray-600">—</span>
+                            </div>
+                            <div class="prog-track"><div id="bar-unassigned" class="prog-fill bg-slate-300" style="width:0%"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Docs bar chart -->
+            <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm">
+                <p class="section-heading">الوثائق المقدمة</p>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-gray-700">🪪 بطاقة التعريف</span>
+                            <span id="lbl-cin" class="text-purple-700">—</span>
+                        </div>
+                        <div class="prog-track"><div id="bar-cin" class="prog-fill bg-blue-500" style="width:0%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-gray-700">📄 عقد الازدياد</span>
+                            <span id="lbl-birth" class="text-purple-700">—</span>
+                        </div>
+                        <div class="prog-track"><div id="bar-birth" class="prog-fill bg-teal-500" style="width:0%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-gray-700">✅ الملف مكتمل (الوثيقتان)</span>
+                            <span id="lbl-full-doc" class="text-purple-700">—</span>
+                        </div>
+                        <div class="prog-track"><div id="bar-full-doc" class="prog-fill bg-emerald-500" style="width:0%"></div></div>
+                    </div>
+                    <p id="lbl-missing-docs" class="text-xs text-rose-500 font-bold mt-1"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paiements -->
+        <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm mb-4">
+            <p class="section-heading">الأداءات الشهرية</p>
+            <!-- Montants en grand -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="rounded-2xl p-4 text-center" style="background: linear-gradient(135deg,#059669,#047857);">
+                    <p id="pay-amount-collected" class="text-3xl font-black text-white">—</p>
+                    <p class="text-xs text-emerald-100 font-bold mt-1">💰 إجمالي المحصَّل (د.م.)</p>
+                </div>
+                <div class="rounded-2xl p-4 text-center" style="background: linear-gradient(135deg,#d97706,#b45309);">
+                    <p id="pay-amount-pending" class="text-3xl font-black text-white">—</p>
+                    <p class="text-xs text-amber-100 font-bold mt-1">⏳ في انتظار التحصيل (د.م.)</p>
+                </div>
+            </div>
+            <!-- Compteurs secondaires -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div class="bg-emerald-50 rounded-xl p-3 text-center">
+                    <p id="pay-paid" class="text-2xl font-black text-emerald-600">—</p>
+                    <p class="text-xs text-emerald-700 font-bold">أشهر خالصة</p>
+                </div>
+                <div class="bg-amber-50 rounded-xl p-3 text-center">
+                    <p id="pay-pending" class="text-2xl font-black text-amber-600">—</p>
+                    <p class="text-xs text-amber-700 font-bold">أشهر في الانتظار</p>
+                </div>
+                <div class="bg-purple-50 rounded-xl p-3 text-center">
+                    <p id="pay-rate" class="text-2xl font-black text-purple-600">—</p>
+                    <p class="text-xs text-purple-700 font-bold">نسبة التسديد</p>
+                </div>
+                <div class="bg-rose-50 rounded-xl p-3 text-center">
+                    <p id="pay-debtors" class="text-2xl font-black text-rose-600">—</p>
+                    <p class="text-xs text-rose-700 font-bold">طلاب متأخرون</p>
+                </div>
+            </div>
+            <div id="debtors-list" class="space-y-1"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+            <!-- Top students -->
+            <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm">
+                <p class="section-heading">🏆 أفضل الطلاب</p>
+                <div id="top-students-list"></div>
+            </div>
+
+            <!-- Progression académique -->
+            <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm">
+                <p class="section-heading">📖 التقدم الأكاديمي</p>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-purple-50 rounded-xl p-3 text-center">
+                        <p id="prog-total-surahs" class="text-2xl font-black text-purple-700">—</p>
+                        <p class="text-xs text-purple-600 font-bold">سورة منجزة (المجموع)</p>
+                    </div>
+                    <div class="bg-blue-50 rounded-xl p-3 text-center">
+                        <p id="prog-avg" class="text-2xl font-black text-blue-600">—</p>
+                        <p class="text-xs text-blue-600 font-bold">معدل / طالب</p>
+                    </div>
+                    <div class="bg-emerald-50 rounded-xl p-3 text-center">
+                        <p id="prog-active-learners" class="text-2xl font-black text-emerald-600">—</p>
+                        <p class="text-xs text-emerald-600 font-bold">طلاب في تقدم</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-3 text-center">
+                        <p id="prog-zero" class="text-2xl font-black text-gray-500">—</p>
+                        <p class="text-xs text-gray-500 font-bold">لم يبدأوا بعد</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activité récente -->
+        <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm mb-4">
+            <p class="section-heading">⚡ آخر الإنجازات</p>
+            <div id="recent-feed"></div>
+        </div>
+
+        <!-- Tableau par classe -->
+        <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm mb-4">
+            <p class="section-heading">🏫 مقارنة الأقسام</p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-right">
+                    <thead>
+                        <tr class="text-xs text-gray-400 font-bold border-b border-gray-100">
+                            <th class="pb-2 font-bold">القسم</th>
+                            <th class="pb-2 font-bold">الطلاب</th>
+                            <th class="pb-2 font-bold">السور المنجزة</th>
+                            <th class="pb-2 font-bold">الوثائق</th>
+                            <th class="pb-2 font-bold">التسديد</th>
+                            <th class="pb-2 font-bold">المستوى</th>
+                        </tr>
+                    </thead>
+                    <tbody id="class-compare-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Alertes -->
+        <div id="alerts-section">
+            <p class="section-heading">⚠️ تنبيهات تحتاج انتباهك</p>
+            <div id="alerts-container" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- ══ TAB: PARENTS ══════════════════════════════════════ -->
+    <div id="tab-parents" class="hidden">
+        <div class="max-w-md mx-auto mt-8">
+            <div class="parent-link-card">
+                <div class="text-6xl mb-2">👨‍👩‍👧</div>
+                <h2 class="text-2xl font-black">بوابة الأولياء</h2>
+                <p class="text-purple-200 text-sm font-bold leading-relaxed">
+                    إدارة اختبارات الأولياء، متابعة نتائجهم، وإضافة محتوى جديد لهم من هنا.
+                </p>
+                <a href="admin-quizparent.html"
+                   class="mt-2 flex items-center gap-2 bg-white text-purple-700 font-black px-8 py-3 rounded-2xl hover:bg-purple-50 transition shadow-lg text-base">
+                    الانتقال إلى بوابة الأولياء
+                    <span class="text-xl">←</span>
+                </a>
+            </div>
+
+            <!-- Quick stats teaser -->
+            <div class="mt-6 bg-white rounded-2xl border border-purple-100 p-5 shadow-sm">
+                <p class="section-heading">ما ستجده هناك</p>
+                <ul class="space-y-3">
+                    <li class="flex items-center gap-3 text-sm text-gray-700 font-bold">
+                        <span class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center text-base">📝</span>
+                        إنشاء وإدارة اختبارات خاصة بالأولياء
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-gray-700 font-bold">
+                        <span class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-base">📊</span>
+                        متابعة نتائج وإجابات الأولياء
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-gray-700 font-bold">
+                        <span class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-base">✉️</span>
+                        التواصل المباشر مع أولياء الأمور
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-gray-700 font-bold">
+                        <span class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-base">📚</span>
+                        إضافة محتوى تربوي لأولياء الأمور
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -141,10 +449,7 @@
             </div>
             <button onclick="closeStudentModal()" class="text-gray-400 hover:text-gray-700 font-bold text-xl px-2">✕</button>
         </div>
-
         <input type="hidden" id="modal-username">
-
-        <!-- Sub-tabs inside modal -->
         <div class="flex gap-1 px-6 pt-4 pb-2 border-b border-gray-100">
             <button onclick="switchModalTab('profile')" id="mtab-profile"
                     class="modal-tab-btn px-3 py-1.5 rounded-lg text-sm font-bold bg-purple-100 text-purple-700">
@@ -163,9 +468,7 @@
                 📊 التقدم
             </button>
         </div>
-
         <div class="p-6">
-            <!-- Profile tab -->
             <div id="modal-content-profile">
                 <div class="space-y-4">
                     <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
@@ -187,7 +490,12 @@
                         </div>
                         <table class="w-full text-sm text-right">
                             <thead class="text-gray-400 text-xs border-b">
-                                <tr><th class="pb-1 w-1/2">الشهر</th><th class="pb-1">الحالة</th><th class="pb-1 text-center">—</th></tr>
+                                <tr>
+                                    <th class="pb-1 w-5/12">الشهر</th>
+                                    <th class="pb-1 w-3/12">المبلغ (د.م.)</th>
+                                    <th class="pb-1 w-3/12">الحالة</th>
+                                    <th class="pb-1 text-center">—</th>
+                                </tr>
                             </thead>
                             <tbody id="modal-payments-body"></tbody>
                         </table>
@@ -198,8 +506,6 @@
                     </button>
                 </div>
             </div>
-
-            <!-- Schedule tab -->
             <div id="modal-content-schedule" class="hidden">
                 <div class="space-y-3">
                     <p class="text-sm text-gray-500">أيام وأوقات حصص هذا الطالب:</p>
@@ -212,8 +518,6 @@
                     </button>
                 </div>
             </div>
-
-            <!-- Message tab -->
             <div id="modal-content-message" class="hidden">
                 <div class="space-y-3">
                     <p class="text-sm text-gray-500">إرسال رسالة لهذا الطالب:</p>
@@ -226,8 +530,6 @@
                     </button>
                 </div>
             </div>
-
-            <!-- Progress tab -->
             <div id="modal-content-progress" class="hidden">
                 <div id="modal-progress-content" class="space-y-2">
                     <p class="text-gray-400 text-sm text-center">جاري التحميل...</p>
@@ -245,11 +547,9 @@
             <button onclick="closeClassModal()" class="text-gray-400 hover:text-gray-700 font-bold text-xl px-2">✕</button>
         </div>
         <div class="p-6 space-y-4">
-            <!-- Class message -->
             <div>
                 <label class="block text-sm font-bold text-gray-600 mb-1">✉️ رسالة لجميع طلاب القسم</label>
-                <textarea id="class-msg-text" rows="3"
-                          placeholder="اكتب الرسالة للكل..."
+                <textarea id="class-msg-text" rows="3" placeholder="اكتب الرسالة للكل..."
                           class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none text-sm resize-none"></textarea>
                 <button onclick="sendClassMsg()"
                         class="mt-2 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm">
@@ -257,11 +557,9 @@
                 </button>
             </div>
             <hr class="border-gray-100">
-            <!-- Class schedule -->
             <div>
                 <label class="block text-sm font-bold text-gray-600 mb-1">📅 جدول القسم (يُطبَّق على الجميع)</label>
-                <textarea id="class-schedule-text" rows="2"
-                          placeholder="مثال: الإثنين 17:00 والخميس 18:00"
+                <textarea id="class-schedule-text" rows="2" placeholder="مثال: الإثنين 17:00 والخميس 18:00"
                           class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none text-sm resize-none"></textarea>
                 <button onclick="saveClassSchedule()"
                         class="mt-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition text-sm">
@@ -269,7 +567,6 @@
                 </button>
             </div>
             <hr class="border-gray-100">
-            <!-- Assign student -->
             <div>
                 <label class="block text-sm font-bold text-gray-600 mb-1">👤 إضافة طالب للقسم</label>
                 <select id="assign-student-select"
@@ -280,7 +577,6 @@
                 </button>
             </div>
             <hr class="border-gray-100">
-            <!-- Delete prof -->
             <button onclick="deleteCurrentProf()"
                     class="w-full py-2 bg-rose-50 text-rose-600 border border-rose-200 font-bold rounded-xl hover:bg-rose-100 transition text-sm">
                 🗑️ حذف القسم والأستاذ
@@ -311,20 +607,25 @@ if (localStorage.getItem('adminAuth') !== 'true') {
 let _allStudents = [];
 let _allProfs    = {};
 let _allUsers    = {};
-let _currentClassProfId  = null;
+let _currentClassProfId   = null;
 let _currentClassStudents = [];
-let _openAccordions = new Set(); // remember which accordions are open
+let _openAccordions = new Set();
+let _statsInterval  = null;
+const STATS_REFRESH_MS = 3 * 60 * 1000; // 3 minutes
 
 /* ══════════════════════════════════════════════════════════
    TABS
 ══════════════════════════════════════════════════════════ */
+const ALL_TABS = ['classes','stats','parents','add-student','add-prof'];
+
 function switchTab(name) {
-    ['classes','add-student','add-prof'].forEach(t => {
+    ALL_TABS.forEach(t => {
         document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
     });
     document.querySelectorAll('.tab-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', ['classes','add-student','add-prof'][i] === name);
+        btn.classList.toggle('active', ALL_TABS[i] === name);
     });
+    if (name === 'stats') renderStats();
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -340,13 +641,11 @@ async function renderAll() {
     const container = document.getElementById('classes-container');
     container.innerHTML = '';
 
-    /* Build lookup: which students belong to which prof */
     const studentToProfId = {};
     Object.entries(_allProfs).forEach(([profId, prof]) => {
         (prof.students || []).forEach(sid => { studentToProfId[sid] = profId; });
     });
 
-    /* ── Section per prof ── */
     Object.entries(_allProfs).forEach(([profId, prof]) => {
         const profStudents = _allStudents.filter(s =>
             (prof.students || []).includes(s.username)
@@ -354,22 +653,302 @@ async function renderAll() {
         container.appendChild(buildClassCard(profId, prof, profStudents));
     });
 
-    /* ── Students with no prof ── */
     const unassigned = _allStudents.filter(s => !studentToProfId[s.username]);
     if (unassigned.length > 0 || Object.keys(_allProfs).length === 0) {
         container.appendChild(buildUnassignedCard(unassigned));
     }
 }
 
-/* ── Class card ─────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════════
+   STATS
+══════════════════════════════════════════════════════════ */
+function renderStats() {
+    if (!_allStudents.length && !Object.keys(_allProfs).length) return;
+
+    const total      = _allStudents.length;
+    const active     = _allStudents.filter(s => !s.isSuspended).length;
+    const suspended  = total - active;
+    const totalProfs = Object.keys(_allProfs).length;
+
+    /* Assigned/unassigned */
+    const assignedSet = new Set(
+        Object.values(_allProfs).flatMap(p => p.students || [])
+    );
+    const unassignedCount = _allStudents.filter(s => !assignedSet.has(s.username)).length;
+
+    /* Docs */
+    const hasCin   = _allStudents.filter(s => s.cinProvided).length;
+    const hasBirth = _allStudents.filter(s => s.birthCertProvided).length;
+    const hasAll   = _allStudents.filter(s => s.cinProvided && s.birthCertProvided).length;
+    const missingDocs = _allStudents.filter(s => !s.cinProvided && !s.birthCertProvided);
+
+    /* Payments */
+    let totalPaid = 0, totalPending = 0;
+    let amountCollected = 0, amountPending = 0;
+    const debtors = [];
+    _allStudents.forEach(s => {
+        const payments = s.payments || [];
+        const pendingRows = payments.filter(p => p.status !== 'payé');
+        const paidRows    = payments.filter(p => p.status === 'payé');
+        totalPaid    += paidRows.length;
+        totalPending += pendingRows.length;
+        amountCollected += paidRows.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+        amountPending   += pendingRows.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+        if (pendingRows.length > 0) {
+            const pendingAmt = pendingRows.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+            debtors.push({ name: s.prenom + ' ' + s.nom, pending: pendingRows.length, amount: pendingAmt });
+        }
+    });
+    const payRate = (totalPaid + totalPending) > 0
+        ? Math.round(totalPaid / (totalPaid + totalPending) * 100) : 0;
+
+    /* Progress */
+    let totalSurahs = 0;
+    const recentActivity = [];
+    const activelearners = [];
+    const zeroProgress   = [];
+
+    _allStudents.forEach(s => {
+        const prog    = s.progress || {};
+        const entries = Object.entries(prog);
+        const completed = entries.filter(([id, p]) =>
+            p && p.completedAt && Object.keys(p.activities || {}).length > 0
+        );
+        totalSurahs += completed.length;
+        if (completed.length > 0) activelearners.push({ s, count: completed.length });
+        else zeroProgress.push(s);
+
+        completed.forEach(([id, p]) => {
+            recentActivity.push({
+                studentName: s.prenom + ' ' + s.nom,
+                surahId: id,
+                completedAt: p.completedAt,
+                score: p.globalScore
+            });
+        });
+    });
+
+    recentActivity.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+    const top5recent = recentActivity.slice(0, 5);
+
+    activelearners.sort((a, b) => b.count - a.count);
+    const top5students = activelearners.slice(0, 5);
+    const avgSurahs = total > 0 ? (totalSurahs / total).toFixed(1) : 0;
+
+    /* ── KPI cards ── */
+    const kpiData = [
+        { label: 'إجمالي الطلاب',      value: total,        cls: 'stat-purple', icon: '👥' },
+        { label: 'طلاب نشطون',          value: active,       cls: 'stat-green',  icon: '✅' },
+        { label: 'طلاب موقوفون',        value: suspended,    cls: 'stat-rose',   icon: '🚫' },
+        { label: 'عدد الأساتذة',        value: totalProfs,   cls: 'stat-blue',   icon: '👨‍🏫' },
+        { label: 'معدل طلاب / أستاذ',   value: totalProfs > 0 ? (total / totalProfs).toFixed(1) : '—', cls: 'stat-teal', icon: '📐' },
+        { label: 'بدون قسم',            value: unassignedCount, cls: 'stat-orange', icon: '⚠️' },
+    ];
+    const kpiEl = document.getElementById('stats-kpi');
+    kpiEl.innerHTML = kpiData.map(k => `
+        <div class="stat-card ${k.cls}" data-icon="${k.icon}">
+            <span class="stat-num">${k.value}</span>
+            <span class="stat-label">${k.label}</span>
+        </div>
+    `).join('');
+
+    /* ── Donut ── */
+    const activePct = total > 0 ? Math.round(active / total * 100) : 0;
+    const dashVal   = (activePct / 100) * 100;
+    document.getElementById('donut-active').setAttribute('stroke-dasharray', dashVal + ' ' + (100 - dashVal));
+    document.getElementById('donut-pct').innerText = activePct + '%';
+    document.getElementById('lbl-active').innerText      = active + ' / ' + total;
+    document.getElementById('lbl-suspended').innerText   = suspended + ' / ' + total;
+    document.getElementById('lbl-unassigned').innerText  = unassignedCount + ' / ' + total;
+    document.getElementById('bar-active').style.width    = activePct + '%';
+    document.getElementById('bar-suspended').style.width = total > 0 ? (suspended / total * 100) + '%' : '0%';
+    document.getElementById('bar-unassigned').style.width= total > 0 ? (unassignedCount / total * 100) + '%' : '0%';
+
+    /* ── Docs ── */
+    const pCin   = total > 0 ? Math.round(hasCin   / total * 100) : 0;
+    const pBirth = total > 0 ? Math.round(hasBirth / total * 100) : 0;
+    const pFull  = total > 0 ? Math.round(hasAll   / total * 100) : 0;
+    document.getElementById('lbl-cin').innerText      = hasCin   + ' / ' + total + ' (' + pCin   + '%)';
+    document.getElementById('lbl-birth').innerText    = hasBirth + ' / ' + total + ' (' + pBirth + '%)';
+    document.getElementById('lbl-full-doc').innerText = hasAll   + ' / ' + total + ' (' + pFull  + '%)';
+    document.getElementById('bar-cin').style.width    = pCin   + '%';
+    document.getElementById('bar-birth').style.width  = pBirth + '%';
+    document.getElementById('bar-full-doc').style.width = pFull + '%';
+    document.getElementById('lbl-missing-docs').innerText = missingDocs.length > 0
+        ? '⚠️ ' + missingDocs.length + ' طالب بدون أي وثيقة: ' + missingDocs.map(s => s.prenom + ' ' + s.nom).join(' — ')
+        : '';
+
+    /* ── Payments ── */
+    document.getElementById('pay-amount-collected').innerText = amountCollected.toLocaleString('ar') + ' د.م.';
+    document.getElementById('pay-amount-pending').innerText   = amountPending.toLocaleString('ar')   + ' د.م.';
+    document.getElementById('pay-paid').innerText    = totalPaid;
+    document.getElementById('pay-pending').innerText = totalPending;
+    document.getElementById('pay-rate').innerText    = payRate + '%';
+    document.getElementById('pay-debtors').innerText = debtors.length;
+    const dl = document.getElementById('debtors-list');
+    dl.innerHTML = debtors.length === 0
+        ? '<p class="text-xs text-emerald-600 font-bold text-center py-2">✅ لا يوجد طلاب متأخرون في التسديد</p>'
+        : debtors.sort((a,b) => b.amount - a.amount || b.pending - a.pending).slice(0, 6).map(d => `
+            <div class="flex items-center justify-between bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-1">
+                <span class="text-sm font-bold text-gray-700">${d.name}</span>
+                <div class="flex items-center gap-2">
+                    ${d.amount > 0 ? `<span class="text-xs font-black text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">${d.amount} د.م.</span>` : ''}
+                    <span class="text-xs font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">${d.pending} شهر</span>
+                </div>
+            </div>`).join('');
+
+    /* ── Top students ── */
+    const medals = ['🥇','🥈','🥉'];
+    const topEl = document.getElementById('top-students-list');
+    topEl.innerHTML = top5students.length === 0
+        ? '<p class="text-gray-400 text-sm text-center py-4">لا توجد بيانات تقدم بعد</p>'
+        : top5students.map((item, i) => `
+            <div class="top-row">
+                <span class="text-xl w-6 text-center">${medals[i] || (i + 1)}</span>
+                <div class="flex-1">
+                    <p class="text-sm font-bold text-gray-800">${item.s.prenom} ${item.s.nom}</p>
+                    <div class="prog-track mt-1">
+                        <div class="prog-fill bg-purple-500"
+                             style="width:${Math.min(item.count * 10, 100)}%"></div>
+                    </div>
+                </div>
+                <span class="text-xs font-black text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                    ${item.count} سورة
+                </span>
+            </div>`).join('');
+
+    /* ── Academic progress ── */
+    document.getElementById('prog-total-surahs').innerText    = totalSurahs;
+    document.getElementById('prog-avg').innerText             = avgSurahs;
+    document.getElementById('prog-active-learners').innerText = activelearners.length;
+    document.getElementById('prog-zero').innerText            = zeroProgress.length;
+
+    /* ── Recent activity feed ── */
+    const feedEl = document.getElementById('recent-feed');
+    feedEl.innerHTML = top5recent.length === 0
+        ? '<p class="text-gray-400 text-sm text-center py-4">لا توجد إنجازات مسجلة بعد</p>'
+        : top5recent.map(a => {
+            const surahName = (typeof SURAH_REGISTRY !== 'undefined'
+                ? (SURAH_REGISTRY.find(s => s.id === a.surahId) || {}).nameAr
+                : null) || a.surahId;
+            const date = a.completedAt ? new Date(a.completedAt).toLocaleDateString('ar') : '';
+            const score = a.score != null ? a.score + '%' : '';
+            return `<div class="feed-item">
+                <span class="text-lg">🎉</span>
+                <div class="flex-1">
+                    <span class="text-sm font-bold text-gray-800">${a.studentName}</span>
+                    <span class="text-sm text-gray-500"> أنجز سورة </span>
+                    <span class="text-sm font-bold text-purple-700">${surahName}</span>
+                </div>
+                <div class="text-left flex flex-col items-end gap-0.5">
+                    ${score ? `<span class="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">${score}</span>` : ''}
+                    <span class="text-xs text-gray-400">${date}</span>
+                </div>
+            </div>`;
+        }).join('');
+
+    /* ── Class comparison table ── */
+    const tbody = document.getElementById('class-compare-body');
+    const classRows = Object.entries(_allProfs).map(([profId, prof]) => {
+        const students = _allStudents.filter(s => (prof.students || []).includes(s.username));
+        const surahs   = students.reduce((acc, s) => {
+            return acc + Object.entries(s.progress || {})
+                .filter(([id, p]) => p && p.completedAt && Object.keys(p.activities || {}).length > 0).length;
+        }, 0);
+        const docsOk = students.filter(s => s.cinProvided && s.birthCertProvided).length;
+        const paidOk = students.filter(s => {
+            const pays = s.payments || [];
+            return pays.length > 0 && pays.every(p => p.status === 'payé');
+        }).length;
+        const avgS = students.length > 0 ? (surahs / students.length).toFixed(1) : 0;
+        const level = avgS >= 5 ? '🟢 ممتاز' : avgS >= 2 ? '🟡 جيد' : '🔴 يحتاج دعم';
+        return { prof, students, surahs, docsOk, paidOk, avgS, level };
+    });
+    classRows.sort((a, b) => b.avgS - a.avgS);
+    tbody.innerHTML = classRows.length === 0
+        ? '<tr><td colspan="6" class="text-center text-gray-400 py-6 text-sm">لا توجد أقسام بعد</td></tr>'
+        : classRows.map((r, i) => `
+            <tr class="border-b border-gray-50 hover:bg-purple-50 transition">
+                <td class="py-2.5 font-bold text-gray-800 text-sm">
+                    ${i === 0 ? '🏆 ' : ''}${r.prof.prenom}<br>
+                    <span class="text-xs font-normal text-gray-400">${r.prof.classe}</span>
+                </td>
+                <td class="py-2.5 text-center">
+                    <span class="bg-purple-100 text-purple-800 font-bold text-xs px-2 py-0.5 rounded-full">${r.students.length}</span>
+                </td>
+                <td class="py-2.5 text-center">
+                    <span class="text-sm font-black text-teal-700">${r.surahs}</span>
+                    <span class="text-xs text-gray-400"> (معدل ${r.avgS})</span>
+                </td>
+                <td class="py-2.5 text-center">
+                    <span class="${r.docsOk === r.students.length ? 'text-emerald-600' : 'text-amber-600'} font-bold text-xs">
+                        ${r.docsOk}/${r.students.length}
+                    </span>
+                </td>
+                <td class="py-2.5 text-center">
+                    <span class="font-bold text-xs text-blue-700">${r.paidOk}/${r.students.length}</span>
+                </td>
+                <td class="py-2.5 text-xs font-bold">${r.level}</td>
+            </tr>`).join('');
+
+    /* ── Alerts ── */
+    const alerts = [];
+    if (unassignedCount > 0)
+        alerts.push({ color: 'border-amber-300 bg-amber-50', icon: '⚠️', text: unassignedCount + ' طالب بدون قسم — الرجاء توزيعهم على الأقسام' });
+    if (missingDocs.length > 0)
+        alerts.push({ color: 'border-rose-300 bg-rose-50', icon: '📂', text: missingDocs.length + ' طالب لم يقدم أي وثيقة بعد' });
+    if (debtors.length > 0)
+        alerts.push({ color: 'border-orange-300 bg-orange-50', icon: '💰', text: debtors.length + ' طالب متأخر في تسديد الأداءات الشهرية' });
+    if (zeroProgress.length > 0)
+        alerts.push({ color: 'border-blue-200 bg-blue-50', icon: '📖', text: zeroProgress.length + ' طالب لم يبدأ أي سورة بعد' });
+    const classesNoStudents = Object.entries(_allProfs).filter(([id, p]) => !(p.students || []).length);
+    if (classesNoStudents.length > 0)
+        alerts.push({ color: 'border-slate-200 bg-slate-50', icon: '🏫', text: classesNoStudents.length + ' قسم فارغ بدون طلاب: ' + classesNoStudents.map(([,p]) => p.prenom).join('، ') });
+
+    const alertsEl = document.getElementById('alerts-container');
+    alertsEl.innerHTML = alerts.length === 0
+        ? `<div class="alert-card border-emerald-200 bg-emerald-50">
+               <span class="text-xl">✅</span>
+               <span class="text-sm font-bold text-emerald-700">كل شيء على ما يرام — لا توجد تنبيهات حالياً</span>
+           </div>`
+        : alerts.map(a => `
+            <div class="alert-card ${a.color}">
+                <span class="text-xl">${a.icon}</span>
+                <span class="text-sm font-bold text-gray-700">${a.text}</span>
+            </div>`).join('');
+
+    /* Update refresh label */
+    const now = new Date().toLocaleTimeString('ar');
+    document.getElementById('refresh-label').innerText = 'آخر تحديث ' + now;
+}
+
+async function refreshStats() {
+    const icon  = document.getElementById('refresh-icon');
+    const label = document.getElementById('refresh-label');
+    icon.classList.add('spin');
+    label.innerText = 'جاري التحديث...';
+    await renderAll();
+    renderStats();
+    icon.classList.remove('spin');
+}
+
+function startStatsAutoRefresh() {
+    if (_statsInterval) clearInterval(_statsInterval);
+    _statsInterval = setInterval(async () => {
+        await renderAll();
+        const activeTab = document.querySelector('.tab-btn.active');
+        if (activeTab && activeTab.innerText.includes('الإحصاءات')) renderStats();
+    }, STATS_REFRESH_MS);
+}
+
+/* ══════════════════════════════════════════════════════════
+   CLASS CARD / ACCORDION (unchanged)
+══════════════════════════════════════════════════════════ */
 function buildClassCard(profId, prof, students) {
     const wrap = document.createElement('div');
     wrap.className = 'class-card';
     wrap.id = 'class-card-' + profId;
-
     const isOpen = _openAccordions.has(profId);
-
-    /* Header */
     const header = document.createElement('div');
     header.className = 'class-card-header accordion-header' + (isOpen ? ' open' : '');
     header.innerHTML = `
@@ -388,19 +967,15 @@ function buildClassCard(profId, prof, students) {
                 إجراءات القسم ⚙️
             </button>
             <span class="accordion-icon text-white text-lg">▾</span>
-        </div>
-    `;
+        </div>`;
     header.onclick = function(e) {
         if (e.target.closest('button')) return;
         toggleAccordion(profId);
     };
     wrap.appendChild(header);
-
-    /* Body */
     const body = document.createElement('div');
     body.className = 'accordion-body p-4 space-y-1' + (isOpen ? ' open' : '');
     body.id = 'accordion-body-' + profId;
-
     if (students.length === 0) {
         body.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لا يوجد طلاب في هذا القسم بعد</p>';
     } else {
@@ -410,14 +985,11 @@ function buildClassCard(profId, prof, students) {
     return wrap;
 }
 
-/* ── Unassigned card ─────────────────────────────────────── */
 function buildUnassignedCard(students) {
     const wrap = document.createElement('div');
     wrap.className = 'class-card';
     wrap.id = 'class-card-unassigned';
-
     const isOpen = _openAccordions.has('unassigned');
-
     const header = document.createElement('div');
     header.style.cssText = 'background: linear-gradient(135deg,#64748b,#475569); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;';
     header.className = 'accordion-header' + (isOpen ? ' open' : '');
@@ -429,15 +1001,12 @@ function buildUnassignedCard(students) {
                 <p class="text-slate-300 text-xs font-bold">${students.length} طالب غير مُرتَّب</p>
             </div>
         </div>
-        <span class="accordion-icon text-white text-lg">▾</span>
-    `;
+        <span class="accordion-icon text-white text-lg">▾</span>`;
     header.onclick = () => toggleAccordion('unassigned');
     wrap.appendChild(header);
-
     const body = document.createElement('div');
     body.className = 'accordion-body p-4 space-y-1' + (isOpen ? ' open' : '');
     body.id = 'accordion-body-unassigned';
-
     if (students.length === 0) {
         body.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">جميع الطلاب مُوزَّعون على أقسام ✅</p>';
     } else {
@@ -447,45 +1016,30 @@ function buildUnassignedCard(students) {
     return wrap;
 }
 
-/* ── Student row ─────────────────────────────────────────── */
 function buildStudentRow(student) {
     const row = document.createElement('div');
     row.className = 'student-row';
-
     const completedSurahs = Object.entries(student.progress || {})
         .filter(([id, p]) => p && p.completedAt && Object.keys(p.activities || {}).length > 0).length;
-
-    const statusColor = student.isSuspended
-        ? 'bg-red-100 text-red-700'
-        : 'bg-emerald-100 text-emerald-700';
-    const statusText = student.isSuspended ? '🚫 موقوف' : '✅ نشط';
-
+    const statusColor = student.isSuspended ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700';
+    const statusText  = student.isSuspended ? '🚫 موقوف' : '✅ نشط';
     row.innerHTML = `
         <div class="flex-1 min-w-[140px]">
             <p class="font-bold text-gray-800 text-sm">${student.prenom} ${student.nom}</p>
             <p class="text-xs text-gray-400 font-mono">${student.username}</p>
         </div>
         <span class="text-xs font-bold ${statusColor} px-2 py-0.5 rounded-full">${statusText}</span>
-        <span class="text-xs text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full font-bold">
-            ${completedSurahs} سورة
-        </span>
+        <span class="text-xs text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full font-bold">${completedSurahs} سورة</span>
         <div class="flex gap-1.5 flex-wrap">
             <button onclick="openStudentModal('${student.username}', '${student.prenom} ${student.nom}')"
-                    class="pill bg-purple-100 text-purple-800">
-                📂 الملف
-            </button>
+                    class="pill bg-purple-100 text-purple-800">📂 الملف</button>
             <button onclick="toggleUserSuspension('${student.username}')"
                     class="pill ${student.isSuspended ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
                 ${student.isSuspended ? '🔄 تفعيل' : '🚫 إيقاف'}
             </button>
             <button onclick="confirmRemoveStudent('${student.username}', '${student.prenom} ${student.nom}')"
-                    class="pill bg-rose-100 text-rose-700">
-                🗑️
-            </button>
-        </div>
-    `;
-
-    /* Messages row if any */
+                    class="pill bg-rose-100 text-rose-700">🗑️</button>
+        </div>`;
     const msgs = student.messages || [];
     if (msgs.length > 0) {
         const msgDiv = document.createElement('div');
@@ -495,26 +1049,20 @@ function buildStudentRow(student) {
             d.className = 'flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-2 py-1';
             d.innerHTML = `
                 <span class="text-xs text-blue-800 font-semibold">
-                    ${m.text}
-                    <span class="text-blue-400">(${m.date})</span>
+                    ${m.text}<span class="text-blue-400"> (${m.date})</span>
                 </span>
-                <button onclick="deleteMessage('${m.id}')"
-                        class="text-rose-500 hover:text-rose-700 font-bold text-sm mr-2">✕</button>
-            `;
+                <button onclick="deleteMessage('${m.id}')" class="text-rose-500 hover:text-rose-700 font-bold text-sm mr-2">✕</button>`;
             msgDiv.appendChild(d);
         });
         row.appendChild(msgDiv);
     }
-
     return row;
 }
 
-/* ── Toggle accordion ────────────────────────────────────── */
 function toggleAccordion(id) {
     const header = document.querySelector('#class-card-' + id + ' .accordion-header');
     const body   = document.getElementById('accordion-body-' + id);
     if (!body) return;
-
     const isOpen = body.classList.contains('open');
     if (isOpen) {
         body.classList.remove('open');
@@ -535,15 +1083,12 @@ async function openStudentModal(username, fullName) {
     document.getElementById('modal-student-name').innerText = fullName;
     document.getElementById('modal-student-username').innerText = '@' + username;
     switchModalTab('profile');
-
     const profile = await Auth.getProfile(username);
     document.getElementById('modal-cin').checked = profile.cinProvided;
     document.getElementById('modal-birthcert').checked = profile.birthCertProvided;
-
     const tbody = document.getElementById('modal-payments-body');
     tbody.innerHTML = '';
-    (profile.payments || []).forEach(p => addPaymentRow(p.month, p.status));
-
+    (profile.payments || []).forEach(p => addPaymentRow(p.month, p.amount, p.status));
     document.getElementById('student-modal').classList.add('open');
 }
 
@@ -556,15 +1101,9 @@ function switchModalTab(name) {
     ['profile','schedule','message','progress'].forEach(t => {
         document.getElementById('modal-content-' + t).classList.toggle('hidden', t !== name);
         const btn = document.getElementById('mtab-' + t);
-        if (t === name) {
-            btn.classList.add('bg-purple-100','text-purple-700');
-            btn.classList.remove('text-gray-500');
-        } else {
-            btn.classList.remove('bg-purple-100','text-purple-700');
-            btn.classList.add('text-gray-500');
-        }
+        if (t === name) { btn.classList.add('bg-purple-100','text-purple-700'); btn.classList.remove('text-gray-500'); }
+        else            { btn.classList.remove('bg-purple-100','text-purple-700'); btn.classList.add('text-gray-500'); }
     });
-
     if (name === 'schedule') loadStudentSchedule();
     if (name === 'progress') loadStudentProgress();
 }
@@ -595,62 +1134,45 @@ async function sendSingleMsg() {
 }
 
 async function loadStudentProgress() {
-    const username = document.getElementById('modal-username').value;
-    const student  = _allStudents.find(s => s.username === username);
+    const username  = document.getElementById('modal-username').value;
+    const student   = _allStudents.find(s => s.username === username);
     const container = document.getElementById('modal-progress-content');
     if (!student) { container.innerHTML = '<p class="text-gray-400 text-sm">لا توجد بيانات</p>'; return; }
-
-    const progress = student.progress || {};
-    const entries  = Object.entries(progress);
-    if (entries.length === 0) {
-        container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لم يبدأ أي سورة بعد</p>';
-        return;
-    }
-
-    // سورة مكتملة = completedAt موجود + activities غير فارغ
+    const progress  = student.progress || {};
+    const entries   = Object.entries(progress);
+    if (entries.length === 0) { container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لم يبدأ أي سورة بعد</p>'; return; }
     const completed  = entries.filter(([id, p]) => p && p.completedAt && Object.keys(p.activities || {}).length > 0);
     const inProgress = entries.filter(([id, p]) => !p.completedAt || Object.keys(p.activities || {}).length === 0);
-
     let html = '';
-
     if (completed.length > 0) {
         html += `<p class="text-xs font-bold text-gray-400 mb-1">السور المنجزة (${completed.length})</p>`;
         html += completed.map(([id, p]) => {
-            const name  = (SURAH_REGISTRY.find(s => s.id === id) || {}).nameAr || id;
+            const name  = (typeof SURAH_REGISTRY !== 'undefined' ? (SURAH_REGISTRY.find(s => s.id === id) || {}).nameAr : null) || id;
             const score = p.globalScore != null ? p.globalScore : 100;
             const date  = new Date(p.completedAt).toLocaleDateString('ar');
             const color = score >= 80 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800';
             return `<div class="flex items-center justify-between ${color} rounded-xl px-3 py-2 text-sm font-bold mb-1">
-                <span>✅ ${name}</span>
-                <span>${score}% &nbsp;·&nbsp; ${date}</span>
-            </div>`;
+                <span>✅ ${name}</span><span>${score}% · ${date}</span></div>`;
         }).join('');
     }
-
     if (inProgress.length > 0) {
         html += `<p class="text-xs font-bold text-gray-400 mt-3 mb-1">قيد التعلم (${inProgress.length})</p>`;
         html += inProgress.map(([id, p]) => {
-            const name       = (SURAH_REGISTRY.find(s => s.id === id) || {}).nameAr || id;
-            const actCount   = Object.keys(p.activities || {}).length;
+            const name     = (typeof SURAH_REGISTRY !== 'undefined' ? (SURAH_REGISTRY.find(s => s.id === id) || {}).nameAr : null) || id;
+            const actCount = Object.keys(p.activities || {}).length;
             return `<div class="flex items-center justify-between bg-blue-50 text-blue-800 rounded-xl px-3 py-2 text-sm font-bold mb-1">
-                <span>📖 ${name}</span>
-                <span>${actCount} نشاط مكتمل</span>
-            </div>`;
+                <span>📖 ${name}</span><span>${actCount} نشاط مكتمل</span></div>`;
         }).join('');
     }
-
-    if (completed.length === 0 && inProgress.length === 0) {
-        html = '<p class="text-gray-400 text-sm text-center py-4">لم يبدأ أي سورة بعد</p>';
-    }
-
     container.innerHTML = html;
 }
 
 /* ══════════════════════════════════════════════════════════
    PROFILE / PAYMENTS
 ══════════════════════════════════════════════════════════ */
-function addPaymentRow(month, status) {
+function addPaymentRow(month, amount, status) {
     month  = month  || '';
+    amount = amount != null ? amount : '';
     status = status || 'en attente';
     const tbody = document.getElementById('modal-payments-body');
     const tr = document.createElement('tr');
@@ -658,11 +1180,14 @@ function addPaymentRow(month, status) {
     const colorClass = status === 'payé' ? 'text-emerald-600' : 'text-amber-600';
     tr.innerHTML = `
         <td class="py-2 pr-1">
-            <input type="text" class="month-input w-full p-1 border rounded text-sm bg-white" value="${month}">
+            <input type="text" class="month-input w-full p-1 border rounded text-sm bg-white" value="${month}" placeholder="رجب 2025">
+        </td>
+        <td class="py-2 px-1">
+            <input type="number" min="0" class="amount-input w-full p-1 border rounded text-sm bg-white text-center font-bold text-purple-700" value="${amount}" placeholder="0">
         </td>
         <td class="py-2 px-1">
             <select class="status-input w-full p-1 border rounded text-sm bg-white font-bold ${colorClass}">
-                <option value="en attente"${status !== 'payé' ? ' selected':''}>⏳ في الانتظار</option>
+                <option value="en attente"${status !== 'payé' ? ' selected':''}>⏳ انتظار</option>
                 <option value="payé"${status === 'payé' ? ' selected':''}>✅ خالص</option>
             </select>
         </td>
@@ -677,14 +1202,15 @@ function addPaymentRow(month, status) {
 }
 
 async function saveAdminProfile() {
-    const username = document.getElementById('modal-username').value;
+    const username          = document.getElementById('modal-username').value;
     const cinProvided       = document.getElementById('modal-cin').checked;
     const birthCertProvided = document.getElementById('modal-birthcert').checked;
     const payments = [];
     document.querySelectorAll('.payment-row').forEach(row => {
         const month  = row.querySelector('.month-input').value.trim();
+        const amount = parseFloat(row.querySelector('.amount-input').value) || 0;
         const status = row.querySelector('.status-input').value;
-        if (month) payments.push({ month, status });
+        if (month) payments.push({ month, amount, status });
     });
     await Auth.updateProfile(username, { cinProvided, birthCertProvided, payments });
     showToast('تم حفظ الملف ✔️', 'success');
@@ -699,25 +1225,16 @@ function openClassModal(profId, event) {
     if (event) event.stopPropagation();
     _currentClassProfId = profId;
     const prof = _allProfs[profId];
-    _currentClassStudents = _allStudents.filter(s =>
-        (prof.students || []).includes(s.username)
-    );
-
-    document.getElementById('class-modal-title').innerText =
-        'قسم: ' + prof.classe + ' — ' + prof.prenom;
+    _currentClassStudents = _allStudents.filter(s => (prof.students || []).includes(s.username));
+    document.getElementById('class-modal-title').innerText = 'قسم: ' + prof.classe + ' — ' + prof.prenom;
     document.getElementById('class-msg-text').value = '';
     document.getElementById('class-schedule-text').value = '';
-
-    /* Populate student selector (unassigned students) */
     const sel = document.getElementById('assign-student-select');
-    const assignedAll = Object.values(_allProfs)
-        .flatMap(p => p.students || []);
-    const unassigned = _allStudents.filter(s => !assignedAll.includes(s.username));
+    const assignedAll = Object.values(_allProfs).flatMap(p => p.students || []);
+    const unassigned  = _allStudents.filter(s => !assignedAll.includes(s.username));
     sel.innerHTML = unassigned.length === 0
         ? '<option>لا يوجد طلاب غير مُرتَّبين</option>'
-        : unassigned.map(s =>
-            `<option value="${s.username}">${s.prenom} ${s.nom}</option>`).join('');
-
+        : unassigned.map(s => `<option value="${s.username}">${s.prenom} ${s.nom}</option>`).join('');
     document.getElementById('class-modal').classList.add('open');
 }
 
@@ -730,7 +1247,6 @@ async function sendClassMsg() {
     const text = document.getElementById('class-msg-text').value.trim();
     if (!text) { alert('الرجاء كتابة الرسالة'); return; }
     if (_currentClassStudents.length === 0) { alert('لا يوجد طلاب في هذا القسم'); return; }
-
     await Promise.all(_currentClassStudents.map(s => Auth.sendMessage(s.username, text)));
     showToast('✔️ تم الإرسال لـ ' + _currentClassStudents.length + ' طلاب', 'success');
     document.getElementById('class-msg-text').value = '';
@@ -742,7 +1258,6 @@ async function saveClassSchedule() {
     const text = document.getElementById('class-schedule-text').value.trim();
     if (!text) { alert('الرجاء كتابة الجدول'); return; }
     if (_currentClassStudents.length === 0) { alert('لا يوجد طلاب في هذا القسم'); return; }
-
     await Promise.all(_currentClassStudents.map(s => Auth.setSchedule(s.username, text)));
     showToast('✔️ تم حفظ الجدول لـ ' + _currentClassStudents.length + ' طلاب', 'success');
     document.getElementById('class-schedule-text').value = '';
@@ -795,13 +1310,10 @@ async function createStudent() {
     const nom    = document.getElementById('new-nom').value.trim();
     const pass   = document.getElementById('new-pass').value.trim();
     const btn    = document.getElementById('btn-create');
-
     if (!prenom || !nom || !pass) { showAdminMsg('يرجى ملء جميع الخانات', false); return; }
     btn.disabled = true; btn.innerText = 'جاري الإضافة...';
-
     const res = await Auth.register(prenom, nom, pass, true);
     btn.disabled = false; btn.innerText = 'إضافة الطالب ✔️';
-
     if (res.ok) {
         showAdminMsg('✅ تم إنشاء حساب ' + prenom + ' ' + nom, true);
         document.getElementById('new-prenom').value = '';
@@ -830,7 +1342,6 @@ async function creerProf() {
     const c = document.getElementById('new-prof-classe').value.trim();
     const m = document.getElementById('new-prof-pass').value.trim();
     if (!p || !c || !m) { alert('المرجو ملء جميع الخانات'); return; }
-
     const res = await Auth.registerProf(p, c, m);
     if (res.ok) {
         document.getElementById('new-prof-prenom').value = '';
@@ -848,7 +1359,7 @@ async function creerProf() {
    TOAST
 ══════════════════════════════════════════════════════════ */
 function showToast(text, type) {
-    const t = document.createElement('div');
+    const t  = document.createElement('div');
     const bg = type === 'success' ? 'bg-emerald-600' : 'bg-rose-600';
     t.className = `fixed bottom-6 left-1/2 -translate-x-1/2 ${bg} text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg z-[100] transition-all`;
     t.innerText = text;
@@ -859,7 +1370,10 @@ function showToast(text, type) {
 /* ══════════════════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════════════════ */
-window.addEventListener('DOMContentLoaded', renderAll);
+window.addEventListener('DOMContentLoaded', async () => {
+    await renderAll();
+    startStatsAutoRefresh();
+});
 </script>
 </body>
 </html>
