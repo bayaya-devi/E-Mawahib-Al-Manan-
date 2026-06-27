@@ -625,7 +625,7 @@ function switchTab(name) {
     document.querySelectorAll('.tab-btn').forEach((btn, i) => {
         btn.classList.toggle('active', ALL_TABS[i] === name);
     });
-    if (name === 'stats') renderStats();
+    if (name === 'stats') await renderStats();
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -662,8 +662,14 @@ async function renderAll() {
 /* ══════════════════════════════════════════════════════════
    STATS
 ══════════════════════════════════════════════════════════ */
-function renderStats() {
+async function renderStats() {
     if (!_allStudents.length && !Object.keys(_allProfs).length) return;
+
+    /* ── Charger profils_admin directement ── */
+    const supabase = Auth.getSupabaseClient();
+    const { data: profils } = await supabase.from('profils_admin').select('*');
+    const profilMap = {};
+    (profils || []).forEach(p => profilMap[p.username] = p);
 
     const total      = _allStudents.length;
     const active     = _allStudents.filter(s => !s.isSuspended).length;
@@ -676,22 +682,22 @@ function renderStats() {
     );
     const unassignedCount = _allStudents.filter(s => !assignedSet.has(s.username)).length;
 
-    /* Docs */
-    const hasCin   = _allStudents.filter(s => s.cinProvided).length;
-    const hasBirth = _allStudents.filter(s => s.birthCertProvided).length;
-    const hasAll   = _allStudents.filter(s => s.cinProvided && s.birthCertProvided).length;
-    const missingDocs = _allStudents.filter(s => !s.cinProvided && !s.birthCertProvided);
+    /* Docs — lus depuis profilMap */
+    const hasCin      = _allStudents.filter(s => profilMap[s.username]?.cin_provided).length;
+    const hasBirth    = _allStudents.filter(s => profilMap[s.username]?.birth_cert_provided).length;
+    const hasAll      = _allStudents.filter(s => profilMap[s.username]?.cin_provided && profilMap[s.username]?.birth_cert_provided).length;
+    const missingDocs = _allStudents.filter(s => !profilMap[s.username]?.cin_provided && !profilMap[s.username]?.birth_cert_provided);
 
-    /* Payments */
+    /* Payments — lus depuis profilMap */
     let totalPaid = 0, totalPending = 0;
     let amountCollected = 0, amountPending = 0;
     const debtors = [];
     _allStudents.forEach(s => {
-        const payments = s.payments || [];
+        const payments    = profilMap[s.username]?.payments || [];
         const pendingRows = payments.filter(p => p.status !== 'payé');
         const paidRows    = payments.filter(p => p.status === 'payé');
-        totalPaid    += paidRows.length;
-        totalPending += pendingRows.length;
+        totalPaid       += paidRows.length;
+        totalPending    += pendingRows.length;
         amountCollected += paidRows.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
         amountPending   += pendingRows.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
         if (pendingRows.length > 0) {
@@ -928,7 +934,7 @@ async function refreshStats() {
     icon.classList.add('spin');
     label.innerText = 'جاري التحديث...';
     await renderAll();
-    renderStats();
+    await renderStats();
     icon.classList.remove('spin');
 }
 
@@ -937,7 +943,7 @@ function startStatsAutoRefresh() {
     _statsInterval = setInterval(async () => {
         await renderAll();
         const activeTab = document.querySelector('.tab-btn.active');
-        if (activeTab && activeTab.innerText.includes('الإحصاءات')) renderStats();
+        if (activeTab && activeTab.innerText.includes('الإحصاءات')) await renderStats();
     }, STATS_REFRESH_MS);
 }
 
