@@ -1,44 +1,93 @@
 /* ═══════════════════════════════════════════════════════════
-   CHATBOT مواهب المنان
+   CHATBOT مواهب المنان — version gratuite (sans API)
    Dépendances : auth.js chargé avant ce fichier
-   Clé API     : remplace YOUR_API_KEY_HERE ci-dessous
 ═══════════════════════════════════════════════════════════ */
-
-const CHATBOT_API_KEY = 'YOUR_API_KEY_HERE'; // 🔑 remplace ici
 
 /* ── Suggestions rapides ── */
 const QUICK_CHIPS = [
-    { label: '📅 ما هو جدولي؟',        msg: 'ما هو جدول حصصي؟' },
-    { label: '📖 كيف أشاهد سوري؟',      msg: 'كيف يمكنني مشاهدة تقدمي في السور؟' },
-    { label: '📝 أين واجباتي؟',          msg: 'أين يمكنني مشاهدة الواجبات؟' },
-    { label: '✉️ هل لدي رسائل؟',         msg: 'هل لدي رسائل من الإدارة؟' },
-    { label: '❓ مساعدة',               msg: 'ماذا يمكنني أن أفعل في هذه المنصة؟' },
+    { label: '📅 جدولي',              msg: 'ما هو جدول حصصي؟' },
+    { label: '📖 تقدمي',              msg: 'كيف أشاهد تقدمي في السور؟' },
+    { label: '📝 واجباتي',            msg: 'أين أجد واجباتي؟' },
+    { label: '✉️ رسائلي',             msg: 'كيف أقرأ رسائلي؟' },
+    { label: '❓ مساعدة',             msg: 'ماذا يمكنني أن أفعل في المنصة؟' },
+];
+
+/* ── Règles de réponse ── */
+const RULES = [
+    {
+        keys: ['جدول','حصص','وقت','موعد','متى','ساعة','يوم'],
+        reply: (s) => s
+            ? `📅 جدول حصصك:\n${s}`
+            : '📅 لم يتم تحديد جدولك بعد.\nتواصل مع الأستاذ أو الإدارة لتحديد أوقات حصصك.'
+    },
+    {
+        keys: ['سور','سورة','تقدم','إنجاز','حفظ','أنجزت'],
+        reply: () => '📖 لمشاهدة تقدمك في السور:\n1. اذهب إلى لوحة التحكم\n2. ستجد قائمة السور التي بدأتها وأنجزتها\n3. يمكنك النقر على أي سورة لمشاهدة تفاصيل نشاطاتك'
+    },
+    {
+        keys: ['واجب','تمرين','درس','مهمة','فرض'],
+        reply: () => '📝 للوصول إلى واجباتك:\n1. افتح لوحة التحكم (dashboard)\n2. ابحث عن قسم "الواجبات"\n3. ستجد جميع الواجبات المسندة إليك من طرف أستاذك'
+    },
+    {
+        keys: ['رسالة','رسائل','إشعار','تنبيه','الإدارة'],
+        reply: () => '✉️ لقراءة رسائلك:\n1. افتح لوحة التحكم\n2. ستجد رسائل الإدارة والأستاذ في الأعلى\n3. يمكنك الاطلاع عليها مباشرة'
+    },
+    {
+        keys: ['ملف','بيانات','معلومات','اسم','كلمة مرور','حساب'],
+        reply: () => '👤 لعرض ملفك الشخصي:\n• انتقل إلى صفحة profil.html\n• ستجد معلومات حسابك وجدولك الشخصي هناك'
+    },
+    {
+        keys: ['ولي','والد','والدة','أب','أم','أولياء','عائلة'],
+        reply: () => '👨‍👩‍👧 صفحة الأولياء:\n• تحتوي على معلومات ومحتوى خاص بأولياء الأمور\n• يمكن الوصول إليها من خلال الرابط المخصص لهم'
+    },
+    {
+        keys: ['مساعدة','مساعد','ماذا','يمكن','أفعل','خدمات','ميزات','المنصة'],
+        reply: () => `🌟 ما يمكنني مساعدتك فيه:\n\n📅 جدولك — اسألني "ما جدولي؟"\n📖 السور — اسألني "كيف أشاهد تقدمي؟"\n📝 الواجبات — اسألني "أين واجباتي؟"\n✉️ الرسائل — اسألني "كيف أقرأ رسائلي؟"\n👤 الملف الشخصي — اسألني عن حسابك\n\nاكتب سؤالك وسأجيبك! 😊`
+    },
+    {
+        keys: ['شكرا','شكراً','مرسي','أحسنت','ممتاز','رائع','بارك'],
+        reply: () => 'العفو! 😊 يسعدني مساعدتك دائماً. هل هناك شيء آخر تريد معرفته؟'
+    },
+    {
+        keys: ['مرحبا','السلام','أهلا','هلا','صباح','مساء'],
+        reply: (s, name) => `وعليكم السلام ${name}! 👋\nكيف يمكنني مساعدتك اليوم؟`
+    },
+    {
+        keys: ['خروج','تسجيل خروج','أغلق','إغلاق','خروج'],
+        reply: () => '🚪 لتسجيل الخروج:\nانقر على زر "خروج" في الصفحة الرئيسية.'
+    },
+    {
+        keys: ['نسيت','نسيت كلمة','مرور','password'],
+        reply: () => '🔑 إذا نسيت كلمة المرور:\nتواصل مع الإدارة وسيساعدونك في إعادة تعيينها.'
+    },
+];
+
+/* ── Réponse par défaut ── */
+const DEFAULT_REPLIES = [
+    'لم أفهم سؤالك جيداً 😅\nحاول السؤال بطريقة أخرى، أو اضغط على أحد الاختصارات أعلاه.',
+    'لست متأكداً من ذلك 🤔\nيمكنك التواصل مع الإدارة أو أستاذك للحصول على مساعدة أفضل.',
+    'هذا خارج ما يمكنني الإجابة عنه حالياً.\nجرب أن تسألني عن جدولك أو واجباتك أو رسائلك! 😊',
 ];
 
 /* ── État ── */
-let _cbOpen       = false;
-let _cbLoading    = false;
-let _cbHistory    = [];   // { role, content }[]
-let _cbSchedule   = null;
-let _cbSession    = null;
+let _cbOpen     = false;
+let _cbSchedule = null;
+let _cbSession  = null;
+let _defIdx     = 0;
 
 /* ═══════════════════════════════════════════════════════════
-   INIT — appelé automatiquement au chargement
+   INIT
 ═══════════════════════════════════════════════════════════ */
 (async function initChatbot() {
-    // Vérifier session élève
     if (typeof Auth === 'undefined') return;
     _cbSession = Auth.getSession();
     if (!_cbSession || _cbSession.role !== 'student') return;
 
-    // Charger l'horaire une fois
     try { _cbSchedule = await Auth.getSchedule(_cbSession.username); }
     catch { _cbSchedule = null; }
 
-    // Injecter le HTML
     document.body.insertAdjacentHTML('beforeend', buildHTML());
 
-    // Événements
     document.getElementById('chatbot-toggle').addEventListener('click', toggleChat);
     document.getElementById('chatbot-close-btn').addEventListener('click', toggleChat);
     document.getElementById('chatbot-send').addEventListener('click', handleSend);
@@ -47,16 +96,16 @@ let _cbSession    = null;
     });
     document.getElementById('chatbot-input').addEventListener('input', autoResize);
 
-    // Chips
     document.querySelectorAll('.cb-chip').forEach(btn => {
         btn.addEventListener('click', () => {
+            if (_cbOpen === false) toggleChat();
             document.getElementById('chatbot-input').value = btn.dataset.msg;
             handleSend();
         });
     });
 
-    // Message de bienvenue
-    appendBotMsg(`مرحباً ${_cbSession.prenom}! 👋\nأنا مساعدك في منصة مواهب المنان. يمكنني مساعدتك في:\n• معرفة جدول حصصك\n• التنقل في المنصة\n• الإجابة على أسئلتك العامة\n\nكيف يمكنني مساعدتك اليوم؟`);
+    const name = _cbSession.prenom || 'طالب';
+    appendBotMsg(`مرحباً ${name}! 👋\nأنا مساعدك في منصة مواهب المنان.\n\nيمكنني مساعدتك في:\n• جدول حصصك 📅\n• التنقل في المنصة 🧭\n• الواجبات والرسائل 📝\n\nاضغط على أحد الاختصارات أو اكتب سؤالك!`);
 })();
 
 /* ═══════════════════════════════════════════════════════════
@@ -68,20 +117,18 @@ function buildHTML() {
     ).join('');
 
     return `
-    <!-- Bouton flottant -->
     <button id="chatbot-toggle" aria-label="فتح المساعد">
         <span id="cb-icon">💬</span>
         <span class="cb-badge" id="cb-badge"></span>
     </button>
 
-    <!-- Fenêtre -->
     <div id="chatbot-window" role="dialog" aria-label="المساعد الذكي">
         <div id="chatbot-header">
             <div class="cb-title">
                 <div class="cb-avatar">🤖</div>
                 <div>
                     <div class="cb-name">مساعد مواهب المنان</div>
-                    <div class="cb-status" id="cb-status-text">متاح الآن ✓</div>
+                    <div class="cb-status">متاح دائماً ✓</div>
                 </div>
             </div>
             <button class="cb-close" id="chatbot-close-btn" aria-label="إغلاق">✕</button>
@@ -110,103 +157,47 @@ function toggleChat() {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SEND
+   SEND + MATCHING
 ═══════════════════════════════════════════════════════════ */
-async function handleSend() {
-    if (_cbLoading) return;
+function handleSend() {
     const input = document.getElementById('chatbot-input');
     const text  = input.value.trim();
     if (!text) return;
 
     input.value = '';
-    autoResize.call(input);
-
-    // Afficher message utilisateur
+    input.style.height = 'auto';
     appendUserMsg(text);
 
-    // Ajouter à l'historique
-    _cbHistory.push({ role: 'user', content: text });
-
-    // Typing indicator
-    const typingId = showTyping();
-    setLoading(true);
-
-    try {
-        const reply = await callClaude(_cbHistory);
-        hideTyping(typingId);
+    // Délai naturel
+    setTimeout(() => {
+        const reply = getReply(text);
         appendBotMsg(reply);
-        _cbHistory.push({ role: 'assistant', content: reply });
-
-        // Garder l'historique à 20 messages max
-        if (_cbHistory.length > 20) _cbHistory = _cbHistory.slice(-20);
-    } catch (err) {
-        hideTyping(typingId);
-        appendBotMsg('عذراً، حدث خطأ في الاتصال. حاول مجدداً. 🔄');
-        console.error('[Chatbot]', err);
-    }
-
-    setLoading(false);
+    }, 400);
 }
 
-/* ═══════════════════════════════════════════════════════════
-   API CLAUDE
-═══════════════════════════════════════════════════════════ */
-async function callClaude(history) {
-    const systemPrompt = buildSystemPrompt();
+function getReply(text) {
+    const normalized = text
+        .toLowerCase()
+        .replace(/[أإآا]/g, 'ا')
+        .replace(/[ةت]/g, 'ت')
+        .replace(/ى/g, 'ي');
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 1000,
-            system: systemPrompt,
-            messages: history
-        })
-    });
-
-    if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(err.error?.message || 'API error ' + response.status);
-    }
-
-    const data = await response.json();
-    return data.content?.[0]?.text || 'لم أتمكن من الإجابة، حاول مجدداً.';
-}
-
-/* ═══════════════════════════════════════════════════════════
-   SYSTEM PROMPT
-═══════════════════════════════════════════════════════════ */
-function buildSystemPrompt() {
-    const name     = _cbSession ? `${_cbSession.prenom} ${_cbSession.nom || ''}`.trim() : 'الطالب';
-    const username = _cbSession?.username || '';
+    const name     = _cbSession?.prenom || '';
     const schedule = _cbSchedule && _cbSchedule !== 'لم يتم تحديد أوقات الحصص بعد.'
-        ? _cbSchedule
-        : 'لم يتم تحديد الجدول بعد، يرجى التواصل مع الإدارة.';
+        ? _cbSchedule : null;
 
-    return `أنت مساعد ذكي لمنصة "مواهب المنان" التعليمية، وهي منصة تابعة لجمعية مواهب المنان - دار القرآن والحديث.
+    for (const rule of RULES) {
+        const match = rule.keys.some(k => {
+            const kn = k.toLowerCase().replace(/[أإآا]/g, 'ا').replace(/[ةت]/g, 'ت').replace(/ى/g, 'ي');
+            return normalized.includes(kn);
+        });
+        if (match) return rule.reply(schedule, name);
+    }
 
-معلومات الطالب الحالي:
-- الاسم: ${name}
-- اسم المستخدم: ${username}
-- جدول الحصص: ${schedule}
-
-دورك:
-- الإجابة على أسئلة الطالب باللغة العربية الفصحى البسيطة
-- مساعدته في التنقل داخل المنصة
-- إخباره بجدول حصصه عند السؤال
-- شرح ميزات المنصة بوضوح
-
-المنصة تحتوي على:
-• لوحة التحكم (dashboard.html): تقدم السور، الواجبات، الرسائل
-• الملف الشخصي (profil.html): معلومات الحساب، الجدول الشخصي
-• صفحة الأولياء (parent.html): معلومات خاصة بأولياء الأمور
-
-قواعد مهمة:
-- لا تتحدث عن تفسير القرآن أو الأحاديث في هذه المرحلة
-- إذا سُئلت عن شيء خارج نطاقك قل بلطف أنك غير متاح لذلك حالياً
-- كن مختصراً وودوداً، استخدم إيموجي باعتدال
-- لا تخترع معلومات غير موجودة في ما زودتك به`;
+    // Réponse par défaut (rotation)
+    const reply = DEFAULT_REPLIES[_defIdx % DEFAULT_REPLIES.length];
+    _defIdx++;
+    return reply;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -216,10 +207,10 @@ function appendBotMsg(text) {
     const msgs = document.getElementById('chatbot-messages');
     const div  = document.createElement('div');
     div.className = 'cb-msg bot';
-    div.textContent = text;
+    // Convertir les sauts de ligne
+    div.innerHTML = text.replace(/\n/g, '<br>');
     msgs.appendChild(div);
     scrollToBottom();
-    // Badge si fenêtre fermée
     if (!_cbOpen) {
         const badge = document.getElementById('cb-badge');
         badge.textContent = '';
@@ -234,27 +225,6 @@ function appendUserMsg(text) {
     div.textContent = text;
     msgs.appendChild(div);
     scrollToBottom();
-}
-
-function showTyping() {
-    const msgs = document.getElementById('chatbot-messages');
-    const div  = document.createElement('div');
-    div.className = 'cb-typing';
-    div.id = 'cb-typing-' + Date.now();
-    div.innerHTML = '<span></span><span></span><span></span>';
-    msgs.appendChild(div);
-    scrollToBottom();
-    return div.id;
-}
-
-function hideTyping(id) {
-    document.getElementById(id)?.remove();
-}
-
-function setLoading(val) {
-    _cbLoading = val;
-    document.getElementById('chatbot-send').disabled = val;
-    document.getElementById('cb-status-text').textContent = val ? 'يكتب...' : 'متاح الآن ✓';
 }
 
 function scrollToBottom() {
