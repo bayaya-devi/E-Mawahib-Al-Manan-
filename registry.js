@@ -164,8 +164,8 @@ const SURAH_REGISTRY = [
     type: "مكية",
     color: "#78350f",
     emoji: "🕋",
-    file: null,
-    available: false
+    file: "quraysh.html",
+    available: true
   },
   {
     id: "al-maun",
