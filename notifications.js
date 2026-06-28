@@ -281,7 +281,29 @@ const Notif = (() => {
     }
 
     window.addEventListener('beforeunload', destroy);
+/* ── Reconnexion automatique (mobile) ── */
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            if (_channel) {
+                const state = _channel.state;
+                console.log('[Notif] visibilitychange — state:', state);
+                if (state !== 'joined' && state !== 'joining') {
+                    console.log('[Notif] Reconnexion...');
+                    _supabase.removeChannel(_channel);
+                    _channel = null;
+                    setTimeout(() => startListening(), 500);
+                }
+            }
+        }
+    });
 
+    /* ── Reconnexion si perte réseau ── */
+    window.addEventListener('online', () => {
+        console.log('[Notif] Réseau rétabli — reconnexion...');
+        if (_channel) _supabase.removeChannel(_channel);
+        _channel = null;
+        setTimeout(() => startListening(), 1000);
+    });
     return { init };
 })();
 
