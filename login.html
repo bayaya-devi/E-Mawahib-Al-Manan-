@@ -215,12 +215,18 @@
             if (role === 'prof') {
                 const classe = document.getElementById('login-classe').value.trim(); // ✅
                 const result = await Auth.loginProf(prenom, classe, password);
-                if (result.ok) { window.location.href = 'dashboard_prof.html'; }
+                if (result.ok) {
+    sessionStorage.setItem('loading_redirect', 'dashboard_prof.html');
+    window.location.href = 'loading.html';
+}
                 else { showError(result.error); }
             } else {
                 const nom = document.getElementById('login-nom').value.trim(); // ✅
                 const result = await Auth.login(prenom, nom, password);
-                if (result.ok) { window.location.href = 'dashboard.html'; }
+                if (result.ok) {
+    sessionStorage.setItem('loading_redirect', 'dashboard.html');
+    window.location.href = 'loading.html';
+}
                 else { showError(result.error); }
             }
         }
