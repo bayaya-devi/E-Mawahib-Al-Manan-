@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منصة مواهب المنان - سورة الأَنبِيَاءِ</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+<style>
+  :root { --surah:#047857; }
+  body { font-family:'Cairo',sans-serif; background:#f8fafc; min-height:100vh; user-select:none; }
+  .quran-text { font-family:'Amiri',serif; line-height:2.25; }
+  .app-shell { background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%); }
+  .tab-active { border-color:var(--surah); background:#fff; color:var(--surah); box-shadow:0 8px 20px rgba(15,23,42,.08); }
+  .tab-inactive { border-color:#e5e7eb; background:#f8fafc; color:#64748b; }
+  .verse-card { transition:transform .18s ease, border-color .18s ease, background .18s ease; border:1px solid #e2e8f0; }
+  .verse-card:hover { transform:translateY(-1px); border-color:var(--surah); background:#f8fafc; }
+  .choice { transition:all .18s ease; }
+  .choice.selected { background:var(--surah); color:white; border-color:var(--surah); }
+  .part-btn.active { background:var(--surah); color:white; border-color:var(--surah); }
+  .xp-bar { transition:width .35s ease; }
+  ::-webkit-scrollbar { width:6px; }
+  ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:10px; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+<script src="registry.js"></script>
+</head>
+<body class="p-3 md:p-6">
+
+<div class="w-full max-w-5xl mx-auto app-shell rounded-[28px] border border-slate-200 shadow-xl overflow-hidden">
+  <header class="p-4 md:p-6 text-white" style="background:linear-gradient(135deg,#047857,#111827)">
+    <div class="flex flex-col md:flex-row justify-between gap-4 md:items-center">
+      <div class="flex items-center gap-4">
+        <img src="logo.webp" alt="مواهب المنان" class="h-16 w-16 object-contain rounded-2xl bg-white/90 p-1" onerror="this.style.display='none'">
+        <div>
+          <p class="text-xs font-bold text-white/70">دار القرآن والحديث • رواية ورش</p>
+          <h1 class="quran-text text-3xl md:text-5xl font-black">سورة الأَنبِيَاءِ</h1>
+          <p class="text-sm font-bold text-white/75">١١٢ آيات • مكية • Al-Anbiyaa</p>
+        </div>
+      </div>
+      <a href="dashboard.html" class="self-start md:self-center px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 font-black text-sm">لوحتي</a>
+    </div>
+    <div class="grid grid-cols-3 gap-2 mt-5 text-center">
+      <div class="rounded-2xl bg-white/12 border border-white/15 px-3 py-3">
+        <p class="text-[11px] text-white/65 font-bold">XP المهمة</p>
+        <p id="xp-label" class="text-xl font-black">0</p>
+      </div>
+      <div class="rounded-2xl bg-white/12 border border-white/15 px-3 py-3">
+        <p class="text-[11px] text-white/65 font-bold">السلسلة</p>
+        <p id="streak-label" class="text-xl font-black">0</p>
+      </div>
+      <div class="rounded-2xl bg-white/12 border border-white/15 px-3 py-3">
+        <p class="text-[11px] text-white/65 font-bold">المستوى</p>
+        <p id="level-label" class="text-xl font-black">هادئ</p>
+      </div>
+    </div>
+  </header>
+
+  <section class="p-4 md:p-6">
+    <div class="mb-5 bg-slate-50 border border-slate-200 rounded-2xl p-4">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-3">
+        <div>
+          <p class="text-xs font-black text-slate-400">مهمة اليوم</p>
+          <h2 class="text-base md:text-lg font-black text-slate-800">استمع، رتّب، أكمل، ثم اختم بتحدي السرعة</h2>
+        </div>
+        <div class="w-full md:w-56 h-3 bg-slate-200 rounded-full overflow-hidden">
+          <div id="xp-bar" class="xp-bar h-full rounded-full" style="width:0%; background:#047857"></div>
+        </div>
+      </div>
+      <div id="part-buttons" class="grid grid-cols-2 sm:grid-cols-6 gap-2"></div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-5">
+      <button id="tab-0" onclick="goToPhase(0)" class="tab-active border rounded-2xl p-3 font-black text-xs md:text-sm">استماع</button>
+      <button id="tab-1" onclick="goToPhase(1)" class="tab-inactive border rounded-2xl p-3 font-black text-xs md:text-sm">ترتيب</button>
+      <button id="tab-2" onclick="goToPhase(2)" class="tab-inactive border rounded-2xl p-3 font-black text-xs md:text-sm">كلمات ناقصة</button>
+      <button id="tab-3" onclick="goToPhase(3)" class="tab-inactive border rounded-2xl p-3 font-black text-xs md:text-sm">تحدي سريع</button>
+    </div>
+
+    <main class="bg-white rounded-3xl border border-slate-200 p-4 md:p-6">
+      <section id="phase-0">
+        <p class="text-center text-slate-500 font-bold text-sm mb-5">استمع للمقدار برواية ورش، ثم اضغط على الآية التي تريد تكرارها.</p>
+        <div id="audio-list" class="space-y-3"></div>
+        <div class="flex justify-center mt-6">
+          <button onclick="playAll()" class="px-6 py-4 text-white font-black rounded-2xl shadow-md" style="background:#047857">استمع للمقدار كاملا</button>
+        </div>
+      </section>
+
+      <section id="phase-1" class="hidden">
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-4">
+          <p class="text-xs font-black text-slate-400">تحدي التركيز</p>
+          <p id="order-target" class="font-black text-slate-800 mt-1"></p>
+        </div>
+        <div id="order-list" class="grid grid-cols-1 gap-3"></div>
+        <div id="order-feedback" class="hidden p-3 rounded-xl text-center font-bold text-sm my-4"></div>
+        <div class="flex justify-between mt-6">
+          <button onclick="buildOrderGame()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black rounded-xl text-sm">إعادة</button>
+          <button onclick="checkOrderGame()" class="px-7 py-3 text-white font-black rounded-xl shadow" style="background:#047857">تحقق</button>
+        </div>
+      </section>
+
+      <section id="phase-2" class="hidden">
+        <p class="text-center text-slate-500 font-bold text-sm mb-5">اختر الكلمة الصحيحة. كل إجابة صحيحة ترفع الـ XP والسلسلة.</p>
+        <div id="fill-list" class="space-y-5"></div>
+        <div id="fill-feedback" class="hidden p-3 rounded-xl text-center font-bold text-sm my-4"></div>
+        <div class="flex justify-between mt-6">
+          <button onclick="buildFillGame()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black rounded-xl text-sm">إعادة</button>
+          <button onclick="checkFillGame()" class="px-7 py-3 text-white font-black rounded-xl shadow" style="background:#047857">سجل النتيجة</button>
+        </div>
+      </section>
+
+      <section id="phase-3" class="hidden">
+        <div class="text-center mb-5">
+          <p class="text-slate-500 font-bold text-sm">تحدي سريع: اختر الآية التي تأتي مباشرة بعد الآية المعروضة.</p>
+          <p class="text-xs text-slate-400 font-bold mt-1">مصمم للمراجعة السريعة وليس للحفظ الأول.</p>
+        </div>
+        <div id="speed-card" class="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-4"></div>
+        <div id="speed-options" class="grid grid-cols-1 gap-3"></div>
+        <div id="speed-feedback" class="hidden p-3 rounded-xl text-center font-bold text-sm my-4"></div>
+        <div class="flex justify-between mt-6">
+          <button onclick="buildSpeedGame()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black rounded-xl text-sm">سؤال جديد</button>
+          <button onclick="finishMission()" class="px-7 py-3 bg-emerald-600 text-white font-black rounded-xl shadow">إنهاء المهمة</button>
+        </div>
+      </section>
+    </main>
+  </section>
+</div>
+
+<script>
+const SURAH_ID = "al-anbiya";
+const SURAH_COLOR = "#047857";
+const verses = [
+  {
+    "num": 1,
+    "numAr": "١",
+    "text": "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ ٱقْتَرَبَ لِلنَّاسِ حِسَابُهُمْ وَهُمْ فِى غَفْلَةٍۢ مُّعْرِضُونَ",
+    "audio": "021001"
+  },
+  {
+    "num": 2,
+    "numAr": "٢",
+    "text": "مَا يَأْتِيهِم مِّن ذِكْرٍۢ مِّن رَّبِّهِم مُّحْدَثٍ إِلَّا ٱسْتَمَعُوهُ وَهُمْ يَلْعَبُونَ",
+    "audio": "021002"
+  },
+  {
+    "num": 3,
+    "numAr": "٣",
+    "text": "لَاهِيَةًۭ قُلُوبُهُمْ ۗ وَأَسَرُّوا۟ ٱلنَّجْوَى ٱلَّذِينَ ظَلَمُوا۟ هَلْ هَٰذَآ إِلَّا بَشَرٌۭ مِّثْلُكُمْ ۖ أَفَتَأْتُونَ ٱلسِّحْرَ وَأَنتُمْ تُبْصِرُونَ",
+    "audio": "021003"
+  },
+  {
+    "num": 4,
+    "numAr": "٤",
+    "text": "قَالَ رَبِّى يَعْلَمُ ٱلْقَوْلَ فِى ٱلسَّمَآءِ وَٱلْأَرْضِ ۖ وَهُوَ ٱلسَّمِيعُ ٱلْعَلِيمُ",
+    "audio": "021004"
+  },
+  {
+    "num": 5,
+    "numAr": "٥",
+    "text": "بَلْ قَالُوٓا۟ أَضْغَٰثُ أَحْلَٰمٍۭ بَلِ ٱفْتَرَىٰهُ بَلْ هُوَ شَاعِرٌۭ فَلْيَأْتِنَا بِـَٔايَةٍۢ كَمَآ أُرْسِلَ ٱلْأَوَّلُونَ",
+    "audio": "021005"
+  },
+  {
+    "num": 6,
+    "numAr": "٦",
+    "text": "مَآ ءَامَنَتْ قَبْلَهُم مِّن قَرْيَةٍ أَهْلَكْنَٰهَآ ۖ أَفَهُمْ يُؤْمِنُونَ",
+    "audio": "021006"
+  },
+  {
+    "num": 7,
+    "numAr": "٧",
+    "text": "وَمَآ أَرْسَلْنَا قَبْلَكَ إِلَّا رِجَالًۭا نُّوحِىٓ إِلَيْهِمْ ۖ فَسْـَٔلُوٓا۟ أَهْلَ ٱلذِّكْرِ إِن كُنتُمْ لَا تَعْلَمُونَ",
+    "audio": "021007"
+  },
+  {
+    "num": 8,
+    "numAr": "٨",
+    "text": "وَمَا جَعَلْنَٰهُمْ جَسَدًۭا لَّا يَأْكُلُونَ ٱلطَّعَامَ وَمَا كَانُوا۟ خَٰلِدِينَ",
+    "audio": "021008"
+  },
+  {
+    "num": 9,
+    "numAr": "٩",
+    "text": "ثُمَّ صَدَقْنَٰهُمُ ٱلْوَعْدَ فَأَنجَيْنَٰهُمْ وَمَن نَّشَآءُ وَأَهْلَكْنَا ٱلْمُسْرِفِينَ",
+    "audio": "021009"
+  },
+  {
+    "num": 10,
+    "numAr": "١٠",
+    "text": "لَقَدْ أَنزَلْنَآ إِلَيْكُمْ كِتَٰبًۭا فِيهِ ذِكْرُكُمْ ۖ أَفَلَا تَعْقِلُونَ",
+    "audio": "021010"
+  },
+  {
+    "num": 11,
+    "numAr": "١١",
+    "text": "وَكَمْ قَصَمْنَا مِن قَرْيَةٍۢ كَانَتْ ظَالِمَةًۭ وَأَنشَأْنَا بَعْدَهَا قَوْمًا ءَاخَرِينَ",
+    "audio": "021011"
+  },
+  {
+    "num": 12,
+    "numAr": "١٢",
+    "text": "فَلَمَّآ أَحَسُّوا۟ بَأْسَنَآ إِذَا هُم مِّنْهَا يَرْكُضُونَ",
+    "audio": "021012"
+  },
+  {
+    "num": 13,
+    "numAr": "١٣",
+    "text": "لَا تَرْكُضُوا۟ وَٱرْجِعُوٓا۟ إِلَىٰ مَآ أُتْرِفْتُمْ فِيهِ وَمَسَٰكِنِكُمْ لَعَلَّكُمْ تُسْـَٔلُونَ",
+    "audio": "021013"
+  },
+  {
+    "num": 14,
+    "numAr": "١٤",
+    "text": "قَالُوا۟ يَٰوَيْلَنَآ إِنَّا كُنَّا ظَٰلِمِينَ",
+    "audio": "021014"
+  },
+  {
+    "num": 15,
+    "numAr": "١٥",
+    "text": "فَمَا زَالَت تِّلْكَ دَعْوَىٰهُمْ حَتَّىٰ جَعَلْنَٰهُمْ حَصِيدًا خَٰمِدِينَ",
+    "audio": "021015"
+  },
+  {
+    "num": 16,
+    "numAr": "١٦",
+    "text": "وَمَا خَلَقْنَا ٱلسَّمَآءَ وَٱلْأَرْضَ وَمَا بَيْنَهُمَا لَٰعِبِينَ",
+    "audio": "021016"
+  },
+  {
+    "num": 17,
+    "numAr": "١٧",
+    "text": "لَوْ أَرَدْنَآ أَن نَّتَّخِذَ لَهْوًۭا لَّٱتَّخَذْنَٰهُ مِن لَّدُنَّآ إِن كُنَّا فَٰعِلِينَ",
+    "audio": "021017"
+  },
+  {
+    "num": 18,
+    "numAr": "١٨",
+    "text": "بَلْ نَقْذِفُ بِٱلْحَقِّ عَلَى ٱلْبَٰطِلِ فَيَدْمَغُهُۥ فَإِذَا هُوَ زَاهِقٌۭ ۚ وَلَكُمُ ٱلْوَيْلُ مِمَّا تَصِفُونَ",
+    "audio": "021018"
+  },
+  {
+    "num": 19,
+    "numAr": "١٩",
+    "text": "وَلَهُۥ مَن فِى ٱلسَّمَٰوَٰتِ وَٱلْأَرْضِ ۚ وَمَنْ عِندَهُۥ لَا يَسْتَكْبِرُونَ عَنْ عِبَادَتِهِۦ وَلَا يَسْتَحْسِرُونَ",
+    "audio": "021019"
+  },
+  {
+    "num": 20,
+    "numAr": "٢٠",
+    "text": "يُسَبِّحُونَ ٱلَّيْلَ وَٱلنَّهَارَ لَا يَفْتُرُونَ",
+    "audio": "021020"
+  },
+  {
+    "num": 21,
+    "numAr": "٢١",
+    "text": "أَمِ ٱتَّخَذُوٓا۟ ءَالِهَةًۭ مِّنَ ٱلْأَرْضِ هُمْ يُنشِرُونَ",
+    "audio": "021021"
+  },
+  {
+    "num": 22,
+    "numAr": "٢٢",
+    "text": "لَوْ كَانَ فِيهِمَآ ءَالِهَةٌ إِلَّا ٱللَّهُ لَفَسَدَتَا ۚ فَسُبْحَٰنَ ٱللَّهِ رَبِّ ٱلْعَرْشِ عَمَّا يَصِفُونَ",
+    "audio": "021022"
+  },
+  {
+    "num": 23,
+    "numAr": "٢٣",
+    "text": "لَا يُسْـَٔلُ عَمَّا يَفْعَلُ وَهُمْ يُسْـَٔلُونَ",
+    "audio": "021023"
+  },
+  {
+    "num": 24,
+    "numAr": "٢٤",
+    "text": "أَمِ ٱتَّخَذُوا۟ مِن دُونِهِۦٓ ءَالِهَةًۭ ۖ قُلْ هَاتُوا۟ بُرْهَٰنَكُمْ ۖ هَٰذَا ذِكْرُ مَن مَّعِىَ وَذِكْرُ مَن قَبْلِى ۗ بَلْ أَكْثَرُهُمْ لَا يَعْلَمُونَ ٱلْحَقَّ ۖ فَهُم مُّعْرِضُونَ",
+    "audio": "021024"
+  },
+  {
+    "num": 25,
+    "numAr": "٢٥",
+    "text": "وَمَآ أَرْسَلْنَا مِن قَبْلِكَ مِن رَّسُولٍ إِلَّا نُوحِىٓ إِلَيْهِ أَنَّهُۥ لَآ إِلَٰهَ إِلَّآ أَنَا۠ فَٱعْبُدُونِ",
+    "audio": "021025"
+  },
+  {
+    "num": 26,
+    "numAr": "٢٦",
+    "text": "وَقَالُوا۟ ٱتَّخَذَ ٱلرَّحْمَٰنُ وَلَدًۭا ۗ سُبْحَٰنَهُۥ ۚ بَلْ عِبَادٌۭ مُّكْرَمُونَ",
+    "audio": "021026"
+  },
+  {
+    "num": 27,
+    "numAr": "٢٧",
+    "text": "لَا يَسْبِقُونَهُۥ بِٱلْقَوْلِ وَهُم بِأَمْرِهِۦ يَعْمَلُونَ",
+    "audio": "021027"
+  },
+  {
+    "num": 28,
+    "numAr": "٢٨",
+    "text": "يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ وَلَا يَشْفَعُونَ إِلَّا لِمَنِ ٱرْتَضَىٰ وَهُم مِّنْ خَشْيَتِهِۦ مُشْفِقُونَ",
+    "audio": "021028"
+  },
+  {
+    "num": 29,
+    "numAr": "٢٩",
+    "text": "۞ وَمَن يَقُلْ مِنْهُمْ إِنِّىٓ إِلَٰهٌۭ مِّن دُونِهِۦ فَذَٰلِكَ نَجْزِيهِ جَهَنَّمَ ۚ كَذَٰلِكَ نَجْزِى ٱلظَّٰلِمِينَ",
+    "audio": "021029"
+  },
+  {
+    "num": 30,
+    "numAr": "٣٠",
+    "text": "أَوَلَمْ يَرَ ٱلَّذِينَ كَفَرُوٓا۟ أَنَّ ٱلسَّمَٰوَٰتِ وَٱلْأَرْضَ كَانَتَا رَتْقًۭا فَفَتَقْنَٰهُمَا ۖ وَجَعَلْنَا مِنَ ٱلْمَآءِ كُلَّ شَىْءٍ حَىٍّ ۖ أَفَلَا يُؤْمِنُونَ",
+    "audio": "021030"
+  },
+  {
+    "num": 31,
+    "numAr": "٣١",
+    "text": "وَجَعَلْنَا فِى ٱلْأَرْضِ رَوَٰسِىَ أَن تَمِيدَ بِهِمْ وَجَعَلْنَا فِيهَا فِجَاجًۭا سُبُلًۭا لَّعَلَّهُمْ يَهْتَدُونَ",
+    "audio": "021031"
+  },
+  {
+    "num": 32,
+    "numAr": "٣٢",
+    "text": "وَجَعَلْنَا ٱلسَّمَآءَ سَقْفًۭا مَّحْفُوظًۭا ۖ وَهُمْ عَنْ ءَايَٰتِهَا مُعْرِضُونَ",
+    "audio": "021032"
+  },
+  {
+    "num": 33,
+    "numAr": "٣٣",
+    "text": "وَهُوَ ٱلَّذِى خَلَقَ ٱلَّيْلَ وَٱلنَّهَارَ وَٱلشَّمْسَ وَٱلْقَمَرَ ۖ كُلٌّۭ فِى فَلَكٍۢ يَسْبَحُونَ",
+    "audio": "021033"
+  },
+  {
+    "num": 34,
+    "numAr": "٣٤",
+    "text": "وَمَا جَعَلْنَا لِبَشَرٍۢ مِّن قَبْلِكَ ٱلْخُلْدَ ۖ أَفَإِي۟ن مِّتَّ فَهُمُ ٱلْخَٰلِدُونَ",
+    "audio": "021034"
+  },
+  {
+    "num": 35,
+    "numAr": "٣٥",
+    "text": "كُلُّ نَفْسٍۢ ذَآئِقَةُ ٱلْمَوْتِ ۗ وَنَبْلُوكُم بِٱلشَّرِّ وَٱلْخَيْرِ فِتْنَةًۭ ۖ وَإِلَيْنَا تُرْجَعُونَ",
+    "audio": "021035"
+  },
+  {
+    "num": 36,
+    "numAr": "٣٦",
+    "text": "وَإِذَا رَءَاكَ ٱلَّذِينَ كَفَرُوٓا۟ إِن يَتَّخِذُونَكَ إِلَّا هُزُوًا أَهَٰذَا ٱلَّذِى يَذْكُرُ ءَالِهَتَكُمْ وَهُم بِذِكْرِ ٱلرَّحْمَٰنِ هُمْ كَٰفِرُونَ",
+    "audio": "021036"
+  },
+  {
+    "num": 37,
+    "numAr": "٣٧",
+    "text": "خُلِقَ ٱلْإِنسَٰنُ مِنْ عَجَلٍۢ ۚ سَأُو۟رِيكُمْ ءَايَٰتِى فَلَا تَسْتَعْجِلُونِ",
+    "audio": "021037"
+  },
+  {
+    "num": 38,
+    "numAr": "٣٨",
+    "text": "وَيَقُولُونَ مَتَىٰ هَٰذَا ٱلْوَعْدُ إِن كُنتُمْ صَٰدِقِينَ",
+    "audio": "021038"
+  },
+  {
+    "num": 39,
+    "numAr": "٣٩",
+    "text": "لَوْ يَعْلَمُ ٱلَّذِينَ كَفَرُوا۟ حِينَ لَا يَكُفُّونَ عَن وُجُوهِهِمُ ٱلنَّارَ وَلَا عَن ظُهُورِهِمْ وَلَا هُمْ يُنصَرُونَ",
+    "audio": "021039"
+  },
+  {
+    "num": 40,
+    "numAr": "٤٠",
+    "text": "بَلْ تَأْتِيهِم بَغْتَةًۭ فَتَبْهَتُهُمْ فَلَا يَسْتَطِيعُونَ رَدَّهَا وَلَا هُمْ يُنظَرُونَ",
+    "audio": "021040"
+  },
+  {
+    "num": 41,
+    "numAr": "٤١",
+    "text": "وَلَقَدِ ٱسْتُهْزِئَ بِرُسُلٍۢ مِّن قَبْلِكَ فَحَاقَ بِٱلَّذِينَ سَخِرُوا۟ مِنْهُم مَّا كَانُوا۟ بِهِۦ يَسْتَهْزِءُونَ",
+    "audio": "021041"
+  },
+  {
+    "num": 42,
+    "numAr": "٤٢",
+    "text": "قُلْ مَن يَكْلَؤُكُم بِٱلَّيْلِ وَٱلنَّهَارِ مِنَ ٱلرَّحْمَٰنِ ۗ بَلْ هُمْ عَن ذِكْرِ رَبِّهِم مُّعْرِضُونَ",
+    "audio": "021042"
+  },
+  {
+    "num": 43,
+    "numAr": "٤٣",
+    "text": "أَمْ لَهُمْ ءَالِهَةٌۭ تَمْنَعُهُم مِّن دُونِنَا ۚ لَا يَسْتَطِيعُونَ نَصْرَ أَنفُسِهِمْ وَلَا هُم مِّنَّا يُصْحَبُونَ",
+    "audio": "021043"
+  },
+  {
+    "num": 44,
+    "numAr": "٤٤",
+    "text": "بَلْ مَتَّعْنَا هَٰٓؤُلَآءِ وَءَابَآءَهُمْ حَتَّىٰ طَالَ عَلَيْهِمُ ٱلْعُمُرُ ۗ أَفَلَا يَرَوْنَ أَنَّا نَأْتِى ٱلْأَرْضَ نَنقُصُهَا مِنْ أَطْرَافِهَآ ۚ أَفَهُمُ ٱلْغَٰلِبُونَ",
+    "audio": "021044"
+  },
+  {
+    "num": 45,
+    "numAr": "٤٥",
+    "text": "قُلْ إِنَّمَآ أُنذِرُكُم بِٱلْوَحْىِ ۚ وَلَا يَسْمَعُ ٱلصُّمُّ ٱلدُّعَآءَ إِذَا مَا يُنذَرُونَ",
+    "audio": "021045"
+  },
+  {
+    "num": 46,
+    "numAr": "٤٦",
+    "text": "وَلَئِن مَّسَّتْهُمْ نَفْحَةٌۭ مِّنْ عَذَابِ رَبِّكَ لَيَقُولُنَّ يَٰوَيْلَنَآ إِنَّا كُنَّا ظَٰلِمِينَ",
+    "audio": "021046"
+  },
+  {
+    "num": 47,
+    "numAr": "٤٧",
+    "text": "وَنَضَعُ ٱلْمَوَٰزِينَ ٱلْقِسْطَ لِيَوْمِ ٱلْقِيَٰمَةِ فَلَا تُظْلَمُ نَفْسٌۭ شَيْـًۭٔا ۖ وَإِن كَانَ مِثْقَالَ حَبَّةٍۢ مِّنْ خَرْدَلٍ أَتَيْنَا بِهَا ۗ وَكَفَىٰ بِنَا حَٰسِبِينَ",
+    "audio": "021047"
+  },
+  {
+    "num": 48,
+    "numAr": "٤٨",
+    "text": "وَلَقَدْ ءَاتَيْنَا مُوسَىٰ وَهَٰرُونَ ٱلْفُرْقَانَ وَضِيَآءًۭ وَذِكْرًۭا لِّلْمُتَّقِينَ",
+    "audio": "021048"
+  },
+  {
+    "num": 49,
+    "numAr": "٤٩",
+    "text": "ٱلَّذِينَ يَخْشَوْنَ رَبَّهُم بِٱلْغَيْبِ وَهُم مِّنَ ٱلسَّاعَةِ مُشْفِقُونَ",
+    "audio": "021049"
+  },
+  {
+    "num": 50,
+    "numAr": "٥٠",
+    "text": "وَهَٰذَا ذِكْرٌۭ مُّبَارَكٌ أَنزَلْنَٰهُ ۚ أَفَأَنتُمْ لَهُۥ مُنكِرُونَ",
+    "audio": "021050"
+  },
+  {
+    "num": 51,
+    "numAr": "٥١",
+    "text": "۞ وَلَقَدْ ءَاتَيْنَآ إِبْرَٰهِيمَ رُشْدَهُۥ مِن قَبْلُ وَكُنَّا بِهِۦ عَٰلِمِينَ",
+    "audio": "021051"
+  },
+  {
+    "num": 52,
+    "numAr": "٥٢",
+    "text": "إِذْ قَالَ لِأَبِيهِ وَقَوْمِهِۦ مَا هَٰذِهِ ٱلتَّمَاثِيلُ ٱلَّتِىٓ أَنتُمْ لَهَا عَٰكِفُونَ",
+    "audio": "021052"
+  },
+  {
+    "num": 53,
+    "numAr": "٥٣",
+    "text": "قَالُوا۟ وَجَدْنَآ ءَابَآءَنَا لَهَا عَٰبِدِينَ",
+    "audio": "021053"
+  },
+  {
+    "num": 54,
+    "numAr": "٥٤",
+    "text": "قَالَ لَقَدْ كُنتُمْ أَنتُمْ وَءَابَآؤُكُمْ فِى ضَلَٰلٍۢ مُّبِينٍۢ",
+    "audio": "021054"
+  },
+  {
+    "num": 55,
+    "numAr": "٥٥",
+    "text": "قَالُوٓا۟ أَجِئْتَنَا بِٱلْحَقِّ أَمْ أَنتَ مِنَ ٱللَّٰعِبِينَ",
+    "audio": "021055"
+  },
+  {
+    "num": 56,
+    "numAr": "٥٦",
+    "text": "قَالَ بَل رَّبُّكُمْ رَبُّ ٱلسَّمَٰوَٰتِ وَٱلْأَرْضِ ٱلَّذِى فَطَرَهُنَّ وَأَنَا۠ عَلَىٰ ذَٰلِكُم مِّنَ ٱلشَّٰهِدِينَ",
+    "audio": "021056"
+  },
+  {
+    "num": 57,
+    "numAr": "٥٧",
+    "text": "وَتَٱللَّهِ لَأَكِيدَنَّ أَصْنَٰمَكُم بَعْدَ أَن تُوَلُّوا۟ مُدْبِرِينَ",
+    "audio": "021057"
+  },
+  {
+    "num": 58,
+    "numAr": "٥٨",
+    "text": "فَجَعَلَهُمْ جُذَٰذًا إِلَّا كَبِيرًۭا لَّهُمْ لَعَلَّهُمْ إِلَيْهِ يَرْجِعُونَ",
+    "audio": "021058"
+  },
+  {
+    "num": 59,
+    "numAr": "٥٩",
+    "text": "قَالُوا۟ مَن فَعَلَ هَٰذَا بِـَٔالِهَتِنَآ إِنَّهُۥ لَمِنَ ٱلظَّٰلِمِينَ",
+    "audio": "021059"
+  },
+  {
+    "num": 60,
+    "numAr": "٦٠",
+    "text": "قَالُوا۟ سَمِعْنَا فَتًۭى يَذْكُرُهُمْ يُقَالُ لَهُۥٓ إِبْرَٰهِيمُ",
+    "audio": "021060"
+  },
+  {
+    "num": 61,
+    "numAr": "٦١",
+    "text": "قَالُوا۟ فَأْتُوا۟ بِهِۦ عَلَىٰٓ أَعْيُنِ ٱلنَّاسِ لَعَلَّهُمْ يَشْهَدُونَ",
+    "audio": "021061"
+  },
+  {
+    "num": 62,
+    "numAr": "٦٢",
+    "text": "قَالُوٓا۟ ءَأَنتَ فَعَلْتَ هَٰذَا بِـَٔالِهَتِنَا يَٰٓإِبْرَٰهِيمُ",
+    "audio": "021062"
+  },
+  {
+    "num": 63,
+    "numAr": "٦٣",
+    "text": "قَالَ بَلْ فَعَلَهُۥ كَبِيرُهُمْ هَٰذَا فَسْـَٔلُوهُمْ إِن كَانُوا۟ يَنطِقُونَ",
+    "audio": "021063"
+  },
+  {
+    "num": 64,
+    "numAr": "٦٤",
+    "text": "فَرَجَعُوٓا۟ إِلَىٰٓ أَنفُسِهِمْ فَقَالُوٓا۟ إِنَّكُمْ أَنتُمُ ٱلظَّٰلِمُونَ",
+    "audio": "021064"
+  },
+  {
+    "num": 65,
+    "numAr": "٦٥",
+    "text": "ثُمَّ نُكِسُوا۟ عَلَىٰ رُءُوسِهِمْ لَقَدْ عَلِمْتَ مَا هَٰٓؤُلَآءِ يَنطِقُونَ",
+    "audio": "021065"
+  },
+  {
+    "num": 66,
+    "numAr": "٦٦",
+    "text": "قَالَ أَفَتَعْبُدُونَ مِن دُونِ ٱللَّهِ مَا لَا يَنفَعُكُمْ شَيْـًۭٔا وَلَا يَضُرُّكُمْ",
+    "audio": "021066"
+  },
+  {
+    "num": 67,
+    "numAr": "٦٧",
+    "text": "أُفٍّۢ لَّكُمْ وَلِمَا تَعْبُدُونَ مِن دُونِ ٱللَّهِ ۖ أَفَلَا تَعْقِلُونَ",
+    "audio": "021067"
+  },
+  {
+    "num": 68,
+    "numAr": "٦٨",
+    "text": "قَالُوا۟ حَرِّقُوهُ وَٱنصُرُوٓا۟ ءَالِهَتَكُمْ إِن كُنتُمْ فَٰعِلِينَ",
+    "audio": "021068"
+  },
+  {
+    "num": 69,
+    "numAr": "٦٩",
+    "text": "قُلْنَا يَٰنَارُ كُونِى بَرْدًۭا وَسَلَٰمًا عَلَىٰٓ إِبْرَٰهِيمَ",
+    "audio": "021069"
+  },
+  {
+    "num": 70,
+    "numAr": "٧٠",
+    "text": "وَأَرَادُوا۟ بِهِۦ كَيْدًۭا فَجَعَلْنَٰهُمُ ٱلْأَخْسَرِينَ",
+    "audio": "021070"
+  },
+  {
+    "num": 71,
+    "numAr": "٧١",
+    "text": "وَنَجَّيْنَٰهُ وَلُوطًا إِلَى ٱلْأَرْضِ ٱلَّتِى بَٰرَكْنَا فِيهَا لِلْعَٰلَمِينَ",
+    "audio": "021071"
+  },
+  {
+    "num": 72,
+    "numAr": "٧٢",
+    "text": "وَوَهَبْنَا لَهُۥٓ إِسْحَٰقَ وَيَعْقُوبَ نَافِلَةًۭ ۖ وَكُلًّۭا جَعَلْنَا صَٰلِحِينَ",
+    "audio": "021072"
+  },
+  {
+    "num": 73,
+    "numAr": "٧٣",
+    "text": "وَجَعَلْنَٰهُمْ أَئِمَّةًۭ يَهْدُونَ بِأَمْرِنَا وَأَوْحَيْنَآ إِلَيْهِمْ فِعْلَ ٱلْخَيْرَٰتِ وَإِقَامَ ٱلصَّلَوٰةِ وَإِيتَآءَ ٱلزَّكَوٰةِ ۖ وَكَانُوا۟ لَنَا عَٰبِدِينَ",
+    "audio": "021073"
+  },
+  {
+    "num": 74,
+    "numAr": "٧٤",
+    "text": "وَلُوطًا ءَاتَيْنَٰهُ حُكْمًۭا وَعِلْمًۭا وَنَجَّيْنَٰهُ مِنَ ٱلْقَرْيَةِ ٱلَّتِى كَانَت تَّعْمَلُ ٱلْخَبَٰٓئِثَ ۗ إِنَّهُمْ كَانُوا۟ قَوْمَ سَوْءٍۢ فَٰسِقِينَ",
+    "audio": "021074"
+  },
+  {
+    "num": 75,
+    "numAr": "٧٥",
+    "text": "وَأَدْخَلْنَٰهُ فِى رَحْمَتِنَآ ۖ إِنَّهُۥ مِنَ ٱلصَّٰلِحِينَ",
+    "audio": "021075"
+  },
+  {
+    "num": 76,
+    "numAr": "٧٦",
+    "text": "وَنُوحًا إِذْ نَادَىٰ مِن قَبْلُ فَٱسْتَجَبْنَا لَهُۥ فَنَجَّيْنَٰهُ وَأَهْلَهُۥ مِنَ ٱلْكَرْبِ ٱلْعَظِيمِ",
+    "audio": "021076"
+  },
+  {
+    "num": 77,
+    "numAr": "٧٧",
+    "text": "وَنَصَرْنَٰهُ مِنَ ٱلْقَوْمِ ٱلَّذِينَ كَذَّبُوا۟ بِـَٔايَٰتِنَآ ۚ إِنَّهُمْ كَانُوا۟ قَوْمَ سَوْءٍۢ فَأَغْرَقْنَٰهُمْ أَجْمَعِينَ",
+    "audio": "021077"
+  },
+  {
+    "num": 78,
+    "numAr": "٧٨",
+    "text": "وَدَاوُۥدَ وَسُلَيْمَٰنَ إِذْ يَحْكُمَانِ فِى ٱلْحَرْثِ إِذْ نَفَشَتْ فِيهِ غَنَمُ ٱلْقَوْمِ وَكُنَّا لِحُكْمِهِمْ شَٰهِدِينَ",
+    "audio": "021078"
+  },
+  {
+    "num": 79,
+    "numAr": "٧٩",
+    "text": "فَفَهَّمْنَٰهَا سُلَيْمَٰنَ ۚ وَكُلًّا ءَاتَيْنَا حُكْمًۭا وَعِلْمًۭا ۚ وَسَخَّرْنَا مَعَ دَاوُۥدَ ٱلْجِبَالَ يُسَبِّحْنَ وَٱلطَّيْرَ ۚ وَكُنَّا فَٰعِلِينَ",
+    "audio": "021079"
+  },
+  {
+    "num": 80,
+    "numAr": "٨٠",
+    "text": "وَعَلَّمْنَٰهُ صَنْعَةَ لَبُوسٍۢ لَّكُمْ لِتُحْصِنَكُم مِّنۢ بَأْسِكُمْ ۖ فَهَلْ أَنتُمْ شَٰكِرُونَ",
+    "audio": "021080"
+  },
+  {
+    "num": 81,
+    "numAr": "٨١",
+    "text": "وَلِسُلَيْمَٰنَ ٱلرِّيحَ عَاصِفَةًۭ تَجْرِى بِأَمْرِهِۦٓ إِلَى ٱلْأَرْضِ ٱلَّتِى بَٰرَكْنَا فِيهَا ۚ وَكُنَّا بِكُلِّ شَىْءٍ عَٰلِمِينَ",
+    "audio": "021081"
+  },
+  {
+    "num": 82,
+    "numAr": "٨٢",
+    "text": "وَمِنَ ٱلشَّيَٰطِينِ مَن يَغُوصُونَ لَهُۥ وَيَعْمَلُونَ عَمَلًۭا دُونَ ذَٰلِكَ ۖ وَكُنَّا لَهُمْ حَٰفِظِينَ",
+    "audio": "021082"
+  },
+  {
+    "num": 83,
+    "numAr": "٨٣",
+    "text": "۞ وَأَيُّوبَ إِذْ نَادَىٰ رَبَّهُۥٓ أَنِّى مَسَّنِىَ ٱلضُّرُّ وَأَنتَ أَرْحَمُ ٱلرَّٰحِمِينَ",
+    "audio": "021083"
+  },
+  {
+    "num": 84,
+    "numAr": "٨٤",
+    "text": "فَٱسْتَجَبْنَا لَهُۥ فَكَشَفْنَا مَا بِهِۦ مِن ضُرٍّۢ ۖ وَءَاتَيْنَٰهُ أَهْلَهُۥ وَمِثْلَهُم مَّعَهُمْ رَحْمَةًۭ مِّنْ عِندِنَا وَذِكْرَىٰ لِلْعَٰبِدِينَ",
+    "audio": "021084"
+  },
+  {
+    "num": 85,
+    "numAr": "٨٥",
+    "text": "وَإِسْمَٰعِيلَ وَإِدْرِيسَ وَذَا ٱلْكِفْلِ ۖ كُلٌّۭ مِّنَ ٱلصَّٰبِرِينَ",
+    "audio": "021085"
+  },
+  {
+    "num": 86,
+    "numAr": "٨٦",
+    "text": "وَأَدْخَلْنَٰهُمْ فِى رَحْمَتِنَآ ۖ إِنَّهُم مِّنَ ٱلصَّٰلِحِينَ",
+    "audio": "021086"
+  },
+  {
+    "num": 87,
+    "numAr": "٨٧",
+    "text": "وَذَا ٱلنُّونِ إِذ ذَّهَبَ مُغَٰضِبًۭا فَظَنَّ أَن لَّن نَّقْدِرَ عَلَيْهِ فَنَادَىٰ فِى ٱلظُّلُمَٰتِ أَن لَّآ إِلَٰهَ إِلَّآ أَنتَ سُبْحَٰنَكَ إِنِّى كُنتُ مِنَ ٱلظَّٰلِمِينَ",
+    "audio": "021087"
+  },
+  {
+    "num": 88,
+    "numAr": "٨٨",
+    "text": "فَٱسْتَجَبْنَا لَهُۥ وَنَجَّيْنَٰهُ مِنَ ٱلْغَمِّ ۚ وَكَذَٰلِكَ نُۨجِى ٱلْمُؤْمِنِينَ",
+    "audio": "021088"
+  },
+  {
+    "num": 89,
+    "numAr": "٨٩",
+    "text": "وَزَكَرِيَّآ إِذْ نَادَىٰ رَبَّهُۥ رَبِّ لَا تَذَرْنِى فَرْدًۭا وَأَنتَ خَيْرُ ٱلْوَٰرِثِينَ",
+    "audio": "021089"
+  },
+  {
+    "num": 90,
+    "numAr": "٩٠",
+    "text": "فَٱسْتَجَبْنَا لَهُۥ وَوَهَبْنَا لَهُۥ يَحْيَىٰ وَأَصْلَحْنَا لَهُۥ زَوْجَهُۥٓ ۚ إِنَّهُمْ كَانُوا۟ يُسَٰرِعُونَ فِى ٱلْخَيْرَٰتِ وَيَدْعُونَنَا رَغَبًۭا وَرَهَبًۭا ۖ وَكَانُوا۟ لَنَا خَٰشِعِينَ",
+    "audio": "021090"
+  },
+  {
+    "num": 91,
+    "numAr": "٩١",
+    "text": "وَٱلَّتِىٓ أَحْصَنَتْ فَرْجَهَا فَنَفَخْنَا فِيهَا مِن رُّوحِنَا وَجَعَلْنَٰهَا وَٱبْنَهَآ ءَايَةًۭ لِّلْعَٰلَمِينَ",
+    "audio": "021091"
+  },
+  {
+    "num": 92,
+    "numAr": "٩٢",
+    "text": "إِنَّ هَٰذِهِۦٓ أُمَّتُكُمْ أُمَّةًۭ وَٰحِدَةًۭ وَأَنَا۠ رَبُّكُمْ فَٱعْبُدُونِ",
+    "audio": "021092"
+  },
+  {
+    "num": 93,
+    "numAr": "٩٣",
+    "text": "وَتَقَطَّعُوٓا۟ أَمْرَهُم بَيْنَهُمْ ۖ كُلٌّ إِلَيْنَا رَٰجِعُونَ",
+    "audio": "021093"
+  },
+  {
+    "num": 94,
+    "numAr": "٩٤",
+    "text": "فَمَن يَعْمَلْ مِنَ ٱلصَّٰلِحَٰتِ وَهُوَ مُؤْمِنٌۭ فَلَا كُفْرَانَ لِسَعْيِهِۦ وَإِنَّا لَهُۥ كَٰتِبُونَ",
+    "audio": "021094"
+  },
+  {
+    "num": 95,
+    "numAr": "٩٥",
+    "text": "وَحَرَٰمٌ عَلَىٰ قَرْيَةٍ أَهْلَكْنَٰهَآ أَنَّهُمْ لَا يَرْجِعُونَ",
+    "audio": "021095"
+  },
+  {
+    "num": 96,
+    "numAr": "٩٦",
+    "text": "حَتَّىٰٓ إِذَا فُتِحَتْ يَأْجُوجُ وَمَأْجُوجُ وَهُم مِّن كُلِّ حَدَبٍۢ يَنسِلُونَ",
+    "audio": "021096"
+  },
+  {
+    "num": 97,
+    "numAr": "٩٧",
+    "text": "وَٱقْتَرَبَ ٱلْوَعْدُ ٱلْحَقُّ فَإِذَا هِىَ شَٰخِصَةٌ أَبْصَٰرُ ٱلَّذِينَ كَفَرُوا۟ يَٰوَيْلَنَا قَدْ كُنَّا فِى غَفْلَةٍۢ مِّنْ هَٰذَا بَلْ كُنَّا ظَٰلِمِينَ",
+    "audio": "021097"
+  },
+  {
+    "num": 98,
+    "numAr": "٩٨",
+    "text": "إِنَّكُمْ وَمَا تَعْبُدُونَ مِن دُونِ ٱللَّهِ حَصَبُ جَهَنَّمَ أَنتُمْ لَهَا وَٰرِدُونَ",
+    "audio": "021098"
+  },
+  {
+    "num": 99,
+    "numAr": "٩٩",
+    "text": "لَوْ كَانَ هَٰٓؤُلَآءِ ءَالِهَةًۭ مَّا وَرَدُوهَا ۖ وَكُلٌّۭ فِيهَا خَٰلِدُونَ",
+    "audio": "021099"
+  },
+  {
+    "num": 100,
+    "numAr": "١٠٠",
+    "text": "لَهُمْ فِيهَا زَفِيرٌۭ وَهُمْ فِيهَا لَا يَسْمَعُونَ",
+    "audio": "021100"
+  },
+  {
+    "num": 101,
+    "numAr": "١٠١",
+    "text": "إِنَّ ٱلَّذِينَ سَبَقَتْ لَهُم مِّنَّا ٱلْحُسْنَىٰٓ أُو۟لَٰٓئِكَ عَنْهَا مُبْعَدُونَ",
+    "audio": "021101"
+  },
+  {
+    "num": 102,
+    "numAr": "١٠٢",
+    "text": "لَا يَسْمَعُونَ حَسِيسَهَا ۖ وَهُمْ فِى مَا ٱشْتَهَتْ أَنفُسُهُمْ خَٰلِدُونَ",
+    "audio": "021102"
+  },
+  {
+    "num": 103,
+    "numAr": "١٠٣",
+    "text": "لَا يَحْزُنُهُمُ ٱلْفَزَعُ ٱلْأَكْبَرُ وَتَتَلَقَّىٰهُمُ ٱلْمَلَٰٓئِكَةُ هَٰذَا يَوْمُكُمُ ٱلَّذِى كُنتُمْ تُوعَدُونَ",
+    "audio": "021103"
+  },
+  {
+    "num": 104,
+    "numAr": "١٠٤",
+    "text": "يَوْمَ نَطْوِى ٱلسَّمَآءَ كَطَىِّ ٱلسِّجِلِّ لِلْكُتُبِ ۚ كَمَا بَدَأْنَآ أَوَّلَ خَلْقٍۢ نُّعِيدُهُۥ ۚ وَعْدًا عَلَيْنَآ ۚ إِنَّا كُنَّا فَٰعِلِينَ",
+    "audio": "021104"
+  },
+  {
+    "num": 105,
+    "numAr": "١٠٥",
+    "text": "وَلَقَدْ كَتَبْنَا فِى ٱلزَّبُورِ مِنۢ بَعْدِ ٱلذِّكْرِ أَنَّ ٱلْأَرْضَ يَرِثُهَا عِبَادِىَ ٱلصَّٰلِحُونَ",
+    "audio": "021105"
+  },
+  {
+    "num": 106,
+    "numAr": "١٠٦",
+    "text": "إِنَّ فِى هَٰذَا لَبَلَٰغًۭا لِّقَوْمٍ عَٰبِدِينَ",
+    "audio": "021106"
+  },
+  {
+    "num": 107,
+    "numAr": "١٠٧",
+    "text": "وَمَآ أَرْسَلْنَٰكَ إِلَّا رَحْمَةًۭ لِّلْعَٰلَمِينَ",
+    "audio": "021107"
+  },
+  {
+    "num": 108,
+    "numAr": "١٠٨",
+    "text": "قُلْ إِنَّمَا يُوحَىٰٓ إِلَىَّ أَنَّمَآ إِلَٰهُكُمْ إِلَٰهٌۭ وَٰحِدٌۭ ۖ فَهَلْ أَنتُم مُّسْلِمُونَ",
+    "audio": "021108"
+  },
+  {
+    "num": 109,
+    "numAr": "١٠٩",
+    "text": "فَإِن تَوَلَّوْا۟ فَقُلْ ءَاذَنتُكُمْ عَلَىٰ سَوَآءٍۢ ۖ وَإِنْ أَدْرِىٓ أَقَرِيبٌ أَم بَعِيدٌۭ مَّا تُوعَدُونَ",
+    "audio": "021109"
+  },
+  {
+    "num": 110,
+    "numAr": "١١٠",
+    "text": "إِنَّهُۥ يَعْلَمُ ٱلْجَهْرَ مِنَ ٱلْقَوْلِ وَيَعْلَمُ مَا تَكْتُمُونَ",
+    "audio": "021110"
+  },
+  {
+    "num": 111,
+    "numAr": "١١١",
+    "text": "وَإِنْ أَدْرِى لَعَلَّهُۥ فِتْنَةٌۭ لَّكُمْ وَمَتَٰعٌ إِلَىٰ حِينٍۢ",
+    "audio": "021111"
+  },
+  {
+    "num": 112,
+    "numAr": "١١٢",
+    "text": "قَٰلَ رَبِّ ٱحْكُم بِٱلْحَقِّ ۗ وَرَبُّنَا ٱلرَّحْمَٰنُ ٱلْمُسْتَعَانُ عَلَىٰ مَا تَصِفُونَ",
+    "audio": "021112"
+  }
+];
+const partCount = 6;
+let currentPart = 0;
+let currentPhase = 0;
+let audioPlayer = null;
+let xp = 0;
+let streak = 0;
+let orderSample = [];
+let orderAnswers = [];
+let fillQuestions = [];
+let fillAnswers = [];
+let speedQuestion = null;
+
+function currentVerses() {
+  const size = Math.ceil(verses.length / partCount);
+  const start = currentPart * size;
+  return verses.slice(start, start + size);
+}
+
+function shuffle(items) {
+  return [...items].sort(() => Math.random() - 0.5);
+}
+
+function normalizeWord(word) {
+  return word.replace(/[ۖۗۘۙۚۛۜ۝،؛.؟]/g, '').trim();
+}
+
+function updateStats(delta = 0, ok = true) {
+  xp = Math.max(0, Math.min(100, xp + delta));
+  streak = ok ? streak + (delta > 0 ? 1 : 0) : 0;
+  document.getElementById('xp-label').textContent = xp;
+  document.getElementById('streak-label').textContent = streak;
+  document.getElementById('xp-bar').style.width = xp + '%';
+  document.getElementById('level-label').textContent = xp >= 85 ? 'متقدم' : xp >= 50 ? 'ثابت' : 'هادئ';
+}
+
+function buildPartButtons() {
+  const box = document.getElementById('part-buttons');
+  box.innerHTML = '';
+  for (let i = 0; i < partCount; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'part-btn border border-slate-200 rounded-xl px-3 py-2 text-xs font-black transition ' + (i === currentPart ? 'active' : 'bg-white text-slate-600');
+    btn.textContent = partCount === 1 ? 'السورة كاملة' : 'مهمة ' + (i + 1);
+    btn.onclick = () => {
+      currentPart = i;
+      xp = 0;
+      streak = 0;
+      stopAudio();
+      buildAll();
+      updateStats(0, true);
+    };
+    box.appendChild(btn);
+  }
+}
+
+function buildAudioScreen() {
+  const list = document.getElementById('audio-list');
+  list.innerHTML = '';
+  currentVerses().forEach(v => {
+    const div = document.createElement('button');
+    div.type = 'button';
+    div.className = 'verse-card w-full flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm text-right';
+    div.onclick = () => {
+      playVerse(v.audio, div);
+      updateStats(2, true);
+    };
+    div.innerHTML = `
+      <span class="inline-flex items-center justify-center w-10 h-10 rounded-full text-white text-sm font-black shrink-0" style="background:${SURAH_COLOR}">${v.numAr}</span>
+      <span class="quran-text text-xl md:text-2xl text-slate-900 font-bold flex-grow leading-loose">${v.text}</span>
+      <span class="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-sm shrink-0">▶</span>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function playVerse(audioCode, el) {
+  stopAudio();
+  document.querySelectorAll('.verse-card').forEach(c => c.style.background = '');
+  audioPlayer = new Audio(`https://everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps/${audioCode}.mp3`);
+  if (el) el.style.background = '#f1f5f9';
+  audioPlayer.onended = () => { if (el) el.style.background = ''; };
+  audioPlayer.play().catch(() => {});
+}
+
+function playAll() {
+  stopAudio();
+  updateStats(8, true);
+  const items = currentVerses();
+  let i = 0;
+  function next() {
+    if (i >= items.length) return;
+    audioPlayer = new Audio(`https://everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps/${items[i].audio}.mp3`);
+    audioPlayer.onended = next;
+    audioPlayer.play().catch(() => {});
+    i++;
+  }
+  next();
+}
+
+function stopAudio() {
+  if (audioPlayer) {
+    audioPlayer.pause();
+    audioPlayer.currentTime = 0;
+  }
+}
+
+function buildOrderGame() {
+  const source = currentVerses();
+  orderSample = source.slice(0, Math.min(7, source.length));
+  if (source.length > 7) {
+    const maxStart = Math.max(0, source.length - 7);
+    const start = Math.floor(Math.random() * (maxStart + 1));
+    orderSample = source.slice(start, start + 7);
+  }
+  orderAnswers = [];
+  document.getElementById('order-target').textContent = 'اختر الآية رقم ' + orderSample[0].numAr + ' ثم واصل السلسلة.';
+  document.getElementById('order-feedback').className = 'hidden p-3 rounded-xl text-center font-bold text-sm my-4';
+  const list = document.getElementById('order-list');
+  list.innerHTML = '';
+  shuffle(orderSample).forEach(v => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'verse-card p-4 rounded-xl quran-text text-xl md:text-2xl font-bold text-slate-900 bg-white text-right';
+    btn.textContent = v.text;
+    btn.onclick = () => {
+      if (btn.dataset.used === '1') return;
+      btn.dataset.used = '1';
+      btn.style.borderColor = '#10b981';
+      btn.style.background = '#ecfdf5';
+      orderAnswers.push(v.num);
+      const next = orderSample[orderAnswers.length];
+      document.getElementById('order-target').textContent = next ? 'الآن اختر الآية رقم ' + next.numAr : 'اكتملت السلسلة، اضغط تحقق.';
+    };
+    list.appendChild(btn);
+  });
+}
+
+function checkOrderGame() {
+  const ok = orderAnswers.length === orderSample.length && orderAnswers.every((n, i) => n === orderSample[i].num);
+  const box = document.getElementById('order-feedback');
+  box.className = 'p-3 rounded-xl text-center font-bold text-sm my-4 ' + (ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700');
+  box.textContent = ok ? 'ترتيب ممتاز. +20 XP' : 'فيه خلل في السلسلة. أعدها بهدوء.';
+  updateStats(ok ? 20 : -8, ok);
+  if (ok) Auth.recordActivity(SURAH_ID, 'teen-order-part-' + currentPart, 100);
+}
+
+function makeFillQuestion(v, index, allWords) {
+  const words = v.text.split(/\s+/).map(normalizeWord).filter(w => w.length > 2);
+  const answer = words[Math.max(0, Math.floor(words.length * 0.65))] || words[words.length - 1] || v.text;
+  const wrongs = shuffle(allWords.filter(w => w !== answer)).slice(0, 2);
+  while (wrongs.length < 2) wrongs.push(words[0] || answer);
+  return { verse: v, blank: v.text.replace(answer, '______'), answer, options: shuffle([answer, ...wrongs]), index };
+}
+
+function buildFillGame() {
+  const source = currentVerses();
+  const allWords = [...new Set(source.flatMap(v => v.text.split(/\s+/).map(normalizeWord).filter(w => w.length > 2)))];
+  fillQuestions = shuffle(source).slice(0, Math.min(6, source.length)).map((v, index) => makeFillQuestion(v, index, allWords));
+  fillAnswers = new Array(fillQuestions.length).fill(null);
+  document.getElementById('fill-feedback').className = 'hidden p-3 rounded-xl text-center font-bold text-sm my-4';
+  const list = document.getElementById('fill-list');
+  list.innerHTML = '';
+  fillQuestions.forEach((q, qi) => {
+    const card = document.createElement('div');
+    card.className = 'bg-slate-50 border border-slate-200 rounded-2xl p-4';
+    card.innerHTML = `
+      <p class="quran-text text-2xl md:text-3xl text-slate-900 font-bold text-center mb-4 leading-loose">${q.blank}</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        ${q.options.map(opt => `<button type="button" class="choice border-2 border-slate-200 rounded-xl px-3 py-3 bg-white quran-text text-xl font-bold" data-q="${qi}" data-value="${opt}">${opt}</button>`).join('')}
+      </div>
+    `;
+    list.appendChild(card);
+  });
+  document.querySelectorAll('.choice').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const qi = Number(btn.dataset.q);
+      fillAnswers[qi] = btn.dataset.value;
+      document.querySelectorAll(`.choice[data-q="${qi}"]`).forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+}
+
+async function checkFillGame() {
+  const total = fillQuestions.length || 1;
+  const correct = fillAnswers.reduce((sum, a, i) => sum + (a === fillQuestions[i].answer ? 1 : 0), 0);
+  const score = Math.round(correct / total * 100);
+  const ok = score >= 70;
+  const box = document.getElementById('fill-feedback');
+  box.className = 'p-3 rounded-xl text-center font-bold text-sm my-4 ' + (ok ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700');
+  box.textContent = ok ? 'نتيجة قوية: ' + score + '%. +25 XP' : 'نتيجتك ' + score + '%. أعد المحاولة لتثبيت الحفظ.';
+  updateStats(ok ? 25 : -5, ok);
+  await Auth.recordActivity(SURAH_ID, 'teen-fill-part-' + currentPart, score);
+}
+
+function buildSpeedGame() {
+  const source = currentVerses();
+  const candidates = source.filter((v, i) => i < source.length - 1);
+  const base = candidates.length ? candidates[Math.floor(Math.random() * candidates.length)] : source[0];
+  const answer = source[source.findIndex(v => v.num === base.num) + 1] || source[0];
+  const wrongs = shuffle(source.filter(v => v.num !== answer.num && v.num !== base.num)).slice(0, 3);
+  speedQuestion = { base, answer };
+  document.getElementById('speed-card').innerHTML = `
+    <p class="text-xs font-black text-slate-400 mb-2">ما الآية التالية؟</p>
+    <p class="quran-text text-2xl md:text-3xl text-slate-900 font-black leading-loose">${base.text}</p>
+  `;
+  const box = document.getElementById('speed-options');
+  box.innerHTML = '';
+  shuffle([answer, ...wrongs]).forEach(v => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'verse-card bg-white rounded-xl p-4 quran-text text-xl md:text-2xl font-bold text-right';
+    btn.textContent = v.text;
+    btn.onclick = () => answerSpeed(v.num);
+    box.appendChild(btn);
+  });
+  document.getElementById('speed-feedback').className = 'hidden p-3 rounded-xl text-center font-bold text-sm my-4';
+}
+
+function answerSpeed(num) {
+  const ok = speedQuestion && num === speedQuestion.answer.num;
+  const box = document.getElementById('speed-feedback');
+  box.className = 'p-3 rounded-xl text-center font-bold text-sm my-4 ' + (ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700');
+  box.textContent = ok ? 'صحيح. سرعة وتركيز! +15 XP' : 'ليست هي. خذ نفسا وأعد السؤال.';
+  updateStats(ok ? 15 : -5, ok);
+  if (ok) Auth.recordActivity(SURAH_ID, 'teen-speed-part-' + currentPart, 100);
+}
+
+async function finishMission() {
+  const score = Math.max(0, Math.min(100, xp));
+  await Auth.recordActivity(SURAH_ID, 'teen-mission-part-' + currentPart, score);
+  if (score >= 70 && currentPart === partCount - 1) await Auth.completeSurah(SURAH_ID);
+  if (typeof confetti === 'function') confetti({ particleCount: score >= 70 ? 120 : 45, spread: 70, origin: { y: .65 } });
+  alert(score >= 70 ? 'تم حفظ نتيجة المهمة. أداء ممتاز.' : 'تم حفظ المحاولة. أعد المهمة لتحسين النتيجة.');
+}
+
+function goToPhase(phase) {
+  currentPhase = phase;
+  stopAudio();
+  [0, 1, 2, 3].forEach(i => {
+    document.getElementById('phase-' + i).classList.toggle('hidden', i !== phase);
+    const tab = document.getElementById('tab-' + i);
+    tab.className = tab.className.replace(/tab-(active|inactive)/g, '').trim() + ' ' + (i === phase ? 'tab-active' : 'tab-inactive');
+  });
+  if (phase === 1) buildOrderGame();
+  if (phase === 2) buildFillGame();
+  if (phase === 3) buildSpeedGame();
+}
+
+function buildAll() {
+  buildPartButtons();
+  buildAudioScreen();
+  buildOrderGame();
+  buildFillGame();
+  buildSpeedGame();
+  goToPhase(currentPhase);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  Auth.requireAuth();
+  buildAll();
+  updateStats(0, true);
+});
+</script>
+</body>
+</html>
