@@ -23,84 +23,46 @@
         .juz-section { scroll-margin-top: 16px; transition: opacity .2s ease, filter .2s ease, transform .2s ease; }
         .juz-section.is-muted { opacity: .42; filter: grayscale(.9); }
         .juz-section.is-active { opacity: 1; filter: none; transform: translateY(-1px); }
+        .juz-section.is-complete { opacity: .82; filter: saturate(.85); }
         .juz-section.is-muted .surah-journey { pointer-events: none; }
         .juz-section.is-muted .juz-road-header { background: linear-gradient(135deg, #e5e7eb, #f8fafc) !important; }
         .juz-section.is-active .juz-road-header { box-shadow: inset 0 -5px 0 color-mix(in srgb, var(--platform-primary) 18%, transparent); }
-        .daily-hub {
-            max-width: 64rem; margin: 18px auto 0; padding: 0 16px;
-        }
-        .daily-hub-card {
-            border-radius: 24px; border: 1px solid color-mix(in srgb, var(--platform-primary) 22%, transparent);
-            background: linear-gradient(145deg, color-mix(in srgb, var(--platform-surface) 84%, #fff), color-mix(in srgb, var(--platform-accent-soft) 32%, #fff));
-            box-shadow: var(--platform-shadow-soft); padding: 14px;
-        }
-        .daily-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-        .daily-tile {
-            min-height: 112px; border-radius: 18px; padding: 12px; background: color-mix(in srgb, #fff 70%, var(--platform-primary-soft));
-            border: 1px solid color-mix(in srgb, var(--platform-primary) 18%, transparent);
-        }
-        .daily-title { font-size: 12px; font-weight: 900; color: var(--platform-primary-dark); margin-bottom: 6px; }
-        .daily-text { font-size: 13px; font-weight: 800; color: #334155; line-height: 1.55; }
-        .daily-progress { display: flex; align-items: center; gap: 10px; margin-top: 10px; color: #475569; font-size: 12px; font-weight: 900; }
-        .daily-progress-track { flex: 1; height: 5px; border-radius: 999px; background: color-mix(in srgb, var(--platform-primary-soft) 52%, #fff); overflow: hidden; }
-        #student-progress-fill { height: 5px !important; }
-        .theme-mini { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; }
-        .theme-mini-label { font-size: 11px; font-weight: 900; color: #64748b; }
-        .theme-mini-options { display: inline-flex; gap: 6px; padding: 5px; border-radius: 999px; background: color-mix(in srgb, var(--platform-primary-soft) 42%, #fff); }
-        .theme-swatch {
-            width: 22px; height: 22px; border-radius: 999px; border: 2px solid rgba(255,255,255,.9);
-            box-shadow: 0 0 0 1px rgba(15,23,42,.14); cursor: pointer; color: transparent; overflow: hidden;
-        }
-        .theme-swatch.active { box-shadow: 0 0 0 3px color-mix(in srgb, var(--platform-primary) 28%, transparent); transform: translateY(-1px); }
-        .surah-journey { position: relative; padding: 22px 10px 28px; min-height: 120px; }
+        .surah-journey { position: relative; padding: 18px 8px 22px; }
         .surah-journey::before {
-            content: ''; position: absolute; inset: 24px 10% 24px 10%; border-radius: 48% 52% 46% 54%;
-            background: radial-gradient(circle, color-mix(in srgb, var(--platform-primary) 22%, transparent) 0 3px, transparent 4px) 0 0 / 34px 34px;
-            opacity: .55; pointer-events: none;
+            content: ''; position: absolute; top: 22px; bottom: 22px; left: 50%; width: 8px;
+            transform: translateX(-50%); border-radius: 999px;
+            background: linear-gradient(180deg, var(--platform-primary-soft), rgba(148,163,184,.26));
         }
-        .journey-step { position: relative; min-height: 78px; display: flex; align-items: center; margin: 0; }
-        .journey-step:nth-child(6n+1) { justify-content: center; transform: translateX(-10%); }
-        .journey-step:nth-child(6n+2) { justify-content: flex-start; padding-left: 11%; }
-        .journey-step:nth-child(6n+3) { justify-content: center; transform: translateX(12%); }
-        .journey-step:nth-child(6n+4) { justify-content: flex-end; padding-right: 12%; }
-        .journey-step:nth-child(6n+5) { justify-content: center; transform: translateX(-4%); }
-        .journey-step:nth-child(6n) { justify-content: flex-start; padding-left: 24%; }
+        .journey-step { position: relative; min-height: 92px; display: flex; align-items: center; margin: 2px 0; }
+        .journey-step:nth-child(odd) { justify-content: flex-start; padding-left: calc(50% + 28px); }
+        .journey-step:nth-child(even) { justify-content: flex-end; padding-right: calc(50% + 28px); }
         .journey-node {
-            width: 172px; min-height: 64px; border: 0; text-align: center; border-radius: 44% 56% 50% 50% / 58% 42% 52% 48%;
-            padding: 10px 12px; background: linear-gradient(145deg, #fff, color-mix(in srgb, var(--platform-primary-soft) 38%, #fff));
-            box-shadow: inset 0 -7px 14px rgba(15,23,42,.08), 0 14px 26px rgba(15,23,42,.12);
-            display: grid; place-items: center; position: relative; isolation: isolate;
-        }
-        .journey-node::after {
-            content: ''; position: absolute; inset: 8px 12px auto auto; width: 28px; height: 10px; border-radius: 999px;
-            background: rgba(255,255,255,.42); transform: rotate(-12deg); pointer-events: none;
+            width: min(100%, 280px); border: 0; text-align: right; border-radius: 24px; padding: 12px 14px;
+            background: white; box-shadow: 0 15px 34px rgba(15,23,42,.12); display: flex; align-items: center; gap: 12px;
         }
         .journey-node:disabled { cursor: not-allowed; }
         .journey-orb {
-            position: absolute; top: 4px; transform: translateY(-40%); width: 30px; height: 30px; border-radius: 999px;
-            display: grid; place-items: center; border: 3px solid #fff; box-shadow: 0 8px 18px rgba(15,23,42,.16); font-weight: 900; z-index: 2;
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            width: 58px; height: 58px; border-radius: 999px; display: grid; place-items: center;
+            border: 6px solid #fff; box-shadow: 0 12px 26px rgba(15,23,42,.16); font-weight: 900;
         }
-        .journey-step:nth-child(odd) .journey-orb { right: calc(50% - 96px); }
-        .journey-step:nth-child(even) .journey-orb { left: calc(50% - 96px); }
         .journey-node.done, .journey-orb.done { background: linear-gradient(135deg, #10b981, #047857); color: white; }
         .journey-node.current, .journey-orb.current { background: linear-gradient(135deg, var(--platform-primary), var(--platform-accent)); color: white; }
-        .journey-node.locked { background: linear-gradient(145deg, #e5e7eb, #f8fafc); color: #94a3b8; box-shadow: inset 0 -7px 14px rgba(15,23,42,.06), 0 10px 20px rgba(15,23,42,.08); }
-        .journey-orb.locked { background: #d1d5db; color: #64748b; }
-        .journey-meta { font-size: 10px; font-weight: 800; opacity: .78; }
-        .journey-state { font-size: 10px; font-weight: 900; border-radius: 999px; padding: 3px 8px; background: rgba(255,255,255,.7); color: inherit; }
-        .juz-road-header { background: linear-gradient(135deg, var(--platform-primary-soft), color-mix(in srgb, var(--platform-accent-soft) 62%, #fff)); }
+        .journey-node.locked { background: #f3f4f6; color: #94a3b8; box-shadow: inset 0 0 0 1px rgba(148,163,184,.18); }
+        .journey-orb.locked { background: #e5e7eb; color: #94a3b8; }
+        .journey-meta { font-size: 11px; font-weight: 800; opacity: .78; }
+        .journey-state { font-size: 11px; font-weight: 900; border-radius: 999px; padding: 4px 9px; background: rgba(255,255,255,.76); color: inherit; }
+        .juz-road-header { background: linear-gradient(135deg, var(--platform-primary-soft), #fff); }
         @media (max-width: 760px) { .daily-grid { grid-template-columns: 1fr; } }
         @media (max-width: 640px) {
             .daily-hub { margin-top: 12px; padding: 0 12px; }
             .surah-journey { padding-inline: 0; }
-            .surah-journey::before { inset-inline: 4%; background-size: 28px 28px; }
-            .journey-step, .journey-step:nth-child(n) { justify-content: center; padding-left: 0; padding-right: 0; transform: none; }
-            .journey-step:nth-child(3n+1) { transform: translateX(-8%); }
-            .journey-step:nth-child(3n+2) { transform: translateX(8%); }
-            .journey-node { width: min(78vw, 180px); }
-            .journey-step:nth-child(n) .journey-orb { left: auto; right: calc(50% - 96px); }
+            .surah-journey::before { left: 28px; transform: none; width: 6px; }
+            .journey-step, .journey-step:nth-child(odd), .journey-step:nth-child(even) { justify-content: stretch; padding-left: 72px; padding-right: 0; }
+            .journey-orb { left: 31px; width: 50px; height: 50px; border-width: 5px; }
+            .journey-node { width: 100%; border-radius: 20px; }
         }
-        .header-bg { background: linear-gradient(135deg, #1a3c34 0%, #0c4a3b 40%, #14532d 100%); }
+        .header-bg { background:        .header-bg { background: linear-gradient(135deg, #1a3c34 0%, #0c4a3b 40%, #14532d 100%); }
         .nav-bottom { 
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
     background: white; border-top: 1px solid #e5e7eb;
@@ -310,7 +272,7 @@ body { padding-bottom: 80px; }
                 const toSurah = allJuzSurahs[allJuzSurahs.length - 1];
                 const completedInJuz = allJuzSurahs.filter(s => s.isCompleted).length;
                 const rangeLabel = fromSurah && toSurah ? `من سورة ${fromSurah.nameAr} إلى سورة ${toSurah.nameAr}` : '';
-                const sectionState = isCurrentJuz(juz) ? 'is-active' : 'is-muted';
+                const sectionState = isCurrentJuz(juz) ? 'is-active' : (completedInJuz === 0 ? 'is-muted' : 'is-complete');
                 return `
                     <section class="juz-section ${sectionState} bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                         <div class="juz-road-header px-4 py-4 flex items-center justify-between gap-3">
