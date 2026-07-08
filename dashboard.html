@@ -21,38 +21,79 @@
         .surah-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px -6px rgba(0,0,0,0.15); }
         .surah-card-locked { opacity: 0.55; cursor: not-allowed; filter: grayscale(0.3); }
         .juz-section { scroll-margin-top: 16px; }
-        .surah-journey { position: relative; padding: 18px 8px 22px; }
-        .surah-journey::before {
-            content: ''; position: absolute; top: 22px; bottom: 22px; left: 50%; width: 8px;
-            transform: translateX(-50%); border-radius: 999px;
-            background: linear-gradient(180deg, var(--platform-primary-soft), rgba(148,163,184,.26));
+        .daily-hub {
+            max-width: 64rem; margin: 18px auto 0; padding: 0 16px;
         }
-        .journey-step { position: relative; min-height: 92px; display: flex; align-items: center; margin: 2px 0; }
-        .journey-step:nth-child(odd) { justify-content: flex-start; padding-left: calc(50% + 28px); }
-        .journey-step:nth-child(even) { justify-content: flex-end; padding-right: calc(50% + 28px); }
+        .daily-hub-card {
+            border-radius: 24px; border: 1px solid color-mix(in srgb, var(--platform-primary) 22%, transparent);
+            background: linear-gradient(145deg, color-mix(in srgb, var(--platform-surface) 84%, #fff), color-mix(in srgb, var(--platform-accent-soft) 32%, #fff));
+            box-shadow: var(--platform-shadow-soft); padding: 14px;
+        }
+        .daily-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .daily-tile {
+            min-height: 112px; border-radius: 18px; padding: 12px; background: color-mix(in srgb, #fff 70%, var(--platform-primary-soft));
+            border: 1px solid color-mix(in srgb, var(--platform-primary) 18%, transparent);
+        }
+        .daily-title { font-size: 12px; font-weight: 900; color: var(--platform-primary-dark); margin-bottom: 6px; }
+        .daily-text { font-size: 13px; font-weight: 800; color: #334155; line-height: 1.55; }
+        .daily-progress { display: flex; align-items: center; gap: 10px; margin-top: 10px; color: #475569; font-size: 12px; font-weight: 900; }
+        .daily-progress-track { flex: 1; height: 5px; border-radius: 999px; background: color-mix(in srgb, var(--platform-primary-soft) 52%, #fff); overflow: hidden; }
+        #student-progress-fill { height: 5px !important; }
+        .theme-mini { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+        .theme-mini-label { font-size: 11px; font-weight: 900; color: #64748b; }
+        .theme-mini-options { display: inline-flex; gap: 6px; padding: 5px; border-radius: 999px; background: color-mix(in srgb, var(--platform-primary-soft) 42%, #fff); }
+        .theme-swatch {
+            width: 22px; height: 22px; border-radius: 999px; border: 2px solid rgba(255,255,255,.9);
+            box-shadow: 0 0 0 1px rgba(15,23,42,.14); cursor: pointer; color: transparent; overflow: hidden;
+        }
+        .theme-swatch.active { box-shadow: 0 0 0 3px color-mix(in srgb, var(--platform-primary) 28%, transparent); transform: translateY(-1px); }
+        .surah-journey { position: relative; padding: 22px 10px 28px; min-height: 120px; }
+        .surah-journey::before {
+            content: ''; position: absolute; inset: 24px 10% 24px 10%; border-radius: 48% 52% 46% 54%;
+            background: radial-gradient(circle, color-mix(in srgb, var(--platform-primary) 22%, transparent) 0 3px, transparent 4px) 0 0 / 34px 34px;
+            opacity: .55; pointer-events: none;
+        }
+        .journey-step { position: relative; min-height: 78px; display: flex; align-items: center; margin: 0; }
+        .journey-step:nth-child(6n+1) { justify-content: center; transform: translateX(-10%); }
+        .journey-step:nth-child(6n+2) { justify-content: flex-start; padding-left: 11%; }
+        .journey-step:nth-child(6n+3) { justify-content: center; transform: translateX(12%); }
+        .journey-step:nth-child(6n+4) { justify-content: flex-end; padding-right: 12%; }
+        .journey-step:nth-child(6n+5) { justify-content: center; transform: translateX(-4%); }
+        .journey-step:nth-child(6n) { justify-content: flex-start; padding-left: 24%; }
         .journey-node {
-            width: min(100%, 280px); border: 0; text-align: right; border-radius: 24px; padding: 12px 14px;
-            background: white; box-shadow: 0 15px 34px rgba(15,23,42,.12); display: flex; align-items: center; gap: 12px;
+            width: 172px; min-height: 64px; border: 0; text-align: center; border-radius: 44% 56% 50% 50% / 58% 42% 52% 48%;
+            padding: 10px 12px; background: linear-gradient(145deg, #fff, color-mix(in srgb, var(--platform-primary-soft) 38%, #fff));
+            box-shadow: inset 0 -7px 14px rgba(15,23,42,.08), 0 14px 26px rgba(15,23,42,.12);
+            display: grid; place-items: center; position: relative; isolation: isolate;
+        }
+        .journey-node::after {
+            content: ''; position: absolute; inset: 8px 12px auto auto; width: 28px; height: 10px; border-radius: 999px;
+            background: rgba(255,255,255,.42); transform: rotate(-12deg); pointer-events: none;
         }
         .journey-node:disabled { cursor: not-allowed; }
         .journey-orb {
-            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
-            width: 58px; height: 58px; border-radius: 999px; display: grid; place-items: center;
-            border: 6px solid #fff; box-shadow: 0 12px 26px rgba(15,23,42,.16); font-weight: 900;
+            position: absolute; top: 4px; transform: translateY(-40%); width: 30px; height: 30px; border-radius: 999px;
+            display: grid; place-items: center; border: 3px solid #fff; box-shadow: 0 8px 18px rgba(15,23,42,.16); font-weight: 900; z-index: 2;
         }
+        .journey-step:nth-child(odd) .journey-orb { right: calc(50% - 96px); }
+        .journey-step:nth-child(even) .journey-orb { left: calc(50% - 96px); }
         .journey-node.done, .journey-orb.done { background: linear-gradient(135deg, #10b981, #047857); color: white; }
         .journey-node.current, .journey-orb.current { background: linear-gradient(135deg, var(--platform-primary), var(--platform-accent)); color: white; }
-        .journey-node.locked { background: #f3f4f6; color: #94a3b8; box-shadow: inset 0 0 0 1px rgba(148,163,184,.18); }
-        .journey-orb.locked { background: #e5e7eb; color: #94a3b8; }
-        .journey-meta { font-size: 11px; font-weight: 800; opacity: .78; }
-        .journey-state { font-size: 11px; font-weight: 900; border-radius: 999px; padding: 4px 9px; background: rgba(255,255,255,.76); color: inherit; }
-        .juz-road-header { background: linear-gradient(135deg, var(--platform-primary-soft), #fff); }
+        .journey-node.locked { background: linear-gradient(145deg, #e5e7eb, #f8fafc); color: #94a3b8; box-shadow: inset 0 -7px 14px rgba(15,23,42,.06), 0 10px 20px rgba(15,23,42,.08); }
+        .journey-orb.locked { background: #d1d5db; color: #64748b; }
+        .journey-meta { font-size: 10px; font-weight: 800; opacity: .78; }
+        .journey-state { font-size: 10px; font-weight: 900; border-radius: 999px; padding: 3px 8px; background: rgba(255,255,255,.7); color: inherit; }
+        .juz-road-header { background: linear-gradient(135deg, var(--platform-primary-soft), color-mix(in srgb, var(--platform-accent-soft) 62%, #fff)); }
+        @media (max-width: 760px) { .daily-grid { grid-template-columns: 1fr; } }
         @media (max-width: 640px) {
+            .daily-hub { margin-top: 12px; padding: 0 12px; }
             .surah-journey { padding-inline: 0; }
-            .surah-journey::before { left: 28px; transform: none; width: 6px; }
-            .journey-step, .journey-step:nth-child(odd), .journey-step:nth-child(even) { justify-content: stretch; padding-left: 72px; padding-right: 0; }
-            .journey-orb { left: 31px; width: 50px; height: 50px; border-width: 5px; }
-            .journey-node { width: 100%; border-radius: 20px; }
+            .surah-journey::before { inset-inline: 4%; background-size: 28px 28px; }
+            .journey-step, .journey-step:nth-child(n) { justify-content: center; padding-left: 0; padding-right: 0; transform: none; }
+            .journey-step:nth-child(3n+1) { transform: translateX(-8%); }
+            .journey-step:nth-child(3n+2) { transform: translateX(8%); }
+            .journey-node { width: min(78vw, 180px); }
+            .journey-step:nth-child(n) .journey-orb { left: auto; right: calc(50% - 96px); }
         }
         .header-bg { background: linear-gradient(135deg, #1a3c34 0%, #0c4a3b 40%, #14532d 100%); }
         .nav-bottom { 
@@ -72,7 +113,6 @@ body { padding-bottom: 80px; }
     <script>Auth.requireAuth('login.html');</script>
 
     <header class="header-bg text-white py-6 px-4 shadow-xl">
-       <div id="messages-container" class="max-w-5xl mx-auto mb-6 hidden"></div>
         <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
             <div class="flex items-center gap-4">
                 <div class="w-16 h-16 rounded-2xl overflow-hidden border border-white/20 shadow-inner bg-white/10 flex items-center justify-center">
@@ -89,36 +129,31 @@ body { padding-bottom: 80px; }
     </header>
   
 
-<!-- Zone des devoirs (Générée par JS) -->
-<div id="zone-devoirs" class="mb-8 space-y-3">
-    <!-- Les devoirs s'afficheront ici -->
-</div>
-    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-6 flex items-center justify-between max-w-4xl mx-auto mt-6">
-        <div class="flex items-center gap-3">
-            <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-2xl shadow-inner">
-                📅
-            </div>
-            <div>
-                <h2 class="text-sm text-gray-500 font-bold mb-1"> توقيت الحصص </h2>
-                <p id="student-schedule" class="text-lg text-blue-900 font-extrabold quran-font"></p>
-            </div>
-        </div>
-    </div>
-
-    <div class="max-w-4xl mx-auto px-4 mt-6">
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center gap-4">
-            <div class="flex-grow">
-                <div class="flex justify-between text-sm mb-2 font-bold text-gray-700">
-                    <span>تقدمك(ي) العام</span>
-                    <span id="student-progress-label">0 / 0 سورة</span>
+    <section class="daily-hub" aria-label="متابعة اليوم">
+        <div class="daily-hub-card">
+            <div class="daily-grid">
+                <div class="daily-tile">
+                    <div class="daily-title">واجب اليوم</div>
+                    <div id="zone-devoirs" class="daily-text"></div>
                 </div>
-                <div class="w-full bg-gray-100 rounded-full h-3 shadow-inner overflow-hidden">
-                    <div id="student-progress-fill" class="bg-emerald-500 h-3 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                <div class="daily-tile">
+                    <div class="daily-title">موعد الحصة</div>
+                    <p id="student-schedule" class="daily-text quran-font">...</p>
+                </div>
+                <div class="daily-tile">
+                    <div class="daily-title">رسائل الإدارة</div>
+                    <div id="messages-container" class="daily-text"></div>
                 </div>
             </div>
-            <div class="text-3xl">🏆</div>
+            <div class="daily-progress">
+                <span>تقدّمك</span>
+                <div class="daily-progress-track">
+                    <div id="student-progress-fill" class="bg-emerald-500 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                </div>
+                <span id="student-progress-label">٠ / ٠</span>
+            </div>
         </div>
-    </div>
+    </section>
 
     <main class="max-w-5xl mx-auto px-4 py-6">
         <section class="bg-white rounded-3xl shadow-sm border border-gray-100 p-4 md:p-5 mb-5">
@@ -132,18 +167,15 @@ body { padding-bottom: 80px; }
                 </div>
                 <div id="library-count" class="bg-emerald-50 text-emerald-700 rounded-2xl px-4 py-2 text-sm font-black text-center"></div>
             </div>
-            <div class="theme-panel" aria-label="اختيار لون لوحة الطالب">
-          <div>
-            <span class="theme-panel-title">لون لوحتي</span>
-            <span class="theme-panel-subtitle">اختر لونًا يساعدك على التركيز ويجعل الحفظ ممتعًا.</span>
-          </div>
-          <div class="theme-options" id="dashboard-theme-picker">
-            <button type="button" class="theme-option" data-theme="emerald"><span class="theme-dot theme-dot-emerald"></span>زمردي</button>
-            <button type="button" class="theme-option" data-theme="indigo"><span class="theme-dot theme-dot-indigo"></span>نيلي</button>
-            <button type="button" class="theme-option" data-theme="rose"><span class="theme-dot theme-dot-rose"></span>وردي</button>
-            <button type="button" class="theme-option" data-theme="amber"><span class="theme-dot theme-dot-amber"></span>ذهبي</button>
-          </div>
-        </div>
+            <div class="theme-mini" aria-label="اختيار لون لوحة الطالب">
+                <span class="theme-mini-label">لون اللوحة</span>
+                <div class="theme-mini-options" id="dashboard-theme-picker">
+                    <button type="button" class="theme-swatch theme-dot-emerald" data-theme="emerald" title="زمردي">زمردي</button>
+                    <button type="button" class="theme-swatch theme-dot-indigo" data-theme="indigo" title="نيلي">نيلي</button>
+                    <button type="button" class="theme-swatch theme-dot-rose" data-theme="rose" title="وردي">وردي</button>
+                    <button type="button" class="theme-swatch theme-dot-amber" data-theme="amber" title="ذهبي">ذهبي</button>
+                </div>
+            </div>
         </section>
         <h2 id="section-available" class="hidden text-lg font-black text-gray-700 mb-4 items-center gap-2">
     <span class="w-2 h-6 bg-emerald-500 rounded-full inline-block"></span>
@@ -287,28 +319,22 @@ async function chargerDevoirs() {
             if (!session) return;
             const devoirs = await Auth.getDevoirs('student', session.username);
             const devoirsEnAttente = devoirs.filter(d => d.statut === 'en_attente');
-            
             const zoneDevoirs = document.getElementById('zone-devoirs');
+            if (!zoneDevoirs) return;
             if (devoirsEnAttente.length > 0) {
-                let html = '<h2 class="text-xl font-black text-rose-600 mb-3">🚨 واجبات جديدة </h2>';
-                devoirsEnAttente.forEach(devoir => {
-                    html += `<div class="bg-rose-50 border border-rose-200 p-4 rounded-xl mb-3">
-                        <p class="text-sm text-rose-800 font-bold mb-1"> من الأستاذ(ة): ${devoir.prof_name}</p>
-                        <h3 class="text-lg font-black text-gray-800">سورة ${devoir.surate} : من الآية ${devoir.aya_debut} إلى الآية ${devoir.aya_fin}</h3>
-                        <p class="text-sm text-gray-600 mt-1">⏳ آخر أجل : ${devoir.date_limite}</p>
-                        <button onclick="validerDevoir('${devoir.id}')" class="mt-2 bg-rose-600 text-white px-4 py-1 rounded font-bold">حفظت الواجب ✅</button>
-                    </div>`;
-                });
-                zoneDevoirs.innerHTML = html;
+                zoneDevoirs.innerHTML = devoirsEnAttente.map(function(devoir) {
+                    return '<div class="mb-2 rounded-xl bg-rose-50 border border-rose-100 p-2">' +
+                        '<div class="font-black text-rose-700">سورة ' + devoir.surate + '</div>' +
+                        '<div class="text-[11px] text-gray-600">من الآية ' + devoir.aya_debut + ' إلى ' + devoir.aya_fin + '</div>' +
+                        '<button onclick="validerDevoir(\'' + devoir.id + '\')" class="mt-2 rounded-full bg-rose-600 text-white px-3 py-1 text-[11px] font-black">حفظت الواجب</button>' +
+                    '</div>';
+                }).join('');
             } else {
-                zoneDevoirs.innerHTML = `<div class="text-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm mb-4"><div class="text-4xl mb-3 opacity-50">📚</div><p class="text-gray-600 text-lg font-bold" dir="rtl">لا يوجد أي واجب حالياً.</p></div>`;
+                zoneDevoirs.innerHTML = '<span class="text-gray-500">لا يوجد واجب حاليًا.</span>';
             }
         }
 
-        
-
-
-      function initDashboardThemePicker() {
+              function initDashboardThemePicker() {
         const picker = document.getElementById('dashboard-theme-picker');
         if (!picker || !window.PlatformTheme) return;
         const buttons = Array.from(picker.querySelectorAll('[data-theme]'));
@@ -333,13 +359,18 @@ async function chargerDevoirs() {
             // 1. Affichage des messages administratifs
             const userMessages = await Auth.getMessages(session.username);
             const msgContainer = document.getElementById('messages-container');
-            if (userMessages.length > 0) {
-                msgContainer.classList.remove('hidden');
-                msgContainer.innerHTML = userMessages.map(m => `
-                    <div class="bg-blue-50 border-r-4 border-blue-500 p-4 rounded-xl mb-3 shadow-sm flex justify-between items-center">
-                        <div><h4 class="font-bold text-blue-800 text-sm">رسالة من الإدارة 📢 :</h4><p class="text-blue-900 mt-1 text-lg font-semibold">${m.text}</p></div>
-                        <button onclick="Auth.clearMessages('${session.username}'); window.location.reload();" class="bg-white text-blue-500 px-3 py-1 rounded-lg text-sm font-bold shadow-sm">إخفاء ✓</button>
-                    </div>`).join('');
+            if (msgContainer) {
+                if (userMessages.length > 0) {
+                    msgContainer.innerHTML = userMessages.map(function(m) {
+                        return '<div class="mb-2 rounded-xl bg-blue-50 border border-blue-100 p-2">' +
+                            '<div class="font-black text-blue-800 text-xs">رسالة من الإدارة</div>' +
+                            '<p class="text-blue-900 mt-1">' + m.text + '</p>' +
+                            '<button onclick="Auth.clearMessages(\'' + session.username + '\'); window.location.reload();" class="mt-2 rounded-full bg-white text-blue-600 px-3 py-1 text-[11px] font-black shadow-sm">إخفاء</button>' +
+                        '</div>';
+                    }).join('');
+                } else {
+                    msgContainer.innerHTML = '<span class="text-gray-500">لا توجد رسائل جديدة.</span>';
+                }
             }
 
             // 2. Affichage des infos de l'élève
@@ -427,7 +458,7 @@ const score = pData.score || pData.global_score || pData.globalScore || 0;
             });
 
             // 5. Mise à jour de la barre de progression globale
-            document.getElementById('student-progress-label').innerText = `${completedCount} / ${availableCount} سورة`;
+            document.getElementById('student-progress-label').innerText = `${toArabicNum(completedCount)} / ${toArabicNum(availableCount)}`;
             const progressPercent = availableCount === 0 ? 0 : Math.round((completedCount / availableCount) * 100);
             document.getElementById('student-progress-fill').style.width = `${progressPercent}%`;
 
