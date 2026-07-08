@@ -20,7 +20,12 @@
         .surah-card { transition: transform 0.25s ease, box-shadow 0.25s ease; cursor: pointer; }
         .surah-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px -6px rgba(0,0,0,0.15); }
         .surah-card-locked { opacity: 0.55; cursor: not-allowed; filter: grayscale(0.3); }
-        .juz-section { scroll-margin-top: 16px; }
+        .juz-section { scroll-margin-top: 16px; transition: opacity .2s ease, filter .2s ease, transform .2s ease; }
+        .juz-section.is-muted { opacity: .42; filter: grayscale(.9); }
+        .juz-section.is-active { opacity: 1; filter: none; transform: translateY(-1px); }
+        .juz-section.is-muted .surah-journey { pointer-events: none; }
+        .juz-section.is-muted .juz-road-header { background: linear-gradient(135deg, #e5e7eb, #f8fafc) !important; }
+        .juz-section.is-active .juz-road-header { box-shadow: inset 0 -5px 0 color-mix(in srgb, var(--platform-primary) 18%, transparent); }
         .daily-hub {
             max-width: 64rem; margin: 18px auto 0; padding: 0 16px;
         }
@@ -279,6 +284,16 @@ body { padding-bottom: 80px; }
             `;
         }
 
+        function getCurrentSurah() {
+            const order = getJourneyOrder();
+            return order.find(surah => !surah.isCompleted) || order[order.length - 1] || null;
+        }
+
+        function isCurrentJuz(juz) {
+            const current = getCurrentSurah();
+            return !!current && current.num >= juz.start && current.num <= juz.end;
+        }
+
         function renderSurahLibrary() {
             const container = document.getElementById('available-grid');
             const filtered = getJourneyOrder();
@@ -295,20 +310,19 @@ body { padding-bottom: 80px; }
                 const toSurah = allJuzSurahs[allJuzSurahs.length - 1];
                 const completedInJuz = allJuzSurahs.filter(s => s.isCompleted).length;
                 const rangeLabel = fromSurah && toSurah ? `من سورة ${fromSurah.nameAr} إلى سورة ${toSurah.nameAr}` : '';
+                const sectionState = isCurrentJuz(juz) ? 'is-active' : 'is-muted';
                 return `
-                    <section class="juz-section bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                        <details ${index === 0 ? 'open' : ''}>
-                            <summary class="juz-road-header cursor-pointer list-none px-4 py-4 flex items-center justify-between gap-3">
-                                <div>
-                                    <h3 class="font-black text-gray-900 text-lg">${juz.name}</h3>
-                                    <p class="text-xs text-gray-500 font-bold quran-font">${rangeLabel}</p>
-                                </div>
-                                <span class="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs font-black text-emerald-700">${toArabicNum(completedInJuz)} / ${toArabicNum(allJuzSurahs.length)}</span>
-                            </summary>
-                            <div class="surah-journey">
-                                ${items.map(renderSurahCard).join('')}
+                    <section class="juz-section ${sectionState} bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                        <div class="juz-road-header px-4 py-4 flex items-center justify-between gap-3">
+                            <div>
+                                <h3 class="font-black text-gray-900 text-lg">${juz.name}</h3>
+                                <p class="text-xs text-gray-500 font-bold quran-font">${rangeLabel}</p>
                             </div>
-                        </details>
+                            <span class="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs font-black text-emerald-700">${toArabicNum(completedInJuz)} / ${toArabicNum(allJuzSurahs.length)}</span>
+                        </div>
+                        <div class="surah-journey">
+                            ${items.map(renderSurahCard).join('')}
+                        </div>
                     </section>
                 `;
             }).join('');
