@@ -205,13 +205,19 @@ body { padding-bottom: 80px; }
             container.innerHTML = juzRanges.map(([start, end], index) => {
                 const items = filtered.filter(s => s.num >= start && s.num <= end);
                 if (items.length === 0) return '';
+                const juzSurahs = dashboardState.surahs.filter(s => s.num >= start && s.num <= end).sort((a, b) => a.num - b.num);
+                const firstSurah = juzSurahs[0];
+                const lastSurah = juzSurahs[juzSurahs.length - 1];
+                const juzRangeLabel = firstSurah && lastSurah
+                    ? `من ${firstSurah.nameAr} إلى ${lastSurah.nameAr}`
+                    : `من سورة ${toArabicNum(start)} إلى سورة ${toArabicNum(end)}`;
                 return `
                     <section class="juz-section bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                         <details ${index === 29 || dashboardState.search || dashboardState.filter !== 'all' ? 'open' : ''}>
                             <summary class="cursor-pointer list-none px-4 py-4 flex items-center justify-between gap-3 bg-gray-50 hover:bg-emerald-50">
                                 <div>
                                     <h3 class="font-black text-gray-800">الجزء ${toArabicNum(index + 1)}</h3>
-                                    <p class="text-xs text-gray-500 font-bold">من سورة ${toArabicNum(start)} إلى سورة ${toArabicNum(end)}</p>
+                                    <p class="text-xs text-gray-500 font-bold quran-font">${juzRangeLabel}</p>
                                 </div>
                                 <span class="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs font-black text-emerald-700">${toArabicNum(items.length)} سورة</span>
                             </summary>
