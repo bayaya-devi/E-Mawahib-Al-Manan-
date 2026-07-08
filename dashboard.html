@@ -12,7 +12,9 @@
     <script src="auth.js"></script>
     <script src="registry.js"></script>
 
-    <style>
+        <link rel="stylesheet" href="platform-theme.css">
+    <script src="platform-theme.js"></script>
+<style>
         body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
         .quran-font { font-family: 'Amiri', serif; }
         .surah-card { transition: transform 0.25s ease, box-shadow 0.25s ease; cursor: pointer; }
@@ -100,7 +102,19 @@ body { padding-bottom: 80px; }
                 </div>
                 <div id="library-count" class="bg-emerald-50 text-emerald-700 rounded-2xl px-4 py-2 text-sm font-black text-center"></div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-[1fr_180px] gap-3 mb-4">
+            <div class="theme-panel" aria-label="اختيار لون لوحة الطالب">
+          <div>
+            <span class="theme-panel-title">لون لوحتي</span>
+            <span class="theme-panel-subtitle">اختر لونًا يساعدك على التركيز ويجعل الحفظ ممتعًا.</span>
+          </div>
+          <div class="theme-options" id="dashboard-theme-picker">
+            <button type="button" class="theme-option" data-theme="emerald"><span class="theme-dot theme-dot-emerald"></span>زمردي</button>
+            <button type="button" class="theme-option" data-theme="indigo"><span class="theme-dot theme-dot-indigo"></span>نيلي</button>
+            <button type="button" class="theme-option" data-theme="rose"><span class="theme-dot theme-dot-rose"></span>وردي</button>
+            <button type="button" class="theme-option" data-theme="amber"><span class="theme-dot theme-dot-amber"></span>ذهبي</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-[1fr_180px] gap-3 mb-4">
                 <input id="surah-search" class="search-input w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 font-bold outline-none focus:border-emerald-500" type="search" placeholder="ابحث بالاسم، الرقم، أو عدد الآيات">
                 <select id="surah-sort" class="sort-select rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 font-bold outline-none focus:border-emerald-500">
                     <option value="num">حسب الرقم</option>
@@ -275,6 +289,25 @@ async function chargerDevoirs() {
 
         
 
+
+      function initDashboardThemePicker() {
+        const picker = document.getElementById('dashboard-theme-picker');
+        if (!picker || !window.PlatformTheme) return;
+        const buttons = Array.from(picker.querySelectorAll('[data-theme]'));
+        const refresh = (theme) => {
+          buttons.forEach((button) => {
+            const isActive = button.dataset.theme === theme;
+            button.classList.toggle('active', isActive);
+            button.setAttribute('aria-pressed', String(isActive));
+          });
+        };
+        refresh(window.PlatformTheme.get());
+        buttons.forEach((button) => {
+          button.addEventListener('click', () => {
+            refresh(window.PlatformTheme.set(button.dataset.theme));
+          });
+        });
+      }
         async function buildStudentDashboard() {
             const session = Auth.getSession();
             if (!session) return;
@@ -397,6 +430,7 @@ const score = pData.score || pData.global_score || pData.globalScore || 0;
             renderSurahLibrary();
         }
 
+        initDashboardThemePicker();
         chargerDevoirs();
         buildStudentDashboard();
     </script>
