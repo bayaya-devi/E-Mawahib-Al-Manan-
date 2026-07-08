@@ -20,9 +20,6 @@
         .surah-card { transition: transform 0.25s ease, box-shadow 0.25s ease; cursor: pointer; }
         .surah-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px -6px rgba(0,0,0,0.15); }
         .surah-card-locked { opacity: 0.55; cursor: not-allowed; filter: grayscale(0.3); }
-        .filter-chip { transition: all .2s ease; }
-        .filter-chip.active { background: #047857; color: white; border-color: #047857; box-shadow: 0 8px 18px rgba(4,120,87,.22); }
-        .sort-select, .search-input { min-height: 46px; }
         .juz-section { scroll-margin-top: 16px; }
         .surah-journey { position: relative; padding: 18px 8px 22px; }
         .surah-journey::before {
@@ -147,22 +144,6 @@ body { padding-bottom: 80px; }
             <button type="button" class="theme-option" data-theme="amber"><span class="theme-dot theme-dot-amber"></span>ذهبي</button>
           </div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-[1fr_180px] gap-3 mb-4">
-                <input id="surah-search" class="search-input w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 font-bold outline-none focus:border-emerald-500" type="search" placeholder="ابحث بالاسم، الرقم، أو عدد الآيات">
-                <select id="surah-sort" class="sort-select rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 font-bold outline-none focus:border-emerald-500">
-                    <option value="num">حسب الرقم</option>
-                    <option value="name">حسب الاسم</option>
-                    <option value="ayat">حسب عدد الآيات</option>
-                </select>
-            </div>
-            <div class="flex gap-2 overflow-x-auto pb-2" id="filter-bar">
-                <button class="filter-chip active shrink-0 rounded-full border border-gray-200 px-4 py-2 text-sm font-black" data-filter="all">كل السور</button>
-                <button class="filter-chip shrink-0 rounded-full border border-gray-200 px-4 py-2 text-sm font-black" data-filter="progress">قيد الدراسة</button>
-                <button class="filter-chip shrink-0 rounded-full border border-gray-200 px-4 py-2 text-sm font-black" data-filter="completed">تمت</button>
-                <button class="filter-chip shrink-0 rounded-full border border-gray-200 px-4 py-2 text-sm font-black" data-filter="short">قصيرة</button>
-                <button class="filter-chip shrink-0 rounded-full border border-gray-200 px-4 py-2 text-sm font-black" data-filter="medium">متوسطة</button>
-                <button class="filter-chip shrink-0 rounded-full border border-gray-200 px-4 py-2 text-sm font-black" data-filter="long">طويلة</button>
-            </div>
         </section>
         <h2 id="section-available" class="hidden text-lg font-black text-gray-700 mb-4 items-center gap-2">
     <span class="w-2 h-6 bg-emerald-500 rounded-full inline-block"></span>
@@ -179,7 +160,7 @@ body { padding-bottom: 80px; }
 
     <script>
         function toArabicNum(n) { return String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]); }
-        const dashboardState = { filter: 'all', search: '', sort: 'num', surahs: [] };
+        const dashboardState = { surahs: [] };
         const juzJourney = [
             { num: 30, name: 'جزء عمّ', start: 78, end: 114 },
             { num: 29, name: 'جزء تبارك', start: 67, end: 77 },
@@ -226,28 +207,6 @@ body { padding-bottom: 80px; }
             return 'long';
         }
 
-        function matchesFilter(surah) {
-            if (dashboardState.filter === 'completed') return surah.isCompleted;
-            if (dashboardState.filter === 'progress') return !surah.isCompleted;
-            if (['short', 'medium', 'long'].includes(dashboardState.filter)) return surah.lengthType === dashboardState.filter;
-            return true;
-        }
-
-        function matchesSearch(surah) {
-            const q = dashboardState.search.trim().toLowerCase();
-            if (!q) return true;
-            return [surah.nameAr, surah.nameFr || '', String(surah.num), String(surah.ayat)]
-                .some(value => String(value).toLowerCase().includes(q));
-        }
-
-        function sortSurahs(items) {
-            return [...items].sort((a, b) => {
-                if (dashboardState.sort === 'name') return String(a.nameAr).localeCompare(String(b.nameAr), 'ar');
-                if (dashboardState.sort === 'ayat') return a.ayat - b.ayat || a.num - b.num;
-                return b.num - a.num;
-            });
-        }
-
         function getJourneyOrder() {
             return [...dashboardState.surahs].sort((a, b) => b.num - a.num);
         }
@@ -290,7 +249,7 @@ body { padding-bottom: 80px; }
 
         function renderSurahLibrary() {
             const container = document.getElementById('available-grid');
-            const filtered = sortSurahs(dashboardState.surahs.filter(s => matchesFilter(s) && matchesSearch(s)));
+            const filtered = getJourneyOrder();
             document.getElementById('library-count').innerText = `${toArabicNum(filtered.length)} / ${toArabicNum(dashboardState.surahs.length)} سورة`;
             if (filtered.length === 0) {
                 container.innerHTML = `<div class="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-500 font-bold">لا توجد سورة مطابقة لهذا البحث.</div>`;
@@ -306,7 +265,7 @@ body { padding-bottom: 80px; }
                 const rangeLabel = fromSurah && toSurah ? `من سورة ${fromSurah.nameAr} إلى سورة ${toSurah.nameAr}` : '';
                 return `
                     <section class="juz-section bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                        <details ${index === 0 || dashboardState.search || dashboardState.filter !== 'all' ? 'open' : ''}>
+                        <details ${index === 0 ? 'open' : ''}>
                             <summary class="juz-road-header cursor-pointer list-none px-4 py-4 flex items-center justify-between gap-3">
                                 <div>
                                     <h3 class="font-black text-gray-900 text-lg">${juz.name}</h3>
@@ -322,25 +281,6 @@ body { padding-bottom: 80px; }
                 `;
             }).join('');
         }
-        function bindLibraryControls() {
-            document.querySelectorAll('.filter-chip').forEach(btn => {
-                btn.onclick = () => {
-                    document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    dashboardState.filter = btn.dataset.filter;
-                    renderSurahLibrary();
-                };
-            });
-            document.getElementById('surah-search').oninput = (event) => {
-                dashboardState.search = event.target.value;
-                renderSurahLibrary();
-            };
-            document.getElementById('surah-sort').onchange = (event) => {
-                dashboardState.sort = event.target.value;
-                renderSurahLibrary();
-            };
-        }
-
         // Ajoute ceci dans la fonction d'initialisation de ta page (ex: window.onload)
 async function chargerDevoirs() {
             const session = Auth.getSession();
@@ -504,7 +444,6 @@ const score = pData.score || pData.global_score || pData.globalScore || 0;
                         lengthType: getLengthType(surah.ayat)
                     };
                 });
-            bindLibraryControls();
             renderSurahLibrary();
         }
 
