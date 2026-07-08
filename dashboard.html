@@ -47,80 +47,53 @@
             box-shadow: 0 0 0 1px rgba(15,23,42,.14); cursor: pointer; color: transparent; overflow: hidden;
         }
         .theme-swatch.active { box-shadow: 0 0 0 3px color-mix(in srgb, var(--platform-primary) 28%, transparent); transform: translateY(-1px); }
-        .surah-journey {
-            position: relative; padding: 26px 6px 34px; min-height: 120px;
-            background: linear-gradient(180deg, rgba(15,23,42,.03), transparent 34%, rgba(15,23,42,.04));
-        }
+        .surah-journey { position: relative; padding: 22px 10px 28px; min-height: 120px; }
         .surah-journey::before {
-            content: ''; position: absolute; inset: 18px 13% 22px 13%;
-            background: radial-gradient(circle, color-mix(in srgb, var(--platform-primary) 20%, transparent) 0 3px, transparent 4px) 0 0 / 34px 34px;
-            opacity: .5; pointer-events: none;
+            content: ''; position: absolute; inset: 24px 10% 24px 10%; border-radius: 48% 52% 46% 54%;
+            background: radial-gradient(circle, color-mix(in srgb, var(--platform-primary) 22%, transparent) 0 3px, transparent 4px) 0 0 / 34px 34px;
+            opacity: .55; pointer-events: none;
         }
-        .journey-step { position: relative; min-height: 96px; display: flex; align-items: center; margin: -2px 0; }
-        .journey-step:nth-child(6n+1) { justify-content: center; transform: translateX(-18%); }
-        .journey-step:nth-child(6n+2) { justify-content: center; transform: translateX(10%); }
-        .journey-step:nth-child(6n+3) { justify-content: center; transform: translateX(-4%); }
-        .journey-step:nth-child(6n+4) { justify-content: center; transform: translateX(22%); }
-        .journey-step:nth-child(6n+5) { justify-content: center; transform: translateX(-14%); }
-        .journey-step:nth-child(6n) { justify-content: center; transform: translateX(6%); }
+        .journey-step { position: relative; min-height: 78px; display: flex; align-items: center; margin: 0; }
+        .journey-step:nth-child(6n+1) { justify-content: center; transform: translateX(-10%); }
+        .journey-step:nth-child(6n+2) { justify-content: flex-start; padding-left: 11%; }
+        .journey-step:nth-child(6n+3) { justify-content: center; transform: translateX(12%); }
+        .journey-step:nth-child(6n+4) { justify-content: flex-end; padding-right: 12%; }
+        .journey-step:nth-child(6n+5) { justify-content: center; transform: translateX(-4%); }
+        .journey-step:nth-child(6n) { justify-content: flex-start; padding-left: 24%; }
         .journey-node {
-            width: 92px; height: 78px; border: 0; border-radius: 999px;
+            width: 172px; min-height: 64px; border: 0; text-align: center; border-radius: 44% 56% 50% 50% / 58% 42% 52% 48%;
+            padding: 10px 12px; background: linear-gradient(145deg, #fff, color-mix(in srgb, var(--platform-primary-soft) 38%, #fff));
+            box-shadow: inset 0 -7px 14px rgba(15,23,42,.08), 0 14px 26px rgba(15,23,42,.12);
             display: grid; place-items: center; position: relative; isolation: isolate;
-            color: white; cursor: pointer; padding: 0;
-            box-shadow: inset 0 -10px 0 rgba(0,0,0,.16), inset 0 8px 16px rgba(255,255,255,.28), 0 14px 24px rgba(15,23,42,.20);
-        }
-        .journey-node::before {
-            content: ''; position: absolute; top: 12px; left: 17px; width: 28px; height: 16px;
-            border-radius: 999px; background: rgba(255,255,255,.38); transform: rotate(-24deg); pointer-events: none;
         }
         .journey-node::after {
-            content: ''; position: absolute; left: 13px; right: 13px; bottom: -10px; height: 12px;
-            border-radius: 999px; background: rgba(15,23,42,.16); filter: blur(.2px); z-index: -1;
+            content: ''; position: absolute; inset: 8px 12px auto auto; width: 28px; height: 10px; border-radius: 999px;
+            background: rgba(255,255,255,.42); transform: rotate(-12deg); pointer-events: none;
         }
         .journey-node:disabled { cursor: not-allowed; }
-        .journey-icon { font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 0 rgba(0,0,0,.14)); }
-        .journey-label {
-            position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
-            min-width: 92px; max-width: 130px; padding: 3px 8px; border-radius: 999px;
-            background: color-mix(in srgb, var(--platform-surface) 88%, #fff); color: #334155;
-            box-shadow: 0 6px 14px rgba(15,23,42,.10); text-align: center;
+        .journey-orb {
+            position: absolute; top: 4px; transform: translateY(-40%); width: 30px; height: 30px; border-radius: 999px;
+            display: grid; place-items: center; border: 3px solid #fff; box-shadow: 0 8px 18px rgba(15,23,42,.16); font-weight: 900; z-index: 2;
         }
-        .journey-name { display: block; font-size: 12px; font-weight: 900; line-height: 1.1; }
-        .journey-meta { display: block; margin-top: 1px; font-size: 9px; font-weight: 900; opacity: .62; }
-        .journey-node.done { background: linear-gradient(180deg, #34d399, #059669); }
-        .journey-node.current { background: linear-gradient(180deg, var(--platform-accent), var(--platform-primary)); transform: scale(1.08); }
-        .journey-node.locked { background: linear-gradient(180deg, #64748b, #334155); color: #cbd5e1; opacity: .9; }
-        .journey-node.locked .journey-label { background: rgba(51,65,85,.88); color: #cbd5e1; box-shadow: none; }
-        .journey-node.current .journey-label { color: var(--platform-primary-dark); box-shadow: 0 8px 18px color-mix(in srgb, var(--platform-primary) 22%, transparent); }
-        .juz-road-header {
-            margin: 0; padding: 0 !important; background: transparent !important;
-        }
-        .unit-card {
-            width: 100%; border-radius: 22px; overflow: hidden; display: grid; grid-template-columns: 1fr 82px;
-            background: linear-gradient(180deg, var(--platform-primary), var(--platform-primary-dark));
-            color: white; box-shadow: inset 0 -8px 0 rgba(0,0,0,.14), 0 16px 26px color-mix(in srgb, var(--platform-primary) 25%, transparent);
-        }
-        .unit-card-main { padding: 16px 18px; }
-        .unit-eyebrow { font-size: 12px; font-weight: 900; opacity: .72; }
-        .unit-title { margin-top: 2px; font-size: 22px; font-weight: 900; line-height: 1.15; }
-        .unit-subtitle { margin-top: 4px; font-size: 12px; font-weight: 800; opacity: .78; }
-        .unit-count { display: grid; place-items: center; border-right: 1px solid rgba(255,255,255,.16); font-size: 13px; font-weight: 900; }
+        .journey-step:nth-child(odd) .journey-orb { right: calc(50% - 96px); }
+        .journey-step:nth-child(even) .journey-orb { left: calc(50% - 96px); }
+        .journey-node.done, .journey-orb.done { background: linear-gradient(135deg, #10b981, #047857); color: white; }
+        .journey-node.current, .journey-orb.current { background: linear-gradient(135deg, var(--platform-primary), var(--platform-accent)); color: white; }
+        .journey-node.locked { background: linear-gradient(145deg, #e5e7eb, #f8fafc); color: #94a3b8; box-shadow: inset 0 -7px 14px rgba(15,23,42,.06), 0 10px 20px rgba(15,23,42,.08); }
+        .journey-orb.locked { background: #d1d5db; color: #64748b; }
+        .journey-meta { font-size: 10px; font-weight: 800; opacity: .78; }
+        .journey-state { font-size: 10px; font-weight: 900; border-radius: 999px; padding: 3px 8px; background: rgba(255,255,255,.7); color: inherit; }
+        .juz-road-header { background: linear-gradient(135deg, var(--platform-primary-soft), color-mix(in srgb, var(--platform-accent-soft) 62%, #fff)); }
         @media (max-width: 760px) { .daily-grid { grid-template-columns: 1fr; } }
         @media (max-width: 640px) {
-            .surah-journey { padding-top: 22px; }
-            .surah-journey::before { inset-inline: 6%; background-size: 28px 28px; }
-            .journey-step { min-height: 92px; }
-            .journey-step:nth-child(6n+1) { transform: translateX(-22%); }
-            .journey-step:nth-child(6n+2) { transform: translateX(18%); }
-            .journey-step:nth-child(6n+3) { transform: translateX(-8%); }
-            .journey-step:nth-child(6n+4) { transform: translateX(24%); }
-            .journey-step:nth-child(6n+5) { transform: translateX(-18%); }
-            .journey-step:nth-child(6n) { transform: translateX(5%); }
-            .journey-node { width: 82px; height: 70px; }
-            .journey-icon { font-size: 27px; }
-            .journey-label { min-width: 78px; max-width: 112px; }
-            .unit-card { grid-template-columns: 1fr 64px; }
-            .unit-title { font-size: 19px; }
+            .daily-hub { margin-top: 12px; padding: 0 12px; }
+            .surah-journey { padding-inline: 0; }
+            .surah-journey::before { inset-inline: 4%; background-size: 28px 28px; }
+            .journey-step, .journey-step:nth-child(n) { justify-content: center; padding-left: 0; padding-right: 0; transform: none; }
+            .journey-step:nth-child(3n+1) { transform: translateX(-8%); }
+            .journey-step:nth-child(3n+2) { transform: translateX(8%); }
+            .journey-node { width: min(78vw, 180px); }
+            .journey-step:nth-child(n) .journey-orb { left: auto; right: calc(50% - 96px); }
         }
         .header-bg { background: linear-gradient(135deg, #1a3c34 0%, #0c4a3b 40%, #14532d 100%); }
         .nav-bottom { 
@@ -279,25 +252,28 @@ body { padding-bottom: 80px; }
             return 'locked';
         }
 
-        function getJourneyIcon(state, surah) {
-            if (state === 'locked') return '🔒';
-            if (state === 'done') return '✓';
-            const icons = ['▶', '📖', '🎧', '⭐'];
-            return icons[surah.num % icons.length];
+        function getJourneyLabel(state, surah) {
+            if (state === 'done') return surah.score ? `تمت • ${surah.score}%` : 'تمت';
+            if (state === 'current') return 'ابدأ الآن';
+            return 'مقفلة';
         }
 
         function renderSurahCard(surah) {
             const state = getJourneyState(surah);
+            const icon = state === 'done' ? '✓' : state === 'current' ? '▶' : '🔒';
             const disabled = state === 'locked' ? 'disabled aria-disabled="true"' : '';
             const action = state === 'locked' ? '' : `onclick="window.location.href='${surah.file}'"`;
             return `
                 <div class="journey-step">
-                    <button type="button" ${action} ${disabled} class="journey-node ${state}" aria-label="${surah.nameAr}">
-                        <span class="journey-icon">${getJourneyIcon(state, surah)}</span>
-                        <span class="journey-label">
-                            <span class="journey-name quran-font">${surah.nameAr}</span>
-                            <span class="journey-meta">${toArabicNum(surah.num)} • ${toArabicNum(surah.ayat)} آيات</span>
-                        </span>
+                    <div class="journey-orb ${state}" aria-hidden="true">${icon}</div>
+                    <button type="button" ${action} ${disabled} class="journey-node ${state}">
+                        <div class="min-w-0 flex-grow">
+                            <div class="flex items-center justify-between gap-2 mb-1">
+                                <h3 class="quran-font text-xl font-black truncate">${surah.nameAr}</h3>
+                                <span class="journey-state">${getJourneyLabel(state, surah)}</span>
+                            </div>
+                            <p class="journey-meta">سورة ${toArabicNum(surah.num)} • ${toArabicNum(surah.ayat)} آيات • ${surah.nameFr || ''}</p>
+                        </div>
                     </button>
                 </div>
             `;
@@ -322,15 +298,12 @@ body { padding-bottom: 80px; }
                 return `
                     <section class="juz-section bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                         <details ${index === 0 ? 'open' : ''}>
-                            <summary class="juz-road-header cursor-pointer list-none">
-                                <div class="unit-card">
-                                    <div class="unit-card-main">
-                                        <div class="unit-eyebrow">رحلة السور</div>
-                                        <h3 class="unit-title">${juz.name}</h3>
-                                        <p class="unit-subtitle quran-font">${rangeLabel}</p>
-                                    </div>
-                                    <div class="unit-count">${toArabicNum(completedInJuz)} / ${toArabicNum(allJuzSurahs.length)}</div>
+                            <summary class="juz-road-header cursor-pointer list-none px-4 py-4 flex items-center justify-between gap-3">
+                                <div>
+                                    <h3 class="font-black text-gray-900 text-lg">${juz.name}</h3>
+                                    <p class="text-xs text-gray-500 font-bold quran-font">${rangeLabel}</p>
                                 </div>
+                                <span class="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs font-black text-emerald-700">${toArabicNum(completedInJuz)} / ${toArabicNum(allJuzSurahs.length)}</span>
                             </summary>
                             <div class="surah-journey">
                                 ${items.map(renderSurahCard).join('')}
