@@ -217,7 +217,7 @@ body { padding-bottom: 80px; }
                     <div class="reward-value reward-stars-value"><span id="reward-stars">0</span> ★</div>
                     <div class="reward-note" id="reward-decay-note">كل سورة تضيف رصيدا جديدا.</div>
                 </div>
-                <div class="reward-pill" aria-label="ترتيبك في القسم بدون أسماء">
+                <div class="reward-pill" aria-label="ترتيبك في القسم">
                     <div class="reward-kicker">ترتيبك في القسم</div>
                     <div class="reward-value reward-rank-value" id="class-rank-value">...</div>
                     <div class="reward-note" id="class-rank-note">ترتيب مجهول حسب النجوم.</div>
@@ -392,7 +392,7 @@ body { padding-bottom: 80px; }
             if (group.length < 2) return 'hidden';
             const result = getMiniGameResult(gameNumber);
             if (result && result.score >= 70) return 'done';
-            return group.some(surah => surah.isCompleted) ? 'current' : 'locked';
+            return 'current';
         }
 
         function renderMiniGameCard(gameNumber) {
@@ -401,9 +401,9 @@ body { padding-bottom: 80px; }
             if (state === 'hidden') return '';
             const config = getMiniGameConfig(gameNumber);
             const result = getMiniGameResult(gameNumber);
-            const disabled = state === 'locked' ? 'disabled aria-disabled="true"' : '';
-            const action = state === 'locked' ? '' : 'onclick="openMiniGame(' + gameNumber + ')"';
-            const label = state === 'done' ? 'تم اللعب • ' + result.score + '%' : state === 'current' ? 'لعبة مفتوحة' : 'افتح سورة من هذه المرحلة';
+            const disabled = '';
+            const action = 'onclick="openMiniGame(' + gameNumber + ')"';
+            const label = state === 'done' ? 'تم اللعب • ' + result.score + '%' : 'تدريب مفتوح';
             const names = group.map(s => s.nameAr).join('، ');
             return '<div class="journey-step mini-game-step">' +
                 '<div class="journey-orb mini-game-orb ' + state + '" aria-hidden="true">' + config.icon + '</div>' +
@@ -744,6 +744,7 @@ body { padding-bottom: 80px; }
 
         function buildMiniGameStages(group, bank, type) {
             const entries = shuffleMiniGame(bank);
+            if (!entries.length) return [];
             const withNext = entries.filter(entry => findNextVerse(entry, bank));
             const stages = [];
             const builders = {
@@ -780,19 +781,28 @@ body { padding-bottom: 80px; }
 
         async function openMiniGame(gameNumber) {
             const group = getMiniGameGroup(gameNumber);
-            if (group.length < 2 || !group.some(surah => surah.isCompleted)) return;
+            if (group.length < 2) return;
             const config = getMiniGameConfig(gameNumber);
-            const bank = await loadMiniGameVerses(group);
-            activeMiniGame = {
-                gameNumber,
-                config,
-                stages: buildMiniGameStages(group, bank, config.type),
-                index: 0,
-                correct: 0,
-                selectedOrder: []
-            };
             ensureMiniGameModal().classList.add('open');
-            renderMiniGameScene();
+            document.getElementById('mini-game-kicker').textContent = config.hint;
+            document.getElementById('mini-game-title').textContent = config.icon + ' ' + config.title;
+            document.getElementById('mini-game-body').innerHTML = '<div class="py-8 text-center font-black text-gray-500">جاري تجهيز لعبة الآيات...</div>';
+            try {
+                const bank = await loadMiniGameVerses(group);
+                const stages = buildMiniGameStages(group, bank, config.type);
+                if (!stages.length) throw new Error('No mini-game stages available');
+                activeMiniGame = {
+                    gameNumber,
+                    config,
+                    stages,
+                    index: 0,
+                    correct: 0,
+                    selectedOrder: []
+                };
+                renderMiniGameScene();
+            } catch (error) {
+                document.getElementById('mini-game-body').innerHTML = '<div class="py-8 text-center font-black text-amber-600">تعذر تجهيز اللعبة الآن. افتح سورة ثم جرّب مرة أخرى.</div>';
+            }
         }
 
         function closeMiniGame() {
@@ -1070,7 +1080,7 @@ async function chargerDevoirs() {
                     return;
                 }
                 rankValueEl.textContent = ranking.rank + ' / ' + ranking.total;
-                if (rankNoteEl) rankNoteEl.textContent = 'بدون أسماء: ' + ranking.stars + ' نجمة في قسمك.';
+                if (rankNoteEl) rankNoteEl.textContent = 'ترتيب مجهول حسب النجوم.';
             } catch (error) {
                 rankValueEl.textContent = '-';
                 if (rankNoteEl) rankNoteEl.textContent = 'الترتيب غير متاح الآن.';
