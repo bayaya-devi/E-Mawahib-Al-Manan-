@@ -9,8 +9,6 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
-        <link rel="stylesheet" href="platform-theme.css">
-    <script src="platform-theme.js"></script>
 <style>
         body {
             font-family: 'Cairo', sans-serif;
@@ -100,20 +98,6 @@
             <h1 class="text-xl font-black text-gray-800">منصة دار القرآن</h1>
             <p class="text-xs text-emerald-700 font-semibold mt-1">جمعية مواهب المنان • عين العودة</p>
         </div>
-
-        <div class="theme-panel mb-4" aria-label="اختيار ألوان المنصة">
-          <div>
-            <span class="theme-panel-title">ألوان المنصة</span>
-            <span class="theme-panel-subtitle">اختر الجو الذي يناسبك قبل الدخول.</span>
-          </div>
-          <div class="theme-options" id="login-theme-picker">
-            <button type="button" class="theme-option" data-theme="emerald"><span class="theme-dot theme-dot-emerald"></span>زمردي</button>
-            <button type="button" class="theme-option" data-theme="indigo"><span class="theme-dot theme-dot-indigo"></span>نيلي</button>
-            <button type="button" class="theme-option" data-theme="rose"><span class="theme-dot theme-dot-rose"></span>وردي</button>
-            <button type="button" class="theme-option" data-theme="amber"><span class="theme-dot theme-dot-amber"></span>ذهبي</button>
-          </div>
-        </div>
-
         <div class="flex bg-gray-100 rounded-xl p-1 mb-5 gap-1"></div>
 
         <div id="error-box" class="error-box mb-4"></div>
@@ -173,25 +157,6 @@
     </div>
     
     <script>
-        function initLoginThemePicker() {
-            const picker = document.getElementById('login-theme-picker');
-            if (!picker || !window.PlatformTheme) return;
-            const buttons = Array.from(picker.querySelectorAll('[data-theme]'));
-            const refresh = (theme) => {
-                buttons.forEach((button) => {
-                    const isActive = button.dataset.theme === theme;
-                    button.classList.toggle('active', isActive);
-                    button.setAttribute('aria-pressed', String(isActive));
-                });
-            };
-            refresh(window.PlatformTheme.get());
-            buttons.forEach((button) => {
-                button.addEventListener('click', () => refresh(window.PlatformTheme.set(button.dataset.theme)));
-            });
-        }
-
-        initLoginThemePicker();
-
         if (Auth.getSession()) window.location.href = 'dashboard.html';
 
         function showTab(tab) {
