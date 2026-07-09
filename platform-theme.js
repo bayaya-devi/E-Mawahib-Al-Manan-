@@ -122,6 +122,7 @@
   function initNavAutoHide() {
     const nav = document.querySelector('.nav-bottom');
     if (!nav) return;
+    if (!window.matchMedia('(max-width: 768px)').matches) return;
     let lastY = window.scrollY || 0;
     let revealTimer = null;
 
@@ -153,6 +154,9 @@
     const isCelebration = path === 'celebration.html';
     const isInactivity = path === 'inactivity.html';
     if (!isDashboard && !isSurah && !isCelebration && !isInactivity) return;
+    const isSmallScreen = window.matchMedia('(max-width: 640px)').matches;
+    const lowPowerDevice = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) || (navigator.deviceMemory && navigator.deviceMemory <= 4);
+    const performanceMode = isSmallScreen || lowPowerDevice;
 
     injectMascotStyles();
     const mascot = document.createElement('div');
@@ -173,6 +177,12 @@
     };
 
     const placeNear = (target, fallback = 'bottom') => {
+      if (performanceMode) {
+        if (mascot.dataset.place !== fallback) mascot.dataset.place = fallback;
+        mascot.style.removeProperty('--mascot-x');
+        mascot.style.removeProperty('--mascot-y');
+        return;
+      }
       if (!target) {
         if (mascot.dataset.place !== fallback) mascot.dataset.place = fallback;
         mascot.style.removeProperty('--mascot-x');
@@ -243,16 +253,17 @@
       scheduleUpdate(350);
     } else if (isSurah) {
       scheduleUpdate(350);
-      document.addEventListener('click', () => scheduleUpdate(220), true);
+      if (!performanceMode) document.addEventListener('click', () => scheduleUpdate(220), true);
     }
 
-    window.addEventListener('resize', () => {
-      scheduleUpdate();
-    }, { passive: true });
+    if (!performanceMode) {
+      window.addEventListener('resize', () => {
+        scheduleUpdate();
+      }, { passive: true });
+    }
 
-    const isSmallScreen = window.matchMedia('(max-width: 640px)').matches;
     const observerTarget = isDashboard ? document.getElementById('available-grid') : document.querySelector('main');
-    if (observerTarget && !isSmallScreen) {
+    if (observerTarget && !performanceMode) {
       const observer = new MutationObserver(() => scheduleUpdate(120));
       observer.observe(observerTarget, { childList: true, subtree: false });
     }
@@ -322,7 +333,7 @@
     initDigitNormalizer();
     initNavAutoHide();
     initMascotGuide();
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) initScrollAnimations();
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && !window.matchMedia('(max-width: 768px)').matches) initScrollAnimations();
   }
 
   window.PlatformTheme = {
