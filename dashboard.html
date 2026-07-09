@@ -298,6 +298,10 @@ body { padding-bottom: 80px; }
 
         function renderSurahCard(surah) {
             const state = getJourneyState(surah);
+            const currentSurah = getCurrentSurah();
+            const lastCompletedSurah = getLastCompletedSurah();
+            const focus = currentSurah && currentSurah.num === surah.num ? 'current' : (lastCompletedSurah && lastCompletedSurah.num === surah.num ? 'last-completed' : '');
+            const focusAttr = focus ? `data-journey-focus="${focus}"` : '';
             const icon = state === 'done' ? '✓' : state === 'current' ? '▶' : '🔒';
             const disabled = state === 'locked' ? 'disabled aria-disabled="true"' : '';
             const action = state === 'locked' ? '' : `onclick="window.location.href='${surah.file}'"`;
@@ -305,7 +309,7 @@ body { padding-bottom: 80px; }
                 ? `<div class="journey-orb ${state}" aria-hidden="true">${icon}</div>`
                 : `<button type="button" ${action} class="journey-orb journey-orb-button ${state}" aria-label="فتح ${surah.nameAr}">${icon}</button>`;
             return `
-                <div class="journey-step">
+                <div id="journey-surah-${surah.num}" class="journey-step" data-journey-state="${state}" ${focusAttr}>
                     ${orbTag}
                     <button type="button" ${action} ${disabled} class="journey-node ${state}">
                         <div class="min-w-0 flex-grow">
@@ -458,6 +462,32 @@ body { padding-bottom: 80px; }
             return order.find(surah => !surah.isCompleted) || order[order.length - 1] || null;
         }
 
+        function getLastCompletedSurah() {
+            const order = getJourneyOrder();
+            const currentIndex = order.findIndex(surah => !surah.isCompleted);
+            if (currentIndex > 0) return order[currentIndex - 1];
+            if (currentIndex === -1) return order[order.length - 1] || null;
+            return null;
+        }
+
+        function scrollToJourneyFocus(event) {
+            if (event) event.preventDefault();
+            const currentEl = document.querySelector('[data-journey-focus="current"]');
+            const lastEl = document.querySelector('[data-journey-focus="last-completed"]');
+            const target = currentEl || lastEl || document.getElementById('section-available');
+            if (!target) return;
+            if (currentEl && lastEl) {
+                const lastRect = lastEl.getBoundingClientRect();
+                const currentRect = currentEl.getBoundingClientRect();
+                const lastCenter = window.scrollY + lastRect.top + lastRect.height / 2;
+                const currentCenter = window.scrollY + currentRect.top + currentRect.height / 2;
+                const focusCenter = (lastCenter + currentCenter) / 2;
+                window.scrollTo({ top: Math.max(0, focusCenter - window.innerHeight * 0.42), behavior: 'smooth' });
+                return;
+            }
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
         function isCurrentJuz(juz) {
             const current = getCurrentSurah();
             return !!current && current.num >= juz.start && current.num <= juz.end;
@@ -570,6 +600,7 @@ async function chargerDevoirs() {
             if (typeof Auth.syncRewardsFromSurahs === 'function') Auth.syncRewardsFromSurahs(dashboardState.surahs);
             updateRewardPanel();
             renderSurahLibrary();
+            if (window.location.hash === '#surah-focus') setTimeout(scrollToJourneyFocus, 180);
         }
 
         function updateRewardPanel() {
@@ -595,7 +626,7 @@ async function chargerDevoirs() {
     <div class="max-w-4xl mx-auto flex justify-around items-center h-16 px-4">
         
         <!-- السور -->
-        <a href="#section-available" 
+        <a href="#surah-focus" onclick="scrollToJourneyFocus(event)"
            class="flex flex-col items-center gap-1 text-emerald-700 hover:text-emerald-900 transition group">
             <div class="w-10 h-10 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center text-xl transition">
                 📖
