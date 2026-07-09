@@ -126,34 +126,60 @@ const Auth = (() => {
 
     // --- 3. FONCTIONS ADMINISTRATEUR ---
     async function getAllStudents() {
-        const { data: eleves, error: e1 } = await supabase.from('eleves').select('*');
-        const { data: progs,  error: e2 } = await supabase.from('progressions').select('*');
-        const { data: msgs,   error: e3 } = await supabase.from('messages').select('*');
+        const [elevesRes, progsRes, msgsRes, profilsRes, devoirsRes, horairesRes] = await Promise.all([
+            supabase.from('eleves').select('*'),
+            supabase.from('progressions').select('*'),
+            supabase.from('messages').select('*'),
+            supabase.from('profils_admin').select('*'),
+            supabase.from('devoirs').select('*'),
+            supabase.from('horaires').select('*')
+        ]);
 
-        if (e1 || e2 || e3) logError('getAllStudents', { e1, e2, e3 });
+        const errors = { e1: elevesRes.error, e2: progsRes.error, e3: msgsRes.error, e4: profilsRes.error, e5: devoirsRes.error, e6: horairesRes.error };
+        if (Object.values(errors).some(Boolean)) logError('getAllStudents', errors);
 
-        return (eleves || []).map(e => {
-            const userProgs = (progs || []).filter(p => p.username === e.username);
+        const progs = progsRes.data || [];
+        const msgs = msgsRes.data || [];
+        const profils = profilsRes.data || [];
+        const devoirs = devoirsRes.data || [];
+        const horaires = horairesRes.data || [];
+        const profilMap = {};
+        profils.forEach(p => { profilMap[p.username] = p; });
+        const scheduleMap = {};
+        horaires.forEach(h => { scheduleMap[h.username] = h.schedule_text || ''; });
+
+        return (elevesRes.data || []).map(e => {
+            const userProgs = progs.filter(p => p.username === e.username);
             const progressDict = {};
             userProgs.forEach(p => progressDict[p.surah_id] = {
                 activities: p.activities || {},
-                completedAt: p.completed_at,
-                globalScore: p.global_score
+                completedAt: p.completed_at || null,
+                globalScore: p.global_score ?? null,
+                updatedAt: p.updated_at || p.completed_at || null
             });
-            const userMsgs = (msgs || []).filter(m => m.username === e.username);
+            const profile = profilMap[e.username] || {};
+            const payments = Array.isArray(profile.payments) ? profile.payments : [];
             return {
-                username: e.username, prenom: e.prenom, nom: e.nom,
-                isSuspended: e.is_suspended, createdAt: e.created_at,
-                progress: progressDict, messages: userMsgs
+                username: e.username,
+                prenom: e.prenom,
+                nom: e.nom,
+                isSuspended: Boolean(e.is_suspended),
+                createdAt: e.created_at,
+                progress: progressDict,
+                messages: msgs.filter(m => m.username === e.username).sort((a, b) => (b.id || 0) - (a.id || 0)),
+                devoirs: devoirs.filter(d => d.student_id === e.username),
+                scheduleText: scheduleMap[e.username] || '',
+                cinProvided: Boolean(profile.cin_provided),
+                birthCertProvided: Boolean(profile.birth_cert_provided),
+                payments
             };
         });
     }
 
     async function getAllUsers() {
-        const { data, error } = await supabase.from('eleves').select('*');
-        if (error) logError('getAllUsers', error);
+        const students = await getAllStudents();
         const dict = {};
-        (data || []).forEach(e => dict[e.username] = e);
+        students.forEach(e => { dict[e.username] = e; });
         return dict;
     }
 
@@ -240,6 +266,27 @@ const Auth = (() => {
         if (error) logError('clearMessages', error);
     }
 
+    async function sendAdminReport(profId, profName, classe, text, category = 'متابعة') {
+        const date = new Date().toLocaleDateString('ar-MA', { day: 'numeric', month: 'long' });
+        const body = '[SIGNAL_ADMIN] ' + JSON.stringify({ profId, profName, classe, category, text, sentAt: new Date().toISOString() });
+        const { error } = await supabase.from('messages').insert([{ username: '__admin__', text: body, date }]);
+        if (error) { logError('sendAdminReport', error); return { ok: false, error: error.message }; }
+        return { ok: true };
+    }
+
+    async function getAdminReports() {
+        const { data, error } = await supabase.from('messages').select('*').eq('username', '__admin__').order('id', { ascending: false });
+        if (error) { logError('getAdminReports', error); return []; }
+        return (data || []).map(row => {
+            const raw = row.text || '';
+            if (raw.startsWith('[SIGNAL_ADMIN] ')) {
+                try { return { id: row.id, date: row.date, ...JSON.parse(raw.replace('[SIGNAL_ADMIN] ', '')) }; }
+                catch (e) {}
+            }
+            return { id: row.id, date: row.date, profName: 'أستاذ', classe: '', category: 'متابعة', text: raw, sentAt: row.created_at || '' };
+        });
+    }
+
     // --- 7. PROFILS ADMINISTRATIFS ---
     async function getProfile(username) {
         const { data, error } = await supabase.from('profils_admin').select('*').eq('username', username).single();
@@ -313,7 +360,7 @@ const Auth = (() => {
 
     async function getDevoirs(role, username) {
         const field = role === 'prof' ? 'prof_id' : 'student_id';
-        const { data, error } = await supabase.from('devoirs').select('*').eq(field, username);
+        const { data, error } = await supabase.from('devoirs').select('*').eq(field, username).order('date_limite', { ascending: true });
         if (error) logError('getDevoirs', error);
         return data || [];
     }
@@ -334,7 +381,7 @@ const Auth = (() => {
         register, login, registerProf, loginProf, logout, getSession, requireAuth,
         getAllStudents, getAllUsers, getProfs, deleteStudent, deleteProf, toggleSuspension,
         assignStudentToProf, removeStudentFromProf,
-        getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages,
+        getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports,
         getProfile, updateProfile, getProgress, recordActivity, completeSurah,
         ajouterDevoir, getDevoirs, annulerDevoir, marquerDevoirTermine,
         getSupabaseClient

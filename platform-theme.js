@@ -18,6 +18,7 @@
     try {
       localStorage.setItem(storageKey, nextTheme);
     } catch (error) {}
+    syncSurahTheme();
     window.dispatchEvent(new CustomEvent('mawahib:theme-change', { detail: { theme: nextTheme } }));
     return nextTheme;
   }
@@ -113,8 +114,45 @@
     mutationObserver.observe(document.body, { childList: true, subtree: true });
   }
 
+
+
+  function syncSurahTheme() {
+    const isSurahPage = /(^|\/)surah-|Al_|al_kadr|quraysh|fil|bayina/.test(location.pathname);
+    if (!isSurahPage) return;
+    document.documentElement.style.setProperty('--surah', 'var(--platform-primary)');
+    let style = document.getElementById('mawahib-surah-theme-sync');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'mawahib-surah-theme-sync';
+      style.textContent = [
+        'header[style*="background"],',
+        '#xp-bar[style*="background"],',
+        'button[style*="background"],',
+        '.choice.selected,',
+        '.part-btn.active {',
+        '  background: linear-gradient(135deg, var(--platform-primary), var(--platform-primary-dark)) !important;',
+        '  color: #fff !important;',
+        '  border-color: var(--platform-primary) !important;',
+        '}',
+        '.tab-active {',
+        '  border-color: var(--platform-primary) !important;',
+        '  color: var(--platform-primary) !important;',
+        '  background: color-mix(in srgb, var(--platform-surface) 88%, #ffffff) !important;',
+        '  box-shadow: 0 10px 24px color-mix(in srgb, var(--platform-primary) 18%, transparent) !important;',
+        '}',
+        '.verse-card:hover, .choice.selected, .part-btn.active { border-color: var(--platform-primary) !important; }',
+        '.app-shell {',
+        '  background: linear-gradient(180deg, color-mix(in srgb, var(--platform-surface) 92%, #ffffff), color-mix(in srgb, var(--platform-primary-soft) 38%, #ffffff)) !important;',
+        '  border-color: color-mix(in srgb, var(--platform-primary) 22%, transparent) !important;',
+        '}'
+      ].join('\n');
+      document.head.appendChild(style);
+    }
+  }
+
   function initEnhancements() {
     if (!document.body) return;
+    syncSurahTheme();
     initDigitNormalizer();
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) initScrollAnimations();
   }

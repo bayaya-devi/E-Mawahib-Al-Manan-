@@ -213,6 +213,10 @@
                     <span id="cockpit-health" class="rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-xs font-black"></span>
                 </div>
                 <div id="ops-alerts" class="space-y-2"></div>
+                <div class="mt-4 border-t border-emerald-100 pt-4">
+                    <p class="section-heading">Signalements professeurs</p>
+                    <div id="admin-reports-list" class="space-y-2"></div>
+                </div>
             </div>
             <div class="cockpit-panel">
                 <p class="section-heading">أوامر سريعة</p>
@@ -696,6 +700,7 @@ if (localStorage.getItem('adminAuth') !== 'true') {
 let _allStudents = [];
 let _allProfs    = {};
 let _allUsers    = {};
+let _adminReports = [];
 let _currentClassProfId   = null;
 let _currentClassStudents = [];
 let _openAccordions = new Set();
@@ -713,7 +718,9 @@ function escapeJsArg(value) {
 
 function getCompletedSurahCount(student) {
     if (Array.isArray(student.completedSurahs)) return student.completedSurahs.length;
-    if (student.progress && typeof student.progress === 'object') return Object.values(student.progress).filter(Boolean).length;
+    if (student.progress && typeof student.progress === 'object') {
+        return Object.values(student.progress).filter(p => p && (p.completedAt || p.completed_at)).length;
+    }
     return Number(student.souratesTerminees || student.completedSurahsCount || 0) || 0;
 }
 
@@ -743,6 +750,7 @@ function renderControlRoom() {
     const alerts = [];
     if (snap.unassigned.length) alerts.push({ tone: 'amber', title: snap.unassigned.length + ' طالب بلا قسم', text: 'اربطهم بقسم حتى لا يضيع مسار المتابعة.' });
     if (snap.zeroProgress.length) alerts.push({ tone: 'rose', title: snap.zeroProgress.length + ' طالب لم يبدأ الحفظ', text: 'ابدأ معهم بسورة قصيرة وسهلة لخلق دفعة أولى.' });
+    if ((_adminReports || []).length) alerts.push({ tone: 'rose', title: _adminReports.length + ' signalement من الأساتذة', text: 'راجع غرفة التحكم قبل القرارات اليومية.' });
     if (!alerts.length) alerts.push({ tone: 'emerald', title: 'الوضع مستقر', text: 'الأقسام منظمة ولا توجد أولوية عاجلة الآن.' });
     if (health) health.textContent = alerts[0].tone === 'emerald' ? 'مستقر' : 'يحتاج متابعة';
     const alertBox = document.getElementById('ops-alerts');
@@ -752,6 +760,11 @@ function renderControlRoom() {
             return '<div class="ops-alert ' + color + '"><div class="text-xl">' + (a.tone === 'emerald' ? '✓' : '!') + '</div><div><strong>' + escapeHtml(a.title) + '</strong><span>' + escapeHtml(a.text) + '</span></div></div>';
         }).join('');
     }
+    const reportsBox = document.getElementById('admin-reports-list');
+    if (reportsBox) {
+        reportsBox.innerHTML = (_adminReports || []).length ? _adminReports.slice(0, 5).map(r => '<div class="rounded-2xl bg-rose-50 border border-rose-100 p-3"><div class="flex items-center justify-between gap-2"><strong class="text-rose-900 text-sm">' + escapeHtml(r.category || 'Signalement') + '</strong><span class="text-xs font-black text-rose-700">' + escapeHtml(r.profName || '') + '</span></div><p class="text-xs text-gray-600 font-bold mt-2 whitespace-pre-line">' + escapeHtml(r.text || '') + '</p></div>').join('') : '<div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-3 text-sm font-black text-emerald-700 text-center">لا توجد signalements حاليا.</div>';
+    }
+
     const classMap = document.getElementById('cockpit-classes');
     if (classMap) {
         const entries = Object.entries(_allProfs || {});
@@ -810,6 +823,7 @@ async function renderAll() {
     _allStudents = await Auth.getAllStudents();
     _allProfs    = await Auth.getProfs();
     _allUsers    = await Auth.getAllUsers();
+    _adminReports = typeof Auth.getAdminReports === 'function' ? await Auth.getAdminReports() : [];
 
     document.getElementById('total-badge').innerText = _allStudents.length + ' طالب';
     renderControlRoom();
@@ -894,7 +908,7 @@ async function renderStats() {
         const prog    = s.progress || {};
         const entries = Object.entries(prog);
         const completed = entries.filter(([id, p]) =>
-            p && p.completedAt && Object.keys(p.activities || {}).length > 0
+            p && p.completedAt
         );
         totalSurahs += completed.length;
         if (completed.length > 0) activelearners.push({ s, count: completed.length });
@@ -1035,7 +1049,7 @@ async function renderStats() {
         const students = _allStudents.filter(s => (prof.students || []).includes(s.username));
         const surahs   = students.reduce((acc, s) => {
             return acc + Object.entries(s.progress || {})
-                .filter(([id, p]) => p && p.completedAt && Object.keys(p.activities || {}).length > 0).length;
+                .filter(([id, p]) => p && p.completedAt).length;
         }, 0);
         const docsOk = students.filter(s => s.cinProvided && s.birthCertProvided).length;
         const paidOk = students.filter(s => {
@@ -1202,7 +1216,7 @@ function buildStudentRow(student) {
     const row = document.createElement('div');
     row.className = 'student-row';
     const completedSurahs = Object.entries(student.progress || {})
-        .filter(([id, p]) => p && p.completedAt && Object.keys(p.activities || {}).length > 0).length;
+        .filter(([id, p]) => p && p.completedAt).length;
     const statusColor = student.isSuspended ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700';
     const statusText  = student.isSuspended ? '🚫 موقوف' : '✅ نشط';
     row.innerHTML = `
@@ -1323,7 +1337,7 @@ async function loadStudentProgress() {
     const progress  = student.progress || {};
     const entries   = Object.entries(progress);
     if (entries.length === 0) { container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لم يبدأ أي سورة بعد</p>'; return; }
-    const completed  = entries.filter(([id, p]) => p && p.completedAt && Object.keys(p.activities || {}).length > 0);
+    const completed  = entries.filter(([id, p]) => p && p.completedAt);
     const inProgress = entries.filter(([id, p]) => !p.completedAt || Object.keys(p.activities || {}).length === 0);
     let html = '';
     if (completed.length > 0) {
