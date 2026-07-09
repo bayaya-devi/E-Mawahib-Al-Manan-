@@ -342,9 +342,17 @@ header,
   will-change: opacity, transform;
 }
 
+.mawahib-reveal.reveal-from-left { transform: translateX(-22px) scale(.985); }
+.mawahib-reveal.reveal-from-right { transform: translateX(22px) scale(.985); }
+.mawahib-reveal.reveal-from-top { transform: translateY(-18px) scale(.985); }
+.mawahib-reveal.reveal-from-bottom { transform: translateY(22px) scale(.985); }
+
 html[data-scroll-dir="up"] .mawahib-reveal {
   transform: translateY(-18px) scale(.985);
 }
+
+html[data-scroll-dir="up"] .mawahib-reveal.reveal-from-left { transform: translateX(18px) scale(.985); }
+html[data-scroll-dir="up"] .mawahib-reveal.reveal-from-right { transform: translateX(-18px) scale(.985); }
 
 .mawahib-reveal.is-visible {
   opacity: 1;

@@ -12,11 +12,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=20260709-login-dashboard-fix"></script>
-    <script src="registry.js?v=20260709-login-dashboard-fix"></script>
+    <script src="auth.js?v=20260709-onboarding-games"></script>
+    <script src="registry.js?v=20260709-onboarding-games"></script>
 
-        <link rel="stylesheet" href="platform-theme.css?v=20260709-login-dashboard-fix">
-    <script src="platform-theme.js?v=20260709-login-dashboard-fix"></script>
+        <link rel="stylesheet" href="platform-theme.css?v=20260709-onboarding-games">
+    <script src="platform-theme.js?v=20260709-onboarding-games"></script>
 <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
         .quran-font { font-family: 'Amiri', serif; }
@@ -85,20 +85,57 @@
         .daily-title::before { content: ''; width: 6px; height: 6px; border-radius: 999px; background: var(--platform-accent); box-shadow: 0 0 0 3px var(--platform-primary-soft); }
         .daily-text { color: #334155; font-size: 12px; font-weight: 700; line-height: 1.45; max-height: 72px; overflow: auto; }
         .daily-text:empty::after { content: 'لا يوجد جديد اليوم'; color: #94a3b8; font-weight: 800; }
-        .daily-progress { display: grid; grid-template-columns: auto minmax(120px, 1fr) auto; gap: 8px; align-items: center; margin-top: 8px; color: #64748b; font-size: 10px; font-weight: 900; }
-        .daily-progress-track { height: 5px; background: rgba(148,163,184,.16); border-radius: 999px; overflow: hidden; }
+        .daily-progress { display: grid; grid-template-columns: auto minmax(160px, 1fr) auto; gap: 10px; align-items: center; margin-top: 10px; color: #475569; font-size: 12px; font-weight: 900; }
+        .daily-progress-track { height: 8px; background: rgba(148,163,184,.16); border-radius: 999px; overflow: hidden; }
         .daily-progress-track > div { height: 100%; background: linear-gradient(90deg, var(--platform-primary), var(--platform-accent)); }
         .reward-strip {
-            margin-top: 8px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+            margin-top: 10px; display: grid; grid-template-columns: minmax(190px, 280px); justify-content: center; gap: 8px;
         }
         .reward-pill {
-            border-radius: 13px; padding: 7px 9px; background: linear-gradient(135deg, #fff7ed, #ffffff);
-            border: 1px solid rgba(217,164,65,.18); min-height: 50px;
+            border-radius: 18px; padding: 12px 16px; text-align: center; background: linear-gradient(135deg, #fff7ed, #ffffff);
+            border: 1px solid rgba(217,164,65,.22); min-height: 72px; box-shadow: 0 14px 28px rgba(217,119,6,.10);
         }
-        .reward-kicker { font-size: 9px; color: #64748b; font-weight: 900; }
-        .reward-value { margin-top: 1px; font-size: 16px; color: #111827; font-weight: 900; line-height: 1; }
-        .reward-stars-value { color: #d97706; text-shadow: 0 2px 12px rgba(250, 204, 21, .35); }
-        .reward-note { margin-top: 2px; font-size: 9px; color: #64748b; font-weight: 800; line-height: 1.25; }
+        .reward-kicker { font-size: 11px; color: #64748b; font-weight: 900; }
+        .reward-value { margin-top: 3px; font-size: 28px; color: #111827; font-weight: 900; line-height: 1; }
+        .reward-stars-value { color: #d97706; text-shadow: 0 2px 12px rgba(250, 204, 21, .45); animation: starPulse 2.4s ease-in-out infinite; }
+        .reward-note { margin-top: 5px; font-size: 10px; color: #64748b; font-weight: 800; line-height: 1.25; }
+        .mini-game-node { background: linear-gradient(135deg, #ecfeff, #ffffff); border: 1px solid rgba(6,182,212,.24); }
+        .mini-game-node.done { background: linear-gradient(135deg, #06b6d4, #0f766e); color: #fff; }
+        .mini-game-node.locked { background: #f1f5f9; color: #94a3b8; border-color: rgba(148,163,184,.22); }
+        .mini-game-orb { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: #fff; }
+        .mini-game-orb.done { background: linear-gradient(135deg, #10b981, #047857); }
+        .mini-game-orb.locked { background: #e2e8f0; color: #94a3b8; }
+        .mini-game-track { height: 82px; border-radius: 22px; background: repeating-linear-gradient(90deg,#e2e8f0 0 24px,#f8fafc 24px 48px); border: 1px solid #e2e8f0; position: relative; overflow: hidden; margin-bottom: 14px; }
+        .mini-game-car { position: absolute; bottom: 14px; right: 8px; width: 54px; height: 30px; border-radius: 14px 18px 10px 10px; background: linear-gradient(135deg,#ef4444,#f97316); box-shadow: 0 10px 18px rgba(15,23,42,.18); transition: right .35s ease; }
+        .mini-game-car::before { content: ''; position: absolute; inset: -11px 13px auto 12px; height: 18px; border-radius: 14px 14px 4px 4px; background: #bfdbfe; }
+        .mini-game-car::after { content: ''; position: absolute; left: 8px; right: 8px; bottom: -5px; height: 10px; background: radial-gradient(circle,#111827 45%,transparent 47%) left/18px 10px no-repeat, radial-gradient(circle,#111827 45%,transparent 47%) right/18px 10px no-repeat; }
+        .mini-game-mission { margin-bottom: 12px; border-radius: 16px; background: #ecfeff; border: 1px solid #a5f3fc; color: #155e75; padding: 10px 12px; text-align: center; font-weight: 900; }
+        .mini-game-lanes, .mini-game-order, .mini-game-garden, .mini-game-shields { display: grid; gap: 9px; }
+        .mini-game-tile, .mini-game-pad, .mini-game-plant, .mini-game-shield {
+            border: 1px solid #cbd5e1; border-radius: 16px; background: #fff; color: #0f172a; padding: 11px;
+            font-weight: 900; line-height: 1.8; min-height: 58px; box-shadow: 0 8px 18px rgba(15,23,42,.07);
+        }
+        .mini-game-tile:hover, .mini-game-pad:hover, .mini-game-plant:hover, .mini-game-shield:hover { border-color: #06b6d4; transform: translateY(-1px); }
+        .mini-game-chests { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+        .mini-game-chest { min-height: 100px; border: 0; border-radius: 18px; background: linear-gradient(135deg,#92400e,#f59e0b); color: #fff; font-weight: 900; padding: 12px; box-shadow: 0 12px 24px rgba(146,64,14,.22); }
+        .mini-game-chest span { display: none; margin-top: 8px; font-size: 12px; line-height: 1.7; }
+        .mini-game-chest.open span { display: block; }
+        .mini-game-bin { margin-top: 10px; min-height: 46px; display: grid; place-items: center; border: 1px dashed #06b6d4; border-radius: 16px; color: #0e7490; font-weight: 900; background: #ecfeff; }
+        .mini-game-bridge { display: flex; gap: 8px; align-items: stretch; overflow-x: auto; padding-bottom: 4px; }
+        .mini-game-pad { min-width: 170px; background: linear-gradient(135deg,#f8fafc,#e0f2fe); }
+        .mini-game-sky { height: 260px; position: relative; overflow: hidden; border-radius: 22px; background: linear-gradient(180deg,#0f172a,#155e75); }
+        .mini-game-meteor { position: absolute; width: 42%; min-height: 54px; border: 0; border-radius: 999px; padding: 8px 10px; background: linear-gradient(135deg,#f97316,#fde047); color: #111827; font-weight: 900; font-size: 11px; animation: meteorFall 4.8s linear infinite; }
+        .mini-game-meteor.m0 { right: 4%; animation-delay: 0s; } .mini-game-meteor.m1 { right: 52%; animation-delay: .7s; } .mini-game-meteor.m2 { right: 22%; animation-delay: 1.4s; } .mini-game-meteor.m3 { right: 62%; animation-delay: 2.1s; }
+        .mini-game-plant { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 9px; background: linear-gradient(135deg,#f0fdf4,#fff); }
+        .mini-game-compass { width: min(100%, 360px); aspect-ratio: 1; margin: 0 auto; border-radius: 999px; background: radial-gradient(circle,#fff 0 34%,#dbeafe 35% 50%,#0f766e 51%); position: relative; display: grid; place-items: center; }
+        .mini-game-compass button { position: static; width: 70%; border: 1px solid #bae6fd; border-radius: 999px; background: rgba(255,255,255,.92); padding: 8px; margin: 4px; font-size: 11px; font-weight: 900; }
+        .mini-game-balloons { min-height: 270px; position: relative; overflow: hidden; border-radius: 22px; background: linear-gradient(180deg,#eff6ff,#fff7ed); }
+        .mini-game-balloon { position: absolute; width: 42%; min-height: 76px; border: 0; border-radius: 50% 50% 46% 46%; background: linear-gradient(135deg,#fb7185,#f472b6); color: #fff; padding: 11px; font-weight: 900; font-size: 11px; animation: balloonFloat 3.6s ease-in-out infinite; }
+        .mini-game-balloon.b0 { right: 4%; top: 20px; } .mini-game-balloon.b1 { right: 52%; top: 70px; animation-delay: .4s; } .mini-game-balloon.b2 { right: 16%; top: 150px; animation-delay: .8s; } .mini-game-balloon.b3 { right: 56%; top: 178px; animation-delay: 1.2s; }
+        .mini-game-shield { background: linear-gradient(135deg,#eff6ff,#ffffff); border-radius: 28px 28px 18px 18px; }
+        @keyframes meteorFall { from { transform: translateY(-90px) rotate(-8deg); opacity: .92; } to { transform: translateY(310px) rotate(8deg); opacity: .96; } }
+        @keyframes balloonFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-13px); } }
+        @keyframes starPulse { 0%,100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.08); filter: brightness(1.18); } }
         .header-bg { background: linear-gradient(135deg, #1a3c34 0%, #0c4a3b 40%, #14532d 100%); }
 
         @media (max-width: 900px) {
@@ -132,7 +169,15 @@ body { padding-bottom: 80px; }
     <img src="logo.webp" alt="مواهب المنان" class="h-24 object-contain drop-shadow-md">
 </div>
 
-    <script>Auth.requireAuth('login.html');</script>
+    <script>
+        if (Auth.requireAuth('login.html')) {
+            const session = Auth.getSession();
+            const seenKey = session ? 'mawahib_onboarding_seen_' + session.username : '';
+            if (session && session.role !== 'prof' && localStorage.getItem(seenKey) !== 'yes') {
+                window.location.href = 'onboarding.html?v=20260709-onboarding-games';
+            }
+        }
+    </script>
 
     <header class="header-bg text-white py-3 px-4 shadow-xl">
         <div class="max-w-4xl mx-auto flex flex-row items-center justify-between gap-3">
@@ -178,16 +223,6 @@ body { padding-bottom: 80px; }
                     <div class="reward-kicker">نجومك</div>
                     <div class="reward-value reward-stars-value"><span id="reward-stars">0</span> ★</div>
                     <div class="reward-note" id="reward-decay-note">كل سورة تضيف رصيدا جديدا.</div>
-                </div>
-                <div class="reward-pill">
-                    <div class="reward-kicker">السلسلة</div>
-                    <div class="reward-value"><span id="reward-streak">0</span> يوم</div>
-                    <div class="reward-note">الاستمرار أهم من السرعة.</div>
-                </div>
-                <div class="reward-pill">
-                    <div class="reward-kicker">السور المنجزة</div>
-                    <div class="reward-value"><span id="reward-completed">0</span></div>
-                    <div class="reward-note">تفتح مراحل تشجيع جديدة.</div>
                 </div>
             </div>
         </div>
@@ -315,6 +350,77 @@ body { padding-bottom: 80px; }
             return 'mawahib_mini_exam_' + student + '_' + groupNumber;
         }
 
+        const miniGameTypes = [
+            { type: 'race', icon: '🏎️', title: 'سباق الآيات', hint: 'تتقدم السيارة مع كل إجابة صحيحة.' },
+            { type: 'treasure', icon: '💎', title: 'كنز السورة', hint: 'افتح الكنز باسم السورة الصحيح.' },
+            { type: 'lantern', icon: '🪔', title: 'مصابيح الترتيب', hint: 'أضئ المصباح باختيار السورة المناسبة.' },
+            { type: 'bridge', icon: '🌉', title: 'جسر الحفظ', hint: 'اعبر الجسر بإجابة دقيقة.' },
+            { type: 'meteor', icon: '☄️', title: 'شهب المراجعة', hint: 'التقط المعلومة قبل أن تفلت.' },
+            { type: 'garden', icon: '🌿', title: 'حديقة السور', hint: 'ازرع خطوة جديدة في المسار.' },
+            { type: 'tower', icon: '🧱', title: 'برج الآيات', hint: 'ابن البرج بسؤال صحيح.' },
+            { type: 'compass', icon: '🧭', title: 'بوصلة الجزء', hint: 'اختر الاتجاه الصحيح في الجزء.' },
+            { type: 'balloon', icon: '🎈', title: 'بالون النجوم', hint: 'ارفع البالون بإجابة موفقة.' },
+            { type: 'shield', icon: '🛡️', title: 'درع المراجعة', hint: 'احم حفظك بمراجعة سريعة.' }
+        ];
+
+        const miniGameThemes = ['التركيز', 'السرعة', 'الهدوء', 'التثبيت', 'التحدي'];
+        const miniGameCatalog = Array.from({ length: 50 }, (_, index) => {
+            const base = miniGameTypes[index % miniGameTypes.length];
+            return { ...base, id: index + 1, title: base.title + ' ' + miniGameThemes[Math.floor(index / miniGameTypes.length)] };
+        });
+
+        function getMiniGameConfig(gameNumber) {
+            return miniGameCatalog[(gameNumber - 1) % miniGameCatalog.length];
+        }
+
+        function getMiniGameKey(gameNumber) {
+            const student = dashboardState.studentKey || 'guest';
+            return 'mawahib_mini_game_' + student + '_' + gameNumber;
+        }
+
+        function getMiniGameResult(gameNumber) {
+            try { return JSON.parse(localStorage.getItem(getMiniGameKey(gameNumber)) || 'null'); }
+            catch (error) { return null; }
+        }
+
+        function getMiniGameGroup(gameNumber) {
+            const order = getJourneyOrder();
+            const start = Math.max(0, gameNumber * 3 - 3);
+            return order.slice(start, start + 3);
+        }
+
+        function getMiniGameState(gameNumber) {
+            const group = getMiniGameGroup(gameNumber);
+            if (group.length < 2) return 'hidden';
+            const result = getMiniGameResult(gameNumber);
+            if (result && result.score >= 70) return 'done';
+            return group.some(surah => surah.isCompleted) ? 'current' : 'locked';
+        }
+
+        function renderMiniGameCard(gameNumber) {
+            const group = getMiniGameGroup(gameNumber);
+            const state = getMiniGameState(gameNumber);
+            if (state === 'hidden') return '';
+            const config = getMiniGameConfig(gameNumber);
+            const result = getMiniGameResult(gameNumber);
+            const disabled = state === 'locked' ? 'disabled aria-disabled="true"' : '';
+            const action = state === 'locked' ? '' : 'onclick="openMiniGame(' + gameNumber + ')"';
+            const label = state === 'done' ? 'تم اللعب • ' + result.score + '%' : state === 'current' ? 'لعبة مفتوحة' : 'افتح سورة من هذه المرحلة';
+            const names = group.map(s => s.nameAr).join('، ');
+            return '<div class="journey-step mini-game-step">' +
+                '<div class="journey-orb mini-game-orb ' + state + '" aria-hidden="true">' + config.icon + '</div>' +
+                '<button type="button" ' + action + ' ' + disabled + ' class="journey-node mini-game-node ' + state + '">' +
+                    '<div class="min-w-0 flex-grow">' +
+                        '<div class="flex items-center justify-between gap-2 mb-1">' +
+                            '<h3 class="text-lg font-black">' + config.title + '</h3>' +
+                            '<span class="journey-state">' + label + '</span>' +
+                        '</div>' +
+                        '<p class="journey-meta">' + config.hint + ' • ' + names + '</p>' +
+                    '</div>' +
+                '</button>' +
+            '</div>';
+        }
+
         function getMiniExamResult(groupNumber) {
             try { return JSON.parse(localStorage.getItem(getMiniExamKey(groupNumber)) || 'null'); }
             catch (error) { return null; }
@@ -386,6 +492,7 @@ body { padding-bottom: 80px; }
         }
 
         let activeMiniExam = null;
+        let activeMiniGame = null;
 
         function openMiniExam(groupNumber) {
             const group = getMiniExamGroup(groupNumber);
@@ -442,6 +549,153 @@ body { padding-bottom: 80px; }
             body.innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black ' + (passed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') + '">' + score + '%</div><h4 class="text-xl font-black text-gray-900 mb-2">' + (passed ? 'ممتاز، الاختبار مكتمل' : 'محاولة جيدة، أعد الاختبار') + '</h4><p class="text-sm font-bold text-gray-500 mb-4">نتيجتك: ' + activeMiniExam.correct + ' / ' + activeMiniExam.questions.length + '</p><button type="button" onclick="closeMiniExam(); renderSurahLibrary();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
         }
 
+        function shuffleMiniGame(items) {
+            return [...items].sort(() => Math.random() - 0.5);
+        }
+
+        function verseSnippet(verse) {
+            const text = String(verse?.text || verse?.label || '');
+            return escapeMiniExamText(text.length > 72 ? text.slice(0, 72) + '…' : text);
+        }
+
+        async function loadMiniGameVerses(group) {
+            const surah = group.find(item => item.isCompleted) || group[0];
+            if (!surah || !surah.file) return { surah, verses: [] };
+            try {
+                const html = await fetch(surah.file, { cache: 'no-store' }).then(response => response.text());
+                const match = html.match(/const verses = (\[[\s\S]*?\]);/);
+                const verses = match ? JSON.parse(match[1]) : [];
+                return { surah, verses: verses.filter(v => v && v.text).slice(0, 8) };
+            } catch (error) {
+                return { surah, verses: [] };
+            }
+        }
+
+        function buildMiniGameStages(group, loaded) {
+            const surah = loaded.surah || group[0];
+            const sourceVerses = loaded.verses.length ? loaded.verses : [
+                { num: 1, text: surah.nameAr + ' - الآية 1' },
+                { num: 2, text: surah.nameAr + ' - الآية 2' },
+                { num: 3, text: surah.nameAr + ' - الآية 3' }
+            ];
+            return sourceVerses.slice(0, Math.min(4, sourceVerses.length)).map((verse, index) => {
+                const pool = shuffleMiniGame(sourceVerses.filter(v => v.num !== verse.num)).slice(0, 3);
+                return { surah, verse, options: shuffleMiniGame([verse, ...pool]), index };
+            });
+        }
+
+        function ensureMiniGameModal() {
+            let modal = document.getElementById('mini-game-modal');
+            if (modal) return modal;
+            modal = document.createElement('div');
+            modal.id = 'mini-game-modal';
+            modal.className = 'mini-exam-modal';
+            modal.innerHTML = '<div class="mini-exam-card" dir="rtl"><div class="flex items-start justify-between gap-3 mb-4"><div><p id="mini-game-kicker" class="text-xs font-black text-cyan-600"></p><h3 id="mini-game-title" class="text-xl font-black text-gray-900"></h3></div><button type="button" onclick="closeMiniGame()" class="w-9 h-9 rounded-full bg-gray-100 text-gray-600 font-black">×</button></div><div id="mini-game-body"></div></div>';
+            document.body.appendChild(modal);
+            modal.addEventListener('click', event => { if (event.target === modal) closeMiniGame(); });
+            return modal;
+        }
+
+        async function openMiniGame(gameNumber) {
+            const group = getMiniGameGroup(gameNumber);
+            if (group.length < 2 || !group.some(surah => surah.isCompleted)) return;
+            const config = getMiniGameConfig(gameNumber);
+            const loaded = await loadMiniGameVerses(group);
+            activeMiniGame = {
+                gameNumber,
+                config,
+                stages: buildMiniGameStages(group, loaded),
+                index: 0,
+                correct: 0,
+                selectedOrder: []
+            };
+            ensureMiniGameModal().classList.add('open');
+            renderMiniGameScene();
+        }
+
+        function closeMiniGame() {
+            const modal = document.getElementById('mini-game-modal');
+            if (modal) modal.classList.remove('open');
+        }
+
+        function renderMiniGameScene() {
+            const body = document.getElementById('mini-game-body');
+            if (!activeMiniGame || !body) return;
+            const stage = activeMiniGame.stages[activeMiniGame.index];
+            const progress = Math.round((activeMiniGame.correct / activeMiniGame.stages.length) * 100);
+            document.getElementById('mini-game-kicker').textContent = activeMiniGame.config.hint;
+            document.getElementById('mini-game-title').textContent = activeMiniGame.config.icon + ' ' + activeMiniGame.config.title;
+            body.innerHTML = renderMiniGameByType(activeMiniGame.config.type, stage, progress);
+        }
+
+        function renderMiniGameByType(type, stage, progress) {
+            const target = stage.verse.num;
+            const label = 'الهدف: الآية ' + target + ' من ' + stage.surah.nameAr;
+            if (type === 'race') {
+                return '<div class="mini-game-track"><div class="mini-game-car" style="right:' + Math.min(220, 8 + progress * 2.2) + 'px"></div></div><div class="mini-game-mission">' + label + '</div><div class="mini-game-lanes">' + stage.options.map(v => '<button class="mini-game-tile lane" onclick="answerMiniGame(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div>';
+            }
+            if (type === 'treasure') {
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-chests">' + stage.options.map((v, i) => '<button class="mini-game-chest" onclick="this.classList.add(&quot;open&quot;); answerMiniGame(' + v.num + ')">صندوق ' + (i + 1) + '<span>' + verseSnippet(v) + '</span></button>').join('') + '</div>';
+            }
+            if (type === 'lantern' || type === 'tower') {
+                const ordered = [...stage.options].sort((a, b) => a.num - b.num);
+                return '<div class="mini-game-mission">رتّب الآيات من الأصغر إلى الأكبر</div><div class="mini-game-order">' + shuffleMiniGame(ordered).map(v => '<button class="mini-game-tile" onclick="selectMiniGameOrder(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div><div id="mini-game-order-bin" class="mini-game-bin">اختر الترتيب هنا</div>';
+            }
+            if (type === 'bridge') {
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-bridge">' + stage.options.map(v => '<button class="mini-game-pad" onclick="answerMiniGame(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div>';
+            }
+            if (type === 'meteor') {
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-sky">' + stage.options.map((v, i) => '<button class="mini-game-meteor m' + i + '" onclick="answerMiniGame(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div>';
+            }
+            if (type === 'garden') {
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-garden">' + stage.options.map(v => '<button class="mini-game-plant" onclick="answerMiniGame(' + v.num + ')">🌱<span>' + verseSnippet(v) + '</span></button>').join('') + '</div>';
+            }
+            if (type === 'compass') {
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-compass">' + stage.options.map(v => '<button onclick="answerMiniGame(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div>';
+            }
+            if (type === 'balloon') {
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-balloons">' + stage.options.map((v, i) => '<button class="mini-game-balloon b' + i + '" onclick="answerMiniGame(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div>';
+            }
+            return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-shields">' + stage.options.map(v => '<button class="mini-game-shield" onclick="answerMiniGame(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div>';
+        }
+
+        function selectMiniGameOrder(num) {
+            if (!activeMiniGame) return;
+            if (!activeMiniGame.selectedOrder.includes(num)) activeMiniGame.selectedOrder.push(num);
+            const bin = document.getElementById('mini-game-order-bin');
+            if (bin) bin.textContent = activeMiniGame.selectedOrder.join(' ← ');
+            const ordered = activeMiniGame.stages[activeMiniGame.index].options.map(v => v.num).sort((a, b) => a - b);
+            if (activeMiniGame.selectedOrder.length === ordered.length) {
+                const ok = activeMiniGame.selectedOrder.every((num, index) => num === ordered[index]);
+                activeMiniGame.selectedOrder = [];
+                completeMiniGameMove(ok);
+            }
+        }
+
+        function answerMiniGame(num) {
+            if (!activeMiniGame) return;
+            const stage = activeMiniGame.stages[activeMiniGame.index];
+            completeMiniGameMove(Number(num) === Number(stage.verse.num));
+        }
+
+        function completeMiniGameMove(ok) {
+            document.querySelectorAll('#mini-game-body button').forEach(button => button.disabled = true);
+            if (ok) activeMiniGame.correct++;
+            setTimeout(() => {
+                activeMiniGame.index++;
+                if (activeMiniGame.index >= activeMiniGame.stages.length) finishMiniGame();
+                else renderMiniGameScene();
+            }, 760);
+        }
+
+        function finishMiniGame() {
+            const score = Math.round((activeMiniGame.correct / activeMiniGame.stages.length) * 100);
+            const passed = score >= 70;
+            localStorage.setItem(getMiniGameKey(activeMiniGame.gameNumber), JSON.stringify({ score, passed, date: new Date().toISOString() }));
+            const body = document.getElementById('mini-game-body');
+            body.innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black ' + (passed ? 'bg-cyan-100 text-cyan-700' : 'bg-amber-100 text-amber-700') + '">' + score + '%</div><h4 class="text-xl font-black text-gray-900 mb-2">' + (passed ? 'رائع، اللعبة مكتملة' : 'محاولة جيدة، أعد اللعبة') + '</h4><p class="text-sm font-bold text-gray-500 mb-4">اللعبة: ' + activeMiniGame.config.title + '</p><button type="button" onclick="closeMiniGame(); renderSurahLibrary();" class="px-5 py-2 rounded-full bg-cyan-600 text-white font-black">العودة للمسار</button></div>';
+        }
+
         function getCurrentSurah() {
             const order = getJourneyOrder();
             return order.find(surah => !surah.isCompleted) || order[order.length - 1] || null;
@@ -478,6 +732,11 @@ body { padding-bottom: 80px; }
             return !!current && current.num >= juz.start && current.num <= juz.end;
         }
 
+        function getActiveJuzIndex() {
+            const index = juzJourney.findIndex(juz => isCurrentJuz(juz));
+            return index >= 0 ? index : Math.max(0, juzJourney.length - 1);
+        }
+
         function renderSurahLibrary() {
             const container = document.getElementById('available-grid');
             const filtered = getJourneyOrder();
@@ -485,7 +744,11 @@ body { padding-bottom: 80px; }
                 container.innerHTML = `<div class="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-500 font-bold">لا توجد سورة مطابقة لهذا البحث.</div>`;
                 return;
             }
+            const activeJuzIndex = getActiveJuzIndex();
             container.innerHTML = juzJourney.map((juz, index) => {
+                const isActiveSection = index === activeJuzIndex;
+                const isNextSection = index === activeJuzIndex + 1;
+                if (!isActiveSection && !isNextSection) return '';
                 const items = filtered.filter(s => s.num >= juz.start && s.num <= juz.end);
                 if (items.length === 0) return '';
                 const allJuzSurahs = dashboardState.surahs.filter(s => s.num >= juz.start && s.num <= juz.end).sort((a, b) => b.num - a.num);
@@ -493,10 +756,10 @@ body { padding-bottom: 80px; }
                 const toSurah = allJuzSurahs[allJuzSurahs.length - 1];
                 const completedInJuz = allJuzSurahs.filter(s => s.isCompleted).length;
                 const rangeLabel = fromSurah && toSurah ? `من سورة ${fromSurah.nameAr} إلى سورة ${toSurah.nameAr}` : '';
-                const sectionState = isCurrentJuz(juz) ? 'is-active' : (completedInJuz === 0 ? 'is-muted' : 'is-complete');
-                const visibleItems = sectionState === 'is-muted' ? items.slice(0, 2) : items;
-                const mutedMessage = sectionState === 'is-muted'
-                    ? '<div class="mx-4 mb-4 rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-center text-xs font-black text-gray-500">أكمل الجزء المفتوح أولاً، ثم تظهر بقية سور هذا الجزء.</div>'
+                const sectionState = isActiveSection ? 'is-active' : 'is-muted';
+                const visibleItems = isActiveSection ? items : items.slice(0, 2);
+                const mutedMessage = isNextSection
+                    ? '<div class="mx-4 mb-4 rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-center text-xs font-black text-gray-500">أكمل هذا الجزء أولاً، ثم يظهر هذا الجزء كاملاً.</div>'
                     : '';
                 return `
                     <section class="juz-section ${sectionState} bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
@@ -511,8 +774,10 @@ body { padding-bottom: 80px; }
                             ${visibleItems.map(surah => {
                                 const globalIndex = filtered.findIndex(item => item.id === surah.id);
                                 const groupNumber = Math.floor((globalIndex + 1) / 4);
+                                const gameNumber = Math.floor((globalIndex + 1) / 3);
+                                const miniGame = isActiveSection && ((globalIndex + 1) % 3 === 0) ? renderMiniGameCard(gameNumber) : '';
                                 const miniExam = sectionState !== 'is-muted' && ((globalIndex + 1) % 4 === 0) ? renderMiniExamCard(groupNumber) : '';
-                                return renderSurahCard(surah) + miniExam;
+                                return renderSurahCard(surah) + miniGame + miniExam;
                             }).join('')}
                         </div>
                         ${mutedMessage}
@@ -602,14 +867,9 @@ async function chargerDevoirs() {
             if (typeof Auth === 'undefined' || typeof Auth.getRewardState !== 'function') return;
             const rewards = Auth.getRewardState();
             if (!rewards) return;
-            const completedRewardCount = Object.keys(rewards.completed || {}).length;
             const starsEl = document.getElementById('reward-stars');
-            const streakEl = document.getElementById('reward-streak');
-            const completedEl = document.getElementById('reward-completed');
             const noteEl = document.getElementById('reward-decay-note');
             if (starsEl) starsEl.textContent = rewards.stars || 0;
-            if (streakEl) streakEl.textContent = rewards.streak || 0;
-            if (completedEl) completedEl.textContent = completedRewardCount;
             if (noteEl && rewards.lostNow > 0) noteEl.textContent = 'نقصت ' + rewards.lostNow + ' نجوم فقط بسبب فترة توقف.';
         }
 
@@ -677,10 +937,10 @@ async function chargerDevoirs() {
 
     </div>
 </nav>
-    <link rel="stylesheet" href="chatbot.css?v=20260709-login-dashboard-fix">
-    <script src="chatbot.js?v=20260709-login-dashboard-fix"></script>
-    <script src="app-settings.js?v=20260709-login-dashboard-fix"></script>
+    <link rel="stylesheet" href="chatbot.css?v=20260709-onboarding-games">
+    <script src="chatbot.js?v=20260709-onboarding-games"></script>
+    <script src="app-settings.js?v=20260709-onboarding-games"></script>
 
-<script src="notifications.js?v=20260709-login-dashboard-fix"></script>
+<script src="notifications.js?v=20260709-onboarding-games"></script>
 </body>
 </html>

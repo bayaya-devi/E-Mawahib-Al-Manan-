@@ -8,8 +8,8 @@
     <meta http-equiv="Expires" content="0">
     <title>جاري التحميل...</title>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@700;900&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="platform-theme.css?v=20260709-login-dashboard-fix">
-    <script src="platform-theme.js?v=20260709-login-dashboard-fix"></script>
+        <link rel="stylesheet" href="platform-theme.css?v=20260709-onboarding-games">
+    <script src="platform-theme.js?v=20260709-onboarding-games"></script>
 <style>
         * { margin:0; padding:0; box-sizing:border-box; }
 
@@ -183,13 +183,25 @@
     </div>
 
     <script>
-        const APP_VERSION = '20260709-login-dashboard-fix';
+        const APP_VERSION = '20260709-onboarding-games';
         function withVersion(url) {
             const [path, hash = ''] = String(url || 'dashboard.html').split('#');
             const separator = path.includes('?') ? '&' : '?';
             return path + separator + 'v=' + APP_VERSION + (hash ? '#' + hash : '');
         }
-        const REDIRECT_TO = withVersion(sessionStorage.getItem('loading_redirect') || 'dashboard.html');
+        function getSession() {
+            try { return JSON.parse(localStorage.getItem('quran_session') || 'null'); }
+            catch (error) { return null; }
+        }
+        function getRedirectTarget() {
+            const requested = sessionStorage.getItem('loading_redirect') || 'dashboard.html';
+            const session = getSession();
+            const isStudentDashboard = requested.includes('dashboard.html') && !requested.includes('dashboard_prof.html');
+            if (!session || session.role === 'prof' || !isStudentDashboard) return requested;
+            const seenKey = 'mawahib_onboarding_seen_' + session.username;
+            return localStorage.getItem(seenKey) === 'yes' ? requested : 'onboarding.html';
+        }
+        const REDIRECT_TO = withVersion(getRedirectTarget());
 
         setTimeout(() => {
             document.body.style.transition = 'opacity 0.5s ease';

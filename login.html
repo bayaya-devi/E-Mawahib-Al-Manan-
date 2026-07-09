@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=20260709-login-dashboard-fix"></script>
+    <script src="auth.js?v=20260709-onboarding-games"></script>
 <style>
         body {
             font-family: 'Cairo', sans-serif;
@@ -172,7 +172,8 @@
 
         if (Auth.getSession()) {
             const s = Auth.getSession();
-            window.location.href = (s.role === 'prof' ? 'dashboard_prof.html' : 'dashboard.html') + '?v=20260709-login-dashboard-fix';
+            sessionStorage.setItem('loading_redirect', s.role === 'prof' ? 'dashboard_prof.html' : 'dashboard.html');
+            window.location.href = 'loading.html?v=20260709-onboarding-games';
         }
 
         function showTab(tab) {
@@ -232,7 +233,7 @@
                 const result = await Auth.loginProf(prenom, classe, password);
                 if (result.ok) {
     sessionStorage.setItem('loading_redirect', 'dashboard_prof.html');
-    window.location.href = 'loading.html?v=20260709-login-dashboard-fix';
+    window.location.href = 'loading.html?v=20260709-onboarding-games';
 }
                 else { showError(result.error); }
             } else {
@@ -240,7 +241,7 @@
                 const result = await Auth.login(prenom, nom, password);
                 if (result.ok) {
     sessionStorage.setItem('loading_redirect', 'dashboard.html');
-    window.location.href = 'loading.html?v=20260709-login-dashboard-fix';
+    window.location.href = 'loading.html?v=20260709-onboarding-games';
 }
                 else { showError(result.error); }
             }

@@ -27,7 +27,8 @@ const MawahibSettings = (() => {
     const ok=await Auth.switchAccount(username);
     if(!ok){ renderPanel(); return; }
     const session=Auth.getSession();
-    window.location.href=accountTarget(session);
+    sessionStorage.setItem('loading_redirect', accountTarget(session));
+    window.location.href='loading.html?v=20260709-onboarding-games';
   }
   function setTheme(theme){ if(window.PlatformTheme) PlatformTheme.set(theme); renderPanel(); }
   async function enableNotifications(){ if(window.Notif && typeof Notif.requestPermission==='function') await Notif.requestPermission(); else if('Notification' in window) await Notification.requestPermission(); renderPanel(); }

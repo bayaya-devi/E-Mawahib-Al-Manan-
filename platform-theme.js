@@ -87,6 +87,7 @@
       document.querySelectorAll(selector).forEach((el, index) => {
         if (!el.classList.contains('mawahib-reveal')) {
           el.classList.add('mawahib-reveal');
+          el.classList.add(['reveal-from-bottom', 'reveal-from-left', 'reveal-from-right', 'reveal-from-top'][index % 4]);
           el.style.setProperty('--reveal-delay', `${Math.min(index % 6, 5) * 45}ms`);
         }
       });
@@ -181,7 +182,7 @@
     syncSurahTheme();
     initDigitNormalizer();
     initNavAutoHide();
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && !window.matchMedia('(max-width: 768px)').matches) initScrollAnimations();
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) initScrollAnimations();
   }
 
   window.PlatformTheme = {
