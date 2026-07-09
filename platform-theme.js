@@ -1,7 +1,7 @@
 (function () {
   const storageKey = 'mawahib_theme';
-  const fallback = 'emerald';
-  const themes = ['emerald', 'indigo', 'rose', 'amber'];
+  const fallback = 'traditional';
+  const themes = ['traditional', 'emerald', 'indigo', 'rose', 'amber'];
 
   function readTheme() {
     try {

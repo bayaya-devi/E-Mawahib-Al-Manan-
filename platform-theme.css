@@ -1,6 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;500;600;700;800&family=Reem+Kufi+Fun:wght@500;600;700&family=Amiri:wght@400;700&display=swap');
 
 :root {
+  --platform-primary: #14532d;
+  --platform-primary-dark: #0c4a3b;
+  --platform-primary-soft: #bbf7d0;
+  --platform-accent: #d9a441;
+  --platform-accent-soft: #fde68a;
+  --platform-bg: #e8f3ec;
+  --platform-surface: #f7fbf8;
+  --platform-surface-soft: #dcfce7;
+  --platform-text: #10231d;
+  --platform-muted: #52645c;
+  --platform-border: rgba(12, 74, 59, 0.13);
+  --platform-shadow: 0 22px 55px rgba(12, 74, 59, 0.22);
+  --platform-shadow-soft: 0 14px 34px rgba(12, 74, 59, 0.16);
+  --platform-radius: 20px;
+  --platform-font-ui: 'Baloo Bhaijaan 2', 'Cairo', system-ui, sans-serif;
+  --platform-font-display: 'Reem Kufi Fun', 'Baloo Bhaijaan 2', 'Cairo', system-ui, sans-serif;
+  --platform-font-quran: 'Amiri', serif;
+}
+
+html[data-theme="emerald"] {
   --platform-primary: #059669;
   --platform-primary-dark: #064e3b;
   --platform-primary-soft: #a7f3d0;
@@ -9,15 +29,6 @@
   --platform-bg: #dcfce7;
   --platform-surface: #f0fdf4;
   --platform-surface-soft: #ccfbf1;
-  --platform-text: #17211b;
-  --platform-muted: #66746b;
-  --platform-border: rgba(15, 23, 42, 0.10);
-  --platform-shadow: 0 22px 55px rgba(6, 78, 59, 0.20);
-  --platform-shadow-soft: 0 14px 34px rgba(6, 78, 59, 0.15);
-  --platform-radius: 20px;
-  --platform-font-ui: 'Baloo Bhaijaan 2', 'Cairo', system-ui, sans-serif;
-  --platform-font-display: 'Reem Kufi Fun', 'Baloo Bhaijaan 2', 'Cairo', system-ui, sans-serif;
-  --platform-font-quran: 'Amiri', serif;
 }
 
 html[data-theme="indigo"] {
@@ -259,6 +270,7 @@ a.bg-green-600,
   box-shadow: 0 0 0 1px rgba(15,23,42,.14);
 }
 
+.theme-dot-traditional { background: linear-gradient(135deg, #0c4a3b, #14532d 58%, #d9a441); }
 .theme-dot-emerald { background: linear-gradient(135deg, #047857, #f59e0b); }
 .theme-dot-indigo { background: linear-gradient(135deg, #4f46e5, #06b6d4); }
 .theme-dot-rose { background: linear-gradient(135deg, #be185d, #f97316); }
