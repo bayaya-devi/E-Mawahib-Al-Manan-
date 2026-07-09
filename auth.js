@@ -6,6 +6,9 @@ const Auth = (() => {
 
     const SESSION_KEY = 'quran_session';
     const ACCOUNTS_KEY = 'mawahib_saved_accounts';
+    const REWARDS_KEY_PREFIX = 'mawahib_rewards_';
+    const CELEBRATION_KEY = 'mawahib_last_celebration';
+    const INACTIVITY_KEY = 'mawahib_last_inactivity';
     const SURAH_ID_ALIASES = {
         'al-zalzala': 'al-zalzala',
         'al-zalzalah': 'al-zalzala',
@@ -157,6 +160,235 @@ const Auth = (() => {
 
     function logError(context, error) {
         console.error(`[${context}]`, error);
+    }
+
+    function _todayKey(date = new Date()) {
+        return date.toISOString().slice(0, 10);
+    }
+
+    function _daysBetween(from, to = new Date()) {
+        if (!from) return 0;
+        const start = new Date(String(from).slice(0, 10) + 'T00:00:00');
+        const end = new Date(_todayKey(to) + 'T00:00:00');
+        return Math.max(0, Math.floor((end - start) / 86400000));
+    }
+
+    function _rewardKey(username) {
+        return REWARDS_KEY_PREFIX + username;
+    }
+
+    function _readRewardState(username) {
+        const fallback = {
+            stars: 0,
+            totalEarned: 0,
+            totalLost: 0,
+            streak: 0,
+            bestStreak: 0,
+            completed: {},
+            lastActivity: null,
+            decayPeriodsApplied: 0,
+            lastDecayAt: null
+        };
+        try {
+            return { ...fallback, ...(JSON.parse(localStorage.getItem(_rewardKey(username)) || '{}')) };
+        } catch {
+            return fallback;
+        }
+    }
+
+    function _writeRewardState(username, state) {
+        localStorage.setItem(_rewardKey(username), JSON.stringify(state));
+    }
+
+    function _applyStarDecay(state) {
+        if (!state.lastActivity) return { state, lost: 0 };
+        const inactiveDays = _daysBetween(state.lastActivity);
+        const periods = Math.floor(inactiveDays / 7);
+        const alreadyApplied = state.decayPeriodsApplied || 0;
+        if (periods <= alreadyApplied) return { state, lost: 0 };
+        const newPeriods = periods - alreadyApplied;
+        const lost = Math.min(state.stars || 0, newPeriods * 2, 8);
+        if (lost > 0) {
+            state.stars = Math.max(0, (state.stars || 0) - lost);
+            state.totalLost = (state.totalLost || 0) + lost;
+            state.lastDecayAt = new Date().toISOString();
+        }
+        state.decayPeriodsApplied = periods;
+        return { state, lost, inactiveDays, periods };
+    }
+
+    function _buildInactivityVariant(decay, state) {
+        const days = decay.inactiveDays || 0;
+        const lost = decay.lost || 0;
+        if (days >= 90) return 'reset';
+        if (days >= 60) return 'long-pause';
+        if (days >= 30) return 'restart';
+        if (days >= 21) return 'return-plan';
+        if (days >= 14) return 'wake-up';
+        if (lost >= 8) return 'heavy';
+        if (lost >= 6) return 'medium';
+        if ((state.stars || 0) <= 5) return 'protect';
+        if ((state.streak || 0) === 0) return 'fresh';
+        return 'soft';
+    }
+
+    function _storeInactivityPayload(decay, state) {
+        if (!decay || !decay.lost) return null;
+        const payload = {
+            variant: _buildInactivityVariant(decay, state),
+            lost: decay.lost || 0,
+            inactiveDays: decay.inactiveDays || 0,
+            stars: state.stars || 0,
+            totalLost: state.totalLost || 0,
+            lastActivity: state.lastActivity || null,
+            createdAt: new Date().toISOString()
+        };
+        try { sessionStorage.setItem(INACTIVITY_KEY, JSON.stringify(payload)); } catch (error) {}
+        return payload;
+    }
+
+    function _getSurahMeta(surahId) {
+        const normalizedId = normalizeSurahId(surahId);
+        if (typeof SURAH_REGISTRY !== 'undefined' && Array.isArray(SURAH_REGISTRY)) {
+            const found = SURAH_REGISTRY.find(s => normalizeSurahId(s.id) === normalizedId);
+            if (found) return found;
+        }
+        if (typeof verses !== 'undefined' && Array.isArray(verses)) {
+            return { id: normalizedId, ayat: verses.length, nameAr: normalizedId, file: location.pathname.split('/').pop() };
+        }
+        return { id: normalizedId, ayat: 20, nameAr: normalizedId, file: location.pathname.split('/').pop() };
+    }
+
+    function _starsForSurah(meta) {
+        const ayat = Number(meta?.ayat || 20);
+        if (ayat <= 10) return 3;
+        if (ayat <= 50) return 5;
+        return 8;
+    }
+
+    function _getNextSurahFile(surahId) {
+        if (typeof SURAH_REGISTRY === 'undefined' || !Array.isArray(SURAH_REGISTRY)) return 'dashboard.html';
+        const order = SURAH_REGISTRY.filter(s => s.available).sort((a, b) => b.num - a.num);
+        const index = order.findIndex(s => normalizeSurahId(s.id) === normalizeSurahId(surahId));
+        return index >= 0 && order[index + 1] ? order[index + 1].file : 'dashboard.html';
+    }
+
+    function _buildCelebrationVariant(state, points, meta, wasComeback) {
+        const completedCount = Object.keys(state.completed || {}).length;
+        if (completedCount === 1) return 'first';
+        if (wasComeback) return 'comeback';
+        if ((state.streak || 0) >= 7) return 'streak';
+        if (completedCount >= 50) return 'elite';
+        if (completedCount >= 20) return 'mastery';
+        if (completedCount >= 12) return 'deep-focus';
+        if (completedCount >= 8) return 'momentum';
+        if (completedCount % 4 === 0) return 'checkpoint';
+        if (points >= 8) return 'major';
+        return 'steady';
+    }
+
+    function _awardSurahStars(surahId) {
+        const session = getSession();
+        if (!session) return null;
+        const normalizedId = normalizeSurahId(surahId);
+        const meta = _getSurahMeta(normalizedId);
+        const points = _starsForSurah(meta);
+        const state = _readRewardState(session.username);
+        const decay = _applyStarDecay(state);
+        if (state.completed && state.completed[normalizedId]) {
+            _writeRewardState(session.username, state);
+            return null;
+        }
+        const inactiveDays = _daysBetween(state.lastActivity);
+        const today = _todayKey();
+        const yesterday = _todayKey(new Date(Date.now() - 86400000));
+        const wasComeback = inactiveDays >= 7;
+        state.stars = (state.stars || 0) + points;
+        state.totalEarned = (state.totalEarned || 0) + points;
+        state.completed = state.completed || {};
+        state.completed[normalizedId] = { stars: points, date: new Date().toISOString() };
+        state.streak = state.lastActivity === today ? (state.streak || 1) : (state.lastActivity === yesterday ? (state.streak || 0) + 1 : 1);
+        state.bestStreak = Math.max(state.bestStreak || 0, state.streak || 0);
+        state.lastActivity = today;
+        state.decayPeriodsApplied = 0;
+        const payload = {
+            variant: _buildCelebrationVariant(state, points, meta, wasComeback),
+            surahId: normalizedId,
+            surahName: meta.nameAr || meta.nameFr || normalizedId,
+            surahFile: meta.file || location.pathname.split('/').pop(),
+            nextUrl: _getNextSurahFile(normalizedId),
+            points,
+            stars: state.stars,
+            totalEarned: state.totalEarned,
+            completedCount: Object.keys(state.completed || {}).length,
+            streak: state.streak || 1,
+            lost: decay.lost || 0,
+            earnedAt: new Date().toISOString()
+        };
+        _writeRewardState(session.username, state);
+        try { sessionStorage.setItem(CELEBRATION_KEY, JSON.stringify(payload)); } catch (error) {}
+        return payload;
+    }
+
+    function _maybeOpenCelebration(payload) {
+        if (!payload || !location || /celebration\.html|dashboard\.html|login\.html|admin\.html/.test(location.pathname)) return;
+        setTimeout(() => {
+            try { window.location.href = 'celebration.html'; } catch (error) {}
+        }, 900);
+    }
+
+    function _maybeOpenInactivity(payload) {
+        if (!payload || !location || /inactivity\.html|celebration\.html|login\.html|admin\.html/.test(location.pathname)) return;
+        setTimeout(() => {
+            try { window.location.href = 'inactivity.html'; } catch (error) {}
+        }, 700);
+    }
+
+    function getRewardState(username) {
+        const session = getSession();
+        const key = username || session?.username;
+        if (!key) return null;
+        const state = _readRewardState(key);
+        const decay = _applyStarDecay(state);
+        if (decay.lost > 0) {
+            _storeInactivityPayload(decay, state);
+            _writeRewardState(key, state);
+        }
+        return { ...state, lostNow: decay.lost || 0 };
+    }
+
+    function syncRewardsFromSurahs(surahs) {
+        const session = getSession();
+        if (!session || !Array.isArray(surahs)) return null;
+        const state = _readRewardState(session.username);
+        const decay = _applyStarDecay(state);
+        const inactivityPayload = decay.lost > 0 ? _storeInactivityPayload(decay, state) : null;
+        let added = 0;
+        state.completed = state.completed || {};
+        surahs.forEach(surah => {
+            if (!surah || !surah.isCompleted) return;
+            const id = normalizeSurahId(surah.id);
+            if (state.completed[id]) return;
+            const stars = _starsForSurah(surah);
+            state.completed[id] = { stars, date: new Date().toISOString(), synced: true };
+            state.stars = (state.stars || 0) + stars;
+            state.totalEarned = (state.totalEarned || 0) + stars;
+            added += stars;
+        });
+        if (added > 0 && !state.lastActivity) state.lastActivity = _todayKey();
+        _writeRewardState(session.username, state);
+        _maybeOpenInactivity(inactivityPayload);
+        return state;
+    }
+
+    function getLastCelebration() {
+        try { return JSON.parse(sessionStorage.getItem(CELEBRATION_KEY) || 'null'); }
+        catch { return null; }
+    }
+
+    function getLastInactivity() {
+        try { return JSON.parse(sessionStorage.getItem(INACTIVITY_KEY) || 'null'); }
+        catch { return null; }
     }
 
     // --- 1. ÉLÈVES ---
@@ -449,9 +681,10 @@ const Auth = (() => {
     async function completeSurah(surahId) {
         const session = getSession(); if (!session) return;
         const normalizedId = normalizeSurahId(surahId);
-        const { data, error } = await supabase.from('progressions').select('activities')
+        const { data, error } = await supabase.from('progressions').select('activities, completed_at')
             .eq('username', session.username).eq('surah_id', normalizedId).maybeSingle();
         if (error && error.code !== 'PGRST116') logError('completeSurah', error);
+        const wasCompleted = Boolean(data?.completed_at);
         const activities = data?.activities || {};
         const scores = Object.values(activities).map(a => a.score);
         const globalScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 100;
@@ -459,6 +692,7 @@ const Auth = (() => {
             username: session.username, surah_id: normalizedId, activities,
             completed_at: new Date().toISOString(), global_score: globalScore
         }]);
+        if (!wasCompleted) _maybeOpenCelebration(_awardSurahStars(normalizedId));
     }
 
     // --- 9. DEVOIRS ---
@@ -498,7 +732,7 @@ const Auth = (() => {
         getAllStudents, getAllUsers, getProfs, deleteStudent, deleteProf, toggleSuspension,
         assignStudentToProf, removeStudentFromProf,
         getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports,
-        getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId,
+        getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, getLastCelebration, getLastInactivity, syncRewardsFromSurahs,
         ajouterDevoir, getDevoirs, annulerDevoir, marquerDevoirTermine,
         getSupabaseClient
     };

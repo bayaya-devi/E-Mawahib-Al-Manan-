@@ -85,6 +85,16 @@
         .daily-progress { display: grid; grid-template-columns: auto minmax(120px, 1fr) auto; gap: 10px; align-items: center; margin-top: 12px; color: #64748b; font-size: 11px; font-weight: 900; }
         .daily-progress-track { height: 7px; background: rgba(148,163,184,.18); border-radius: 999px; overflow: hidden; }
         .daily-progress-track > div { height: 100%; background: linear-gradient(90deg, var(--platform-primary), var(--platform-accent)); }
+        .reward-strip {
+            margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+        }
+        .reward-pill {
+            border-radius: 16px; padding: 10px 12px; background: linear-gradient(135deg, #fff7ed, #ffffff);
+            border: 1px solid rgba(217,164,65,.22); min-height: 68px;
+        }
+        .reward-kicker { font-size: 10px; color: #64748b; font-weight: 900; }
+        .reward-value { margin-top: 2px; font-size: 20px; color: #111827; font-weight: 900; line-height: 1; }
+        .reward-note { margin-top: 3px; font-size: 10px; color: #64748b; font-weight: 800; line-height: 1.35; }
         .header-bg { background: linear-gradient(135deg, #1a3c34 0%, #0c4a3b 40%, #14532d 100%); }
 
         @media (max-width: 900px) {
@@ -96,6 +106,7 @@
             .daily-grid { grid-template-columns: 1fr; }
             .daily-tile:last-child { grid-column: auto; }
             .daily-progress { grid-template-columns: 1fr; gap: 6px; }
+            .reward-strip { grid-template-columns: 1fr; }
             .surah-journey { padding-inline: 0; }
             .surah-journey::before { left: 28px; transform: none; width: 6px; }
             .journey-step, .journey-step:nth-child(odd), .journey-step:nth-child(even) { justify-content: stretch; padding-left: 72px; padding-right: 0; }
@@ -159,6 +170,23 @@ body { padding-bottom: 80px; }
                     <div id="student-progress-fill" class="bg-emerald-500 rounded-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
                 <span id="student-progress-label">0 / 0</span>
+            </div>
+            <div class="reward-strip" aria-label="نظام النجوم">
+                <div class="reward-pill">
+                    <div class="reward-kicker">نجومك</div>
+                    <div class="reward-value"><span id="reward-stars">0</span> ★</div>
+                    <div class="reward-note" id="reward-decay-note">كل سورة تضيف رصيدا جديدا.</div>
+                </div>
+                <div class="reward-pill">
+                    <div class="reward-kicker">السلسلة</div>
+                    <div class="reward-value"><span id="reward-streak">0</span> يوم</div>
+                    <div class="reward-note">الاستمرار أهم من السرعة.</div>
+                </div>
+                <div class="reward-pill">
+                    <div class="reward-kicker">السور المنجزة</div>
+                    <div class="reward-value"><span id="reward-completed">0</span></div>
+                    <div class="reward-note">تفتح مراحل تشجيع جديدة.</div>
+                </div>
             </div>
         </div>
     </section>
@@ -241,6 +269,13 @@ body { padding-bottom: 80px; }
             return 'long';
         }
 
+        function getSurahStars(surah) {
+            if (!surah) return 0;
+            if (surah.ayat <= 10) return 3;
+            if (surah.ayat <= 50) return 5;
+            return 8;
+        }
+
         function getJourneyOrder() {
             return [...dashboardState.surahs].sort((a, b) => b.num - a.num);
         }
@@ -277,7 +312,7 @@ body { padding-bottom: 80px; }
                                 <h3 class="quran-font text-xl font-black truncate">${surah.nameAr}</h3>
                                 <span class="journey-state">${getJourneyLabel(state, surah)}</span>
                             </div>
-                            <p class="journey-meta">سورة ${toArabicNum(surah.num)} • ${toArabicNum(surah.ayat)} آيات • ${surah.nameFr || ''}</p>
+                            <p class="journey-meta">سورة ${toArabicNum(surah.num)} • ${toArabicNum(surah.ayat)} آيات • ${getSurahStars(surah)} نجوم • ${surah.nameFr || ''}</p>
                         </div>
                     </button>
                 </div>
@@ -531,7 +566,24 @@ async function chargerDevoirs() {
                 const progressPercent = availableCount === 0 ? 0 : Math.round((completedCount / availableCount) * 100);
                 progressFill.style.width = `${progressPercent}%`;
             }
+            if (typeof Auth.syncRewardsFromSurahs === 'function') Auth.syncRewardsFromSurahs(dashboardState.surahs);
+            updateRewardPanel();
             renderSurahLibrary();
+        }
+
+        function updateRewardPanel() {
+            if (typeof Auth === 'undefined' || typeof Auth.getRewardState !== 'function') return;
+            const rewards = Auth.getRewardState();
+            if (!rewards) return;
+            const completedRewardCount = Object.keys(rewards.completed || {}).length;
+            const starsEl = document.getElementById('reward-stars');
+            const streakEl = document.getElementById('reward-streak');
+            const completedEl = document.getElementById('reward-completed');
+            const noteEl = document.getElementById('reward-decay-note');
+            if (starsEl) starsEl.textContent = rewards.stars || 0;
+            if (streakEl) streakEl.textContent = rewards.streak || 0;
+            if (completedEl) completedEl.textContent = completedRewardCount;
+            if (noteEl && rewards.lostNow > 0) noteEl.textContent = 'نقصت ' + rewards.lostNow + ' نجوم فقط بسبب فترة توقف.';
         }
 
         chargerDevoirs();

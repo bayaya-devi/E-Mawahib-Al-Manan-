@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>عودة للمسار - مواهب المنان</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="platform-theme.css">
+  <script src="platform-theme.js"></script>
+  <script src="auth.js"></script>
+  <style>
+    body {
+      min-height: 100vh;
+      font-family: 'Cairo', sans-serif;
+      background:
+        radial-gradient(circle at 14% 12%, rgba(251,191,36,.35), transparent 22rem),
+        radial-gradient(circle at 88% 20%, color-mix(in srgb, var(--platform-primary-soft) 65%, transparent), transparent 24rem),
+        linear-gradient(145deg, #f8fafc, var(--platform-bg));
+      overflow-x: hidden;
+    }
+    .return-shell {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+    .return-card {
+      width: min(100%, 760px);
+      border-radius: 30px;
+      overflow: hidden;
+      background: rgba(255,255,255,.95);
+      border: 1px solid rgba(15,23,42,.08);
+      box-shadow: 0 30px 90px rgba(15,23,42,.16);
+    }
+    .return-visual {
+      min-height: 210px;
+      position: relative;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #334155, var(--platform-primary-dark));
+      color: white;
+      isolation: isolate;
+    }
+    .return-visual::before {
+      content: '';
+      position: absolute;
+      inset: 20px;
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,.16);
+    }
+    .moon {
+      width: 118px;
+      height: 118px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 42px;
+      background: rgba(255,255,255,.13);
+      border: 1px solid rgba(255,255,255,.26);
+      box-shadow: 0 24px 60px rgba(0,0,0,.2);
+      animation: breathe 3.4s ease-in-out infinite;
+    }
+    .dash-line {
+      position: absolute;
+      width: 76%;
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent);
+      animation: pathMove 3s ease-in-out infinite;
+    }
+    .small-stars {
+      position: absolute;
+      inset: 0;
+      background-image:
+        radial-gradient(circle at 22% 28%, rgba(255,255,255,.8) 0 2px, transparent 3px),
+        radial-gradient(circle at 78% 34%, rgba(255,255,255,.5) 0 2px, transparent 3px),
+        radial-gradient(circle at 34% 72%, rgba(255,255,255,.45) 0 2px, transparent 3px);
+      animation: twinkle 2.8s ease-in-out infinite;
+    }
+    .return-body { padding: 24px; }
+    .kicker { color: var(--platform-primary); font-size: 12px; font-weight: 900; }
+    .title { color: #111827; font-size: clamp(28px, 7vw, 46px); line-height: 1.15; font-weight: 900; }
+    .subtitle { color: #475569; font-weight: 800; line-height: 1.85; }
+    .loss-box {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0,1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .loss-stat {
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 12px;
+      background: linear-gradient(135deg, #f8fafc, #ffffff);
+    }
+    .loss-stat span { display: block; color: #64748b; font-size: 11px; font-weight: 900; }
+    .loss-stat strong { display: block; color: #111827; font-size: 24px; line-height: 1.1; font-weight: 900; margin-top: 4px; }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
+    .actions a {
+      flex: 1 1 190px;
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 16px;
+      font-weight: 900;
+      text-align: center;
+    }
+    .primary-action { background: linear-gradient(135deg, var(--platform-primary), var(--platform-primary-dark)); color: white; }
+    .secondary-action { background: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; }
+
+    .variant-soft .moon { animation-duration: 4.2s; }
+    .variant-fresh .return-visual { background: linear-gradient(135deg, #0369a1, var(--platform-primary-dark)); }
+    .variant-protect .moon { box-shadow: 0 0 42px rgba(253,230,138,.32); }
+    .variant-medium .dash-line { animation-duration: 2.2s; }
+    .variant-heavy .return-visual { background: linear-gradient(135deg, #7c2d12, #334155); }
+    .variant-wake-up .small-stars { animation-duration: 1.8s; }
+    .variant-return-plan .moon { border-radius: 28px; }
+    .variant-restart .return-visual { background: linear-gradient(135deg, #312e81, #0f172a); }
+    .variant-long-pause .dash-line { width: 58%; }
+    .variant-reset .moon { width: 132px; height: 132px; }
+
+    @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.055); } }
+    @keyframes pathMove { 0%,100% { transform: translateX(-18%); opacity: .4; } 50% { transform: translateX(18%); opacity: .9; } }
+    @keyframes twinkle { 0%,100% { opacity: .38; } 50% { opacity: .95; } }
+
+    @media (max-width: 640px) {
+      .return-shell { padding: 12px; place-items: stretch; align-items: center; }
+      .return-card { border-radius: 24px; }
+      .return-visual { min-height: 180px; }
+      .return-body { padding: 18px; }
+      .loss-box { grid-template-columns: 1fr; }
+      .actions a { flex-basis: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="return-shell">
+    <article id="return-card" class="return-card variant-soft">
+      <div class="return-visual">
+        <div class="small-stars"></div>
+        <div class="dash-line"></div>
+        <div class="moon" id="return-symbol">↺</div>
+      </div>
+      <section class="return-body">
+        <p class="kicker" id="return-kicker">عودة للمسار</p>
+        <h1 class="title" id="return-title">لا بأس، نكمل بهدوء</h1>
+        <p class="subtitle mt-3" id="return-subtitle">نقصت بعض النجوم فقط لتذكيرك بالاستمرار. الرصيد الحقيقي هو رجوعك اليوم.</p>
+        <div class="loss-box">
+          <div class="loss-stat"><span>نجوم ناقصة</span><strong id="lost-stars">0</strong></div>
+          <div class="loss-stat"><span>رصيدك الآن</span><strong id="current-stars">0</strong></div>
+          <div class="loss-stat"><span>أيام التوقف</span><strong id="inactive-days">0</strong></div>
+        </div>
+        <div class="actions">
+          <a href="dashboard.html" class="primary-action">العودة للمسار</a>
+          <a href="dashboard.html#section-available" class="secondary-action">اختيار سورة الآن</a>
+        </div>
+      </section>
+    </article>
+  </main>
+
+  <script>
+    const variants = {
+      soft: ['تنبيه خفيف', 'رجعة بسيطة', 'نقصت نجوم قليلة فقط. المهم أنك رجعت قبل أن يطول الانقطاع.', '↺'],
+      fresh: ['بداية جديدة', 'ابدأ من خطوة صغيرة', 'لا تحتاج جلسة طويلة الآن. سورة قصيرة أو مراجعة مركزة تكفي لإعادة الحركة.', '1'],
+      protect: ['احم رصيدك', 'رصيدك يستحق الحماية', 'النجوم المتبقية تذكير بما بنيته. خذ خطوة واحدة اليوم حتى تثبته.', '◇'],
+      medium: ['توقف متوسط', 'المسار ينتظرك', 'الفترة طالت قليلا، لكن العودة اليوم تقطع نصف الطريق نفسيا.', '↗'],
+      heavy: ['خصم محدود', 'خسارة صغيرة لا تلغي العمل', 'نقصت بعض النجوم، لكن لا شيء من الحفظ يضيع عندما ترجع للمراجعة.', '−'],
+      'wake-up': ['إشارة انتباه', 'حان وقت الرجوع', 'اعتبرها إشارة هادئة: لا تؤجل كثيرا، فقط افتح السورة التالية.', '◎'],
+      'return-plan': ['خطة عودة', 'ثلاث دقائق تكفي للبداية', 'ابدأ باستماع، ثم ترتيب، ثم سؤال واحد. لا تجعل الرجوع ضخما في ذهنك.', '3'],
+      restart: ['إعادة تشغيل', 'الانقطاع لا يحكم عليك', 'بعد شهر، أفضل قرار هو بداية نظيفة بلا تأنيب. المسار موجود.', '↻'],
+      'long-pause': ['عودة بعد pause طويلة', 'نرجع بدون ضغط', 'الفترة كانت طويلة، لذلك لا نطلب قفزة. نطلب خطوة ثابتة فقط.', '→'],
+      reset: ['صفحة جديدة', 'ابدأ كأنك تبني من جديد', 'حتى الوقفة الطويلة لا تغلق الباب. اليوم يصلح كبداية جديدة تماما.', '0']
+    };
+
+    function getPayload() {
+      if (typeof Auth !== 'undefined' && Auth.getLastInactivity) return Auth.getLastInactivity();
+      return null;
+    }
+
+    function renderReturn() {
+      const payload = getPayload() || { variant: 'soft', lost: 0, stars: 0, inactiveDays: 0 };
+      const variant = variants[payload.variant] ? payload.variant : 'soft';
+      const copy = variants[variant];
+      document.getElementById('return-card').className = 'return-card variant-' + variant;
+      document.getElementById('return-kicker').textContent = copy[0];
+      document.getElementById('return-title').textContent = copy[1];
+      document.getElementById('return-subtitle').textContent = copy[2];
+      document.getElementById('return-symbol').textContent = copy[3];
+      document.getElementById('lost-stars').textContent = '-' + (payload.lost || 0);
+      document.getElementById('current-stars').textContent = payload.stars || 0;
+      document.getElementById('inactive-days').textContent = payload.inactiveDays || 0;
+    }
+
+    if (typeof Auth !== 'undefined' && !Auth.getSession()) {
+      window.location.href = 'login.html';
+    } else {
+      renderReturn();
+    }
+  </script>
+</body>
+</html>
