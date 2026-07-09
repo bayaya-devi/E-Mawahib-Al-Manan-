@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;500;600;700;800&family=Reem+Kufi+Fun:wght@500;600;700&family=Amiri:wght@400;700&display=swap');
+
 :root {
   --platform-primary: #059669;
   --platform-primary-dark: #064e3b;
@@ -13,6 +15,9 @@
   --platform-shadow: 0 22px 55px rgba(6, 78, 59, 0.20);
   --platform-shadow-soft: 0 14px 34px rgba(6, 78, 59, 0.15);
   --platform-radius: 20px;
+  --platform-font-ui: 'Baloo Bhaijaan 2', 'Cairo', system-ui, sans-serif;
+  --platform-font-display: 'Reem Kufi Fun', 'Baloo Bhaijaan 2', 'Cairo', system-ui, sans-serif;
+  --platform-font-quran: 'Amiri', serif;
 }
 
 html[data-theme="indigo"] {
@@ -332,4 +337,45 @@ html[data-scroll-dir="up"] .mawahib-reveal {
     transform: none;
     transition: none;
   }
+}
+
+body,
+button,
+a,
+input,
+select,
+textarea,
+.badge,
+.status-badge,
+.juz-badge,
+.theme-option,
+.nav-bottom,
+.journey-node,
+.daily-tile {
+  font-family: var(--platform-font-ui) !important;
+  letter-spacing: 0 !important;
+}
+
+h1,
+h2,
+h3,
+.header-bg h1,
+.header-bg-parent h1,
+.section-heading,
+.daily-title,
+.journey-state,
+.theme-panel-title,
+.stat-card .stat-num,
+.stat-card .stat-label {
+  font-family: var(--platform-font-display) !important;
+  letter-spacing: 0 !important;
+}
+
+.quran-font,
+.quran-text,
+.ayah,
+.verse,
+[id*="ayah"],
+[id*="verse"] {
+  font-family: var(--platform-font-quran) !important;
 }
