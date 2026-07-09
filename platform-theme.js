@@ -142,6 +142,132 @@
     }, { passive: true });
   }
 
+  function initMascotGuide() {
+    if (document.getElementById('mawahib-mascot')) return;
+    const session = window.Auth && Auth.getSession ? Auth.getSession() : null;
+    if (session && session.role && session.role !== 'student') return;
+
+    const path = location.pathname.split('/').pop() || 'dashboard.html';
+    const isDashboard = path === 'dashboard.html' || path === '';
+    const isSurah = /^(surah-|Al_|al_kadr|quraysh|fil|bayina|qaria)/.test(path);
+    const isCelebration = path === 'celebration.html';
+    const isInactivity = path === 'inactivity.html';
+    if (!isDashboard && !isSurah && !isCelebration && !isInactivity) return;
+
+    injectMascotStyles();
+    const mascot = document.createElement('div');
+    mascot.id = 'mawahib-mascot';
+    mascot.className = 'mawahib-mascot';
+    mascot.dir = 'rtl';
+    mascot.innerHTML = [
+      '<div class="mascot-thought" id="mascot-thought"></div>',
+      '<div class="mascot-stage"><img src="assets/mascot.png" alt="رفيق مواهب المنان"></div>',
+      '<div class="mascot-z">Zz</div>'
+    ].join('');
+    document.body.appendChild(mascot);
+
+    const setMessage = (text, state = 'point') => {
+      mascot.dataset.state = state;
+      const bubble = document.getElementById('mascot-thought');
+      if (bubble) bubble.textContent = text;
+    };
+
+    const placeNear = (target, fallback = 'bottom') => {
+      if (!target) {
+        mascot.dataset.place = fallback;
+        mascot.style.removeProperty('--mascot-x');
+        mascot.style.removeProperty('--mascot-y');
+        return;
+      }
+      const rect = target.getBoundingClientRect();
+      const width = Math.min(window.innerWidth, document.documentElement.clientWidth || window.innerWidth);
+      const x = Math.max(10, Math.min(width - 136, rect.left + rect.width / 2 - 68));
+      const y = Math.max(76, Math.min(window.innerHeight - 176, rect.top + rect.height / 2 - 76));
+      mascot.dataset.place = 'target';
+      mascot.style.setProperty('--mascot-x', `${Math.round(x)}px`);
+      mascot.style.setProperty('--mascot-y', `${Math.round(y)}px`);
+    };
+
+    const updateDashboard = () => {
+      const current = document.querySelector('[data-journey-focus="current"]');
+      const last = document.querySelector('[data-journey-focus="last-completed"]');
+      const rewardStars = Number(document.getElementById('reward-stars')?.textContent || 0);
+      const target = current || last;
+      if (current) {
+        setMessage('هذه هي التالية.', 'point');
+        placeNear(current);
+      } else if (last) {
+        setMessage('أحسنت، أكمل بثبات.', 'happy');
+        placeNear(last);
+      } else if (rewardStars === 0) {
+        setMessage('نبدأ بخطوة صغيرة.', 'point');
+        placeNear(document.getElementById('section-available'));
+      } else {
+        setMessage('تابع المسار بهدوء.', 'point');
+        placeNear(target);
+      }
+    };
+
+    const updateSurah = () => {
+      const activePhase = document.querySelector('[id^="phase-"]:not(.hidden)');
+      const selected = document.querySelector('.choice.selected, .correct, .wrong, .tab-active, .part-btn.active');
+      const target = selected || activePhase || document.querySelector('main');
+      const wrong = document.querySelector('.wrong, .bg-rose-50, .text-rose-700');
+      if (wrong) setMessage('راجع بهدوء.', 'sad');
+      else setMessage('ركّز هنا.', 'point');
+      placeNear(target, 'bottom');
+    };
+
+    if (isCelebration) {
+      setMessage('أحسنت، خطوة قوية.', 'happy');
+      placeNear(document.querySelector('.victory-card, main'), 'bottom');
+    } else if (isInactivity) {
+      setMessage('لنبدأ بخطوة صغيرة.', 'sleep');
+      placeNear(document.querySelector('.return-card, main'), 'bottom');
+    } else if (isDashboard) {
+      setMessage('هذه هي التالية.', 'point');
+      setTimeout(updateDashboard, 350);
+    } else if (isSurah) {
+      setTimeout(updateSurah, 350);
+      document.addEventListener('click', () => setTimeout(updateSurah, 220), true);
+    }
+
+    window.addEventListener('resize', () => {
+      if (isDashboard) updateDashboard();
+      if (isSurah) updateSurah();
+    }, { passive: true });
+
+    const observer = new MutationObserver(() => {
+      if (isDashboard) updateDashboard();
+      if (isSurah) updateSurah();
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'data-journey-focus'] });
+  }
+
+  function injectMascotStyles() {
+    if (document.getElementById('mawahib-mascot-style')) return;
+    const style = document.createElement('style');
+    style.id = 'mawahib-mascot-style';
+    style.textContent = [
+      '.mawahib-mascot{position:fixed;right:14px;bottom:92px;z-index:48;width:118px;pointer-events:none;transition:transform .42s ease,opacity .25s ease;filter:drop-shadow(0 18px 24px rgba(15,23,42,.18))}',
+      '.mawahib-mascot[data-place="target"]{right:auto;bottom:auto;transform:translate3d(var(--mascot-x),var(--mascot-y),0)}',
+      '.mascot-stage{width:100%;aspect-ratio:1;display:grid;place-items:end center;animation:mascotFloat 3.2s ease-in-out infinite}',
+      '.mascot-stage img{width:100%;height:100%;object-fit:contain;display:block}',
+      '.mascot-thought{position:absolute;right:78%;bottom:72%;min-width:122px;max-width:172px;padding:9px 11px;border-radius:18px 18px 6px 18px;background:linear-gradient(135deg,var(--platform-primary-soft,#dcfce7),#fff);border:1px solid color-mix(in srgb,var(--platform-primary,#14532d) 24%,#fff);color:var(--platform-primary-dark,#0c4a3b);font:900 12px/1.45 var(--platform-font-ui,Cairo),sans-serif;text-align:center;box-shadow:0 14px 30px rgba(15,23,42,.12)}',
+      '.mascot-thought::after{content:"";position:absolute;right:14px;bottom:-8px;border:8px solid transparent;border-top-color:color-mix(in srgb,var(--platform-primary-soft,#dcfce7) 65%,#fff)}',
+      '.mascot-z{position:absolute;right:9px;top:-8px;display:none;color:var(--platform-primary,#14532d);font-weight:900;animation:mascotSleep 1.8s ease-in-out infinite}',
+      '.mawahib-mascot[data-state="happy"] .mascot-stage{animation:mascotWin 900ms ease-in-out infinite}',
+      '.mawahib-mascot[data-state="sad"] .mascot-stage{filter:saturate(.72);transform:rotate(-2deg)}',
+      '.mawahib-mascot[data-state="sleep"] .mascot-stage{filter:saturate(.65);opacity:.86;animation:none}',
+      '.mawahib-mascot[data-state="sleep"] .mascot-z{display:block}',
+      '@keyframes mascotFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}',
+      '@keyframes mascotWin{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-10px) scale(1.035)}}',
+      '@keyframes mascotSleep{0%{opacity:.2;transform:translateY(4px) scale(.9)}50%{opacity:1}100%{opacity:.1;transform:translateY(-10px) scale(1.08)}}',
+      '@media(max-width:640px){.mawahib-mascot{width:92px;bottom:86px;right:8px}.mascot-thought{min-width:104px;max-width:132px;font-size:10px;padding:7px 9px}.mawahib-mascot[data-place="target"]{transform:translate3d(min(var(--mascot-x),calc(100vw - 104px)),var(--mascot-y),0)}}'
+    ].join('\n');
+    document.head.appendChild(style);
+  }
+
   function syncSurahTheme() {
     const isSurahPage = /(^|\/)surah-|Al_|al_kadr|quraysh|fil|bayina/.test(location.pathname);
     if (!isSurahPage) return;
@@ -181,6 +307,7 @@
     syncSurahTheme();
     initDigitNormalizer();
     initNavAutoHide();
+    initMascotGuide();
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) initScrollAnimations();
   }
 
