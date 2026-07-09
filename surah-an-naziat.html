@@ -7,8 +7,8 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <link rel="stylesheet" href="platform-theme.css">
-    <script src="platform-theme.js"></script>
+<link rel="stylesheet" href="platform-theme.css">
+<script src="platform-theme.js"></script>
 <style>
   :root { --surah:#1e40af; }
   body { font-family:'Cairo',sans-serif; background:#f8fafc; min-height:100vh; user-select:none; }
@@ -541,10 +541,24 @@ function buildOrderGame() {
       btn.style.background = '#ecfdf5';
       orderAnswers.push(v.num);
       const next = orderSample[orderAnswers.length];
-      document.getElementById('order-target').textContent = next ? 'الآن اختر الآية رقم ' + next.numAr : 'اكتملت السلسلة، اضغط تحقق.';
+      document.getElementById('order-target').textContent = next ? 'الآن اختر الآية رقم ' + next.numAr : 'اكتملت السلسلة، نتحقق تلقائيا.';
+      if (!next) setTimeout(checkOrderGame, 260);
     };
     list.appendChild(btn);
   });
+}
+
+function autoAdvancePhase(nextPhase) {
+  setTimeout(() => {
+    if (typeof goToPhase === 'function') goToPhase(nextPhase);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 850);
+}
+
+function completeExerciseSet() {
+  setTimeout(() => {
+    if (typeof finishMission === 'function') finishMission();
+  }, 750);
 }
 
 function checkOrderGame() {
@@ -553,7 +567,10 @@ function checkOrderGame() {
   box.className = 'p-3 rounded-xl text-center font-bold text-sm my-4 ' + (ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700');
   box.textContent = ok ? 'ترتيب ممتاز. +20 XP' : 'فيه خلل في السلسلة. أعدها بهدوء.';
   updateStats(ok ? 20 : -8, ok);
-  if (ok) Auth.recordActivity(SURAH_ID, 'teen-order-part-' + currentPart, 100);
+  if (ok) {
+    Auth.recordActivity(SURAH_ID, 'teen-order-part-' + currentPart, 100);
+    autoAdvancePhase(2);
+  }
 }
 
 function makeFillQuestion(v, index, allWords) {
@@ -589,6 +606,9 @@ function buildFillGame() {
       fillAnswers[qi] = btn.dataset.value;
       document.querySelectorAll(`.choice[data-q="${qi}"]`).forEach(b => b.classList.remove('selected'));
       btn.classList.add('selected');
+      if (fillAnswers.every(Boolean) && fillAnswers.every((answer, index) => answer === fillQuestions[index].answer)) {
+        setTimeout(checkFillGame, 260);
+      }
     });
   });
 }
@@ -603,6 +623,7 @@ async function checkFillGame() {
   box.textContent = ok ? 'نتيجة قوية: ' + score + '%. +25 XP' : 'نتيجتك ' + score + '%. أعد المحاولة لتثبيت الحفظ.';
   updateStats(ok ? 25 : -5, ok);
   await Auth.recordActivity(SURAH_ID, 'teen-fill-part-' + currentPart, score);
+  if (score === 100) autoAdvancePhase(3);
 }
 
 function buildSpeedGame() {
@@ -635,7 +656,10 @@ function answerSpeed(num) {
   box.className = 'p-3 rounded-xl text-center font-bold text-sm my-4 ' + (ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700');
   box.textContent = ok ? 'صحيح. سرعة وتركيز! +15 XP' : 'ليست هي. خذ نفسا وأعد السؤال.';
   updateStats(ok ? 15 : -5, ok);
-  if (ok) Auth.recordActivity(SURAH_ID, 'teen-speed-part-' + currentPart, 100);
+  if (ok) {
+    Auth.recordActivity(SURAH_ID, 'teen-speed-part-' + currentPart, 100);
+    completeExerciseSet();
+  }
 }
 
 async function finishMission() {
@@ -643,7 +667,14 @@ async function finishMission() {
   await Auth.recordActivity(SURAH_ID, 'teen-mission-part-' + currentPart, score);
   if (score >= 70 && currentPart === partCount - 1) await Auth.completeSurah(SURAH_ID);
   if (typeof confetti === 'function') confetti({ particleCount: score >= 70 ? 120 : 45, spread: 70, origin: { y: .65 } });
-  alert(score >= 70 ? 'تم حفظ نتيجة المهمة. أداء ممتاز.' : 'تم حفظ المحاولة. أعد المهمة لتحسين النتيجة.');
+  if (score >= 70 && currentPart < partCount - 1) {
+    currentPart++;
+    currentPhase = 0;
+    buildAll();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
+  if (score < 70) alert('تم حفظ المحاولة. أعد المهمة لتحسين النتيجة.');
 }
 
 function goToPhase(phase) {

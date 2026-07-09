@@ -62,9 +62,11 @@
       place-items: center;
       font-size: 44px;
       font-weight: 900;
+      color: #facc15;
       background: rgba(255,255,255,.13);
       border: 1px solid rgba(255,255,255,.28);
       box-shadow: inset 0 0 0 10px rgba(255,255,255,.07), 0 24px 50px rgba(0,0,0,.18);
+      text-shadow: 0 5px 18px rgba(250, 204, 21, .35);
       animation: pulseWin 2.4s ease-in-out infinite;
     }
     .orbit {
@@ -110,6 +112,7 @@
     }
     .stat span { display: block; color: #64748b; font-size: 11px; font-weight: 900; }
     .stat strong { display: block; color: #111827; font-size: 24px; font-weight: 900; line-height: 1.1; margin-top: 4px; }
+    .stat strong.star-number { color: #d97706; text-shadow: 0 2px 12px rgba(250, 204, 21, .28); }
     .actions {
       display: flex;
       gap: 10px;
@@ -170,8 +173,8 @@
         <h1 class="title" id="victory-title">خطوة قوية</h1>
         <p class="subtitle mt-3" id="victory-subtitle">تم تسجيل تقدمك بنجاح.</p>
         <div class="stats">
-          <div class="stat"><span>نجوم جديدة</span><strong id="victory-points">0</strong></div>
-          <div class="stat"><span>رصيدك الآن</span><strong id="victory-stars">0</strong></div>
+          <div class="stat"><span>نجوم جديدة</span><strong id="victory-points" class="star-number">0</strong></div>
+          <div class="stat"><span>رصيدك الآن</span><strong id="victory-stars" class="star-number">0</strong></div>
           <div class="stat"><span>السلسلة</span><strong id="victory-streak">0</strong></div>
         </div>
         <div class="actions">

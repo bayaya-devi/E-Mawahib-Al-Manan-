@@ -307,6 +307,10 @@ function selectWord(word, btn) {
     span.className = "px-4 py-2 bg-amber-100 text-amber-900 rounded-lg border border-amber-300 text-xl font-bold shadow-sm";
     span.innerText = word;
     box.appendChild(span);
+    const gameData = surahData[currentQuarterIndex].game1;
+    if (selectedWordsList.length === gameData.words.length && selectedWordsList.join(' ') === gameData.correct) {
+        setTimeout(validateCurrentScreen, 500);
+    }
 }
 
 function resetReconstruction() { setupGame1(); hideFeedback(); }
@@ -336,6 +340,7 @@ function checkGame2Answer(selected, btnElement) {
         if (blank) { blank.innerText = gameData.correct; blank.style.borderBottom = 'none'; }
         for (let b of allBtns) if (b !== btnElement) b.disabled = true;
         showFeedback("إجابة صحيحة! بطل رائع 🌟", "success");
+        setTimeout(validateCurrentScreen, 700);
     } else {
         btnElement.className = "p-5 bg-rose-50 border-4 border-rose-200 text-rose-400 font-bold text-xl rounded-2xl cursor-not-allowed opacity-50";
         btnElement.disabled = true;

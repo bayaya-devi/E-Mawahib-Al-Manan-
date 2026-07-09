@@ -318,6 +318,9 @@ function dropWord(e, slot) {
   
   const chip = document.getElementById(`chip-${word}`);
   if (chip) chip.classList.add('used');
+  if (fillExercises.every((ex, index) => fillSlotAnswers[index] === ex.answer)) {
+    setTimeout(checkFillGame, 500);
+  }
 }
 
 function checkFillGame() {

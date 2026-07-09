@@ -98,6 +98,8 @@
     }
     .loss-stat span { display: block; color: #64748b; font-size: 11px; font-weight: 900; }
     .loss-stat strong { display: block; color: #111827; font-size: 24px; line-height: 1.1; font-weight: 900; margin-top: 4px; }
+    .loss-stat strong.star-number { color: #d97706; text-shadow: 0 2px 12px rgba(250, 204, 21, .26); }
+    .loss-stat strong.loss-number { color: #dc2626; }
     .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
     .actions a {
       flex: 1 1 190px;
@@ -150,8 +152,8 @@
         <h1 class="title" id="return-title">لا بأس، نكمل بهدوء</h1>
         <p class="subtitle mt-3" id="return-subtitle">نقصت بعض النجوم فقط لتذكيرك بالاستمرار. الرصيد الحقيقي هو رجوعك اليوم.</p>
         <div class="loss-box">
-          <div class="loss-stat"><span>نجوم ناقصة</span><strong id="lost-stars">0</strong></div>
-          <div class="loss-stat"><span>رصيدك الآن</span><strong id="current-stars">0</strong></div>
+          <div class="loss-stat"><span>نجوم ناقصة</span><strong id="lost-stars" class="loss-number">0</strong></div>
+          <div class="loss-stat"><span>رصيدك الآن</span><strong id="current-stars" class="star-number">0</strong></div>
           <div class="loss-stat"><span>أيام التوقف</span><strong id="inactive-days">0</strong></div>
         </div>
         <div class="actions">

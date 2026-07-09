@@ -573,6 +573,9 @@
 
                     matchedPairs++;
                     showFeedback("توصيل صحيح! رائع", "success", 1500);
+                    if (matchedPairs === surahTinData[currentPart].matching.length) {
+                        setTimeout(validateCurrentScreen, 750);
+                    }
                     
                     selectedRight = null; selectedLeft = null;
                 } else {
@@ -664,6 +667,7 @@
                     p.classList.add('bg-green-50');
                 }
                 showFeedback("ترتيب ممتاز ومثالي! بطل", "success", 3000);
+                setTimeout(validateCurrentScreen, 850);
             } else {
                 showFeedback("الترتيب غير صحيح بعد، راجع حفظك وحاول التعديل بالأسهم.", "error", 3000);
             }
@@ -701,6 +705,7 @@
                 
                 for(let b of allBtns) if(b !== btn) b.disabled = true;
                 showFeedback("إجابة صحيحة! بارك الله فيك", "success", 2000);
+                setTimeout(validateCurrentScreen, 850);
             } else {
                 btn.className = "p-5 bg-red-50 border-4 border-red-200 text-red-400 font-bold text-xl rounded-2xl cursor-not-allowed opacity-50";
                 btn.disabled = true;

@@ -356,6 +356,9 @@ function selectFill(qi, opt, btn) {
   
   const blank = document.getElementById(`blank-${qi}`);
   if (blank) blank.textContent = opt;
+  if (fillAnswers.every((answer, index) => answer === fillBlanks[index].answer)) {
+    setTimeout(checkGame2, 500);
+  }
 }
 
 function checkGame2() {

@@ -407,6 +407,9 @@ function selectQuiz(qi, oi, btn) {
   });
   quizAnswers[qi] = oi;
   btn.className = "w-full text-right p-3.5 bg-orange-600 border-2 border-orange-600 text-white font-bold text-sm rounded-xl transition";
+  if (quizAnswers.every((answer, index) => answer === quizQuestions[index].correct)) {
+    setTimeout(checkQuiz, 500);
+  }
 }
 
 function checkQuiz() {
