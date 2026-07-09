@@ -633,10 +633,27 @@ async function chargerDevoirs() {
             <span class="text-[11px] font-black">الآباء</span>
         </a>
 
+        <button type="button" data-chatbot-toggle
+           class="flex flex-col items-center gap-1 text-purple-700 hover:text-purple-900 transition group">
+            <div class="w-10 h-10 rounded-xl bg-purple-50 group-hover:bg-purple-100 flex items-center justify-center text-xl transition">
+                <span data-chatbot-icon>💬</span>
+            </div>
+            <span class="text-[11px] font-black">المساعد</span>
+        </button>
+
+        <button type="button" data-settings-toggle
+           class="flex flex-col items-center gap-1 text-slate-700 hover:text-slate-900 transition group">
+            <div class="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-slate-100 flex items-center justify-center text-xl transition">
+                ⚙
+            </div>
+            <span class="text-[11px] font-black">الإعدادات</span>
+        </button>
+
     </div>
 </nav>
     <link rel="stylesheet" href="chatbot.css">
     <script src="chatbot.js"></script>
+    <script src="app-settings.js"></script>
 
 <script src="notifications.js"></script>
 </body>

@@ -95,6 +95,7 @@ let _defIdx     = 0;
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
     });
     document.getElementById('chatbot-input').addEventListener('input', autoResize);
+    bindNavChatButtons();
 
     document.querySelectorAll('.cb-chip').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -107,6 +108,17 @@ let _defIdx     = 0;
     const name = _cbSession.prenom || 'طالب';
     appendBotMsg(`مرحباً ${name}! 👋\nأنا مساعدك في منصة مواهب المنان.\n\nيمكنني مساعدتك في:\n• جدول حصصك 📅\n• التنقل في المنصة 🧭\n• الواجبات والرسائل 📝\n\nاضغط على أحد الاختصارات أو اكتب سؤالك!`);
 })();
+
+function bindNavChatButtons() {
+    const buttons = document.querySelectorAll('[data-chatbot-toggle]');
+    if (!buttons.length) return;
+    document.body.classList.add('chatbot-nav-mode');
+    buttons.forEach(button => {
+        if (button.dataset.chatbotBound === '1') return;
+        button.dataset.chatbotBound = '1';
+        button.addEventListener('click', toggleChat);
+    });
+}
 
 /* ═══════════════════════════════════════════════════════════
    BUILD HTML
@@ -149,6 +161,7 @@ function toggleChat() {
     _cbOpen = !_cbOpen;
     document.getElementById('chatbot-window').classList.toggle('open', _cbOpen);
     document.getElementById('cb-icon').textContent = _cbOpen ? '✕' : '💬';
+    document.querySelectorAll('[data-chatbot-icon]').forEach(icon => { icon.textContent = _cbOpen ? '✕' : '💬'; });
     if (_cbOpen) {
         document.getElementById('cb-badge').classList.remove('show');
         setTimeout(() => document.getElementById('chatbot-input').focus(), 250);

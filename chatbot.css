@@ -43,6 +43,7 @@
     border: 2px solid #fff;
 }
 #chatbot-toggle .cb-badge.show { display: flex; }
+body.chatbot-nav-mode #chatbot-toggle { display: none; }
 
 /* ── Fenêtre chat ── */
 #chatbot-window {
@@ -69,7 +70,6 @@
     opacity: 1;
     pointer-events: all;
 }
-
 /* ── Header ── */
 #chatbot-header {
     background: linear-gradient(135deg, #7c3aed, #6d28d9);

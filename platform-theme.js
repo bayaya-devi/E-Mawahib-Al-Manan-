@@ -119,6 +119,29 @@
     mutationObserver.observe(document.body, { childList: true, subtree: true });
   }
 
+  function initNavAutoHide() {
+    const nav = document.querySelector('.nav-bottom');
+    if (!nav) return;
+    let lastY = window.scrollY || 0;
+    let revealTimer = null;
+
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY || 0;
+      const delta = Math.abs(y - lastY);
+      if (delta < 6) return;
+
+      const scrollingDown = y > lastY;
+      const nearTop = y < 80;
+      nav.classList.toggle('nav-scroll-hidden', scrollingDown && !nearTop);
+      lastY = y;
+
+      clearTimeout(revealTimer);
+      revealTimer = setTimeout(() => {
+        nav.classList.remove('nav-scroll-hidden');
+      }, 720);
+    }, { passive: true });
+  }
+
   function syncSurahTheme() {
     const isSurahPage = /(^|\/)surah-|Al_|al_kadr|quraysh|fil|bayina/.test(location.pathname);
     if (!isSurahPage) return;
@@ -157,6 +180,7 @@
     if (!document.body) return;
     syncSurahTheme();
     initDigitNormalizer();
+    initNavAutoHide();
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) initScrollAnimations();
   }
 
