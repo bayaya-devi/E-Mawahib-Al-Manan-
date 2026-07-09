@@ -123,12 +123,41 @@
         .feed-item { display: flex; align-items: center; gap: 10px;
                      padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
         .feed-item:last-child { border-bottom: none; }
+        .control-shell { display: grid; grid-template-columns: 230px minmax(0,1fr); gap: 18px; align-items: start; }
+        .control-sidebar { position: sticky; top: 16px; border-radius: 24px; background: linear-gradient(180deg,#0c4a3b,#14532d); color: #fff; padding: 16px; box-shadow: 0 22px 50px rgba(12,74,59,.24); }
+        .control-sidebar-title { font-size: 13px; font-weight: 900; color: #d1fae5; margin-bottom: 12px; }
+        .control-sidebar .tab-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 12px; margin-bottom: 7px; border: 0; border-radius: 16px; color: #d1fae5; background: rgba(255,255,255,.06); font-weight: 900; }
+        .control-sidebar .tab-btn.active { color: #064e3b; background: #fff; box-shadow: 0 12px 24px rgba(0,0,0,.16); }
+        .control-main { min-width: 0; }
+        .cockpit-hero { border-radius: 28px; padding: 20px; color: #fff; background: radial-gradient(circle at 12% 15%, rgba(217,164,65,.35), transparent 30%), linear-gradient(135deg,#0c4a3b,#14532d 55%,#166534); box-shadow: 0 24px 70px rgba(12,74,59,.25); }
+        .cockpit-kpi-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+        .cockpit-kpi { border-radius: 20px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16); padding: 14px; backdrop-filter: blur(10px); }
+        .cockpit-kpi strong { display: block; font-size: 26px; line-height: 1; font-weight: 900; }
+        .cockpit-kpi span { display: block; margin-top: 7px; font-size: 11px; font-weight: 800; color: rgba(255,255,255,.78); }
+        .cockpit-panel { background: #fff; border: 1px solid #d1fae5; border-radius: 22px; padding: 16px; box-shadow: 0 14px 34px rgba(12,74,59,.08); }
+        .cockpit-action { min-height: 82px; border-radius: 18px; border: 1px solid #d1fae5; background: linear-gradient(135deg,#f0fdf4,#fff); padding: 12px; text-align: right; font-weight: 900; color: #064e3b; transition: transform .18s ease, box-shadow .18s ease; }
+        .cockpit-action:hover { transform: translateY(-2px); box-shadow: 0 14px 26px rgba(12,74,59,.13); }
+        .ops-alert { display: flex; gap: 10px; align-items: flex-start; border-radius: 16px; padding: 10px 12px; border: 1px solid; }
+        .ops-alert strong { display: block; font-size: 13px; color: #17211b; }
+        .ops-alert span { display: block; font-size: 11px; color: #64748b; font-weight: 800; margin-top: 2px; }
+        .ai-command-input { min-height: 44px; border-radius: 16px; border: 1px solid #d1fae5; background: #f8fafc; padding: 10px 12px; width: 100%; outline: none; }
+        .ai-chip { border-radius: 999px; padding: 7px 10px; background: #ecfdf5; color: #047857; font-size: 11px; font-weight: 900; }
+        .text-purple-900,.text-purple-800,.text-purple-700,.text-purple-600,.text-blue-600 { color: #064e3b !important; }
+        .bg-purple-100,.bg-purple-50 { background-color: #ecfdf5 !important; }
+        .border-purple-100 { border-color: #d1fae5 !important; }
+        .bg-purple-600,.bg-blue-600 { background-color: #047857 !important; }
+        .hover\:bg-purple-700:hover,.hover\:bg-blue-700:hover { background-color: #065f46 !important; }
+        .focus\:border-purple-400:focus { border-color: #059669 !important; }
+        .accent-purple-600 { accent-color: #047857 !important; }
+        #total-badge { background: #ecfdf5; color: #047857; }
+        @media (max-width: 900px) { .control-shell { grid-template-columns: 1fr; } .control-sidebar { position: static; } .control-sidebar .tab-btn { display: inline-flex; width: auto; } .control-nav-scroll { display: flex; gap: 8px; overflow-x: auto; } .cockpit-kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+
     </style>
 </head>
 <body class="p-4 md:p-6">
 
 <!-- ══ HEADER ══════════════════════════════════════════════ -->
-<div class="max-w-5xl mx-auto">
+<div class="max-w-7xl mx-auto">
     <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
         <div class="flex items-center gap-4">
             <img src="logo.webp" alt="مواهب المنان" class="h-16 object-contain drop-shadow-md">
@@ -147,16 +176,74 @@
     </div>
 
     <!-- ══ TABS ══════════════════════════════════════════════ -->
-    <div class="flex gap-4 border-b border-gray-200 mb-6 px-1 overflow-x-auto">
-        <button class="tab-btn active pb-3 text-sm text-gray-600 whitespace-nowrap" onclick="switchTab('classes')">🏫 الأقسام والطلاب</button>
-        <button class="tab-btn pb-3 text-sm text-gray-600 whitespace-nowrap" onclick="switchTab('stats')">📊 الإحصاءات</button>
-        <button class="tab-btn pb-3 text-sm text-gray-600 whitespace-nowrap" onclick="switchTab('parents')">👨‍👩‍👧 الأولياء</button>
-        <button class="tab-btn pb-3 text-sm text-gray-600 whitespace-nowrap" onclick="switchTab('add-student')">➕ إضافة طالب</button>
-        <button class="tab-btn pb-3 text-sm text-gray-600 whitespace-nowrap" onclick="switchTab('add-prof')">👤 إضافة أستاذ</button>
+    <div class="control-shell">
+        <aside class="control-sidebar">
+            <div class="control-sidebar-title">غرفة التحكم</div>
+            <div class="control-nav-scroll">
+                <button class="tab-btn active" onclick="switchTab('cockpit')"><span>القيادة</span><span>⌘</span></button>
+                <button class="tab-btn" onclick="switchTab('classes')"><span>الأقسام والطلاب</span><span>🏫</span></button>
+                <button class="tab-btn" onclick="switchTab('stats')"><span>الإحصاءات</span><span>📊</span></button>
+                <button class="tab-btn" onclick="switchTab('parents')"><span>الأولياء</span><span>👨‍👩‍👧</span></button>
+                <button class="tab-btn" onclick="switchTab('add-student')"><span>إضافة طالب</span><span>➕</span></button>
+                <button class="tab-btn" onclick="switchTab('add-prof')"><span>إضافة أستاذ</span><span>👤</span></button>
+            </div>
+        </aside>
+        <section class="control-main">
+
+    <div id="tab-cockpit">
+        <div class="cockpit-hero mb-4">
+            <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-5 mb-5">
+                <div>
+                    <p class="text-emerald-100 text-xs font-black mb-2">مركز القيادة الذكي</p>
+                    <h2 class="text-2xl md:text-4xl font-black leading-tight">نظرة واحدة على المدرسة كلها</h2>
+                    <p class="text-emerald-100 text-sm font-bold mt-2">الأولويات، التنبيهات، الأقسام، الطلاب، الرسائل، والقرارات السريعة في مكان واحد.</p>
+                </div>
+                <button onclick="refreshControlRoom()" class="bg-white text-emerald-900 px-5 py-3 rounded-2xl font-black shadow-lg">تحديث غرفة التحكم</button>
+            </div>
+            <div id="cockpit-kpis" class="cockpit-kpi-grid"></div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
+            <div class="cockpit-panel xl:col-span-2">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                        <p class="section-heading">الأولويات الذكية</p>
+                        <h3 class="text-lg font-black text-gray-900">ما يحتاج انتباهك الآن</h3>
+                    </div>
+                    <span id="cockpit-health" class="rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-xs font-black"></span>
+                </div>
+                <div id="ops-alerts" class="space-y-2"></div>
+            </div>
+            <div class="cockpit-panel">
+                <p class="section-heading">أوامر سريعة</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="cockpit-action" onclick="switchTab('add-student')">طالب جديد<br><span class="text-xs text-gray-400">فتح التسجيل</span></button>
+                    <button class="cockpit-action" onclick="switchTab('add-prof')">أستاذ جديد<br><span class="text-xs text-gray-400">قسم أو معلم</span></button>
+                    <button class="cockpit-action" onclick="switchTab('classes')">توزيع الطلاب<br><span class="text-xs text-gray-400">الأقسام</span></button>
+                    <button class="cockpit-action" onclick="switchTab('stats')">تحليل كامل<br><span class="text-xs text-gray-400">المؤشرات</span></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <div class="cockpit-panel xl:col-span-2">
+                <p class="section-heading">خريطة الأقسام</p>
+                <div id="cockpit-classes" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+            </div>
+            <div class="cockpit-panel">
+                <p class="section-heading">مساعد الإدارة</p>
+                <input id="ai-command" class="ai-command-input" placeholder="اسأل: من يحتاج متابعة؟" onkeydown="if(event.key==='Enter') answerAdminAssistant()">
+                <div class="flex flex-wrap gap-2 my-3">
+                    <button class="ai-chip" onclick="askAdminAssistant('late')">المتأخرون</button>
+                    <button class="ai-chip" onclick="askAdminAssistant('zero')">لم يبدأوا</button>
+                    <button class="ai-chip" onclick="askAdminAssistant('classes')">الأقسام</button>
+                </div>
+                <div id="ai-answer" class="rounded-2xl bg-emerald-50 border border-emerald-100 p-3 text-sm font-bold text-gray-700 leading-relaxed">اكتب سؤالا قصيرا أو اختر أحد الأزرار.</div>
+            </div>
+        </div>
     </div>
 
-    <!-- ══ TAB: CLASSES ══════════════════════════════════════ -->
-    <div id="tab-classes">
+    <div id="tab-classes" class="hidden">
         <div id="classes-container">
             <p class="text-center text-gray-400 py-12">جاري التحميل...</p>
         </div>
@@ -437,6 +524,8 @@
             </div>
         </div>
     </div>
+        </section>
+    </div>
 </div>
 
 <!-- ══ MODAL: INDIVIDUAL STUDENT ══════════════════════════ -->
@@ -613,10 +702,95 @@ let _openAccordions = new Set();
 let _statsInterval  = null;
 const STATS_REFRESH_MS = 3 * 60 * 1000; // 3 minutes
 
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+function escapeJsArg(value) {
+    let text = String(value ?? '').split('\r').join(' ').split('\n').join(' ');
+    return escapeHtml(text.split('\\').join('\\\\').split("'").join("\\'"));
+}
+
+function getCompletedSurahCount(student) {
+    if (Array.isArray(student.completedSurahs)) return student.completedSurahs.length;
+    if (student.progress && typeof student.progress === 'object') return Object.values(student.progress).filter(Boolean).length;
+    return Number(student.souratesTerminees || student.completedSurahsCount || 0) || 0;
+}
+
+function getAssignedSet() {
+    const assigned = new Set();
+    Object.values(_allProfs || {}).forEach(prof => (prof.students || []).forEach(username => assigned.add(username)));
+    return assigned;
+}
+
+function getOpsSnapshot() {
+    const assigned = getAssignedSet();
+    const activeStudents = _allStudents.filter(s => !s.isSuspended);
+    const unassigned = activeStudents.filter(s => !assigned.has(s.username));
+    const zeroProgress = activeStudents.filter(s => getCompletedSurahCount(s) === 0);
+    const totalCompleted = activeStudents.reduce((sum, s) => sum + getCompletedSurahCount(s), 0);
+    const avgProgress = activeStudents.length ? Math.round(totalCompleted / activeStudents.length) : 0;
+    return { assigned, activeStudents, unassigned, zeroProgress, totalCompleted, avgProgress };
+}
+
+function renderControlRoom() {
+    const kpis = document.getElementById('cockpit-kpis');
+    if (!kpis) return;
+    const snap = getOpsSnapshot();
+    const totalProfs = Object.keys(_allProfs || {}).length;
+    kpis.innerHTML = [['الطلاب', _allStudents.length, 'إجمالي المسجلين'], ['النشطون', snap.activeStudents.length, 'حاضرون في النظام'], ['الأقسام', totalProfs, 'أقسام وأساتذة'], ['المعدل', snap.avgProgress, 'سورة لكل طالب']].map(item => '<div class="cockpit-kpi"><strong>' + item[1] + '</strong><span>' + escapeHtml(item[0]) + ' · ' + escapeHtml(item[2]) + '</span></div>').join('');
+    const health = document.getElementById('cockpit-health');
+    const alerts = [];
+    if (snap.unassigned.length) alerts.push({ tone: 'amber', title: snap.unassigned.length + ' طالب بلا قسم', text: 'اربطهم بقسم حتى لا يضيع مسار المتابعة.' });
+    if (snap.zeroProgress.length) alerts.push({ tone: 'rose', title: snap.zeroProgress.length + ' طالب لم يبدأ الحفظ', text: 'ابدأ معهم بسورة قصيرة وسهلة لخلق دفعة أولى.' });
+    if (!alerts.length) alerts.push({ tone: 'emerald', title: 'الوضع مستقر', text: 'الأقسام منظمة ولا توجد أولوية عاجلة الآن.' });
+    if (health) health.textContent = alerts[0].tone === 'emerald' ? 'مستقر' : 'يحتاج متابعة';
+    const alertBox = document.getElementById('ops-alerts');
+    if (alertBox) {
+        alertBox.innerHTML = alerts.map(a => {
+            const color = a.tone === 'rose' ? 'bg-rose-50 border-rose-100' : a.tone === 'amber' ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100';
+            return '<div class="ops-alert ' + color + '"><div class="text-xl">' + (a.tone === 'emerald' ? '✓' : '!') + '</div><div><strong>' + escapeHtml(a.title) + '</strong><span>' + escapeHtml(a.text) + '</span></div></div>';
+        }).join('');
+    }
+    const classMap = document.getElementById('cockpit-classes');
+    if (classMap) {
+        const entries = Object.entries(_allProfs || {});
+        classMap.innerHTML = entries.length ? entries.map(([profId, prof]) => {
+            const students = _allStudents.filter(st => (prof.students || []).includes(st.username));
+            const avg = students.length ? Math.round(students.reduce((sum, st) => sum + getCompletedSurahCount(st), 0) / students.length) : 0;
+            return '<button class="text-right rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 hover:bg-emerald-50 transition" onclick="openClassModal(\'' + escapeHtml(profId) + '\')"><div class="flex items-center justify-between gap-3"><strong class="text-emerald-900">' + escapeHtml(prof.classe || 'قسم') + '</strong><span class="text-xs font-black text-emerald-700 bg-white rounded-full px-2 py-1">' + students.length + ' طالب</span></div><p class="text-xs text-gray-500 font-bold mt-2">الأستاذ: ' + escapeHtml(prof.prenom || prof.username || '') + '</p><p class="text-xs text-emerald-700 font-black mt-2">متوسط الحفظ: ' + avg + ' سورة</p></button>';
+        }).join('') : '<div class="rounded-2xl bg-gray-50 border border-gray-100 p-4 text-sm font-bold text-gray-500">لا توجد أقسام بعد.</div>';
+    }
+}
+
+function refreshControlRoom() {
+    renderAll().then(() => { renderControlRoom(); showToast('تم تحديث غرفة التحكم', 'success'); });
+}
+
+function askAdminAssistant(intent) {
+    const input = document.getElementById('ai-command');
+    if (input) input.value = intent;
+    answerAdminAssistant();
+}
+
+function answerAdminAssistant() {
+    const answer = document.getElementById('ai-answer');
+    const input = (document.getElementById('ai-command')?.value || '').toLowerCase();
+    const snap = getOpsSnapshot();
+    let text = 'المؤشر العام جيد: ' + snap.activeStudents.length + ' طالب نشط، ومتوسط ' + snap.avgProgress + ' سورة لكل طالب.';
+    if (input.includes('late') || input.includes('متأخر') || input.includes('zero')) {
+        const names = snap.zeroProgress.slice(0, 5).map(s => ((s.prenom || '') + ' ' + (s.nom || '')).trim() || s.username);
+        text = names.length ? 'ابدأ المتابعة مع: ' + names.join('، ') + '. أعطهم هدفا صغيرا اليوم: سورة قصيرة واحدة.' : 'لا يوجد طالب متوقف تماما حاليا.';
+    } else if (input.includes('class') || input.includes('قسم')) {
+        text = snap.unassigned.length ? 'هناك ' + snap.unassigned.length + ' طالب يحتاجون ربطا بقسم قبل أي تحليل آخر.' : 'كل الطلاب النشطين مرتبطون بأقسام.';
+    }
+    if (answer) answer.textContent = text;
+}
+
 /* ══════════════════════════════════════════════════════════
    TABS
 ══════════════════════════════════════════════════════════ */
-const ALL_TABS = ['classes','stats','parents','add-student','add-prof'];
+const ALL_TABS = ['cockpit','classes','stats','parents','add-student','add-prof'];
 
 async function switchTab(name) {
     ALL_TABS.forEach(t => {
@@ -626,6 +800,7 @@ async function switchTab(name) {
         btn.classList.toggle('active', ALL_TABS[i] === name);
     });
     if (name === 'stats') await renderStats();
+    if (name === 'cockpit') renderControlRoom();
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -637,6 +812,7 @@ async function renderAll() {
     _allUsers    = await Auth.getAllUsers();
 
     document.getElementById('total-badge').innerText = _allStudents.length + ' طالب';
+    renderControlRoom();
 
     const container = document.getElementById('classes-container');
     container.innerHTML = '';
@@ -1031,19 +1207,19 @@ function buildStudentRow(student) {
     const statusText  = student.isSuspended ? '🚫 موقوف' : '✅ نشط';
     row.innerHTML = `
         <div class="flex-1 min-w-[140px]">
-            <p class="font-bold text-gray-800 text-sm">${student.prenom} ${student.nom}</p>
-            <p class="text-xs text-gray-400 font-mono">${student.username}</p>
+            <p class="font-bold text-gray-800 text-sm">${escapeHtml(student.prenom)} ${escapeHtml(student.nom)}</p>
+            <p class="text-xs text-gray-400 font-mono">${escapeHtml(student.username)}</p>
         </div>
         <span class="text-xs font-bold ${statusColor} px-2 py-0.5 rounded-full">${statusText}</span>
         <span class="text-xs text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full font-bold">${completedSurahs} سورة</span>
         <div class="flex gap-1.5 flex-wrap">
-            <button onclick="openStudentModal('${student.username}', '${student.prenom} ${student.nom}')"
+            <button onclick="openStudentModal('${escapeJsArg(student.username)}', '${escapeJsArg(student.prenom)} ${escapeJsArg(student.nom)}')"
                     class="pill bg-purple-100 text-purple-800">📂 الملف</button>
-            <button onclick="toggleUserSuspension('${student.username}')"
+            <button onclick="toggleUserSuspension('${escapeJsArg(student.username)}')"
                     class="pill ${student.isSuspended ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
                 ${student.isSuspended ? '🔄 تفعيل' : '🚫 إيقاف'}
             </button>
-            <button onclick="confirmRemoveStudent('${student.username}', '${student.prenom} ${student.nom}')"
+            <button onclick="confirmRemoveStudent('${escapeJsArg(student.username)}', '${escapeJsArg(student.prenom)} ${escapeJsArg(student.nom)}')"
                     class="pill bg-rose-100 text-rose-700">🗑️</button>
         </div>`;
     const msgs = student.messages || [];
@@ -1055,7 +1231,7 @@ function buildStudentRow(student) {
             d.className = 'flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-2 py-1';
             d.innerHTML = `
                 <span class="text-xs text-blue-800 font-semibold">
-                    ${m.text}<span class="text-blue-400"> (${m.date})</span>
+                    ${escapeHtml(m.text)}<span class="text-blue-400"> (${escapeHtml(m.date || '')})</span>
                 </span>
                 <button onclick="deleteMessage('${m.id}')" class="text-rose-500 hover:text-rose-700 font-bold text-sm mr-2">✕</button>`;
             msgDiv.appendChild(d);

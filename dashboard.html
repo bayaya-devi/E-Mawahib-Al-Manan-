@@ -41,6 +41,8 @@
             background: white; box-shadow: 0 15px 34px rgba(15,23,42,.12); display: flex; align-items: center; gap: 12px;
         }
         .journey-node:disabled { cursor: not-allowed; }
+        .journey-orb-button { border: 6px solid #fff; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
+        .journey-orb-button:hover { transform: translate(-50%, -50%) scale(1.06); box-shadow: 0 16px 32px rgba(15,23,42,.22); }
         .journey-orb {
             position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
             width: 58px; height: 58px; border-radius: 999px; display: grid; place-items: center;
@@ -176,7 +178,6 @@ body { padding-bottom: 80px; }
                     </h2>
                     <p class="text-xs text-gray-500 font-bold mt-1">ابدأ من سورة الناس، وكل خطوة تفتح لك السورة التالية حتى الفاتحة.</p>
                 </div>
-                <div id="library-count" class="bg-emerald-50 text-emerald-700 rounded-2xl px-4 py-2 text-sm font-black text-center"></div>
             </div>
             <div class="theme-mini" aria-label="اختيار لون لوحة الطالب">
                 <span class="theme-mini-label">لون اللوحة</span>
@@ -275,9 +276,12 @@ body { padding-bottom: 80px; }
             const icon = state === 'done' ? '✓' : state === 'current' ? '▶' : '🔒';
             const disabled = state === 'locked' ? 'disabled aria-disabled="true"' : '';
             const action = state === 'locked' ? '' : `onclick="window.location.href='${surah.file}'"`;
+            const orbTag = state === 'locked'
+                ? `<div class="journey-orb ${state}" aria-hidden="true">${icon}</div>`
+                : `<button type="button" ${action} class="journey-orb journey-orb-button ${state}" aria-label="فتح ${surah.nameAr}">${icon}</button>`;
             return `
                 <div class="journey-step">
-                    <div class="journey-orb ${state}" aria-hidden="true">${icon}</div>
+                    ${orbTag}
                     <button type="button" ${action} ${disabled} class="journey-node ${state}">
                         <div class="min-w-0 flex-grow">
                             <div class="flex items-center justify-between gap-2 mb-1">
@@ -437,7 +441,6 @@ body { padding-bottom: 80px; }
         function renderSurahLibrary() {
             const container = document.getElementById('available-grid');
             const filtered = getJourneyOrder();
-            document.getElementById('library-count').innerText = `${toArabicNum(filtered.length)} / ${toArabicNum(dashboardState.surahs.length)} سورة`;
             if (filtered.length === 0) {
                 container.innerHTML = `<div class="bg-white rounded-2xl border border-gray-100 p-8 text-center text-gray-500 font-bold">لا توجد سورة مطابقة لهذا البحث.</div>`;
                 return;
