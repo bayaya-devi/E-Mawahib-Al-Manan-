@@ -43,6 +43,12 @@
             outline: none;
             direction: rtl;
         }
+        .input-field[type="password"] {
+            direction: ltr;
+            text-align: left;
+            unicode-bidi: plaintext;
+            font-family: 'Cairo', Arial, sans-serif;
+        }
         .input-field:focus { border-color: #059669; }
 
         .btn-primary {
@@ -132,7 +138,7 @@
 
             <div>
                 <label class="block text-xs font-bold text-gray-600 mb-1">كلمة المرور :</label>
-                <input id="login-password" type="password" class="input-field" placeholder="••••••"
+                <input id="login-password" type="password" dir="ltr" autocomplete="current-password" class="input-field" placeholder="••••••"
                        onkeydown="if(event.key==='Enter') doLogin()">
             </div>
             <button class="btn-primary mt-3" onclick="doLogin()">دخول</button>
@@ -149,7 +155,7 @@
             </div>
             <div>
                 <label class="block text-xs font-bold text-gray-600 mb-1">كلمة المرور</label>
-                <input id="reg-password" type="password" class="input-field" placeholder="4 أحرف على الأقل"
+                <input id="reg-password" type="password" dir="ltr" autocomplete="new-password" class="input-field" placeholder="4 أحرف على الأقل"
                        onkeydown="if(event.key==='Enter') doRegister()">
             </div>
             <button class="btn-primary mt-3" onclick="doRegister()">إنشاء الحساب</button>
