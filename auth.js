@@ -415,6 +415,62 @@ const Auth = (() => {
         return state;
     }
 
+    async function getClassStarRanking(username) {
+        const session = getSession();
+        const studentId = username || session?.username;
+        if (!studentId) return null;
+        try {
+            const { data: profs, error: profsError } = await supabase.from('profs').select('username, classe, students');
+            if (profsError) {
+                logError('getClassStarRanking.profs', profsError);
+                return null;
+            }
+            const klass = (profs || []).find(prof => Array.isArray(prof.students) && prof.students.includes(studentId));
+            if (!klass || !Array.isArray(klass.students) || klass.students.length === 0) {
+                const own = getRewardState(studentId);
+                return { rank: null, total: 0, stars: own?.stars || 0, classe: '', isAssigned: false };
+            }
+
+            const classStudents = Array.from(new Set(klass.students.filter(Boolean)));
+            const { data: rows, error: progressError } = await supabase
+                .from('progressions')
+                .select('username, surah_id, completed_at')
+                .in('username', classStudents);
+            if (progressError) {
+                logError('getClassStarRanking.progressions', progressError);
+                return null;
+            }
+
+            const scores = classStudents.map(id => {
+                const completedIds = new Set();
+                (rows || []).forEach(row => {
+                    if (row.username !== id || !row.completed_at || !row.surah_id) return;
+                    completedIds.add(normalizeSurahId(row.surah_id));
+                });
+                const stars = Array.from(completedIds).reduce((sum, surahId) => {
+                    return sum + _starsForSurah(_getSurahMeta(surahId));
+                }, 0);
+                return { id, stars, completedCount: completedIds.size };
+            }).sort((a, b) => (b.stars - a.stars) || (b.completedCount - a.completedCount) || a.id.localeCompare(b.id));
+
+            const ownIndex = scores.findIndex(item => item.id === studentId);
+            if (ownIndex < 0) return null;
+            const own = scores[ownIndex];
+            const betterCount = scores.filter(item => item.stars > own.stars || (item.stars === own.stars && item.completedCount > own.completedCount)).length;
+            return {
+                rank: betterCount + 1,
+                total: scores.length,
+                stars: own.stars,
+                completedCount: own.completedCount,
+                classe: klass.classe || '',
+                isAssigned: true
+            };
+        } catch (error) {
+            logError('getClassStarRanking', error);
+            return null;
+        }
+    }
+
     function getLastCelebration() {
         try { return JSON.parse(sessionStorage.getItem(CELEBRATION_KEY) || 'null'); }
         catch { return null; }
@@ -762,7 +818,7 @@ const Auth = (() => {
         getAllStudents, getAllUsers, getProfs, deleteStudent, deleteProf, toggleSuspension,
         assignStudentToProf, removeStudentFromProf,
         getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports,
-        getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, getLastCelebration, getLastInactivity, syncRewardsFromSurahs,
+        getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, getLastCelebration, getLastInactivity, syncRewardsFromSurahs, getClassStarRanking,
         ajouterDevoir, getDevoirs, annulerDevoir, marquerDevoirTermine,
         getSupabaseClient
     };

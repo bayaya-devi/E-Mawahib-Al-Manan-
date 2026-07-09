@@ -12,11 +12,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=20260710-direct-dashboard"></script>
-    <script src="registry.js?v=20260710-direct-dashboard"></script>
+    <script src="auth.js?v=20260710-surah-learning-rank"></script>
+    <script src="registry.js?v=20260710-surah-learning-rank"></script>
 
-        <link rel="stylesheet" href="platform-theme.css?v=20260710-direct-dashboard">
-    <script src="platform-theme.js?v=20260710-direct-dashboard"></script>
+        <link rel="stylesheet" href="platform-theme.css?v=20260710-surah-learning-rank">
+    <script src="platform-theme.js?v=20260710-surah-learning-rank"></script>
 <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
         .quran-font { font-family: 'Amiri', serif; }
@@ -89,7 +89,7 @@
         .daily-progress-track { height: 8px; background: rgba(148,163,184,.16); border-radius: 999px; overflow: hidden; }
         .daily-progress-track > div { height: 100%; background: linear-gradient(90deg, var(--platform-primary), var(--platform-accent)); }
         .reward-strip {
-            margin-top: 10px; display: grid; grid-template-columns: minmax(190px, 280px); justify-content: center; gap: 8px;
+            margin-top: 10px; display: grid; grid-template-columns: repeat(2, minmax(170px, 280px)); justify-content: center; gap: 8px;
         }
         .reward-pill {
             border-radius: 18px; padding: 12px 16px; text-align: center; background: linear-gradient(135deg, #fff7ed, #ffffff);
@@ -98,6 +98,7 @@
         .reward-kicker { font-size: 11px; color: #64748b; font-weight: 900; }
         .reward-value { margin-top: 3px; font-size: 28px; color: #111827; font-weight: 900; line-height: 1; }
         .reward-stars-value { color: #d97706; text-shadow: 0 2px 12px rgba(250, 204, 21, .45); animation: starPulse 2.4s ease-in-out infinite; }
+        .reward-rank-value { color: var(--platform-primary-dark); }
         .reward-note { margin-top: 5px; font-size: 10px; color: #64748b; font-weight: 800; line-height: 1.25; }
         .mini-game-node { background: linear-gradient(135deg, #ecfeff, #ffffff); border: 1px solid rgba(6,182,212,.24); }
         .mini-game-node.done { background: linear-gradient(135deg, #06b6d4, #0f766e); color: #fff; }
@@ -215,6 +216,11 @@ body { padding-bottom: 80px; }
                     <div class="reward-kicker">نجومك</div>
                     <div class="reward-value reward-stars-value"><span id="reward-stars">0</span> ★</div>
                     <div class="reward-note" id="reward-decay-note">كل سورة تضيف رصيدا جديدا.</div>
+                </div>
+                <div class="reward-pill" aria-label="ترتيبك في القسم بدون أسماء">
+                    <div class="reward-kicker">ترتيبك في القسم</div>
+                    <div class="reward-value reward-rank-value" id="class-rank-value">...</div>
+                    <div class="reward-note" id="class-rank-note">ترتيب مجهول حسب النجوم.</div>
                 </div>
             </div>
         </div>
@@ -343,16 +349,16 @@ body { padding-bottom: 80px; }
         }
 
         const miniGameTypes = [
-            { type: 'race', icon: '🏎️', title: 'سباق الآيات', hint: 'تتقدم السيارة مع كل إجابة صحيحة.' },
-            { type: 'treasure', icon: '💎', title: 'كنز السورة', hint: 'افتح الكنز باسم السورة الصحيح.' },
-            { type: 'lantern', icon: '🪔', title: 'مصابيح الترتيب', hint: 'أضئ المصباح باختيار السورة المناسبة.' },
-            { type: 'bridge', icon: '🌉', title: 'جسر الحفظ', hint: 'اعبر الجسر بإجابة دقيقة.' },
-            { type: 'meteor', icon: '☄️', title: 'شهب المراجعة', hint: 'التقط المعلومة قبل أن تفلت.' },
-            { type: 'garden', icon: '🌿', title: 'حديقة السور', hint: 'ازرع خطوة جديدة في المسار.' },
-            { type: 'tower', icon: '🧱', title: 'برج الآيات', hint: 'ابن البرج بسؤال صحيح.' },
-            { type: 'compass', icon: '🧭', title: 'بوصلة الجزء', hint: 'اختر الاتجاه الصحيح في الجزء.' },
-            { type: 'balloon', icon: '🎈', title: 'بالون النجوم', hint: 'ارفع البالون بإجابة موفقة.' },
-            { type: 'shield', icon: '🛡️', title: 'درع المراجعة', hint: 'احم حفظك بمراجعة سريعة.' }
+            { type: 'race', icon: '🏎️', title: 'سباق الآية التالية', hint: 'تتقدم السيارة عندما تعرف ترتيب الآيات.' },
+            { type: 'treasure', icon: '💎', title: 'كنز السورة', hint: 'افتح الكنز بربط الآية بسورتها.' },
+            { type: 'lantern', icon: '🪔', title: 'مصابيح الترتيب', hint: 'أضئ المصابيح بترتيب الآيات الصحيح.' },
+            { type: 'bridge', icon: '🌉', title: 'جسر الحفظ', hint: 'اعبر الجسر باختيار الآية التالية.' },
+            { type: 'meteor', icon: '☄️', title: 'شهب الكلمات', hint: 'التقط الكلمة الناقصة قبل أن تفلت.' },
+            { type: 'garden', icon: '🌿', title: 'حديقة المعاني', hint: 'ازرع الحديقة بإكمال كلمات الآيات.' },
+            { type: 'tower', icon: '🧱', title: 'برج الترتيل', hint: 'ابن البرج بترتيب الآيات كما نزلت.' },
+            { type: 'compass', icon: '🧭', title: 'بوصلة السورة', hint: 'اتجه إلى السورة التي تنتمي إليها الآية.' },
+            { type: 'balloon', icon: '🎈', title: 'بالون المتابعة', hint: 'ارفع البالون عندما تعرف الآية التالية.' },
+            { type: 'shield', icon: '🛡️', title: 'درع المراجعة', hint: 'احم حفظك بكلمات الآيات الصحيحة.' }
         ];
 
         const miniGameThemes = ['التركيز', 'السرعة', 'الهدوء', 'التثبيت', 'التحدي'];
@@ -447,28 +453,148 @@ body { padding-bottom: 80px; }
                 '<button type="button" ' + action + ' ' + disabled + ' class="journey-node mini-exam-node ' + state + '">' +
                     '<div class="min-w-0 flex-grow">' +
                         '<div class="flex items-center justify-between gap-2 mb-1">' +
-                            '<h3 class="text-lg font-black">اختبار صغير ' + groupNumber + '</h3>' +
+                            '<h3 class="text-lg font-black">تمرين حفظ ' + groupNumber + '</h3>' +
                             '<span class="journey-state">' + label + '</span>' +
                         '</div>' +
-                        '<p class="journey-meta">مراجعة: ' + names + '</p>' +
+                        '<p class="journey-meta">آيات من: ' + names + '</p>' +
                     '</div>' +
                 '</button>' +
             '</div>';
         }
 
-        function buildMiniExamQuestions(group) {
-            const options = group.map(s => s.nameAr);
-            const byAyat = [...group].sort((a, b) => b.ayat - a.ayat)[0];
-            return [
-                { prompt: 'أي سورة رقمها ' + group[0].num + '؟', answer: group[0].nameAr, options },
-                { prompt: 'أي سورة في هذا المستوى عدد آياتها ' + byAyat.ayat + '؟', answer: byAyat.nameAr, options },
-                { prompt: 'ما أول سورة في هذا المستوى؟', answer: group[0].nameAr, options },
-                { prompt: 'ما السورة التي تفتح المستوى التالي؟', answer: group[group.length - 1].nameAr, options }
-            ];
-        }
-
         function escapeMiniExamText(text) {
             return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function jsString(text) {
+            return JSON.stringify(String(text)).replace(/</g, '\\u003c');
+        }
+
+        function cleanVerseText(text) {
+            return String(text || '').replace(/\s+/g, ' ').trim();
+        }
+
+        function splitVerseWords(text) {
+            return cleanVerseText(text).split(/\s+/).filter(word => word.length > 2);
+        }
+
+        function shortVerseText(text, limit = 110) {
+            const clean = cleanVerseText(text);
+            return clean.length > limit ? clean.slice(0, limit) + '…' : clean;
+        }
+
+        function shuffleMiniGame(items) {
+            return [...items].sort(() => Math.random() - 0.5);
+        }
+
+        async function loadSurahVerses(surah) {
+            if (!surah || !surah.file) return { surah, verses: [] };
+            try {
+                const html = await fetch(surah.file, { cache: 'no-store' }).then(response => response.text());
+                const match = html.match(/const verses = (\[[\s\S]*?\]);/);
+                const verses = match ? JSON.parse(match[1]) : [];
+                return {
+                    surah,
+                    verses: verses
+                        .filter(verse => verse && verse.text)
+                        .map(verse => ({
+                            key: surah.id + ':' + verse.num,
+                            surah,
+                            num: Number(verse.num),
+                            text: cleanVerseText(verse.text)
+                        }))
+                };
+            } catch (error) {
+                return { surah, verses: [] };
+            }
+        }
+
+        async function loadVerseBank(group) {
+            const loaded = await Promise.all(group.map(loadSurahVerses));
+            const entries = loaded.flatMap(item => item.verses);
+            if (entries.length > 0) return entries;
+            return group.flatMap(surah => [
+                { key: surah.id + ':1', surah, num: 1, text: surah.nameAr + ' - الآية 1' },
+                { key: surah.id + ':2', surah, num: 2, text: surah.nameAr + ' - الآية 2' },
+                { key: surah.id + ':3', surah, num: 3, text: surah.nameAr + ' - الآية 3' }
+            ]);
+        }
+
+        function optionTexts(correct, pool, mapper, count = 4) {
+            const correctText = mapper(correct);
+            const distractors = shuffleMiniGame(pool)
+                .map(mapper)
+                .filter(text => text && text !== correctText);
+            return shuffleMiniGame([correctText, ...Array.from(new Set(distractors)).slice(0, count - 1)]);
+        }
+
+        function findNextVerse(entry, bank) {
+            return bank.find(item => item.surah.id === entry.surah.id && item.num === entry.num + 1) || null;
+        }
+
+        function buildMissingWordQuestion(entry, bank) {
+            const words = splitVerseWords(entry.text);
+            const answer = words[Math.min(words.length - 1, Math.max(0, Math.floor(words.length / 2)))] || words[0] || entry.surah.nameAr;
+            const prompt = shortVerseText(entry.text.replace(answer, '______'), 140);
+            const poolWords = bank.flatMap(item => splitVerseWords(item.text)).filter(word => word !== answer);
+            return {
+                kind: 'missing-word',
+                prompt: 'أكمل الكلمة الناقصة في الآية:',
+                source: prompt,
+                answer,
+                options: shuffleMiniGame([answer, ...Array.from(new Set(shuffleMiniGame(poolWords))).slice(0, 3)])
+            };
+        }
+
+        function buildNextVerseQuestion(entry, bank) {
+            const next = findNextVerse(entry, bank);
+            if (!next) return buildMissingWordQuestion(entry, bank);
+            return {
+                kind: 'next-verse',
+                prompt: 'ما الآية التي تأتي بعدها مباشرة؟',
+                source: shortVerseText(entry.text, 150),
+                answer: shortVerseText(next.text, 150),
+                options: optionTexts(next, bank.filter(item => item.key !== next.key), item => shortVerseText(item.text, 150))
+            };
+        }
+
+        function buildSurahMatchQuestion(entry, group) {
+            return {
+                kind: 'surah-match',
+                prompt: 'إلى أي سورة تنتمي هذه الآية؟',
+                source: shortVerseText(entry.text, 150),
+                answer: entry.surah.nameAr,
+                options: shuffleMiniGame([entry.surah.nameAr, ...group.filter(surah => surah.id !== entry.surah.id).map(surah => surah.nameAr)]).slice(0, 4)
+            };
+        }
+
+        function buildEndingQuestion(entry, bank) {
+            const words = splitVerseWords(entry.text);
+            if (words.length < 5) return buildMissingWordQuestion(entry, bank);
+            const splitAt = Math.max(2, Math.floor(words.length / 2));
+            const start = words.slice(0, splitAt).join(' ');
+            const answer = words.slice(splitAt).join(' ');
+            return {
+                kind: 'ending',
+                prompt: 'أكمل نهاية الآية:',
+                source: shortVerseText(start + ' ...', 130),
+                answer,
+                options: optionTexts({ text: answer }, bank, item => shortVerseText(splitVerseWords(item.text).slice(Math.floor(splitVerseWords(item.text).length / 2)).join(' '), 90))
+            };
+        }
+
+        async function buildMiniExamQuestions(group) {
+            const bank = await loadVerseBank(group);
+            const withNext = bank.filter(entry => findNextVerse(entry, bank));
+            const samples = shuffleMiniGame(bank).slice(0, 6);
+            return [
+                buildNextVerseQuestion(withNext[0] || samples[0], bank),
+                buildMissingWordQuestion(samples[1] || samples[0], bank),
+                buildSurahMatchQuestion(samples[2] || samples[0], group),
+                buildEndingQuestion(samples[3] || samples[0], bank),
+                buildNextVerseQuestion(withNext[1] || samples[4] || samples[0], bank),
+                buildMissingWordQuestion(samples[5] || samples[0], bank)
+            ].filter(Boolean);
         }
 
         function ensureMiniExamModal() {
@@ -486,10 +612,13 @@ body { padding-bottom: 80px; }
         let activeMiniExam = null;
         let activeMiniGame = null;
 
-        function openMiniExam(groupNumber) {
+        async function openMiniExam(groupNumber) {
             const group = getMiniExamGroup(groupNumber);
             if (group.length < 4 || !group.every(surah => surah.isCompleted)) return;
-            activeMiniExam = { groupNumber, questions: buildMiniExamQuestions(group), index: 0, correct: 0 };
+            ensureMiniExamModal().classList.add('open');
+            document.getElementById('mini-exam-title').textContent = 'اختبار حفظ ' + groupNumber;
+            document.getElementById('mini-exam-body').innerHTML = '<div class="py-8 text-center font-black text-gray-500">جاري تجهيز تمارين الآيات...</div>';
+            activeMiniExam = { groupNumber, questions: await buildMiniExamQuestions(group), index: 0, correct: 0 };
             ensureMiniExamModal().classList.add('open');
             renderMiniExamQuestion();
         }
@@ -503,9 +632,10 @@ body { padding-bottom: 80px; }
             const body = document.getElementById('mini-exam-body');
             if (!activeMiniExam || !body) return;
             const q = activeMiniExam.questions[activeMiniExam.index];
-            document.getElementById('mini-exam-title').textContent = 'اختبار صغير ' + activeMiniExam.groupNumber;
+            document.getElementById('mini-exam-title').textContent = 'اختبار حفظ ' + activeMiniExam.groupNumber;
             body.innerHTML = '<div class="mb-3 text-sm font-black text-gray-500">سؤال ' + (activeMiniExam.index + 1) + ' / ' + activeMiniExam.questions.length + '</div>' +
-                '<div class="rounded-2xl bg-orange-50 border border-orange-100 p-4 font-black text-gray-900 mb-4">' + escapeMiniExamText(q.prompt) + '</div>' +
+                '<div class="rounded-2xl bg-orange-50 border border-orange-100 p-4 font-black text-gray-900 mb-3">' + escapeMiniExamText(q.prompt) + '</div>' +
+                '<div class="quran-font rounded-2xl bg-white border border-gray-100 p-4 text-lg leading-loose text-gray-800 mb-4">' + escapeMiniExamText(q.source || '') + '</div>' +
                 '<div class="space-y-2">' + q.options.map(option => '<button type="button" class="mini-exam-option" data-answer="' + escapeMiniExamText(option) + '">' + escapeMiniExamText(option) + '</button>').join('') + '</div>';
             body.querySelectorAll('.mini-exam-option').forEach(button => {
                 button.addEventListener('click', () => answerMiniExam(button, button.dataset.answer));
@@ -541,39 +671,99 @@ body { padding-bottom: 80px; }
             body.innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black ' + (passed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') + '">' + score + '%</div><h4 class="text-xl font-black text-gray-900 mb-2">' + (passed ? 'ممتاز، الاختبار مكتمل' : 'محاولة جيدة، أعد الاختبار') + '</h4><p class="text-sm font-bold text-gray-500 mb-4">نتيجتك: ' + activeMiniExam.correct + ' / ' + activeMiniExam.questions.length + '</p><button type="button" onclick="closeMiniExam(); renderSurahLibrary();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
         }
 
-        function shuffleMiniGame(items) {
-            return [...items].sort(() => Math.random() - 0.5);
-        }
-
         function verseSnippet(verse) {
-            const text = String(verse?.text || verse?.label || '');
-            return escapeMiniExamText(text.length > 72 ? text.slice(0, 72) + '…' : text);
+            const text = String(verse?.label || verse?.text || '');
+            return escapeMiniExamText(text.length > 86 ? text.slice(0, 86) + '…' : text);
         }
 
         async function loadMiniGameVerses(group) {
-            const surah = group.find(item => item.isCompleted) || group[0];
-            if (!surah || !surah.file) return { surah, verses: [] };
-            try {
-                const html = await fetch(surah.file, { cache: 'no-store' }).then(response => response.text());
-                const match = html.match(/const verses = (\[[\s\S]*?\]);/);
-                const verses = match ? JSON.parse(match[1]) : [];
-                return { surah, verses: verses.filter(v => v && v.text).slice(0, 8) };
-            } catch (error) {
-                return { surah, verses: [] };
-            }
+            const playable = group.filter(item => item.isCompleted);
+            return loadVerseBank(playable.length ? playable : group);
         }
 
-        function buildMiniGameStages(group, loaded) {
-            const surah = loaded.surah || group[0];
-            const sourceVerses = loaded.verses.length ? loaded.verses : [
-                { num: 1, text: surah.nameAr + ' - الآية 1' },
-                { num: 2, text: surah.nameAr + ' - الآية 2' },
-                { num: 3, text: surah.nameAr + ' - الآية 3' }
-            ];
-            return sourceVerses.slice(0, Math.min(4, sourceVerses.length)).map((verse, index) => {
-                const pool = shuffleMiniGame(sourceVerses.filter(v => v.num !== verse.num)).slice(0, 3);
-                return { surah, verse, options: shuffleMiniGame([verse, ...pool]), index };
-            });
+        function makeGameOption(key, label, meta = {}) {
+            return { key: String(key), label: shortVerseText(label, 95), ...meta };
+        }
+
+        function buildChooseNextStage(entry, bank, label) {
+            const next = findNextVerse(entry, bank);
+            const answer = next || entry;
+            const answerKey = answer.key;
+            const distractors = shuffleMiniGame(bank)
+                .filter(item => item.key !== answerKey)
+                .slice(0, 3)
+                .map(item => makeGameOption(item.key, item.text));
+            return {
+                mode: 'choice',
+                mission: label || 'اختر الآية التي تأتي بعدها مباشرة',
+                source: entry.text,
+                answerKey,
+                options: shuffleMiniGame([makeGameOption(answerKey, answer.text), ...distractors])
+            };
+        }
+
+        function buildMissingWordStage(entry, bank) {
+            const words = splitVerseWords(entry.text);
+            const answer = words[Math.min(words.length - 1, Math.max(0, Math.floor(words.length / 2)))] || words[0] || entry.surah.nameAr;
+            const poolWords = bank.flatMap(item => splitVerseWords(item.text)).filter(word => word !== answer);
+            return {
+                mode: 'choice',
+                mission: 'اختر الكلمة الناقصة من الآية',
+                source: entry.text.replace(answer, '______'),
+                answerKey: answer,
+                options: shuffleMiniGame([answer, ...Array.from(new Set(shuffleMiniGame(poolWords))).slice(0, 3)]).map(word => makeGameOption(word, word))
+            };
+        }
+
+        function buildSurahMatchStage(entry, group) {
+            return {
+                mode: 'choice',
+                mission: 'اربط الآية بسورتها الصحيحة',
+                source: entry.text,
+                answerKey: entry.surah.id,
+                options: shuffleMiniGame([entry.surah, ...group.filter(surah => surah.id !== entry.surah.id)]).slice(0, 4).map(surah => makeGameOption(surah.id, surah.nameAr))
+            };
+        }
+
+        function buildOrderStage(bank) {
+            const bySurah = Object.values(bank.reduce((acc, entry) => {
+                acc[entry.surah.id] = acc[entry.surah.id] || [];
+                acc[entry.surah.id].push(entry);
+                return acc;
+            }, {})).map(items => items.sort((a, b) => a.num - b.num)).filter(items => items.length >= 3);
+            const sample = shuffleMiniGame(bySurah)[0] || bank.slice(0, 3);
+            const ordered = sample.slice(0, Math.min(4, sample.length)).sort((a, b) => a.num - b.num);
+            return {
+                mode: 'order',
+                mission: 'رتب هذه الآيات كما جاءت في السورة',
+                source: ordered[0]?.surah?.nameAr || '',
+                orderedKeys: ordered.map(item => item.key),
+                options: shuffleMiniGame(ordered).map(item => makeGameOption(item.key, item.text, { order: item.num }))
+            };
+        }
+
+        function buildMiniGameStages(group, bank, type) {
+            const entries = shuffleMiniGame(bank);
+            const withNext = entries.filter(entry => findNextVerse(entry, bank));
+            const stages = [];
+            const builders = {
+                race: entry => buildChooseNextStage(entry, bank, 'السيارة تتحرك عندما تختار الآية التالية'),
+                treasure: entry => buildSurahMatchStage(entry, group),
+                lantern: () => buildOrderStage(bank),
+                bridge: entry => buildChooseNextStage(entry, bank, 'اعبر الجسر بالآية التالية الصحيحة'),
+                meteor: entry => buildMissingWordStage(entry, bank),
+                garden: entry => buildMissingWordStage(entry, bank),
+                tower: () => buildOrderStage(bank),
+                compass: entry => buildSurahMatchStage(entry, group),
+                balloon: entry => buildChooseNextStage(entry, bank, 'ارفع البالون بالآية التي تأتي بعدها'),
+                shield: entry => buildMissingWordStage(entry, bank)
+            };
+            for (let i = 0; i < 4; i++) {
+                const source = withNext[i % Math.max(1, withNext.length)] || entries[i % Math.max(1, entries.length)];
+                const stage = (builders[type] || builders.race)(source);
+                if (stage && stage.options && stage.options.length >= 2) stages.push(stage);
+            }
+            return stages.length ? stages : [buildMissingWordStage(entries[0], bank)];
         }
 
         function ensureMiniGameModal() {
@@ -592,11 +782,11 @@ body { padding-bottom: 80px; }
             const group = getMiniGameGroup(gameNumber);
             if (group.length < 2 || !group.some(surah => surah.isCompleted)) return;
             const config = getMiniGameConfig(gameNumber);
-            const loaded = await loadMiniGameVerses(group);
+            const bank = await loadMiniGameVerses(group);
             activeMiniGame = {
                 gameNumber,
                 config,
-                stages: buildMiniGameStages(group, loaded),
+                stages: buildMiniGameStages(group, bank, config.type),
                 index: 0,
                 correct: 0,
                 selectedOrder: []
@@ -617,57 +807,57 @@ body { padding-bottom: 80px; }
             const progress = Math.round((activeMiniGame.correct / activeMiniGame.stages.length) * 100);
             document.getElementById('mini-game-kicker').textContent = activeMiniGame.config.hint;
             document.getElementById('mini-game-title').textContent = activeMiniGame.config.icon + ' ' + activeMiniGame.config.title;
+            activeMiniGame.selectedOrder = [];
             body.innerHTML = renderMiniGameByType(activeMiniGame.config.type, stage, progress);
         }
 
         function renderMiniGameByType(type, stage, progress) {
-            const target = stage.verse.num;
-            const label = 'الهدف: الآية ' + target + ' من ' + stage.surah.nameAr;
+            const label = stage.mission + (stage.source ? '<div class="quran-font mt-2 text-base leading-loose text-slate-700">' + escapeMiniExamText(shortVerseText(stage.source, 150)) + '</div>' : '');
+            const optionButtons = className => stage.options.map(option => '<button class="' + className + '" onclick="answerMiniGame(' + jsString(option.key) + ')">' + verseSnippet(option) + '</button>').join('');
             if (type === 'race') {
-                return '<div class="mini-game-track"><div class="mini-game-car" style="right:' + Math.min(220, 8 + progress * 2.2) + 'px"></div></div><div class="mini-game-mission">' + label + '</div><div class="mini-game-lanes">' + stage.options.map(v => '<button class="mini-game-tile lane" onclick="answerMiniGame(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div>';
+                return '<div class="mini-game-track"><div class="mini-game-car" style="right:' + Math.min(220, 8 + progress * 2.2) + 'px"></div></div><div class="mini-game-mission">' + label + '</div><div class="mini-game-lanes">' + optionButtons('mini-game-tile lane') + '</div>';
             }
             if (type === 'treasure') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-chests">' + stage.options.map((v, i) => '<button class="mini-game-chest" onclick="this.classList.add(&quot;open&quot;); answerMiniGame(' + v.num + ')">صندوق ' + (i + 1) + '<span>' + verseSnippet(v) + '</span></button>').join('') + '</div>';
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-chests">' + stage.options.map((option, i) => '<button class="mini-game-chest" onclick="this.classList.add(&quot;open&quot;); answerMiniGame(' + jsString(option.key) + ')">صندوق ' + (i + 1) + '<span>' + verseSnippet(option) + '</span></button>').join('') + '</div>';
             }
             if (type === 'lantern' || type === 'tower') {
-                const ordered = [...stage.options].sort((a, b) => a.num - b.num);
-                return '<div class="mini-game-mission">رتّب الآيات من الأصغر إلى الأكبر</div><div class="mini-game-order">' + shuffleMiniGame(ordered).map(v => '<button class="mini-game-tile" onclick="selectMiniGameOrder(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div><div id="mini-game-order-bin" class="mini-game-bin">اختر الترتيب هنا</div>';
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-order">' + stage.options.map(option => '<button class="mini-game-tile" onclick="selectMiniGameOrder(' + jsString(option.key) + ')">' + verseSnippet(option) + '</button>').join('') + '</div><div id="mini-game-order-bin" class="mini-game-bin">اختر الترتيب هنا</div>';
             }
             if (type === 'bridge') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-bridge">' + stage.options.map(v => '<button class="mini-game-pad" onclick="answerMiniGame(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div>';
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-bridge">' + optionButtons('mini-game-pad') + '</div>';
             }
             if (type === 'meteor') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-sky">' + stage.options.map((v, i) => '<button class="mini-game-meteor m' + i + '" onclick="answerMiniGame(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div>';
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-sky">' + stage.options.map((option, i) => '<button class="mini-game-meteor m' + i + '" onclick="answerMiniGame(' + jsString(option.key) + ')">' + verseSnippet(option) + '</button>').join('') + '</div>';
             }
             if (type === 'garden') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-garden">' + stage.options.map(v => '<button class="mini-game-plant" onclick="answerMiniGame(' + v.num + ')">🌱<span>' + verseSnippet(v) + '</span></button>').join('') + '</div>';
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-garden">' + stage.options.map(option => '<button class="mini-game-plant" onclick="answerMiniGame(' + jsString(option.key) + ')">🌱<span>' + verseSnippet(option) + '</span></button>').join('') + '</div>';
             }
             if (type === 'compass') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-compass">' + stage.options.map(v => '<button onclick="answerMiniGame(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div>';
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-compass">' + stage.options.map(option => '<button onclick="answerMiniGame(' + jsString(option.key) + ')">' + verseSnippet(option) + '</button>').join('') + '</div>';
             }
             if (type === 'balloon') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-balloons">' + stage.options.map((v, i) => '<button class="mini-game-balloon b' + i + '" onclick="answerMiniGame(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div>';
+                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-balloons">' + stage.options.map((option, i) => '<button class="mini-game-balloon b' + i + '" onclick="answerMiniGame(' + jsString(option.key) + ')">' + verseSnippet(option) + '</button>').join('') + '</div>';
             }
-            return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-shields">' + stage.options.map(v => '<button class="mini-game-shield" onclick="answerMiniGame(' + v.num + ')">' + verseSnippet(v) + '</button>').join('') + '</div>';
+            return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-shields">' + optionButtons('mini-game-shield') + '</div>';
         }
 
-        function selectMiniGameOrder(num) {
+        function selectMiniGameOrder(key) {
             if (!activeMiniGame) return;
-            if (!activeMiniGame.selectedOrder.includes(num)) activeMiniGame.selectedOrder.push(num);
+            if (!activeMiniGame.selectedOrder.includes(key)) activeMiniGame.selectedOrder.push(key);
             const bin = document.getElementById('mini-game-order-bin');
             if (bin) bin.textContent = activeMiniGame.selectedOrder.join(' ← ');
-            const ordered = activeMiniGame.stages[activeMiniGame.index].options.map(v => v.num).sort((a, b) => a - b);
+            const ordered = activeMiniGame.stages[activeMiniGame.index].orderedKeys || [];
             if (activeMiniGame.selectedOrder.length === ordered.length) {
-                const ok = activeMiniGame.selectedOrder.every((num, index) => num === ordered[index]);
+                const ok = activeMiniGame.selectedOrder.every((selectedKey, index) => selectedKey === ordered[index]);
                 activeMiniGame.selectedOrder = [];
                 completeMiniGameMove(ok);
             }
         }
 
-        function answerMiniGame(num) {
+        function answerMiniGame(key) {
             if (!activeMiniGame) return;
             const stage = activeMiniGame.stages[activeMiniGame.index];
-            completeMiniGameMove(Number(num) === Number(stage.verse.num));
+            completeMiniGameMove(String(key) === String(stage.answerKey));
         }
 
         function completeMiniGameMove(ok) {
@@ -855,7 +1045,7 @@ async function chargerDevoirs() {
             if (window.location.hash === '#surah-focus') setTimeout(scrollToJourneyFocus, 180);
         }
 
-        function updateRewardPanel() {
+        async function updateRewardPanel() {
             if (typeof Auth === 'undefined' || typeof Auth.getRewardState !== 'function') return;
             const rewards = Auth.getRewardState();
             if (!rewards) return;
@@ -863,6 +1053,28 @@ async function chargerDevoirs() {
             const noteEl = document.getElementById('reward-decay-note');
             if (starsEl) starsEl.textContent = rewards.stars || 0;
             if (noteEl && rewards.lostNow > 0) noteEl.textContent = 'نقصت ' + rewards.lostNow + ' نجوم فقط بسبب فترة توقف.';
+            const rankValueEl = document.getElementById('class-rank-value');
+            const rankNoteEl = document.getElementById('class-rank-note');
+            if (!rankValueEl || typeof Auth.getClassStarRanking !== 'function') return;
+            rankValueEl.textContent = '...';
+            try {
+                const ranking = await Auth.getClassStarRanking();
+                if (!ranking) {
+                    rankValueEl.textContent = '-';
+                    if (rankNoteEl) rankNoteEl.textContent = 'الترتيب غير متاح الآن.';
+                    return;
+                }
+                if (!ranking.isAssigned || !ranking.total) {
+                    rankValueEl.textContent = '-';
+                    if (rankNoteEl) rankNoteEl.textContent = 'سيظهر بعد ربطك بقسم.';
+                    return;
+                }
+                rankValueEl.textContent = ranking.rank + ' / ' + ranking.total;
+                if (rankNoteEl) rankNoteEl.textContent = 'بدون أسماء: ' + ranking.stars + ' نجمة في قسمك.';
+            } catch (error) {
+                rankValueEl.textContent = '-';
+                if (rankNoteEl) rankNoteEl.textContent = 'الترتيب غير متاح الآن.';
+            }
         }
 
         chargerDevoirs();
@@ -929,10 +1141,10 @@ async function chargerDevoirs() {
 
     </div>
 </nav>
-    <link rel="stylesheet" href="chatbot.css?v=20260710-direct-dashboard">
-    <script src="chatbot.js?v=20260710-direct-dashboard"></script>
-    <script src="app-settings.js?v=20260710-direct-dashboard"></script>
+    <link rel="stylesheet" href="chatbot.css?v=20260710-surah-learning-rank">
+    <script src="chatbot.js?v=20260710-surah-learning-rank"></script>
+    <script src="app-settings.js?v=20260710-surah-learning-rank"></script>
 
-<script src="notifications.js?v=20260710-direct-dashboard"></script>
+<script src="notifications.js?v=20260710-surah-learning-rank"></script>
 </body>
 </html>
