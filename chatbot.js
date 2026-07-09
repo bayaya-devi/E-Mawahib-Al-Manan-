@@ -81,7 +81,7 @@ let _defIdx     = 0;
 (async function initChatbot() {
     if (typeof Auth === 'undefined') return;
     _cbSession = Auth.getSession();
-    if (!_cbSession || _cbSession.role !== 'student') return;
+    if (!_cbSession) return;
 
     try { _cbSchedule = await Auth.getSchedule(_cbSession.username); }
     catch { _cbSchedule = null; }
