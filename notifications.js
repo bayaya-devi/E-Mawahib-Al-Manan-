@@ -49,7 +49,7 @@ const Notif = (() => {
   async function registerServiceWorker() {
     if (!('serviceWorker' in navigator)) return;
     try {
-      const registration = await navigator.serviceWorker.register('sw.js?v=20260709-onboarding-games');
+      const registration = await navigator.serviceWorker.register('sw.js?v=20260710-direct-dashboard');
       state.swReady = navigator.serviceWorker.ready.then(() => registration);
     } catch (error) {
       console.warn('[Notif] service worker unavailable', error);

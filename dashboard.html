@@ -12,11 +12,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=20260709-onboarding-games"></script>
-    <script src="registry.js?v=20260709-onboarding-games"></script>
+    <script src="auth.js?v=20260710-direct-dashboard"></script>
+    <script src="registry.js?v=20260710-direct-dashboard"></script>
 
-        <link rel="stylesheet" href="platform-theme.css?v=20260709-onboarding-games">
-    <script src="platform-theme.js?v=20260709-onboarding-games"></script>
+        <link rel="stylesheet" href="platform-theme.css?v=20260710-direct-dashboard">
+    <script src="platform-theme.js?v=20260710-direct-dashboard"></script>
 <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
         .quran-font { font-family: 'Amiri', serif; }
@@ -169,15 +169,7 @@ body { padding-bottom: 80px; }
     <img src="logo.webp" alt="مواهب المنان" class="h-24 object-contain drop-shadow-md">
 </div>
 
-    <script>
-        if (Auth.requireAuth('login.html')) {
-            const session = Auth.getSession();
-            const seenKey = session ? 'mawahib_onboarding_seen_' + session.username : '';
-            if (session && session.role !== 'prof' && localStorage.getItem(seenKey) !== 'yes') {
-                window.location.href = 'onboarding.html?v=20260709-onboarding-games';
-            }
-        }
-    </script>
+    <script>Auth.requireAuth('login.html');</script>
 
     <header class="header-bg text-white py-3 px-4 shadow-xl">
         <div class="max-w-4xl mx-auto flex flex-row items-center justify-between gap-3">
@@ -937,10 +929,10 @@ async function chargerDevoirs() {
 
     </div>
 </nav>
-    <link rel="stylesheet" href="chatbot.css?v=20260709-onboarding-games">
-    <script src="chatbot.js?v=20260709-onboarding-games"></script>
-    <script src="app-settings.js?v=20260709-onboarding-games"></script>
+    <link rel="stylesheet" href="chatbot.css?v=20260710-direct-dashboard">
+    <script src="chatbot.js?v=20260710-direct-dashboard"></script>
+    <script src="app-settings.js?v=20260710-direct-dashboard"></script>
 
-<script src="notifications.js?v=20260709-onboarding-games"></script>
+<script src="notifications.js?v=20260710-direct-dashboard"></script>
 </body>
 </html>
