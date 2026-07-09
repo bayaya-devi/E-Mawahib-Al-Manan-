@@ -5,6 +5,7 @@ const Auth = (() => {
     const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     const SESSION_KEY = 'quran_session';
+    const ACCOUNTS_KEY = 'mawahib_saved_accounts';
 
     // --- GESTION DE LA SESSION LOCALE ---
     function getSession() {
@@ -12,8 +13,44 @@ const Auth = (() => {
         catch { return null; }
     }
 
+    function _readSavedAccounts() {
+        try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || '[]'); }
+        catch { return []; }
+    }
+
+    function _writeSavedAccounts(accounts) {
+        const unique = [];
+        const seen = new Set();
+        accounts.forEach(account => {
+            if (!account || !account.username || seen.has(account.username)) return;
+            seen.add(account.username);
+            unique.push(account);
+        });
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(unique.slice(0, 12)));
+    }
+
+    function _rememberAccount(session) {
+        const accounts = _readSavedAccounts().filter(account => account.username !== session.username);
+        accounts.unshift({ ...session, lastUsedAt: new Date().toISOString() });
+        _writeSavedAccounts(accounts);
+    }
+
     function _setSession(username, prenom, nomOrClasse, role = 'student') {
-        localStorage.setItem(SESSION_KEY, JSON.stringify({ username, prenom, nom: nomOrClasse, role }));
+        const session = { username, prenom, nom: nomOrClasse, role };
+        localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        _rememberAccount(session);
+    }
+
+    function getSavedAccounts() {
+        return _readSavedAccounts();
+    }
+
+    function switchAccount(username) {
+        const account = _readSavedAccounts().find(item => item.username === username);
+        if (!account) return false;
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ username: account.username, prenom: account.prenom, nom: account.nom, role: account.role }));
+        _rememberAccount(account);
+        return true;
     }
 
     function logout() {
@@ -378,7 +415,7 @@ const Auth = (() => {
     function getSupabaseClient() { return supabase; }
 
     return {
-        register, login, registerProf, loginProf, logout, getSession, requireAuth,
+        register, login, registerProf, loginProf, logout, getSession, getSavedAccounts, switchAccount, requireAuth,
         getAllStudents, getAllUsers, getProfs, deleteStudent, deleteProf, toggleSuspension,
         assignStudentToProf, removeStudentFromProf,
         getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports,

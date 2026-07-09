@@ -315,4 +315,6 @@ const Notif = (() => {
   };
 })();
 
+window.Notif = Notif;
+
 document.addEventListener('DOMContentLoaded', () => Notif.init());

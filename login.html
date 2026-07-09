@@ -157,7 +157,10 @@
     </div>
     
     <script>
-        if (Auth.getSession()) window.location.href = 'dashboard.html';
+        if (Auth.getSession()) {
+            const s = Auth.getSession();
+            window.location.href = s.role === 'prof' ? 'dashboard_prof.html' : 'dashboard.html';
+        }
 
         function showTab(tab) {
             const isLogin = tab === 'login';
