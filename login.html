@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>منصة دار القرآن مواهب المنان — تسجيل الدخول</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js"></script>
+    <script src="auth.js?v=20260709-login-dashboard-fix"></script>
 <style>
         body {
             font-family: 'Cairo', sans-serif;
@@ -163,9 +166,13 @@
     </div>
     
     <script>
+        if ('caches' in window) {
+            caches.keys().then(keys => keys.forEach(key => caches.delete(key))).catch(() => {});
+        }
+
         if (Auth.getSession()) {
             const s = Auth.getSession();
-            window.location.href = s.role === 'prof' ? 'dashboard_prof.html' : 'dashboard.html';
+            window.location.href = (s.role === 'prof' ? 'dashboard_prof.html' : 'dashboard.html') + '?v=20260709-login-dashboard-fix';
         }
 
         function showTab(tab) {
@@ -225,7 +232,7 @@
                 const result = await Auth.loginProf(prenom, classe, password);
                 if (result.ok) {
     sessionStorage.setItem('loading_redirect', 'dashboard_prof.html');
-    window.location.href = 'loading.html';
+    window.location.href = 'loading.html?v=20260709-login-dashboard-fix';
 }
                 else { showError(result.error); }
             } else {
@@ -233,7 +240,7 @@
                 const result = await Auth.login(prenom, nom, password);
                 if (result.ok) {
     sessionStorage.setItem('loading_redirect', 'dashboard.html');
-    window.location.href = 'loading.html';
+    window.location.href = 'loading.html?v=20260709-login-dashboard-fix';
 }
                 else { showError(result.error); }
             }

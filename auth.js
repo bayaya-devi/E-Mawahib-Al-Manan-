@@ -108,7 +108,19 @@ const Auth = (() => {
     }
 
     function _candidateUsernames(str1, str2) {
-        return Array.from(new Set([_genId(str1, str2), _legacyGenId(str1, str2)]));
+        const clean1 = _cleanName(str1);
+        const clean2 = _cleanName(str2);
+        const raw1 = String(str1 || '').trim().toLowerCase();
+        const raw2 = String(str2 || '').trim().toLowerCase();
+        return Array.from(new Set([
+            _genId(str1, str2),
+            _legacyGenId(str1, str2),
+            clean1 + clean2,
+            clean1 + '_' + clean2,
+            clean1 + '-' + clean2,
+            raw1 + '.' + raw2,
+            raw1 + '_' + raw2
+        ].filter(Boolean)));
     }
 
     function _encodePassword(password) {
@@ -125,9 +137,31 @@ const Auth = (() => {
     function _passwordMatches(stored, password) {
         if (!stored) return false;
         const clean = String(password || '').trim();
-        const candidates = [_encodePassword(clean)];
+        const candidates = [_encodePassword(clean), clean];
         try { candidates.push(btoa(clean)); } catch (error) {}
-        return candidates.includes(stored);
+        if (candidates.includes(stored)) return true;
+        try { if (decodeURIComponent(escape(atob(stored))) === clean) return true; } catch (error) {}
+        try { if (atob(stored) === clean) return true; } catch (error) {}
+        return false;
+    }
+
+    function _sameIdentity(row, field2, value1, value2) {
+        return _cleanName(row?.prenom) === _cleanName(value1) && _cleanName(row?.[field2]) === _cleanName(value2);
+    }
+
+    async function _findLoginRow(table, secondField, value1, value2) {
+        const usernames = _candidateUsernames(value1, value2);
+        const { data: matches, error } = await supabase.from(table).select('*').in('username', usernames);
+        if (error) return { data: null, error };
+        const byUsername = usernames.map(username => (matches || []).find(row => row.username === username)).find(Boolean);
+        if (byUsername) return { data: byUsername, error: null };
+
+        const { data: fallbackRows, error: fallbackError } = await supabase.from(table).select('*')
+            .ilike('prenom', String(value1 || '').trim())
+            .ilike(secondField, String(value2 || '').trim());
+        if (fallbackError) return { data: null, error: fallbackError };
+        const byIdentity = (fallbackRows || []).find(row => _sameIdentity(row, secondField, value1, value2));
+        return { data: byIdentity || null, error: null };
     }
 
     function normalizeSurahId(surahId) {
@@ -422,9 +456,7 @@ const Auth = (() => {
         password = password.trim();
 
         if (!prenom || !nom || !password) return { ok: false, error: 'يرجى ملء جميع الحقول' };
-        const usernames = _candidateUsernames(prenom, nom);
-        const { data: matches, error } = await supabase.from('eleves').select('*').in('username', usernames);
-        const data = usernames.map(username => (matches || []).find(row => row.username === username)).find(Boolean);
+        const { data, error } = await _findLoginRow('eleves', 'nom', prenom, nom);
 
         if (error) {
             logError('login', error);
@@ -464,9 +496,7 @@ const Auth = (() => {
         classe   = classe.trim();
         password = password.trim();
 
-        const usernames = _candidateUsernames(prenom, classe);
-        const { data: matches, error } = await supabase.from('profs').select('*').in('username', usernames);
-        const data = usernames.map(username => (matches || []).find(row => row.username === username)).find(Boolean);
+        const { data, error } = await _findLoginRow('profs', 'classe', prenom, classe);
 
         if (error) {
             logError('loginProf', error);

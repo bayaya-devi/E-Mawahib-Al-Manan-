@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>منصة جمعية مواهب المنان - دار القرآن والحديث - لوحة الطالب</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js"></script>
-    <script src="registry.js"></script>
+    <script src="auth.js?v=20260709-login-dashboard-fix"></script>
+    <script src="registry.js?v=20260709-login-dashboard-fix"></script>
 
-        <link rel="stylesheet" href="platform-theme.css">
-    <script src="platform-theme.js"></script>
+        <link rel="stylesheet" href="platform-theme.css?v=20260709-login-dashboard-fix">
+    <script src="platform-theme.js?v=20260709-login-dashboard-fix"></script>
 <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
         .quran-font { font-family: 'Amiri', serif; }
@@ -197,11 +200,6 @@ body { padding-bottom: 80px; }
 </h2>
         <div class="space-y-4 mb-10" id="available-grid"></div>
 
-        <h2 id="section-locked" class="hidden text-lg font-black text-gray-700 mb-4 items-center gap-2">
-    <span class="w-2 h-6 bg-gray-300 rounded-full inline-block"></span>
-    السور القادمة قريباً
-</h2>
-        <div class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="locked-grid"></div>
     </main>
 
     <script>
@@ -510,7 +508,12 @@ body { padding-bottom: 80px; }
                             <span class="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs font-black text-emerald-700">${toArabicNum(completedInJuz)} / ${toArabicNum(allJuzSurahs.length)}</span>
                         </div>
                         <div class="surah-journey">
-                            ${visibleItems.map(surah => { const globalIndex = filtered.findIndex(item => item.id === surah.id); const groupNumber = Math.floor((globalIndex + 1) / 4); return renderSurahCard(surah) + (sectionState !== 'is-muted' && ((globalIndex + 1) % 4 === 0) ? renderMiniExamCard(groupNumber) : ''); }).join('')}
+                            ${visibleItems.map(surah => {
+                                const globalIndex = filtered.findIndex(item => item.id === surah.id);
+                                const groupNumber = Math.floor((globalIndex + 1) / 4);
+                                const miniExam = sectionState !== 'is-muted' && ((globalIndex + 1) % 4 === 0) ? renderMiniExamCard(groupNumber) : '';
+                                return renderSurahCard(surah) + miniExam;
+                            }).join('')}
                         </div>
                         ${mutedMessage}
                     </section>
@@ -674,10 +677,10 @@ async function chargerDevoirs() {
 
     </div>
 </nav>
-    <link rel="stylesheet" href="chatbot.css">
-    <script src="chatbot.js"></script>
-    <script src="app-settings.js"></script>
+    <link rel="stylesheet" href="chatbot.css?v=20260709-login-dashboard-fix">
+    <script src="chatbot.js?v=20260709-login-dashboard-fix"></script>
+    <script src="app-settings.js?v=20260709-login-dashboard-fix"></script>
 
-<script src="notifications.js"></script>
+<script src="notifications.js?v=20260709-login-dashboard-fix"></script>
 </body>
 </html>
