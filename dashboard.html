@@ -68,34 +68,34 @@
         .journey-meta { font-size: 11px; font-weight: 800; opacity: .78; }
         .journey-state { font-size: 11px; font-weight: 900; border-radius: 999px; padding: 4px 9px; background: rgba(255,255,255,.76); color: inherit; }
         .juz-road-header { background: linear-gradient(135deg, var(--platform-primary-soft), #fff); }
-        .daily-hub { max-width: 64rem; margin: 18px auto 0; padding: 0 16px; }
+        .daily-hub { max-width: 64rem; margin: 12px auto 0; padding: 0 16px; }
         .daily-hub-card {
-            background: rgba(255,255,255,.96); border: 1px solid rgba(16,185,129,.16); border-radius: 24px;
-            box-shadow: 0 18px 40px rgba(15,23,42,.08); padding: 14px;
+            background: rgba(255,255,255,.96); border: 1px solid rgba(16,185,129,.14); border-radius: 18px;
+            box-shadow: 0 12px 26px rgba(15,23,42,.06); padding: 10px;
         }
         .daily-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(220px, .82fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
         .daily-tile {
-            min-height: 118px; border-radius: 18px; background: linear-gradient(135deg, #f8fffb, #ffffff);
-            border: 1px solid rgba(16,185,129,.14); padding: 13px 14px; overflow: hidden;
+            min-height: 74px; border-radius: 14px; background: linear-gradient(135deg, #f8fffb, #ffffff);
+            border: 1px solid rgba(16,185,129,.12); padding: 9px 10px; overflow: hidden;
         }
-        .daily-title { font-size: 12px; font-weight: 900; color: var(--platform-primary-dark); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-        .daily-title::before { content: ''; width: 8px; height: 8px; border-radius: 999px; background: var(--platform-accent); box-shadow: 0 0 0 4px var(--platform-primary-soft); }
-        .daily-text { color: #334155; font-size: 13px; font-weight: 700; line-height: 1.7; max-height: 132px; overflow: auto; }
+        .daily-title { font-size: 11px; font-weight: 900; color: var(--platform-primary-dark); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+        .daily-title::before { content: ''; width: 6px; height: 6px; border-radius: 999px; background: var(--platform-accent); box-shadow: 0 0 0 3px var(--platform-primary-soft); }
+        .daily-text { color: #334155; font-size: 12px; font-weight: 700; line-height: 1.45; max-height: 72px; overflow: auto; }
         .daily-text:empty::after { content: 'لا يوجد جديد اليوم'; color: #94a3b8; font-weight: 800; }
-        .daily-progress { display: grid; grid-template-columns: auto minmax(120px, 1fr) auto; gap: 10px; align-items: center; margin-top: 12px; color: #64748b; font-size: 11px; font-weight: 900; }
-        .daily-progress-track { height: 7px; background: rgba(148,163,184,.18); border-radius: 999px; overflow: hidden; }
+        .daily-progress { display: grid; grid-template-columns: auto minmax(120px, 1fr) auto; gap: 8px; align-items: center; margin-top: 8px; color: #64748b; font-size: 10px; font-weight: 900; }
+        .daily-progress-track { height: 5px; background: rgba(148,163,184,.16); border-radius: 999px; overflow: hidden; }
         .daily-progress-track > div { height: 100%; background: linear-gradient(90deg, var(--platform-primary), var(--platform-accent)); }
         .reward-strip {
-            margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
+            margin-top: 8px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;
         }
         .reward-pill {
-            border-radius: 16px; padding: 10px 12px; background: linear-gradient(135deg, #fff7ed, #ffffff);
-            border: 1px solid rgba(217,164,65,.22); min-height: 68px;
+            border-radius: 13px; padding: 7px 9px; background: linear-gradient(135deg, #fff7ed, #ffffff);
+            border: 1px solid rgba(217,164,65,.18); min-height: 50px;
         }
-        .reward-kicker { font-size: 10px; color: #64748b; font-weight: 900; }
-        .reward-value { margin-top: 2px; font-size: 20px; color: #111827; font-weight: 900; line-height: 1; }
+        .reward-kicker { font-size: 9px; color: #64748b; font-weight: 900; }
+        .reward-value { margin-top: 1px; font-size: 16px; color: #111827; font-weight: 900; line-height: 1; }
         .reward-stars-value { color: #d97706; text-shadow: 0 2px 12px rgba(250, 204, 21, .35); }
-        .reward-note { margin-top: 3px; font-size: 10px; color: #64748b; font-weight: 800; line-height: 1.35; }
+        .reward-note { margin-top: 2px; font-size: 9px; color: #64748b; font-weight: 800; line-height: 1.25; }
         .header-bg { background: linear-gradient(135deg, #1a3c34 0%, #0c4a3b 40%, #14532d 100%); }
 
         @media (max-width: 900px) {
@@ -131,15 +131,14 @@ body { padding-bottom: 80px; }
 
     <script>Auth.requireAuth('login.html');</script>
 
-    <header class="header-bg text-white py-6 px-4 shadow-xl">
-        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+    <header class="header-bg text-white py-3 px-4 shadow-xl">
+        <div class="max-w-4xl mx-auto flex flex-row items-center justify-between gap-3">
             <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-2xl overflow-hidden border border-white/20 shadow-inner bg-white/10 flex items-center justify-center">
-                    <span class="text-3xl">📖</span>
+                <div class="w-11 h-11 rounded-2xl overflow-hidden border border-white/20 shadow-inner bg-white/10 flex items-center justify-center">
+                    <span class="text-xl">📖</span>
                 </div>
                 <div>
-                    <h1 class="text-xl md:text-3xl font-black leading-tight">مرحباً بك(ي)، <span id="student-name" class="text-emerald-300"></span> ! </h1>
-                    <p class="text-emerald-100 font-semibold mt-1 text-sm">اختر(ي) السورة التي تود(ي) دراستها ومراجعتها اليوم</p>
+                    <h1 class="text-lg md:text-2xl font-black leading-tight">مرحبا، <span id="student-name" class="text-emerald-300"></span></h1>
                 </div>
             </div>
             <button onclick="Auth.logout(); window.location.href='login.html'" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/20 transition text-sm">
@@ -150,7 +149,6 @@ body { padding-bottom: 80px; }
 
     <section class="daily-hub" aria-label="متابعة اليوم">
         <div class="daily-hub-card">
-            <div class="flex justify-end mb-3"><button id="notification-enable" type="button" class="rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-2 text-xs font-black">تفعيل إشعارات الهاتف والكمبيوتر</button></div>
             <div class="daily-grid">
                 <div class="daily-tile">
                     <div class="daily-title">واجب اليوم</div>
@@ -193,17 +191,6 @@ body { padding-bottom: 80px; }
     </section>
 
     <main class="max-w-5xl mx-auto px-4 py-6">
-        <section class="bg-white rounded-3xl shadow-sm border border-gray-100 p-4 md:p-5 mb-5">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-                <div>
-                    <h2 class="text-lg font-black text-gray-800 flex items-center gap-2">
-                        <span class="w-2 h-6 bg-emerald-500 rounded-full inline-block"></span>
-                        رحلة الحفظ خطوة بخطوة
-                    </h2>
-                    <p class="text-xs text-gray-500 font-bold mt-1">ابدأ من سورة الناس، وكل خطوة تفتح لك السورة التالية حتى الفاتحة.</p>
-                </div>
-            </div>
-        </section>
         <h2 id="section-available" class="hidden text-lg font-black text-gray-700 mb-4 items-center gap-2">
     <span class="w-2 h-6 bg-emerald-500 rounded-full inline-block"></span>
     السور المتاحة للتعلم
@@ -509,6 +496,10 @@ body { padding-bottom: 80px; }
                 const completedInJuz = allJuzSurahs.filter(s => s.isCompleted).length;
                 const rangeLabel = fromSurah && toSurah ? `من سورة ${fromSurah.nameAr} إلى سورة ${toSurah.nameAr}` : '';
                 const sectionState = isCurrentJuz(juz) ? 'is-active' : (completedInJuz === 0 ? 'is-muted' : 'is-complete');
+                const visibleItems = sectionState === 'is-muted' ? items.slice(0, 2) : items;
+                const mutedMessage = sectionState === 'is-muted'
+                    ? '<div class="mx-4 mb-4 rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-center text-xs font-black text-gray-500">أكمل الجزء المفتوح أولاً، ثم تظهر بقية سور هذا الجزء.</div>'
+                    : '';
                 return `
                     <section class="juz-section ${sectionState} bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                         <div class="juz-road-header px-4 py-4 flex items-center justify-between gap-3">
@@ -519,8 +510,9 @@ body { padding-bottom: 80px; }
                             <span class="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs font-black text-emerald-700">${toArabicNum(completedInJuz)} / ${toArabicNum(allJuzSurahs.length)}</span>
                         </div>
                         <div class="surah-journey">
-                            ${items.map(surah => { const globalIndex = filtered.findIndex(item => item.id === surah.id); const groupNumber = Math.floor((globalIndex + 1) / 4); return renderSurahCard(surah) + (((globalIndex + 1) % 4 === 0) ? renderMiniExamCard(groupNumber) : ''); }).join('')}
+                            ${visibleItems.map(surah => { const globalIndex = filtered.findIndex(item => item.id === surah.id); const groupNumber = Math.floor((globalIndex + 1) / 4); return renderSurahCard(surah) + (sectionState !== 'is-muted' && ((globalIndex + 1) % 4 === 0) ? renderMiniExamCard(groupNumber) : ''); }).join('')}
                         </div>
+                        ${mutedMessage}
                     </section>
                 `;
             }).join('');
