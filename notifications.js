@@ -222,7 +222,8 @@ const Notif = (() => {
     const progress = await Auth.getProgress(state.session.username);
     const order = SURAH_REGISTRY.slice().sort((a, b) => b.num - a.num);
     return order.find(s => {
-      const p = progress[s.id] || progress[String(s.id).replace('_', '-')];
+      const canonicalId = Auth.normalizeSurahId ? Auth.normalizeSurahId(s.id) : s.id;
+      const p = progress[canonicalId] || progress[s.id] || progress[String(s.id).replace('_', '-')];
       return !p || !p.completedAt;
     }) || order[0] || null;
   }

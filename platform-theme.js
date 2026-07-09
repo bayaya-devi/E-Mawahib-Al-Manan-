@@ -79,7 +79,7 @@
 
     const selector = [
       'main > section', '.card', '.dashboard-section', '.profile-card', '.parent-card', '.quiz-card',
-      '.lesson-card', '.surah-card', '.station-card', '.juz-section', '.journey-step', '.daily-tile',
+      '.lesson-card', '.surah-card', '.station-card', '.juz-section', '.daily-tile',
       '.top-row', '.feed-item', '.alert-card'
     ].join(',');
 
@@ -104,17 +104,20 @@
       observer.observe(el);
     });
 
+    let mutationFrame = null;
     const mutationObserver = new MutationObserver(() => {
-      apply();
-      document.querySelectorAll('.mawahib-reveal:not([data-reveal-bound])').forEach(el => {
-        el.dataset.revealBound = 'true';
-        observer.observe(el);
+      if (mutationFrame) return;
+      mutationFrame = requestAnimationFrame(() => {
+        mutationFrame = null;
+        apply();
+        document.querySelectorAll('.mawahib-reveal:not([data-reveal-bound])').forEach(el => {
+          el.dataset.revealBound = 'true';
+          observer.observe(el);
+        });
       });
     });
     mutationObserver.observe(document.body, { childList: true, subtree: true });
   }
-
-
 
   function syncSurahTheme() {
     const isSurahPage = /(^|\/)surah-|Al_|al_kadr|quraysh|fil|bayina/.test(location.pathname);
@@ -195,7 +198,7 @@ const MawahibSettings = (() => {
   function escapeHtml(value){ return String(value||'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
   function escapeAttr(value){ return escapeHtml(String(value||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")); }
   function open(){ renderPanel(); document.getElementById('mawahib-settings-overlay').classList.add('open'); } function close(){ document.getElementById('mawahib-settings-overlay').classList.remove('open'); }
-  function switchAccount(username){ if(!Auth.switchAccount || !Auth.switchAccount(username)) return; const session=Auth.getSession(); window.location.href=accountTarget(session); }
+  async function switchAccount(username){ if(!Auth.switchAccount) return; const ok=await Auth.switchAccount(username); if(!ok) { renderPanel(); return; } const session=Auth.getSession(); window.location.href=accountTarget(session); }
   function setTheme(theme){ if(window.PlatformTheme) PlatformTheme.set(theme); renderPanel(); }
   async function enableNotifications(){ if(window.Notif && typeof Notif.requestPermission==='function') await Notif.requestPermission(); else if('Notification' in window) await Notification.requestPermission(); renderPanel(); }
   async function testNotification(){ if(window.Notif && typeof Notif.remindNow==='function') return Notif.remindNow(); if('Notification' in window && Notification.permission==='granted') new Notification('مواهب المنان',{body:'تم اختبار الإشعارات بنجاح',icon:'logo.webp',dir:'rtl'}); else await enableNotifications(); }

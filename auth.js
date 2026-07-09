@@ -6,6 +6,16 @@ const Auth = (() => {
 
     const SESSION_KEY = 'quran_session';
     const ACCOUNTS_KEY = 'mawahib_saved_accounts';
+    const SURAH_ID_ALIASES = {
+        'al-zalzala': 'al-zalzala',
+        'al-zalzalah': 'al-zalzala',
+        'az-zalzalah': 'al-zalzala',
+        'bayina': 'al-bayyina',
+        'al-bayina': 'al-bayyina',
+        'al-kadr': 'al-qadr',
+        'qaria': 'al-qaria',
+        'fil': 'al-fil'
+    };
 
     // --- GESTION DE LA SESSION LOCALE ---
     function getSession() {
@@ -45,11 +55,17 @@ const Auth = (() => {
         return _readSavedAccounts();
     }
 
-    function switchAccount(username) {
+    async function switchAccount(username) {
         const account = _readSavedAccounts().find(item => item.username === username);
         if (!account) return false;
-        localStorage.setItem(SESSION_KEY, JSON.stringify({ username: account.username, prenom: account.prenom, nom: account.nom, role: account.role }));
-        _rememberAccount(account);
+        const table = account.role === 'prof' ? 'profs' : 'eleves';
+        const { data, error } = await supabase.from(table).select('*').eq('username', account.username).maybeSingle();
+        if (error || !data || data.is_suspended) {
+            _writeSavedAccounts(_readSavedAccounts().filter(item => item.username !== username));
+            return false;
+        }
+        const nom = account.role === 'prof' ? data.classe : data.nom;
+        _setSession(data.username, data.prenom, nom, account.role || 'student');
         return true;
     }
 
@@ -64,11 +80,79 @@ const Auth = (() => {
 
     // ✅ _genId : trim() sur les deux paramètres pour éviter les espaces parasites
     function _genId(str1, str2) {
-        return (str1.trim() + '.' + str2.trim())
+        return _cleanName(str1) + '.' + _cleanName(str2);
+    }
+
+    function _cleanName(value) {
+        return String(value || '')
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[\u064B-\u065F\u0670]/g, '')
+            .replace(/[\u200B-\u200D\uFEFF]/g, '')
+            .replace(/['’`´]/g, '')
+            .replace(/[^a-z0-9\u0600-\u06FF]+/g, '_')
+            .replace(/^_+|_+$/g, '');
+    }
+
+    function _legacyGenId(str1, str2) {
+        return (String(str1 || '').trim() + '.' + String(str2 || '').trim())
             .toLowerCase()
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .replace(/\s+/g, '_');
+    }
+
+    function _candidateUsernames(str1, str2) {
+        return Array.from(new Set([_genId(str1, str2), _legacyGenId(str1, str2)]));
+    }
+
+    function _encodePassword(password) {
+        const clean = String(password || '').trim();
+        if (window.TextEncoder) {
+            const bytes = new TextEncoder().encode(clean);
+            let binary = '';
+            bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+            return btoa(binary);
+        }
+        return btoa(unescape(encodeURIComponent(clean)));
+    }
+
+    function _passwordMatches(stored, password) {
+        if (!stored) return false;
+        const clean = String(password || '').trim();
+        const candidates = [_encodePassword(clean)];
+        try { candidates.push(btoa(clean)); } catch (error) {}
+        return candidates.includes(stored);
+    }
+
+    function normalizeSurahId(surahId) {
+        const id = String(surahId || '').trim().toLowerCase().replace(/_/g, '-');
+        return SURAH_ID_ALIASES[id] || id;
+    }
+
+    function _progressAliases(surahId) {
+        const normalized = normalizeSurahId(surahId);
+        const aliases = new Set([normalized, String(surahId || '').trim(), String(surahId || '').trim().replace(/_/g, '-')]);
+        Object.entries(SURAH_ID_ALIASES).forEach(([from, to]) => {
+            if (to === normalized) aliases.add(from);
+        });
+        return Array.from(aliases).filter(Boolean);
+    }
+
+    function _rememberProgressAliases(result, row) {
+        const value = {
+            activities: row.activities || {},
+            completedAt: row.completed_at || null,
+            completed_at: row.completed_at || null,
+            is_completed: Boolean(row.completed_at),
+            globalScore: row.global_score ?? null,
+            global_score: row.global_score ?? null,
+            score: row.global_score ?? null,
+            updatedAt: row.updated_at || row.completed_at || null
+        };
+        _progressAliases(row.surah_id).forEach(alias => { result[alias] = value; });
     }
 
     function logError(context, error) {
@@ -87,7 +171,7 @@ const Auth = (() => {
 
         const username = _genId(prenom, nom);
         const { error } = await supabase.from('eleves').insert([{
-            username, prenom, nom, password: btoa(password), is_suspended: false
+            username, prenom, nom, password: _encodePassword(password), is_suspended: false
         }]);
 
         if (error) {
@@ -106,8 +190,9 @@ const Auth = (() => {
         password = password.trim();
 
         if (!prenom || !nom || !password) return { ok: false, error: 'يرجى ملء جميع الحقول' };
-        const username = _genId(prenom, nom);
-        const { data, error } = await supabase.from('eleves').select('*').eq('username', username).single();
+        const usernames = _candidateUsernames(prenom, nom);
+        const { data: matches, error } = await supabase.from('eleves').select('*').in('username', usernames);
+        const data = usernames.map(username => (matches || []).find(row => row.username === username)).find(Boolean);
 
         if (error) {
             logError('login', error);
@@ -115,10 +200,10 @@ const Auth = (() => {
         }
         if (!data) return { ok: false, error: 'لم يتم العثور على هذا الحساب' };
         if (data.is_suspended) return { ok: false, error: '⚠️ هذا الحساب مغلق حالياً' };
-        if (data.password !== btoa(password)) return { ok: false, error: 'كلمة المرور غير صحيحة' };
+        if (!_passwordMatches(data.password, password)) return { ok: false, error: 'كلمة المرور غير صحيحة' };
 
-        _setSession(username, data.prenom, data.nom, 'student');
-        return { ok: true, username };
+        _setSession(data.username, data.prenom, data.nom, 'student');
+        return { ok: true, username: data.username };
     }
 
     // --- 2. PROFESSEURS ---
@@ -131,7 +216,7 @@ const Auth = (() => {
         if (!prenom || !classe || !password) return { ok: false, error: 'يرجى ملء جميع الحقول' };
         const username = _genId(prenom, classe);
         const { error } = await supabase.from('profs').insert([{
-            username, prenom, classe, password: btoa(password), students: []
+            username, prenom, classe, password: _encodePassword(password), students: []
         }]);
 
         if (error) {
@@ -147,18 +232,19 @@ const Auth = (() => {
         classe   = classe.trim();
         password = password.trim();
 
-        const username = _genId(prenom, classe);
-        const { data, error } = await supabase.from('profs').select('*').eq('username', username).single();
+        const usernames = _candidateUsernames(prenom, classe);
+        const { data: matches, error } = await supabase.from('profs').select('*').in('username', usernames);
+        const data = usernames.map(username => (matches || []).find(row => row.username === username)).find(Boolean);
 
         if (error) {
             logError('loginProf', error);
             return { ok: false, error: 'خطأ في الاتصال: ' + error.message };
         }
         if (!data) return { ok: false, error: 'لم يتم العثور على حساب الأستاذ' };
-        if (data.password !== btoa(password)) return { ok: false, error: 'كلمة المرور غير صحيحة' };
+        if (!_passwordMatches(data.password, password)) return { ok: false, error: 'كلمة المرور غير صحيحة' };
 
-        _setSession(username, data.prenom, data.classe, 'prof');
-        return { ok: true, username };
+        _setSession(data.username, data.prenom, data.classe, 'prof');
+        return { ok: true, username: data.username };
     }
 
     // --- 3. FONCTIONS ADMINISTRATEUR ---
@@ -188,12 +274,7 @@ const Auth = (() => {
         return (elevesRes.data || []).map(e => {
             const userProgs = progs.filter(p => p.username === e.username);
             const progressDict = {};
-            userProgs.forEach(p => progressDict[p.surah_id] = {
-                activities: p.activities || {},
-                completedAt: p.completed_at || null,
-                globalScore: p.global_score ?? null,
-                updatedAt: p.updated_at || p.completed_at || null
-            });
+            userProgs.forEach(p => _rememberProgressAliases(progressDict, p));
             const profile = profilMap[e.username] || {};
             const payments = Array.isArray(profile.payments) ? profile.payments : [];
             return {
@@ -270,7 +351,7 @@ const Auth = (() => {
 
     // --- 5. HORAIRES ---
     async function getSchedule(username) {
-        const { data, error } = await supabase.from('horaires').select('schedule_text').eq('username', username).single();
+        const { data, error } = await supabase.from('horaires').select('schedule_text').eq('username', username).maybeSingle();
         if (error) logError('getSchedule', error);
         return data ? data.schedule_text : "لم يتم تحديد أوقات الحصص بعد.";
     }
@@ -326,7 +407,7 @@ const Auth = (() => {
 
     // --- 7. PROFILS ADMINISTRATIFS ---
     async function getProfile(username) {
-        const { data, error } = await supabase.from('profils_admin').select('*').eq('username', username).single();
+        const { data, error } = await supabase.from('profils_admin').select('*').eq('username', username).maybeSingle();
         if (error && error.code !== 'PGRST116') logError('getProfile', error);
         return data
             ? { cinProvided: data.cin_provided, birthCertProvided: data.birth_cert_provided, payments: data.payments || [] }
@@ -348,36 +429,34 @@ const Auth = (() => {
         const { data, error } = await supabase.from('progressions').select('*').eq('username', username);
         if (error) logError('getProgress', error);
         const res = {};
-        (data || []).forEach(p => res[p.surah_id] = {
-            activities: p.activities || {},
-            completedAt: p.completed_at,
-            globalScore: p.global_score
-        });
+        (data || []).forEach(p => _rememberProgressAliases(res, p));
         return res;
     }
 
     async function recordActivity(surahId, activityKey, score) {
         const session = getSession(); if (!session) return;
+        const normalizedId = normalizeSurahId(surahId);
         const { data, error } = await supabase.from('progressions').select('activities')
-            .eq('username', session.username).eq('surah_id', surahId).single();
+            .eq('username', session.username).eq('surah_id', normalizedId).maybeSingle();
         if (error && error.code !== 'PGRST116') logError('recordActivity', error);
         let activities = data?.activities || {};
         if (!activities[activityKey] || score > activities[activityKey].score) {
             activities[activityKey] = { score, date: new Date().toISOString() };
-            await supabase.from('progressions').upsert([{ username: session.username, surah_id: surahId, activities }]);
+            await supabase.from('progressions').upsert([{ username: session.username, surah_id: normalizedId, activities }]);
         }
     }
 
     async function completeSurah(surahId) {
         const session = getSession(); if (!session) return;
+        const normalizedId = normalizeSurahId(surahId);
         const { data, error } = await supabase.from('progressions').select('activities')
-            .eq('username', session.username).eq('surah_id', surahId).single();
+            .eq('username', session.username).eq('surah_id', normalizedId).maybeSingle();
         if (error && error.code !== 'PGRST116') logError('completeSurah', error);
         const activities = data?.activities || {};
         const scores = Object.values(activities).map(a => a.score);
         const globalScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 100;
         await supabase.from('progressions').upsert([{
-            username: session.username, surah_id: surahId, activities,
+            username: session.username, surah_id: normalizedId, activities,
             completed_at: new Date().toISOString(), global_score: globalScore
         }]);
     }
@@ -419,7 +498,7 @@ const Auth = (() => {
         getAllStudents, getAllUsers, getProfs, deleteStudent, deleteProf, toggleSuspension,
         assignStudentToProf, removeStudentFromProf,
         getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports,
-        getProfile, updateProfile, getProgress, recordActivity, completeSurah,
+        getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId,
         ajouterDevoir, getDevoirs, annulerDevoir, marquerDevoirTermine,
         getSupabaseClient
     };

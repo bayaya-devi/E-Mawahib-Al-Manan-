@@ -241,10 +241,14 @@ body { padding-bottom: 80px; }
         ];
 
         function getProgressFor(progressData, surah) {
+            const canonicalId = (typeof Auth !== 'undefined' && Auth.normalizeSurahId) ? Auth.normalizeSurahId(surah.id) : surah.id;
             if (Array.isArray(progressData)) {
-                return progressData.find(p => p.surah_id === surah.id || p.surah_id === surah.id.replace('_', '-')) || {};
+                return progressData.find(p => {
+                    const progressId = (typeof Auth !== 'undefined' && Auth.normalizeSurahId) ? Auth.normalizeSurahId(p.surah_id) : p.surah_id;
+                    return progressId === canonicalId || p.surah_id === surah.id || p.surah_id === surah.id.replace('_', '-');
+                }) || {};
             }
-            return progressData ? (progressData[surah.id] || progressData[surah.id.replace('_', '-')] || {}) : {};
+            return progressData ? (progressData[canonicalId] || progressData[surah.id] || progressData[surah.id.replace('_', '-')] || {}) : {};
         }
 
         function getLengthType(ayat) {
@@ -539,88 +543,6 @@ async function chargerDevoirs() {
             // 3. Récupération de la progression
             const progressData = await Auth.getProgress(session.username);
             
-            // 4. GÉNÉRATION DES SOURATES (C'est ce qui te manquait !)
-            const availableGrid = document.getElementById('available-grid');
-            const lockedGrid = document.getElementById('locked-grid');
-            availableGrid.innerHTML = '';
-            lockedGrid.innerHTML = '';
-
-            let availableCount = 0;
-            let completedCount = 0;
-
-            SURAH_REGISTRY.forEach(surah => {
-                if (surah.available) {
-                    availableCount++;
-
-                    
-// --- DÉBUT DE LA CORRECTION ---
-let pData = {};
-
-// 1. Gérer le format des données (Si Supabase renvoie une liste/tableau)
-if (Array.isArray(progressData)) {
-    pData = progressData.find(p => 
-        p.surah_id === surah.id || 
-        p.surah_id === surah.id.replace('_', '-') // Corrige la différence al_qadr / al-qadr
-    ) || {};
-} 
-// 2. Gérer le format Objet (Dictionnaire)
-else if (progressData) {
-    pData = progressData[surah.id] || progressData[surah.id.replace('_', '-')] || {};
-}
-
-// 3. Gérer les noms exacts des colonnes dans ta base de données Supabase
-const isCompleted = pData.is_completed === true || !!pData.completed_at || !!pData.completedAt || pData.status === 'completed';
-const score = pData.score || pData.global_score || pData.globalScore || 0;
-// --- FIN DE LA CORRECTION ---
-
-
-
-                    
-                    if (isCompleted) completedCount++;
-
-                    const statusBadge = isCompleted 
-                        ? `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded font-bold">مكتملة ✅ (${score}%)</span>`
-                        : `<span class="bg-amber-100 text-amber-800 text-xs px-2 py-1 rounded font-bold">قيد الدراسة ⏳</span>`;
-
-                    availableGrid.innerHTML += `
-                        <div onclick="window.location.href='${surah.file}'" class="surah-card bg-white rounded-2xl p-5 border-2 border-transparent flex items-center justify-between group hover:shadow-md" style="--hover-border: ${surah.color};" onmouseover="this.style.borderColor='${surah.color}'" onmouseout="this.style.borderColor='transparent'">
-                            <div class="flex items-center gap-4">
-                                <div class="w-14 h-14 rounded-xl flex items-center justify-center text-2xl shadow-inner" style="background-color: ${surah.color}15; color: ${surah.color}">
-                                    ${surah.emoji}
-                                </div>
-                                <div>
-                                    <h3 class="font-black text-xl text-gray-800 mb-1 quran-font">${surah.nameAr}</h3>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs font-bold text-gray-500">${surah.type} • ${toArabicNum(surah.ayat)} آيات</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex flex-col items-end gap-2">
-                                <span class="text-sm font-black text-gray-300">﴿${toArabicNum(surah.num)}﴾</span>
-                                ${statusBadge}
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    lockedGrid.innerHTML += `
-                        <div class="surah-card-locked bg-gray-50 rounded-xl p-4 border border-gray-200 flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center text-lg grayscale">
-                                ${surah.emoji}
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-gray-600 quran-font">${surah.nameAr}</h3>
-                                <span class="text-[10px] font-bold text-gray-400">قريباً إن شاء الله</span>
-                            </div>
-                        </div>
-                    `;
-                }
-            });
-
-            // 5. Mise à jour de la barre de progression globale
-            document.getElementById('student-progress-label').innerText = `${toArabicNum(completedCount)} / ${toArabicNum(availableCount)}`;
-            const progressPercent = availableCount === 0 ? 0 : Math.round((completedCount / availableCount) * 100);
-            document.getElementById('student-progress-fill').style.width = `${progressPercent}%`;
-
             dashboardState.surahs = SURAH_REGISTRY
                 .filter(surah => surah.available)
                 .map(surah => {
@@ -634,6 +556,15 @@ const score = pData.score || pData.global_score || pData.globalScore || 0;
                         lengthType: getLengthType(surah.ayat)
                     };
                 });
+            const availableCount = dashboardState.surahs.length;
+            const completedCount = dashboardState.surahs.filter(surah => surah.isCompleted).length;
+            const progressLabel = document.getElementById('student-progress-label');
+            const progressFill = document.getElementById('student-progress-fill');
+            if (progressLabel) progressLabel.innerText = `${toArabicNum(completedCount)} / ${toArabicNum(availableCount)}`;
+            if (progressFill) {
+                const progressPercent = availableCount === 0 ? 0 : Math.round((completedCount / availableCount) * 100);
+                progressFill.style.width = `${progressPercent}%`;
+            }
             renderSurahLibrary();
         }
 
