@@ -308,3 +308,28 @@ header,
 .header-bg-parent {
   box-shadow: 0 20px 52px color-mix(in srgb, var(--platform-primary-dark) 28%, transparent) !important;
 }
+
+.mawahib-reveal {
+  opacity: 0;
+  transform: translateY(22px) scale(.985);
+  transition: opacity .48s ease, transform .48s cubic-bezier(.22, 1, .36, 1), box-shadow .24s ease;
+  transition-delay: var(--reveal-delay, 0ms);
+  will-change: opacity, transform;
+}
+
+html[data-scroll-dir="up"] .mawahib-reveal {
+  transform: translateY(-18px) scale(.985);
+}
+
+.mawahib-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mawahib-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

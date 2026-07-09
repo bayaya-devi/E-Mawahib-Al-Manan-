@@ -49,6 +49,19 @@
         .journey-node.done, .journey-orb.done { background: linear-gradient(135deg, #10b981, #047857); color: white; }
         .journey-node.current, .journey-orb.current { background: linear-gradient(135deg, var(--platform-primary), var(--platform-accent)); color: white; }
         .journey-node.locked { background: #f3f4f6; color: #94a3b8; box-shadow: inset 0 0 0 1px rgba(148,163,184,.18); }
+        .mini-exam-node { background: linear-gradient(135deg, #fff7ed, #ffffff); border: 1px solid rgba(249,115,22,.22); }
+        .mini-exam-node.done { background: linear-gradient(135deg, #10b981, #047857); color: #fff; }
+        .mini-exam-node.locked { background: #f1f5f9; color: #94a3b8; border-color: rgba(148,163,184,.22); }
+        .mini-exam-orb { background: linear-gradient(135deg, #f97316, var(--platform-accent)); color: #fff; }
+        .mini-exam-orb.done { background: linear-gradient(135deg, #10b981, #047857); }
+        .mini-exam-orb.locked { background: #e2e8f0; color: #94a3b8; }
+        .mini-exam-modal { position: fixed; inset: 0; z-index: 80; display: none; align-items: center; justify-content: center; padding: 18px; background: rgba(15,23,42,.55); backdrop-filter: blur(10px); }
+        .mini-exam-modal.open { display: flex; }
+        .mini-exam-card { width: min(100%, 520px); border-radius: 26px; background: #fff; box-shadow: 0 24px 70px rgba(15,23,42,.24); padding: 18px; }
+        .mini-exam-option { width: 100%; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px 14px; text-align: right; font-weight: 900; background: #f8fafc; }
+        .mini-exam-option:hover { border-color: var(--platform-primary); background: var(--platform-primary-soft); }
+        .mini-exam-option.correct { background: #dcfce7; color: #166534; border-color: #22c55e; }
+        .mini-exam-option.wrong { background: #fee2e2; color: #991b1b; border-color: #f87171; }
         .journey-orb.locked { background: #e5e7eb; color: #94a3b8; }
         .journey-meta { font-size: 11px; font-weight: 800; opacity: .78; }
         .journey-state { font-size: 11px; font-weight: 900; border-radius: 999px; padding: 4px 9px; background: rgba(255,255,255,.76); color: inherit; }
@@ -148,7 +161,7 @@ body { padding-bottom: 80px; }
                 <div class="daily-progress-track">
                     <div id="student-progress-fill" class="bg-emerald-500 rounded-full transition-all duration-1000" style="width: 0%"></div>
                 </div>
-                <span id="student-progress-label">٠ / ٠</span>
+                <span id="student-progress-label">0 / 0</span>
             </div>
         </div>
     </section>
@@ -189,7 +202,7 @@ body { padding-bottom: 80px; }
     </main>
 
     <script>
-        function toArabicNum(n) { return String(n).replace(/[0-9]/g, d => '٠١٢٣٤٥٦٧٨٩'[d]); }
+        function toArabicNum(n) { return String(n); }
         const dashboardState = { surahs: [] };
         const juzJourney = [
             { num: 30, name: 'جزء عمّ', start: 78, end: 114 },
@@ -277,6 +290,139 @@ body { padding-bottom: 80px; }
             `;
         }
 
+
+        function getMiniExamKey(groupNumber) {
+            const student = dashboardState.studentKey || 'guest';
+            return 'mawahib_mini_exam_' + student + '_' + groupNumber;
+        }
+
+        function getMiniExamResult(groupNumber) {
+            try { return JSON.parse(localStorage.getItem(getMiniExamKey(groupNumber)) || 'null'); }
+            catch (error) { return null; }
+        }
+
+        function getMiniExamGroup(groupNumber) {
+            const order = getJourneyOrder();
+            return order.slice((groupNumber - 1) * 4, groupNumber * 4);
+        }
+
+        function getMiniExamState(groupNumber) {
+            const group = getMiniExamGroup(groupNumber);
+            if (group.length < 4) return 'hidden';
+            const unlocked = group.every(surah => surah.isCompleted);
+            const result = getMiniExamResult(groupNumber);
+            if (result && result.score >= 70) return 'done';
+            return unlocked ? 'current' : 'locked';
+        }
+
+        function renderMiniExamCard(groupNumber) {
+            const group = getMiniExamGroup(groupNumber);
+            const state = getMiniExamState(groupNumber);
+            if (state === 'hidden') return '';
+            const result = getMiniExamResult(groupNumber);
+            const icon = state === 'done' ? '✓' : state === 'current' ? '★' : '🔒';
+            const disabled = state === 'locked' ? 'disabled aria-disabled="true"' : '';
+            const action = state === 'locked' ? '' : 'onclick="openMiniExam(' + groupNumber + ')"';
+            const label = state === 'done' ? 'تم الاختبار • ' + result.score + '%' : state === 'current' ? 'اختبار مفتوح' : 'أكمل 4 سور';
+            const names = group.map(s => s.nameAr).join('، ');
+            return '<div class="journey-step mini-exam-step">' +
+                '<div class="journey-orb mini-exam-orb ' + state + '" aria-hidden="true">' + icon + '</div>' +
+                '<button type="button" ' + action + ' ' + disabled + ' class="journey-node mini-exam-node ' + state + '">' +
+                    '<div class="min-w-0 flex-grow">' +
+                        '<div class="flex items-center justify-between gap-2 mb-1">' +
+                            '<h3 class="text-lg font-black">اختبار صغير ' + groupNumber + '</h3>' +
+                            '<span class="journey-state">' + label + '</span>' +
+                        '</div>' +
+                        '<p class="journey-meta">مراجعة: ' + names + '</p>' +
+                    '</div>' +
+                '</button>' +
+            '</div>';
+        }
+
+        function buildMiniExamQuestions(group) {
+            const options = group.map(s => s.nameAr);
+            const byAyat = [...group].sort((a, b) => b.ayat - a.ayat)[0];
+            return [
+                { prompt: 'أي سورة رقمها ' + group[0].num + '؟', answer: group[0].nameAr, options },
+                { prompt: 'أي سورة في هذا المستوى عدد آياتها ' + byAyat.ayat + '؟', answer: byAyat.nameAr, options },
+                { prompt: 'ما أول سورة في هذا المستوى؟', answer: group[0].nameAr, options },
+                { prompt: 'ما السورة التي تفتح المستوى التالي؟', answer: group[group.length - 1].nameAr, options }
+            ];
+        }
+
+        function escapeMiniExamText(text) {
+            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function ensureMiniExamModal() {
+            let modal = document.getElementById('mini-exam-modal');
+            if (modal) return modal;
+            modal = document.createElement('div');
+            modal.id = 'mini-exam-modal';
+            modal.className = 'mini-exam-modal';
+            modal.innerHTML = '<div class="mini-exam-card" dir="rtl"><div class="flex items-start justify-between gap-3 mb-4"><div><p class="text-xs font-black text-orange-600">مراجعة قصيرة</p><h3 id="mini-exam-title" class="text-xl font-black text-gray-900"></h3></div><button type="button" onclick="closeMiniExam()" class="w-9 h-9 rounded-full bg-gray-100 text-gray-600 font-black">×</button></div><div id="mini-exam-body"></div></div>';
+            document.body.appendChild(modal);
+            modal.addEventListener('click', event => { if (event.target === modal) closeMiniExam(); });
+            return modal;
+        }
+
+        let activeMiniExam = null;
+
+        function openMiniExam(groupNumber) {
+            const group = getMiniExamGroup(groupNumber);
+            if (group.length < 4 || !group.every(surah => surah.isCompleted)) return;
+            activeMiniExam = { groupNumber, questions: buildMiniExamQuestions(group), index: 0, correct: 0 };
+            ensureMiniExamModal().classList.add('open');
+            renderMiniExamQuestion();
+        }
+
+        function closeMiniExam() {
+            const modal = document.getElementById('mini-exam-modal');
+            if (modal) modal.classList.remove('open');
+        }
+
+        function renderMiniExamQuestion() {
+            const body = document.getElementById('mini-exam-body');
+            if (!activeMiniExam || !body) return;
+            const q = activeMiniExam.questions[activeMiniExam.index];
+            document.getElementById('mini-exam-title').textContent = 'اختبار صغير ' + activeMiniExam.groupNumber;
+            body.innerHTML = '<div class="mb-3 text-sm font-black text-gray-500">سؤال ' + (activeMiniExam.index + 1) + ' / ' + activeMiniExam.questions.length + '</div>' +
+                '<div class="rounded-2xl bg-orange-50 border border-orange-100 p-4 font-black text-gray-900 mb-4">' + escapeMiniExamText(q.prompt) + '</div>' +
+                '<div class="space-y-2">' + q.options.map(option => '<button type="button" class="mini-exam-option" data-answer="' + escapeMiniExamText(option) + '">' + escapeMiniExamText(option) + '</button>').join('') + '</div>';
+            body.querySelectorAll('.mini-exam-option').forEach(button => {
+                button.addEventListener('click', () => answerMiniExam(button, button.dataset.answer));
+            });
+        }
+
+        function answerMiniExam(button, answer) {
+            if (!activeMiniExam) return;
+            const q = activeMiniExam.questions[activeMiniExam.index];
+            const options = Array.from(document.querySelectorAll('.mini-exam-option'));
+            options.forEach(option => {
+                option.disabled = true;
+                if (option.textContent === q.answer) option.classList.add('correct');
+            });
+            if (answer === q.answer) {
+                activeMiniExam.correct++;
+                button.classList.add('correct');
+            } else {
+                button.classList.add('wrong');
+            }
+            setTimeout(() => {
+                activeMiniExam.index++;
+                if (activeMiniExam.index >= activeMiniExam.questions.length) finishMiniExam();
+                else renderMiniExamQuestion();
+            }, 700);
+        }
+
+        function finishMiniExam() {
+            const score = Math.round((activeMiniExam.correct / activeMiniExam.questions.length) * 100);
+            const passed = score >= 70;
+            localStorage.setItem(getMiniExamKey(activeMiniExam.groupNumber), JSON.stringify({ score, passed, date: new Date().toISOString() }));
+            const body = document.getElementById('mini-exam-body');
+            body.innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black ' + (passed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') + '">' + score + '%</div><h4 class="text-xl font-black text-gray-900 mb-2">' + (passed ? 'ممتاز، الاختبار مكتمل' : 'محاولة جيدة، أعد الاختبار') + '</h4><p class="text-sm font-bold text-gray-500 mb-4">نتيجتك: ' + activeMiniExam.correct + ' / ' + activeMiniExam.questions.length + '</p><button type="button" onclick="closeMiniExam(); renderSurahLibrary();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
+        }
+
         function getCurrentSurah() {
             const order = getJourneyOrder();
             return order.find(surah => !surah.isCompleted) || order[order.length - 1] || null;
@@ -314,7 +460,7 @@ body { padding-bottom: 80px; }
                             <span class="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs font-black text-emerald-700">${toArabicNum(completedInJuz)} / ${toArabicNum(allJuzSurahs.length)}</span>
                         </div>
                         <div class="surah-journey">
-                            ${items.map(renderSurahCard).join('')}
+                            ${items.map(surah => { const globalIndex = filtered.findIndex(item => item.id === surah.id); const groupNumber = Math.floor((globalIndex + 1) / 4); return renderSurahCard(surah) + (((globalIndex + 1) % 4 === 0) ? renderMiniExamCard(groupNumber) : ''); }).join('')}
                         </div>
                     </section>
                 `;
@@ -362,6 +508,7 @@ async function chargerDevoirs() {
         async function buildStudentDashboard() {
             const session = Auth.getSession();
             if (!session) return;
+            dashboardState.studentKey = session.username || session.prenom || 'guest';
             
             // 1. Affichage des messages administratifs
             const userMessages = await Auth.getMessages(session.username);
