@@ -85,11 +85,6 @@
         .daily-progress { display: grid; grid-template-columns: auto minmax(120px, 1fr) auto; gap: 10px; align-items: center; margin-top: 12px; color: #64748b; font-size: 11px; font-weight: 900; }
         .daily-progress-track { height: 7px; background: rgba(148,163,184,.18); border-radius: 999px; overflow: hidden; }
         .daily-progress-track > div { height: 100%; background: linear-gradient(90deg, var(--platform-primary), var(--platform-accent)); }
-        .theme-mini { display: inline-flex; align-items: center; gap: 7px; margin-top: 2px; padding: 4px 7px; border-radius: 999px; background: #f8fafc; border: 1px solid #e2e8f0; width: fit-content; opacity: .86; }
-        .theme-mini-label { color: #64748b; font-size: 10px; font-weight: 900; white-space: nowrap; }
-        .theme-mini-options { display: inline-flex; align-items: center; gap: 4px; }
-        .theme-swatch { width: 18px; height: 18px; border-radius: 999px; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(15,23,42,.12); color: transparent; font-size: 0; overflow: hidden; cursor: pointer; }
-        .theme-swatch.active { box-shadow: 0 0 0 2px var(--platform-primary), 0 4px 10px rgba(15,23,42,.14); transform: translateY(-1px); }
         .header-bg { background: linear-gradient(135deg, #1a3c34 0%, #0c4a3b 40%, #14532d 100%); }
 
         @media (max-width: 900px) {
@@ -106,7 +101,6 @@
             .journey-step, .journey-step:nth-child(odd), .journey-step:nth-child(even) { justify-content: stretch; padding-left: 72px; padding-right: 0; }
             .journey-orb { left: 31px; width: 50px; height: 50px; border-width: 5px; }
             .journey-node { width: 100%; border-radius: 20px; }
-            .theme-mini { margin-top: 8px; }
         }
 
         .nav-bottom { 
@@ -178,16 +172,6 @@ body { padding-bottom: 80px; }
                         رحلة الحفظ خطوة بخطوة
                     </h2>
                     <p class="text-xs text-gray-500 font-bold mt-1">ابدأ من سورة الناس، وكل خطوة تفتح لك السورة التالية حتى الفاتحة.</p>
-                </div>
-            </div>
-            <div class="theme-mini" aria-label="اختيار لون لوحة الطالب">
-                <span class="theme-mini-label">لون اللوحة</span>
-                <div class="theme-mini-options" id="dashboard-theme-picker">
-                    <button type="button" class="theme-swatch theme-dot-traditional" data-theme="traditional" title="الأخضر التقليدي">الأخضر التقليدي</button>
-                    <button type="button" class="theme-swatch theme-dot-emerald" data-theme="emerald" title="زمردي">زمردي</button>
-                    <button type="button" class="theme-swatch theme-dot-indigo" data-theme="indigo" title="نيلي">نيلي</button>
-                    <button type="button" class="theme-swatch theme-dot-rose" data-theme="rose" title="وردي">وردي</button>
-                    <button type="button" class="theme-swatch theme-dot-amber" data-theme="amber" title="ذهبي">ذهبي</button>
                 </div>
             </div>
         </section>
@@ -496,24 +480,6 @@ async function chargerDevoirs() {
             }
         }
 
-              function initDashboardThemePicker() {
-        const picker = document.getElementById('dashboard-theme-picker');
-        if (!picker || !window.PlatformTheme) return;
-        const buttons = Array.from(picker.querySelectorAll('[data-theme]'));
-        const refresh = (theme) => {
-          buttons.forEach((button) => {
-            const isActive = button.dataset.theme === theme;
-            button.classList.toggle('active', isActive);
-            button.setAttribute('aria-pressed', String(isActive));
-          });
-        };
-        refresh(window.PlatformTheme.get());
-        buttons.forEach((button) => {
-          button.addEventListener('click', () => {
-            refresh(window.PlatformTheme.set(button.dataset.theme));
-          });
-        });
-      }
         async function buildStudentDashboard() {
             const session = Auth.getSession();
             if (!session) return;
@@ -568,7 +534,6 @@ async function chargerDevoirs() {
             renderSurahLibrary();
         }
 
-        initDashboardThemePicker();
         chargerDevoirs();
         buildStudentDashboard();
     </script>
