@@ -52,6 +52,9 @@
             <button onclick="Auth.logout(); window.location.href='login.html'" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/20 transition text-sm">
                 الخروج
             </button>
+            <a id="quick-carnet-link" href="carnet-suivi.html" class="hidden px-4 py-2 bg-white text-slate-900 font-black rounded-xl transition text-sm">
+                فتح دفتر المتابعة
+            </a>
         </div>
     </header>
 
@@ -230,6 +233,18 @@
             });
         }
 
+        function updateQuickCarnetLink(accounts) {
+            const link = document.getElementById('quick-carnet-link');
+            if (!link) return;
+            const first = accounts && accounts[0];
+            if (!first || !first.username) {
+                link.classList.add('hidden');
+                return;
+            }
+            link.href = 'carnet-suivi.html?student=' + encodeURIComponent(first.username);
+            link.classList.remove('hidden');
+        }
+
         function recitationTone(result) {
             const value = String(result || '');
             if (value.includes('متقن')) return 'bg-emerald-50 text-emerald-700';
@@ -260,6 +275,7 @@
             const session = Auth.getSession();
             const container = document.getElementById('parent-recitation-list');
             const accounts = getParentStudentAccounts(session);
+            updateQuickCarnetLink(accounts);
             if (!accounts.length) {
                 container.innerHTML = '<div class="recitation-card text-center text-slate-500 font-bold md:col-span-2">أضف حساب الطالب على هذا الجهاز ليظهر سجل التسميع.</div>';
                 return;
