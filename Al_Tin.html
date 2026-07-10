@@ -844,32 +844,52 @@ function validateCurrentScreen() {
     </script>
 
 <nav class="nav-bottom">
-  <div class="max-w-4xl mx-auto flex justify-around items-center h-16 px-4">
-    <a href="dashboard.html#surah-focus" class="flex flex-col items-center gap-1 text-emerald-700 hover:text-emerald-900 transition group">
-      <div class="w-10 h-10 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center text-xl transition">📖</div>
-      <span class="text-[11px] font-black">السور</span>
-    </a>
-    <a href="profil.html" class="flex flex-col items-center gap-1 text-blue-700 hover:text-blue-900 transition group">
-      <div class="w-10 h-10 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center text-xl transition">🗂️</div>
-      <span class="text-[11px] font-black">الملف</span>
-    </a>
-    <a href="dashboard.html" class="active flex flex-col items-center gap-1 text-blue-700 hover:text-blue-900 transition group">
-      <div class="w-10 h-10 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center text-xl transition">🏠</div>
-      <span class="text-[11px] font-black">الرئيسية</span>
-    </a>
-    <a href="carnet-suivi.html" class="flex flex-col items-center gap-1 text-amber-700 hover:text-amber-900 transition group">
-      <div class="w-10 h-10 rounded-xl bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center text-xl transition">📘</div>
-      <span class="text-[11px] font-black">دفتر متابعة التعلم</span>
-    </a>
-    <a href="parent.html" class="flex flex-col items-center gap-1 text-violet-700 hover:text-violet-900 transition group">
-      <div class="w-10 h-10 rounded-xl bg-violet-50 group-hover:bg-violet-100 flex items-center justify-center text-xl transition">🌳</div>
-      <span class="text-[11px] font-black">الآباء</span>
-    </a>
-    <button type="button" data-settings-toggle class="flex flex-col items-center gap-1 text-slate-700 hover:text-slate-900 transition group">
-      <div class="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-slate-100 flex items-center justify-center text-xl transition">⚙</div>
-      <span class="text-[11px] font-black">الإعدادات</span>
-    </button>
-  </div>
+    <div class="max-w-4xl mx-auto flex justify-around items-center h-16 px-4">
+        <a href="dashboard.html#surah-focus" onclick="if(window.scrollToJourneyFocus){scrollToJourneyFocus(event)}"
+           class="flex flex-col items-center gap-1 text-emerald-700 hover:text-emerald-900 transition group">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center text-xl transition">
+                📖
+            </div>
+            <span class="text-[11px] font-black">السور</span>
+        </a>
+
+        <a href="profil.html"
+           class="flex flex-col items-center gap-1 text-blue-700 hover:text-blue-900 transition group">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center text-xl transition">
+                🗂️
+            </div>
+            <span class="text-[11px] font-black">الملف</span>
+        </a>
+
+        <a href="dashboard.html"
+           class="flex flex-col items-center gap-1 text-blue-700 hover:text-blue-900 transition group">
+            <div class="w-10 h-10 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center text-xl transition">
+                🚪
+            </div>
+            <span class="text-[11px] font-black">الصفحة الرئيسية</span>
+        </a>
+
+        <a href="parent.html"
+           class="flex flex-col items-center gap-1 text-violet-700 hover:text-violet-900 transition group">
+            <div class="w-10 h-10 rounded-xl bg-violet-50 group-hover:bg-violet-100 flex items-center justify-center text-xl transition">
+                🌳
+            </div>
+            <span class="text-[11px] font-black">الآباء</span>
+        </a>
+
+        <a href="carnet-suivi.html" class="flex flex-col items-center gap-1 text-amber-700 hover:text-amber-900 transition group">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center text-xl transition">📘</div>
+            <span class="text-[11px] font-black">دفتر متابعة التعلم</span>
+        </a>
+
+        <button type="button" data-settings-toggle
+           class="flex flex-col items-center gap-1 text-slate-700 hover:text-slate-900 transition group">
+            <div class="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-slate-100 flex items-center justify-center text-xl transition">
+                ⚙
+            </div>
+            <span class="text-[11px] font-black">الإعدادات</span>
+        </button>
+    </div>
 </nav>
 <div class="mawahib-nav-padding"></div>
 
