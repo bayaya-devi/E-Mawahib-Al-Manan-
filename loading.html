@@ -8,8 +8,8 @@
     <meta http-equiv="Expires" content="0">
     <title>جاري التحميل...</title>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@700;900&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="platform-theme.css?v=20260710-surah-learning-rank">
-    <script src="platform-theme.js?v=20260710-surah-learning-rank"></script>
+        <link rel="stylesheet" href="platform-theme.css">
+    <script src="platform-theme.js"></script>
 <style>
         * { margin:0; padding:0; box-sizing:border-box; }
 
@@ -183,16 +183,10 @@
     </div>
 
     <script>
-        const APP_VERSION = '20260710-surah-learning-rank';
-        function withVersion(url) {
-            const [path, hash = ''] = String(url || 'dashboard.html').split('#');
-            const separator = path.includes('?') ? '&' : '?';
-            return path + separator + 'v=' + APP_VERSION + (hash ? '#' + hash : '');
-        }
         function getRedirectTarget() {
             return sessionStorage.getItem('loading_redirect') || 'dashboard.html';
         }
-        const REDIRECT_TO = withVersion(getRedirectTarget());
+        const REDIRECT_TO = getRedirectTarget();
 
         setTimeout(() => {
             document.body.style.transition = 'opacity 0.5s ease';
