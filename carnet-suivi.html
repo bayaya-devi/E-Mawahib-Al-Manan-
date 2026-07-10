@@ -140,7 +140,11 @@
 
     function groupByDay(notes) {
       const map = new Map();
-      notes.forEach(note => {
+      notes.sort((a, b) => {
+        const da = new Date(a.savedAt || a.createdAt || a.date || 0).getTime() || 0;
+        const db = new Date(b.savedAt || b.createdAt || b.date || 0).getTime() || 0;
+        return db - da;
+      }).forEach(note => {
         const day = noteDate(note);
         if (!map.has(day)) map.set(day, []);
         map.get(day).push(note);

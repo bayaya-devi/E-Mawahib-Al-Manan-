@@ -23,9 +23,6 @@
             box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
             padding-bottom: env(safe-area-inset-bottom);
         }
-        .recitation-card { background: rgba(255,255,255,.92); border: 1px solid #e5e7eb; border-radius: 22px; padding: 16px; box-shadow: 0 14px 34px rgba(15,23,42,.06); }
-        .recitation-chip { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 900; }
-        .recitation-line { border-radius: 16px; background: #f8fafc; border: 1px solid #eef2f7; padding: 10px 12px; }
         body { padding-bottom: 100px; }
     </style>
 </head>
@@ -52,27 +49,10 @@
             <button onclick="Auth.logout(); window.location.href='login.html'" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/20 transition text-sm">
                 الخروج
             </button>
-            <a id="quick-carnet-link" href="carnet-suivi.html" class="hidden px-4 py-2 bg-white text-slate-900 font-black rounded-xl transition text-sm">
-                فتح دفتر المتابعة
-            </a>
         </div>
     </header>
 
     <main class="max-w-4xl mx-auto px-4 py-6">
-        <section id="parent-recitation-section" class="mb-8">
-            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
-                <div>
-                    <p class="text-xs font-black text-slate-400">تسميع الحصص</p>
-                    <h2 class="text-2xl font-black text-slate-900">متابعة التسميع</h2>
-                    <p class="text-sm text-slate-500 font-bold mt-1">ملخص واضح لكل ابن بدون تكديس التفاصيل.</p>
-                </div>
-                <button onclick="loadParentRecitations()" class="px-4 py-2 bg-slate-900 text-white rounded-2xl text-sm font-black">تحديث</button>
-            </div>
-            <div id="parent-recitation-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="recitation-card text-center text-slate-400 font-bold">جاري التحميل...</div>
-            </div>
-        </section>
-
         <div id="feedback-section" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
             <h2 class="text-xl font-black text-gray-800 mb-2">تقييم جودة سير الدراسة</h2>
             <p class="text-gray-500 text-sm mb-6 font-bold">رأيكم يهمنا. يرجى تقييم النقاط التالية من 0 (ضعيف جدا) إلى 10 (ممتاز).</p>
@@ -112,6 +92,9 @@
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-md">
                     إرسال التقييم
                 </button>
+                <a id="feedback-carnet-link" href="carnet-suivi.html" class="hidden block w-full text-center bg-slate-900 hover:bg-slate-800 text-white font-black py-3 rounded-xl transition shadow-md">
+                    فتح دفتر المتابعة
+                </a>
             </form>
             
             <div id="feedback-success" class="hidden text-center py-8">
@@ -233,8 +216,8 @@
             });
         }
 
-        function updateQuickCarnetLink(accounts) {
-            const link = document.getElementById('quick-carnet-link');
+        function updateCarnetButton(accounts) {
+            const link = document.getElementById('feedback-carnet-link');
             if (!link) return;
             const first = accounts && accounts[0];
             if (!first || !first.username) {
@@ -245,76 +228,15 @@
             link.classList.remove('hidden');
         }
 
-        function recitationTone(result) {
-            const value = String(result || '');
-            if (value.includes('متقن')) return 'bg-emerald-50 text-emerald-700';
-            if (value.includes('جيد')) return 'bg-blue-50 text-blue-700';
-            if (value.includes('غائب')) return 'bg-slate-100 text-slate-600';
-            return 'bg-amber-50 text-amber-700';
-        }
-
-        function formatRecitationDate(item) {
-            const raw = item.savedAt || item.createdAt || item.date || '';
-            const parsed = raw ? new Date(raw) : null;
-            if (parsed && !Number.isNaN(parsed.getTime())) return parsed.toLocaleDateString('ar-MA');
-            return raw || '-';
-        }
-
-        function recitationRangeLabel(note) {
-            if (!note) return '';
-            if (note.scope === 'جزء') {
-                const start = note.ayahStart || '';
-                const end = note.ayahEnd || '';
-                if (start && end) return 'من الآية ' + start + ' إلى ' + end;
-                if (start) return 'من الآية ' + start;
-            }
-            return 'السورة كاملة';
-        }
-
-        async function loadParentRecitations() {
+        async function prepareParentCarnetButton() {
             const session = Auth.getSession();
-            const container = document.getElementById('parent-recitation-list');
             const accounts = getParentStudentAccounts(session);
-            updateQuickCarnetLink(accounts);
-            if (!accounts.length) {
-                container.innerHTML = '<div class="recitation-card text-center text-slate-500 font-bold md:col-span-2">أضف حساب الطالب على هذا الجهاز ليظهر سجل التسميع.</div>';
-                return;
-            }
-            const users = await Auth.getAllUsers();
-            const cards = await Promise.all(accounts.map(async account => {
-                const student = users[account.username] || account;
-                const notes = typeof Auth.getTeacherNotes === 'function' ? await Auth.getTeacherNotes(account.username) : [];
-                const recitations = notes.filter(note => note && (note.source === 'recitation' || note.surah || note.validation)).slice(0, 6);
-                const latest = recitations[0];
-                const mastered = recitations.filter(note => /ممتاز|جيد جدا|متقن/.test(String(note.validation || ''))).length;
-                const review = recitations.filter(note => /مراجعة|غير متقن|إعادة|ضعيف/.test(String(note.validation || ''))).length;
-                const absent = recitations.filter(note => String(note.validation || '').includes('غائب')).length;
-                const name = ((student.prenom || account.prenom || '') + ' ' + (student.nom || account.nom || '')).trim() || account.username;
-                const lines = recitations.slice(0, 4).map(note => {
-                    return '<div class="recitation-line">'
-                        + '<div class="flex items-center justify-between gap-2"><strong class="text-slate-900">' + escapeHtml(note.surah || 'تسميع عام') + '</strong><span class="recitation-chip ' + recitationTone(note.validation) + '">' + escapeHtml(note.validation || '-') + '</span></div>'
-                        + '<p class="text-xs text-slate-500 font-black mt-1">' + escapeHtml(recitationRangeLabel(note)) + '</p>'
-                        + '<div class="flex items-center justify-between gap-2 mt-1"><span class="text-xs text-slate-400 font-bold">' + escapeHtml(formatRecitationDate(note)) + '</span>' + (note.comment ? '<span class="text-xs text-slate-600 font-bold truncate">' + escapeHtml(note.comment) + '</span>' : '') + '</div>'
-                        + '</div>';
-                }).join('');
-                return '<article class="recitation-card">'
-                    + '<div class="flex items-start justify-between gap-3 mb-4"><div><h3 class="text-xl font-black text-slate-900">' + escapeHtml(name) + '</h3><p class="text-xs text-slate-400 font-bold">' + escapeHtml(account.username) + '</p></div><span class="recitation-chip ' + recitationTone(latest ? latest.validation : '') + '">' + escapeHtml(latest ? latest.validation : 'لا سجل') + '</span></div>'
-                    + '<div class="grid grid-cols-3 gap-2 mb-4">'
-                    + '<div class="rounded-2xl bg-emerald-50 p-3 text-center"><strong class="block text-lg text-emerald-700">' + mastered + '</strong><span class="text-[11px] font-black text-emerald-700">متقن</span></div>'
-                    + '<div class="rounded-2xl bg-amber-50 p-3 text-center"><strong class="block text-lg text-amber-700">' + review + '</strong><span class="text-[11px] font-black text-amber-700">للمراجعة</span></div>'
-                    + '<div class="rounded-2xl bg-slate-100 p-3 text-center"><strong class="block text-lg text-slate-600">' + absent + '</strong><span class="text-[11px] font-black text-slate-600">غياب</span></div>'
-                    + '</div>'
-                    + (latest ? '<div class="rounded-2xl bg-slate-900 text-white p-4 mb-3"><p class="text-xs text-slate-300 font-black">آخر تسميع</p><strong class="block mt-1">' + escapeHtml(latest.surah || '-') + '</strong><p class="text-sm text-slate-300 font-bold mt-1">' + escapeHtml(recitationRangeLabel(latest)) + '</p>' + (latest.comment ? '<p class="text-sm text-slate-200 mt-1">' + escapeHtml(latest.comment) + '</p>' : '') + '</div>' : '<p class="text-center text-slate-400 font-bold py-5">لم يسجل الأستاذ تسميعا بعد.</p>')
-                    + '<div class="space-y-2">' + lines + '</div>'
-                    + '<a href="carnet-suivi.html?student=' + encodeURIComponent(account.username) + '" class="block w-full text-center mt-4 rounded-2xl bg-slate-900 text-white py-3 font-black">فتح دفتر المتابعة</a>'
-                    + '</article>';
-            }));
-            container.innerHTML = cards.join('');
+            updateCarnetButton(accounts);
         }
 
         window.onload = () => {
             buildParentHeader();
-            loadParentRecitations();
+            prepareParentCarnetButton();
         };
     </script>
 
