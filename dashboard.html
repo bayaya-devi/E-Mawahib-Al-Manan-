@@ -184,7 +184,7 @@ body { padding-bottom: 80px; }
                 <div class="reward-pill" aria-label="ترتيبك في القسم">
                     <div class="reward-kicker">ترتيبك في القسم</div>
                     <div class="reward-value reward-rank-value" id="class-rank-value">...</div>
-                    <div class="reward-note" id="class-rank-note">ترتيب مجهول حسب النجوم.</div>
+                    <div class="reward-note" id="class-rank-note"></div>
                 </div>
             </div>
         </div>
@@ -752,7 +752,7 @@ async function chargerDevoirs() {
                     return;
                 }
                 rankValueEl.textContent = ranking.rank + ' / ' + ranking.total;
-                if (rankNoteEl) rankNoteEl.textContent = 'ترتيب مجهول حسب النجوم.';
+                if (rankNoteEl) rankNoteEl.textContent = '';
             } catch (error) {
                 rankValueEl.textContent = '-';
                 if (rankNoteEl) rankNoteEl.textContent = 'الترتيب غير متاح الآن.';
