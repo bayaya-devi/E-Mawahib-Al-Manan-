@@ -196,7 +196,8 @@
       momentum: ['زخم', 'المسار يتحرك', 'عدة سور متتالية تعني أنك لم تعد تتعامل مع الحفظ كواجب فقط، بل كمسار.', '∞'],
       'deep-focus': ['تركيز عميق', 'مرحلة أعلى', 'أنت الآن تدخل منطقة تحتاج مراجعة أذكى، لا مجهودا أكثر فقط.', '◈'],
       mastery: ['تمكن', 'رصيد واضح', 'عدد السور المنجزة صار له وزن. المرحلة القادمة تحتاج تثبيت ومراجعة.', '20'],
-      elite: ['مستوى متقدم', 'إنجاز كبير', 'هذا مستوى لا يصل إليه الإنسان بالصدفة. الاستمرار صار جزءا من هويتك.', '50']
+      elite: ['مستوى متقدم', 'إنجاز كبير', 'هذا مستوى لا يصل إليه الإنسان بالصدفة. الاستمرار صار جزءا من هويتك.', '50'],
+      'try-again': ['محاولة محفوظة', 'أعدها بثبات', 'لم تُفتح السورة التالية بعد، لكن المحاولة سُجلت.', '↻']
     };
 
     function getPayload() {
@@ -217,7 +218,9 @@
       document.getElementById('victory-points').textContent = '+' + (payload.points || 0);
       document.getElementById('victory-stars').textContent = payload.stars || 0;
       document.getElementById('victory-streak').textContent = payload.streak || 0;
-      document.getElementById('next-link').href = payload.nextUrl || 'dashboard.html';
+      const returnUrl = 'dashboard.html#surah-focus';
+      document.getElementById('next-link').href = returnUrl;
+      setTimeout(() => { window.location.href = returnUrl; }, 3600);
       if (window.confetti) {
         const intensity = Math.min(150, 55 + Number(payload.points || 0) * 10);
         confetti({ particleCount: intensity, spread: 68, origin: { y: 0.28 }, scalar: 0.86 });

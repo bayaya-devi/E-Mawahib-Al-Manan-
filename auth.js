@@ -189,7 +189,21 @@ const Auth = (() => {
             score: row.global_score ?? null,
             updatedAt: row.updated_at || row.completed_at || null
         };
-        _progressAliases(row.surah_id).forEach(alias => { result[alias] = value; });
+        _progressAliases(row.surah_id).forEach(alias => {
+            const existing = result[alias] || {};
+            result[alias] = {
+                ...existing,
+                ...value,
+                activities: { ...(existing.activities || {}), ...(value.activities || {}) },
+                completedAt: existing.completedAt || value.completedAt,
+                completed_at: existing.completed_at || value.completed_at,
+                is_completed: Boolean(existing.is_completed || value.is_completed),
+                globalScore: Math.max(Number(existing.globalScore || 0), Number(value.globalScore || 0)),
+                global_score: Math.max(Number(existing.global_score || 0), Number(value.global_score || 0)),
+                score: Math.max(Number(existing.score || 0), Number(value.score || 0)),
+                updatedAt: existing.updatedAt || value.updatedAt
+            };
+        });
     }
 
     function logError(context, error) {
@@ -350,7 +364,7 @@ const Auth = (() => {
             surahId: normalizedId,
             surahName: meta.nameAr || meta.nameFr || normalizedId,
             surahFile: meta.file || location.pathname.split('/').pop(),
-            nextUrl: _getNextSurahFile(normalizedId),
+            nextUrl: 'dashboard.html#surah-focus',
             points,
             stars: state.stars,
             totalEarned: state.totalEarned,
@@ -376,6 +390,31 @@ const Auth = (() => {
         setTimeout(() => {
             try { window.location.href = 'inactivity.html'; } catch (error) {}
         }, 700);
+    }
+
+    function storeMissionAttempt(surahId, score = 0, passed = false) {
+        const session = getSession();
+        if (!session) return null;
+        const normalizedId = normalizeSurahId(surahId);
+        const meta = _getSurahMeta(normalizedId);
+        const state = _readRewardState(session.username);
+        const payload = {
+            variant: passed ? 'steady' : 'try-again',
+            surahId: normalizedId,
+            surahName: meta.nameAr || meta.nameFr || normalizedId,
+            surahFile: meta.file || location.pathname.split('/').pop(),
+            nextUrl: 'dashboard.html#surah-focus',
+            points: 0,
+            stars: state.stars || 0,
+            totalEarned: state.totalEarned || 0,
+            completedCount: Object.keys(state.completed || {}).length,
+            streak: state.streak || 0,
+            score: Math.max(0, Math.min(100, Number(score || 0))),
+            failed: !passed,
+            earnedAt: new Date().toISOString()
+        };
+        try { sessionStorage.setItem(CELEBRATION_KEY, JSON.stringify(payload)); } catch (error) {}
+        return payload;
     }
 
     function getRewardState(username) {
@@ -778,7 +817,11 @@ const Auth = (() => {
             username: session.username, surah_id: normalizedId, activities,
             completed_at: new Date().toISOString(), global_score: globalScore
         }]);
-        if (!wasCompleted) _maybeOpenCelebration(_awardSurahStars(normalizedId));
+        const payload = wasCompleted
+            ? storeMissionAttempt(normalizedId, globalScore, true)
+            : _awardSurahStars(normalizedId);
+        _maybeOpenCelebration(payload);
+        return payload;
     }
 
     // --- 9. DEVOIRS ---
@@ -818,7 +861,7 @@ const Auth = (() => {
         getAllStudents, getAllUsers, getProfs, deleteStudent, deleteProf, toggleSuspension,
         assignStudentToProf, removeStudentFromProf,
         getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports,
-        getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, getLastCelebration, getLastInactivity, syncRewardsFromSurahs, getClassStarRanking,
+        getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, getLastCelebration, getLastInactivity, syncRewardsFromSurahs, getClassStarRanking, storeMissionAttempt,
         ajouterDevoir, getDevoirs, annulerDevoir, marquerDevoirTermine,
         getSupabaseClient
     };

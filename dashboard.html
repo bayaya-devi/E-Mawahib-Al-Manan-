@@ -100,42 +100,6 @@
         .reward-stars-value { color: #d97706; text-shadow: 0 2px 12px rgba(250, 204, 21, .45); animation: starPulse 2.4s ease-in-out infinite; }
         .reward-rank-value { color: var(--platform-primary-dark); }
         .reward-note { margin-top: 5px; font-size: 10px; color: #64748b; font-weight: 800; line-height: 1.25; }
-        .mini-game-node { background: linear-gradient(135deg, #ecfeff, #ffffff); border: 1px solid rgba(6,182,212,.24); }
-        .mini-game-node.done { background: linear-gradient(135deg, #06b6d4, #0f766e); color: #fff; }
-        .mini-game-node.locked { background: #f1f5f9; color: #94a3b8; border-color: rgba(148,163,184,.22); }
-        .mini-game-orb { background: linear-gradient(135deg, #06b6d4, #8b5cf6); color: #fff; }
-        .mini-game-orb.done { background: linear-gradient(135deg, #10b981, #047857); }
-        .mini-game-orb.locked { background: #e2e8f0; color: #94a3b8; }
-        .mini-game-track { height: 82px; border-radius: 22px; background: repeating-linear-gradient(90deg,#e2e8f0 0 24px,#f8fafc 24px 48px); border: 1px solid #e2e8f0; position: relative; overflow: hidden; margin-bottom: 14px; }
-        .mini-game-car { position: absolute; bottom: 14px; right: 8px; width: 54px; height: 30px; border-radius: 14px 18px 10px 10px; background: linear-gradient(135deg,#ef4444,#f97316); box-shadow: 0 10px 18px rgba(15,23,42,.18); transition: right .35s ease; }
-        .mini-game-car::before { content: ''; position: absolute; inset: -11px 13px auto 12px; height: 18px; border-radius: 14px 14px 4px 4px; background: #bfdbfe; }
-        .mini-game-car::after { content: ''; position: absolute; left: 8px; right: 8px; bottom: -5px; height: 10px; background: radial-gradient(circle,#111827 45%,transparent 47%) left/18px 10px no-repeat, radial-gradient(circle,#111827 45%,transparent 47%) right/18px 10px no-repeat; }
-        .mini-game-mission { margin-bottom: 12px; border-radius: 16px; background: #ecfeff; border: 1px solid #a5f3fc; color: #155e75; padding: 10px 12px; text-align: center; font-weight: 900; }
-        .mini-game-lanes, .mini-game-order, .mini-game-garden, .mini-game-shields { display: grid; gap: 9px; }
-        .mini-game-tile, .mini-game-pad, .mini-game-plant, .mini-game-shield {
-            border: 1px solid #cbd5e1; border-radius: 16px; background: #fff; color: #0f172a; padding: 11px;
-            font-weight: 900; line-height: 1.8; min-height: 58px; box-shadow: 0 8px 18px rgba(15,23,42,.07);
-        }
-        .mini-game-tile:hover, .mini-game-pad:hover, .mini-game-plant:hover, .mini-game-shield:hover { border-color: #06b6d4; transform: translateY(-1px); }
-        .mini-game-chests { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-        .mini-game-chest { min-height: 100px; border: 0; border-radius: 18px; background: linear-gradient(135deg,#92400e,#f59e0b); color: #fff; font-weight: 900; padding: 12px; box-shadow: 0 12px 24px rgba(146,64,14,.22); }
-        .mini-game-chest span { display: none; margin-top: 8px; font-size: 12px; line-height: 1.7; }
-        .mini-game-chest.open span { display: block; }
-        .mini-game-bin { margin-top: 10px; min-height: 46px; display: grid; place-items: center; border: 1px dashed #06b6d4; border-radius: 16px; color: #0e7490; font-weight: 900; background: #ecfeff; }
-        .mini-game-bridge { display: flex; gap: 8px; align-items: stretch; overflow-x: auto; padding-bottom: 4px; }
-        .mini-game-pad { min-width: 170px; background: linear-gradient(135deg,#f8fafc,#e0f2fe); }
-        .mini-game-sky { height: 260px; position: relative; overflow: hidden; border-radius: 22px; background: linear-gradient(180deg,#0f172a,#155e75); }
-        .mini-game-meteor { position: absolute; width: 42%; min-height: 54px; border: 0; border-radius: 999px; padding: 8px 10px; background: linear-gradient(135deg,#f97316,#fde047); color: #111827; font-weight: 900; font-size: 11px; animation: meteorFall 4.8s linear infinite; }
-        .mini-game-meteor.m0 { right: 4%; animation-delay: 0s; } .mini-game-meteor.m1 { right: 52%; animation-delay: .7s; } .mini-game-meteor.m2 { right: 22%; animation-delay: 1.4s; } .mini-game-meteor.m3 { right: 62%; animation-delay: 2.1s; }
-        .mini-game-plant { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 9px; background: linear-gradient(135deg,#f0fdf4,#fff); }
-        .mini-game-compass { width: min(100%, 360px); aspect-ratio: 1; margin: 0 auto; border-radius: 999px; background: radial-gradient(circle,#fff 0 34%,#dbeafe 35% 50%,#0f766e 51%); position: relative; display: grid; place-items: center; }
-        .mini-game-compass button { position: static; width: 70%; border: 1px solid #bae6fd; border-radius: 999px; background: rgba(255,255,255,.92); padding: 8px; margin: 4px; font-size: 11px; font-weight: 900; }
-        .mini-game-balloons { min-height: 270px; position: relative; overflow: hidden; border-radius: 22px; background: linear-gradient(180deg,#eff6ff,#fff7ed); }
-        .mini-game-balloon { position: absolute; width: 42%; min-height: 76px; border: 0; border-radius: 50% 50% 46% 46%; background: linear-gradient(135deg,#fb7185,#f472b6); color: #fff; padding: 11px; font-weight: 900; font-size: 11px; animation: balloonFloat 3.6s ease-in-out infinite; }
-        .mini-game-balloon.b0 { right: 4%; top: 20px; } .mini-game-balloon.b1 { right: 52%; top: 70px; animation-delay: .4s; } .mini-game-balloon.b2 { right: 16%; top: 150px; animation-delay: .8s; } .mini-game-balloon.b3 { right: 56%; top: 178px; animation-delay: 1.2s; }
-        .mini-game-shield { background: linear-gradient(135deg,#eff6ff,#ffffff); border-radius: 28px 28px 18px 18px; }
-        @keyframes meteorFall { from { transform: translateY(-90px) rotate(-8deg); opacity: .92; } to { transform: translateY(310px) rotate(8deg); opacity: .96; } }
-        @keyframes balloonFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-13px); } }
         @keyframes starPulse { 0%,100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.08); filter: brightness(1.18); } }
         .header-bg { background: linear-gradient(135deg, #1a3c34 0%, #0c4a3b 40%, #14532d 100%); }
 
@@ -348,77 +312,6 @@ body { padding-bottom: 80px; }
             return 'mawahib_mini_exam_' + student + '_' + groupNumber;
         }
 
-        const miniGameTypes = [
-            { type: 'race', icon: '🏎️', title: 'سباق الآية التالية', hint: 'تتقدم السيارة عندما تعرف ترتيب الآيات.' },
-            { type: 'treasure', icon: '💎', title: 'كنز السورة', hint: 'افتح الكنز بربط الآية بسورتها.' },
-            { type: 'lantern', icon: '🪔', title: 'مصابيح الترتيب', hint: 'أضئ المصابيح بترتيب الآيات الصحيح.' },
-            { type: 'bridge', icon: '🌉', title: 'جسر الحفظ', hint: 'اعبر الجسر باختيار الآية التالية.' },
-            { type: 'meteor', icon: '☄️', title: 'شهب الكلمات', hint: 'التقط الكلمة الناقصة قبل أن تفلت.' },
-            { type: 'garden', icon: '🌿', title: 'حديقة المعاني', hint: 'ازرع الحديقة بإكمال كلمات الآيات.' },
-            { type: 'tower', icon: '🧱', title: 'برج الترتيل', hint: 'ابن البرج بترتيب الآيات كما نزلت.' },
-            { type: 'compass', icon: '🧭', title: 'بوصلة السورة', hint: 'اتجه إلى السورة التي تنتمي إليها الآية.' },
-            { type: 'balloon', icon: '🎈', title: 'بالون المتابعة', hint: 'ارفع البالون عندما تعرف الآية التالية.' },
-            { type: 'shield', icon: '🛡️', title: 'درع المراجعة', hint: 'احم حفظك بكلمات الآيات الصحيحة.' }
-        ];
-
-        const miniGameThemes = ['التركيز', 'السرعة', 'الهدوء', 'التثبيت', 'التحدي'];
-        const miniGameCatalog = Array.from({ length: 50 }, (_, index) => {
-            const base = miniGameTypes[index % miniGameTypes.length];
-            return { ...base, id: index + 1, title: base.title + ' ' + miniGameThemes[Math.floor(index / miniGameTypes.length)] };
-        });
-
-        function getMiniGameConfig(gameNumber) {
-            return miniGameCatalog[(gameNumber - 1) % miniGameCatalog.length];
-        }
-
-        function getMiniGameKey(gameNumber) {
-            const student = dashboardState.studentKey || 'guest';
-            return 'mawahib_mini_game_' + student + '_' + gameNumber;
-        }
-
-        function getMiniGameResult(gameNumber) {
-            try { return JSON.parse(localStorage.getItem(getMiniGameKey(gameNumber)) || 'null'); }
-            catch (error) { return null; }
-        }
-
-        function getMiniGameGroup(gameNumber) {
-            const order = getJourneyOrder();
-            const start = Math.max(0, gameNumber * 3 - 3);
-            return order.slice(start, start + 3);
-        }
-
-        function getMiniGameState(gameNumber) {
-            const group = getMiniGameGroup(gameNumber);
-            if (group.length < 2) return 'hidden';
-            const result = getMiniGameResult(gameNumber);
-            if (result && result.score >= 70) return 'done';
-            return 'current';
-        }
-
-        function renderMiniGameCard(gameNumber) {
-            const group = getMiniGameGroup(gameNumber);
-            const state = getMiniGameState(gameNumber);
-            if (state === 'hidden') return '';
-            const config = getMiniGameConfig(gameNumber);
-            const result = getMiniGameResult(gameNumber);
-            const disabled = '';
-            const action = 'onclick="openMiniGame(' + gameNumber + ')"';
-            const label = state === 'done' ? 'تم اللعب • ' + result.score + '%' : 'تدريب مفتوح';
-            const names = group.map(s => s.nameAr).join('، ');
-            return '<div class="journey-step mini-game-step">' +
-                '<div class="journey-orb mini-game-orb ' + state + '" aria-hidden="true">' + config.icon + '</div>' +
-                '<button type="button" ' + action + ' ' + disabled + ' class="journey-node mini-game-node ' + state + '">' +
-                    '<div class="min-w-0 flex-grow">' +
-                        '<div class="flex items-center justify-between gap-2 mb-1">' +
-                            '<h3 class="text-lg font-black">' + config.title + '</h3>' +
-                            '<span class="journey-state">' + label + '</span>' +
-                        '</div>' +
-                        '<p class="journey-meta">' + config.hint + ' • ' + names + '</p>' +
-                    '</div>' +
-                '</button>' +
-            '</div>';
-        }
-
         function getMiniExamResult(groupNumber) {
             try { return JSON.parse(localStorage.getItem(getMiniExamKey(groupNumber)) || 'null'); }
             catch (error) { return null; }
@@ -483,7 +376,7 @@ body { padding-bottom: 80px; }
             return clean.length > limit ? clean.slice(0, limit) + '…' : clean;
         }
 
-        function shuffleMiniGame(items) {
+        function shuffleItems(items) {
             return [...items].sort(() => Math.random() - 0.5);
         }
 
@@ -522,10 +415,10 @@ body { padding-bottom: 80px; }
 
         function optionTexts(correct, pool, mapper, count = 4) {
             const correctText = mapper(correct);
-            const distractors = shuffleMiniGame(pool)
+            const distractors = shuffleItems(pool)
                 .map(mapper)
                 .filter(text => text && text !== correctText);
-            return shuffleMiniGame([correctText, ...Array.from(new Set(distractors)).slice(0, count - 1)]);
+            return shuffleItems([correctText, ...Array.from(new Set(distractors)).slice(0, count - 1)]);
         }
 
         function findNextVerse(entry, bank) {
@@ -542,7 +435,7 @@ body { padding-bottom: 80px; }
                 prompt: 'أكمل الكلمة الناقصة في الآية:',
                 source: prompt,
                 answer,
-                options: shuffleMiniGame([answer, ...Array.from(new Set(shuffleMiniGame(poolWords))).slice(0, 3)])
+                options: shuffleItems([answer, ...Array.from(new Set(shuffleItems(poolWords))).slice(0, 3)])
             };
         }
 
@@ -564,7 +457,7 @@ body { padding-bottom: 80px; }
                 prompt: 'إلى أي سورة تنتمي هذه الآية؟',
                 source: shortVerseText(entry.text, 150),
                 answer: entry.surah.nameAr,
-                options: shuffleMiniGame([entry.surah.nameAr, ...group.filter(surah => surah.id !== entry.surah.id).map(surah => surah.nameAr)]).slice(0, 4)
+                options: shuffleItems([entry.surah.nameAr, ...group.filter(surah => surah.id !== entry.surah.id).map(surah => surah.nameAr)]).slice(0, 4)
             };
         }
 
@@ -586,7 +479,7 @@ body { padding-bottom: 80px; }
         async function buildMiniExamQuestions(group) {
             const bank = await loadVerseBank(group);
             const withNext = bank.filter(entry => findNextVerse(entry, bank));
-            const samples = shuffleMiniGame(bank).slice(0, 6);
+            const samples = shuffleItems(bank).slice(0, 6);
             return [
                 buildNextVerseQuestion(withNext[0] || samples[0], bank),
                 buildMissingWordQuestion(samples[1] || samples[0], bank),
@@ -608,9 +501,7 @@ body { padding-bottom: 80px; }
             modal.addEventListener('click', event => { if (event.target === modal) closeMiniExam(); });
             return modal;
         }
-
         let activeMiniExam = null;
-        let activeMiniGame = null;
 
         async function openMiniExam(groupNumber) {
             const group = getMiniExamGroup(groupNumber);
@@ -669,223 +560,6 @@ body { padding-bottom: 80px; }
             localStorage.setItem(getMiniExamKey(activeMiniExam.groupNumber), JSON.stringify({ score, passed, date: new Date().toISOString() }));
             const body = document.getElementById('mini-exam-body');
             body.innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black ' + (passed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') + '">' + score + '%</div><h4 class="text-xl font-black text-gray-900 mb-2">' + (passed ? 'ممتاز، الاختبار مكتمل' : 'محاولة جيدة، أعد الاختبار') + '</h4><p class="text-sm font-bold text-gray-500 mb-4">نتيجتك: ' + activeMiniExam.correct + ' / ' + activeMiniExam.questions.length + '</p><button type="button" onclick="closeMiniExam(); renderSurahLibrary();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
-        }
-
-        function verseSnippet(verse) {
-            const text = String(verse?.label || verse?.text || '');
-            return escapeMiniExamText(text.length > 86 ? text.slice(0, 86) + '…' : text);
-        }
-
-        async function loadMiniGameVerses(group) {
-            const playable = group.filter(item => item.isCompleted);
-            return loadVerseBank(playable.length ? playable : group);
-        }
-
-        function makeGameOption(key, label, meta = {}) {
-            return { key: String(key), label: shortVerseText(label, 95), ...meta };
-        }
-
-        function buildChooseNextStage(entry, bank, label) {
-            const next = findNextVerse(entry, bank);
-            const answer = next || entry;
-            const answerKey = answer.key;
-            const distractors = shuffleMiniGame(bank)
-                .filter(item => item.key !== answerKey)
-                .slice(0, 3)
-                .map(item => makeGameOption(item.key, item.text));
-            return {
-                mode: 'choice',
-                mission: label || 'اختر الآية التي تأتي بعدها مباشرة',
-                source: entry.text,
-                answerKey,
-                options: shuffleMiniGame([makeGameOption(answerKey, answer.text), ...distractors])
-            };
-        }
-
-        function buildMissingWordStage(entry, bank) {
-            const words = splitVerseWords(entry.text);
-            const answer = words[Math.min(words.length - 1, Math.max(0, Math.floor(words.length / 2)))] || words[0] || entry.surah.nameAr;
-            const poolWords = bank.flatMap(item => splitVerseWords(item.text)).filter(word => word !== answer);
-            return {
-                mode: 'choice',
-                mission: 'اختر الكلمة الناقصة من الآية',
-                source: entry.text.replace(answer, '______'),
-                answerKey: answer,
-                options: shuffleMiniGame([answer, ...Array.from(new Set(shuffleMiniGame(poolWords))).slice(0, 3)]).map(word => makeGameOption(word, word))
-            };
-        }
-
-        function buildSurahMatchStage(entry, group) {
-            return {
-                mode: 'choice',
-                mission: 'اربط الآية بسورتها الصحيحة',
-                source: entry.text,
-                answerKey: entry.surah.id,
-                options: shuffleMiniGame([entry.surah, ...group.filter(surah => surah.id !== entry.surah.id)]).slice(0, 4).map(surah => makeGameOption(surah.id, surah.nameAr))
-            };
-        }
-
-        function buildOrderStage(bank) {
-            const bySurah = Object.values(bank.reduce((acc, entry) => {
-                acc[entry.surah.id] = acc[entry.surah.id] || [];
-                acc[entry.surah.id].push(entry);
-                return acc;
-            }, {})).map(items => items.sort((a, b) => a.num - b.num)).filter(items => items.length >= 3);
-            const sample = shuffleMiniGame(bySurah)[0] || bank.slice(0, 3);
-            const ordered = sample.slice(0, Math.min(4, sample.length)).sort((a, b) => a.num - b.num);
-            return {
-                mode: 'order',
-                mission: 'رتب هذه الآيات كما جاءت في السورة',
-                source: ordered[0]?.surah?.nameAr || '',
-                orderedKeys: ordered.map(item => item.key),
-                options: shuffleMiniGame(ordered).map(item => makeGameOption(item.key, item.text, { order: item.num }))
-            };
-        }
-
-        function buildMiniGameStages(group, bank, type) {
-            const entries = shuffleMiniGame(bank);
-            if (!entries.length) return [];
-            const withNext = entries.filter(entry => findNextVerse(entry, bank));
-            const stages = [];
-            const builders = {
-                race: entry => buildChooseNextStage(entry, bank, 'السيارة تتحرك عندما تختار الآية التالية'),
-                treasure: entry => buildSurahMatchStage(entry, group),
-                lantern: () => buildOrderStage(bank),
-                bridge: entry => buildChooseNextStage(entry, bank, 'اعبر الجسر بالآية التالية الصحيحة'),
-                meteor: entry => buildMissingWordStage(entry, bank),
-                garden: entry => buildMissingWordStage(entry, bank),
-                tower: () => buildOrderStage(bank),
-                compass: entry => buildSurahMatchStage(entry, group),
-                balloon: entry => buildChooseNextStage(entry, bank, 'ارفع البالون بالآية التي تأتي بعدها'),
-                shield: entry => buildMissingWordStage(entry, bank)
-            };
-            for (let i = 0; i < 4; i++) {
-                const source = withNext[i % Math.max(1, withNext.length)] || entries[i % Math.max(1, entries.length)];
-                const stage = (builders[type] || builders.race)(source);
-                if (stage && stage.options && stage.options.length >= 2) stages.push(stage);
-            }
-            return stages.length ? stages : [buildMissingWordStage(entries[0], bank)];
-        }
-
-        function ensureMiniGameModal() {
-            let modal = document.getElementById('mini-game-modal');
-            if (modal) return modal;
-            modal = document.createElement('div');
-            modal.id = 'mini-game-modal';
-            modal.className = 'mini-exam-modal';
-            modal.innerHTML = '<div class="mini-exam-card" dir="rtl"><div class="flex items-start justify-between gap-3 mb-4"><div><p id="mini-game-kicker" class="text-xs font-black text-cyan-600"></p><h3 id="mini-game-title" class="text-xl font-black text-gray-900"></h3></div><button type="button" onclick="closeMiniGame()" class="w-9 h-9 rounded-full bg-gray-100 text-gray-600 font-black">×</button></div><div id="mini-game-body"></div></div>';
-            document.body.appendChild(modal);
-            modal.addEventListener('click', event => { if (event.target === modal) closeMiniGame(); });
-            return modal;
-        }
-
-        async function openMiniGame(gameNumber) {
-            const group = getMiniGameGroup(gameNumber);
-            if (group.length < 2) return;
-            const config = getMiniGameConfig(gameNumber);
-            ensureMiniGameModal().classList.add('open');
-            document.getElementById('mini-game-kicker').textContent = config.hint;
-            document.getElementById('mini-game-title').textContent = config.icon + ' ' + config.title;
-            document.getElementById('mini-game-body').innerHTML = '<div class="py-8 text-center font-black text-gray-500">جاري تجهيز لعبة الآيات...</div>';
-            try {
-                const bank = await loadMiniGameVerses(group);
-                const stages = buildMiniGameStages(group, bank, config.type);
-                if (!stages.length) throw new Error('No mini-game stages available');
-                activeMiniGame = {
-                    gameNumber,
-                    config,
-                    stages,
-                    index: 0,
-                    correct: 0,
-                    selectedOrder: []
-                };
-                renderMiniGameScene();
-            } catch (error) {
-                document.getElementById('mini-game-body').innerHTML = '<div class="py-8 text-center font-black text-amber-600">تعذر تجهيز اللعبة الآن. افتح سورة ثم جرّب مرة أخرى.</div>';
-            }
-        }
-
-        function closeMiniGame() {
-            const modal = document.getElementById('mini-game-modal');
-            if (modal) modal.classList.remove('open');
-        }
-
-        function renderMiniGameScene() {
-            const body = document.getElementById('mini-game-body');
-            if (!activeMiniGame || !body) return;
-            const stage = activeMiniGame.stages[activeMiniGame.index];
-            const progress = Math.round((activeMiniGame.correct / activeMiniGame.stages.length) * 100);
-            document.getElementById('mini-game-kicker').textContent = activeMiniGame.config.hint;
-            document.getElementById('mini-game-title').textContent = activeMiniGame.config.icon + ' ' + activeMiniGame.config.title;
-            activeMiniGame.selectedOrder = [];
-            body.innerHTML = renderMiniGameByType(activeMiniGame.config.type, stage, progress);
-        }
-
-        function renderMiniGameByType(type, stage, progress) {
-            const label = stage.mission + (stage.source ? '<div class="quran-font mt-2 text-base leading-loose text-slate-700">' + escapeMiniExamText(shortVerseText(stage.source, 150)) + '</div>' : '');
-            const optionButtons = className => stage.options.map(option => '<button class="' + className + '" onclick="answerMiniGame(' + jsString(option.key) + ')">' + verseSnippet(option) + '</button>').join('');
-            if (type === 'race') {
-                return '<div class="mini-game-track"><div class="mini-game-car" style="right:' + Math.min(220, 8 + progress * 2.2) + 'px"></div></div><div class="mini-game-mission">' + label + '</div><div class="mini-game-lanes">' + optionButtons('mini-game-tile lane') + '</div>';
-            }
-            if (type === 'treasure') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-chests">' + stage.options.map((option, i) => '<button class="mini-game-chest" onclick="this.classList.add(&quot;open&quot;); answerMiniGame(' + jsString(option.key) + ')">صندوق ' + (i + 1) + '<span>' + verseSnippet(option) + '</span></button>').join('') + '</div>';
-            }
-            if (type === 'lantern' || type === 'tower') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-order">' + stage.options.map(option => '<button class="mini-game-tile" onclick="selectMiniGameOrder(' + jsString(option.key) + ')">' + verseSnippet(option) + '</button>').join('') + '</div><div id="mini-game-order-bin" class="mini-game-bin">اختر الترتيب هنا</div>';
-            }
-            if (type === 'bridge') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-bridge">' + optionButtons('mini-game-pad') + '</div>';
-            }
-            if (type === 'meteor') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-sky">' + stage.options.map((option, i) => '<button class="mini-game-meteor m' + i + '" onclick="answerMiniGame(' + jsString(option.key) + ')">' + verseSnippet(option) + '</button>').join('') + '</div>';
-            }
-            if (type === 'garden') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-garden">' + stage.options.map(option => '<button class="mini-game-plant" onclick="answerMiniGame(' + jsString(option.key) + ')">🌱<span>' + verseSnippet(option) + '</span></button>').join('') + '</div>';
-            }
-            if (type === 'compass') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-compass">' + stage.options.map(option => '<button onclick="answerMiniGame(' + jsString(option.key) + ')">' + verseSnippet(option) + '</button>').join('') + '</div>';
-            }
-            if (type === 'balloon') {
-                return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-balloons">' + stage.options.map((option, i) => '<button class="mini-game-balloon b' + i + '" onclick="answerMiniGame(' + jsString(option.key) + ')">' + verseSnippet(option) + '</button>').join('') + '</div>';
-            }
-            return '<div class="mini-game-mission">' + label + '</div><div class="mini-game-shields">' + optionButtons('mini-game-shield') + '</div>';
-        }
-
-        function selectMiniGameOrder(key) {
-            if (!activeMiniGame) return;
-            if (!activeMiniGame.selectedOrder.includes(key)) activeMiniGame.selectedOrder.push(key);
-            const bin = document.getElementById('mini-game-order-bin');
-            if (bin) bin.textContent = activeMiniGame.selectedOrder.join(' ← ');
-            const ordered = activeMiniGame.stages[activeMiniGame.index].orderedKeys || [];
-            if (activeMiniGame.selectedOrder.length === ordered.length) {
-                const ok = activeMiniGame.selectedOrder.every((selectedKey, index) => selectedKey === ordered[index]);
-                activeMiniGame.selectedOrder = [];
-                completeMiniGameMove(ok);
-            }
-        }
-
-        function answerMiniGame(key) {
-            if (!activeMiniGame) return;
-            const stage = activeMiniGame.stages[activeMiniGame.index];
-            completeMiniGameMove(String(key) === String(stage.answerKey));
-        }
-
-        function completeMiniGameMove(ok) {
-            document.querySelectorAll('#mini-game-body button').forEach(button => button.disabled = true);
-            if (ok) activeMiniGame.correct++;
-            setTimeout(() => {
-                activeMiniGame.index++;
-                if (activeMiniGame.index >= activeMiniGame.stages.length) finishMiniGame();
-                else renderMiniGameScene();
-            }, 760);
-        }
-
-        function finishMiniGame() {
-            const score = Math.round((activeMiniGame.correct / activeMiniGame.stages.length) * 100);
-            const passed = score >= 70;
-            localStorage.setItem(getMiniGameKey(activeMiniGame.gameNumber), JSON.stringify({ score, passed, date: new Date().toISOString() }));
-            const body = document.getElementById('mini-game-body');
-            body.innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black ' + (passed ? 'bg-cyan-100 text-cyan-700' : 'bg-amber-100 text-amber-700') + '">' + score + '%</div><h4 class="text-xl font-black text-gray-900 mb-2">' + (passed ? 'رائع، اللعبة مكتملة' : 'محاولة جيدة، أعد اللعبة') + '</h4><p class="text-sm font-bold text-gray-500 mb-4">اللعبة: ' + activeMiniGame.config.title + '</p><button type="button" onclick="closeMiniGame(); renderSurahLibrary();" class="px-5 py-2 rounded-full bg-cyan-600 text-white font-black">العودة للمسار</button></div>';
         }
 
         function getCurrentSurah() {
@@ -966,10 +640,8 @@ body { padding-bottom: 80px; }
                             ${visibleItems.map(surah => {
                                 const globalIndex = filtered.findIndex(item => item.id === surah.id);
                                 const groupNumber = Math.floor((globalIndex + 1) / 4);
-                                const gameNumber = Math.floor((globalIndex + 1) / 3);
-                                const miniGame = isActiveSection && ((globalIndex + 1) % 3 === 0) ? renderMiniGameCard(gameNumber) : '';
                                 const miniExam = sectionState !== 'is-muted' && ((globalIndex + 1) % 4 === 0) ? renderMiniExamCard(groupNumber) : '';
-                                return renderSurahCard(surah) + miniGame + miniExam;
+                                return renderSurahCard(surah) + miniExam;
                             }).join('')}
                         </div>
                         ${mutedMessage}

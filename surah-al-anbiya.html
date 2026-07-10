@@ -1061,7 +1061,6 @@ function answerSpeed(num) {
 async function finishMission() {
   const score = Math.max(0, Math.min(100, xp));
   await Auth.recordActivity(SURAH_ID, 'teen-mission-part-' + currentPart, score);
-  if (score >= 70 && currentPart === partCount - 1) await Auth.completeSurah(SURAH_ID);
   if (typeof confetti === 'function') confetti({ particleCount: score >= 70 ? 120 : 45, spread: 70, origin: { y: .65 } });
   if (score >= 70 && currentPart < partCount - 1) {
     currentPart++;
@@ -1070,7 +1069,13 @@ async function finishMission() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return;
   }
-  if (score < 70) alert('تم حفظ المحاولة. أعد المهمة لتحسين النتيجة.');
+  if (score >= 70 && currentPart === partCount - 1) {
+    await Auth.completeSurah(SURAH_ID);
+    window.location.href = 'celebration.html';
+    return;
+  }
+  if (typeof Auth.storeMissionAttempt === 'function') Auth.storeMissionAttempt(SURAH_ID, score, false);
+  window.location.href = 'celebration.html';
 }
 
 function goToPhase(phase) {
