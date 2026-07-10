@@ -24,6 +24,8 @@
         .student-card { background: #fff; border: 1px solid var(--platform-border); border-radius: 18px; padding: 15px; box-shadow: 0 12px 28px rgba(15,23,42,.06); }
         .progress-track { height: 9px; border-radius: 999px; overflow: hidden; background: color-mix(in srgb, var(--platform-primary-soft) 45%, #e5e7eb); }
         .progress-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--platform-primary), var(--platform-accent)); }
+        .mini-badge { display:inline-flex; align-items:center; border-radius:999px; padding:4px 9px; font-size:11px; font-weight:900; }
+        .field-soft { width:100%; border-radius:14px; border:1px solid var(--platform-border); background:#fff; padding:9px 10px; font-size:12px; font-weight:800; }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.52); z-index: 50; align-items: center; justify-content: center; padding: 16px; }
         .modal-overlay.open { display: flex; }
         .quick-action { border-radius: 16px; border: 1px solid var(--platform-border); background: linear-gradient(135deg, #fff, color-mix(in srgb, var(--platform-primary-soft) 28%, #fff)); padding: 12px; font-weight: 900; color: var(--platform-primary-dark); text-align: right; }
@@ -83,6 +85,15 @@
             <div class="panel xl:col-span-3">
                 <p class="text-xs font-black text-gray-400 mb-3">آخر الإنجازات</p>
                 <div id="recent-progress" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
+            </div>
+            <div class="panel xl:col-span-2">
+                <p class="text-xs font-black text-gray-400 mb-3">أولوية التسميع</p>
+                <h2 class="text-lg font-black text-gray-900 mb-3">طلاب يُستحسن الاستماع لهم اليوم</h2>
+                <div id="listen-queue" class="space-y-2"></div>
+            </div>
+            <div class="panel">
+                <p class="text-xs font-black text-gray-400 mb-3">إحصائيات القسم</p>
+                <div id="prof-learning-stats" class="space-y-2"></div>
             </div>
         </section>
 
@@ -170,6 +181,10 @@
             </div>
             <textarea id="admin-report-text" rows="7" class="w-full rounded-2xl p-3 text-sm" placeholder="اكتب signalement واضح: ماذا حدث؟ مع من؟ ماذا تقترح؟"></textarea>
             <button onclick="sendAdminReport()" class="btn-primary w-full mt-3 py-3 rounded-2xl font-black">إرسال إلى الإدارة</button>
+            <div class="mt-5">
+                <p class="text-xs font-black text-gray-400 mb-2">Signalements envoyés</p>
+                <div id="prof-reports-history" class="space-y-2"></div>
+            </div>
         </section>
     </main>
 </div>
@@ -191,6 +206,23 @@
                 <datalist id="surah-list"></datalist>
             </div>
             <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-black text-gray-600 mb-1">نوع الواجب</label>
+                    <select id="devoir-type" class="w-full px-3 py-2.5 rounded-xl border bg-gray-50 text-sm">
+                        <option value="تعلم">تعلم</option>
+                        <option value="مراجعة">مراجعة</option>
+                        <option value="تسميع">تسميع</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-black text-gray-600 mb-1">الأولوية</label>
+                    <select id="devoir-priority" class="w-full px-3 py-2.5 rounded-xl border bg-gray-50 text-sm">
+                        <option value="عادي">عادي</option>
+                        <option value="مهم">مهم</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
                 <div><label class="block text-sm font-black text-gray-600 mb-1">من الآية</label><input type="number" id="devoir-debut" min="1" class="w-full px-3 py-2.5 rounded-xl border bg-gray-50 text-sm"></div>
                 <div><label class="block text-sm font-black text-gray-600 mb-1">إلى الآية</label><input type="number" id="devoir-fin" min="1" class="w-full px-3 py-2.5 rounded-xl border bg-gray-50 text-sm"></div>
             </div>
@@ -203,11 +235,54 @@
     </div>
 </div>
 
+<div id="modal-carnet" class="modal-overlay" onclick="handleCarnetClick(event)">
+    <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <div>
+                <h2 class="text-base font-black text-gray-900">Carnet de suivi</h2>
+                <p class="text-xs text-gray-500 mt-1" id="carnet-student-name"></p>
+            </div>
+            <button onclick="fermerCarnet()" class="text-gray-400 hover:text-gray-700 font-black text-xl px-2">×</button>
+        </div>
+        <div class="p-6 overflow-y-auto space-y-4">
+            <input type="hidden" id="carnet-student-id">
+            <div id="carnet-summary" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-black text-gray-600 mb-1">Validation</label>
+                    <select id="carnet-validation" class="field-soft">
+                        <option value="validé">validé</option>
+                        <option value="à revoir">à revoir</option>
+                        <option value="absent">absent</option>
+                        <option value="récitation insuffisante">récitation insuffisante</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-black text-gray-600 mb-1">Point faible</label>
+                    <input id="carnet-weakness" class="field-soft" placeholder="ex: ordre des versets, hésitation, tajwid">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-black text-gray-600 mb-1">Remarque courte</label>
+                <textarea id="carnet-comment" rows="3" class="field-soft" placeholder="Note pédagogique pour le prochain cours"></textarea>
+            </div>
+            <button onclick="saveCarnetNote()" class="btn-primary w-full py-3 rounded-2xl font-black">Enregistrer dans le carnet</button>
+            <div>
+                <p class="text-xs font-black text-gray-400 mb-2">Historique apprentissage / révision</p>
+                <div id="carnet-history" class="space-y-2"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let session = null;
 let myStudents = [];
 let myDevoirs = [];
 let myProf = null;
+let myClassSessions = [];
+let teacherNotesCache = {};
+let myReports = [];
 
 function escapeHtml(value) {
     return String(value || '').replace(/[&<>"']/g, function(ch) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]; });
@@ -225,6 +300,23 @@ function latestCompletion(student) {
     const entries = Object.entries(student.progress || {}).filter(function(item) { return item[1] && item[1].completedAt; });
     entries.sort(function(a, b) { return new Date(b[1].completedAt) - new Date(a[1].completedAt); });
     return entries[0] || null;
+}
+
+function currentSurah(student) {
+    const completed = new Set(Object.entries(student.progress || {}).filter(function(item) { return item[1] && item[1].completedAt; }).map(function(item) { return item[0]; }));
+    if (typeof SURAH_REGISTRY === 'undefined') return null;
+    const order = SURAH_REGISTRY.filter(function(s) { return s.available; }).sort(function(a, b) { return b.num - a.num; });
+    return order.find(function(s) { return !completed.has(s.id); }) || order[order.length - 1] || null;
+}
+
+function studentRisk(student) {
+    const count = completedCount(student);
+    const pendingHw = homeworkFor(student).filter(function(d) { return d.statut !== 'termine'; }).length;
+    const sessions = myClassSessions || [];
+    const absences = sessions.filter(function(item) { return (item.absent || []).includes(student.username); }).length;
+    const notes = teacherNotesCache[student.username] || [];
+    const weak = notes.filter(function(n) { return /revoir|insuffisante|absent|صعوبة|ضعف/i.test((n.validation || '') + ' ' + (n.weakness || '') + ' ' + (n.comment || '')); }).length;
+    return pendingHw * 3 + absences * 2 + weak * 2 + (count === 0 ? 4 : 0);
 }
 
 function surahName(id) {
@@ -256,6 +348,7 @@ function switchTab(name) {
     if (name === 'attendance') renderAttendance();
     if (name === 'students') renderStudents();
     if (name === 'devoirs') chargerSuiviDevoirs();
+    if (name === 'reports') renderProfReports();
 }
 
 async function initProfDashboard() {
@@ -273,8 +366,16 @@ async function refreshProfDashboard(show) {
     const profs = await Auth.getProfs();
     const users = await Auth.getAllUsers();
     myDevoirs = await Auth.getDevoirs('prof', session.username);
+    myClassSessions = typeof Auth.getClassSessions === 'function' ? await Auth.getClassSessions(session.username) : [];
+    myReports = typeof Auth.getProfReports === 'function' ? await Auth.getProfReports(session.username) : [];
     myProf = profs[session.username] || { students: [] };
     myStudents = (myProf.students || []).map(function(id) { return users[id]; }).filter(Boolean);
+    teacherNotesCache = {};
+    if (typeof Auth.getTeacherNotes === 'function') {
+        await Promise.all(myStudents.map(async function(st) {
+            teacherNotesCache[st.username] = await Auth.getTeacherNotes(st.username);
+        }));
+    }
     renderAll();
     if (show !== false) showToast('تم تحديث بيانات القسم', 'success');
 }
@@ -282,10 +383,54 @@ async function refreshProfDashboard(show) {
 function renderAll() {
     renderKpis();
     renderOverview();
+    renderListenQueue();
+    renderLearningStats();
     renderAttendance();
     renderStudents();
     renderHomework();
     renderReportStudentOptions();
+    renderProfReports();
+}
+
+function renderListenQueue() {
+    const box = document.getElementById('listen-queue');
+    if (!box) return;
+    const queue = myStudents
+        .map(function(st) {
+            const score = studentRisk(st);
+            const current = currentSurah(st);
+            return { st: st, score: score, current: current };
+        })
+        .filter(function(item) { return item.score > 0; })
+        .sort(function(a, b) { return b.score - a.score; })
+        .slice(0, 8);
+    box.innerHTML = queue.length ? queue.map(function(item, index) {
+        const name = item.st.prenom + ' ' + item.st.nom;
+        return '<div class="rounded-2xl border border-amber-100 bg-amber-50/60 p-3 flex items-center justify-between gap-3"><div><strong class="text-gray-900">' + escapeHtml(index + 1 + '. ' + name) + '</strong><p class="text-xs font-bold text-gray-500 mt-1">السورة الحالية: ' + escapeHtml(item.current ? item.current.nameAr : '-') + '</p></div><button onclick="ouvrirCarnet(\'' + escapeArg(item.st.username) + '\')" class="rounded-xl bg-white text-amber-700 px-3 py-2 text-xs font-black">Carnet</button></div>';
+    }).join('') : '<div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 text-sm font-black text-emerald-700 text-center">لا توجد أولوية تسميع عاجلة الآن.</div>';
+}
+
+function renderLearningStats() {
+    const box = document.getElementById('prof-learning-stats');
+    if (!box) return;
+    const total = myStudents.length || 1;
+    const counts = myStudents.map(completedCount);
+    const avg = Math.round(counts.reduce(function(sum, n) { return sum + n; }, 0) / total);
+    const advanced = myStudents.filter(function(st) { return completedCount(st) > avg && completedCount(st) > 0; }).length;
+    const blocked = myStudents.filter(function(st) { return studentRisk(st) >= 4; }).length;
+    const absences = myStudents.filter(function(st) {
+        return (myClassSessions || []).filter(function(item) { return (item.absent || []).includes(st.username); }).length >= 2;
+    }).length;
+    const undone = myDevoirs.filter(function(d) { return d.statut !== 'termine'; }).length;
+    box.innerHTML = [
+        ['متوسط القسم', avg + ' سورة', 'bg-emerald-50 text-emerald-700'],
+        ['في تقدم جيد', advanced, 'bg-sky-50 text-sky-700'],
+        ['بحاجة لمتابعة', blocked, 'bg-rose-50 text-rose-700'],
+        ['غياب متكرر', absences, 'bg-amber-50 text-amber-700'],
+        ['واجبات غير منجزة', undone, 'bg-purple-50 text-purple-700']
+    ].map(function(item) {
+        return '<div class="rounded-2xl ' + item[2] + ' p-3 flex items-center justify-between gap-3"><span class="text-xs font-black">' + item[0] + '</span><strong class="text-lg">' + item[1] + '</strong></div>';
+    }).join('');
 }
 
 function renderKpis() {
@@ -344,7 +489,7 @@ function renderAttendance() {
     const list = document.getElementById('attendance-list');
     list.innerHTML = myStudents.length ? myStudents.map(function(st) {
         const name = st.prenom + ' ' + st.nom;
-        return '<label class="rounded-2xl border border-gray-100 bg-white p-3 flex items-center justify-between gap-3 cursor-pointer"><span><strong class="block text-gray-900">' + escapeHtml(name) + '</strong><small class="text-gray-400 font-bold">' + escapeHtml(st.username) + '</small></span><input type="checkbox" class="attendance-check w-5 h-5 accent-emerald-600" value="' + escapeHtml(st.username) + '" checked></label>';
+        return '<div class="rounded-2xl border border-gray-100 bg-white p-3 space-y-3"><label class="flex items-center justify-between gap-3 cursor-pointer"><span><strong class="block text-gray-900">' + escapeHtml(name) + '</strong><small class="text-gray-400 font-bold">' + escapeHtml(st.username) + '</small></span><input type="checkbox" class="attendance-check w-5 h-5 accent-emerald-600" value="' + escapeHtml(st.username) + '" checked></label><div class="grid grid-cols-1 md:grid-cols-2 gap-2"><select class="session-validation field-soft" data-student="' + escapeHtml(st.username) + '"><option value="validé">validé</option><option value="à revoir">à revoir</option><option value="absent">absent</option><option value="récitation insuffisante">récitation insuffisante</option></select><input class="session-comment field-soft" data-student="' + escapeHtml(st.username) + '" placeholder="commentaire court"></div></div>';
     }).join('') : '<p class="text-gray-400 text-sm text-center py-8">لا يوجد طلاب في هذا القسم.</p>';
     renderSessionHistory();
 }
@@ -352,7 +497,9 @@ function renderAttendance() {
 function renderSessionHistory() {
     const box = document.getElementById('session-history');
     if (!box) return;
-    const items = readSessions();
+    const remoteIds = new Set((myClassSessions || []).map(function(item) { return item.id; }));
+    const items = [...(myClassSessions || []), ...readSessions().filter(function(item) { return !remoteIds.has(item.id); })]
+        .sort(function(a, b) { return new Date(b.savedAt || b.date) - new Date(a.savedAt || a.date); });
     box.innerHTML = items.length ? items.slice(0, 6).map(function(item) {
         return '<div class="rounded-2xl border border-gray-100 bg-white p-3"><p class="font-black text-gray-900">' + escapeHtml(item.date) + '</p><p class="text-xs text-emerald-700 font-black mt-1">حضور: ' + item.present.length + ' / ' + item.total + '</p><p class="text-xs text-gray-600 font-bold mt-2">تعلم: ' + escapeHtml(item.learning || '-') + '</p><p class="text-xs text-gray-600 font-bold">مراجعة: ' + escapeHtml(item.revision || '-') + '</p></div>';
     }).join('') : '<p class="text-gray-400 text-sm text-center py-6">لا توجد حصة مسجلة بعد.</p>';
@@ -367,11 +514,24 @@ async function saveDailySession() {
     const learning = document.getElementById('session-learning').value.trim();
     const revision = document.getElementById('session-revision').value.trim();
     const present = Array.from(document.querySelectorAll('.attendance-check:checked')).map(function(input) { return input.value; });
+    const absent = myStudents.map(function(st) { return st.username; }).filter(function(username) { return !present.includes(username); });
+    const validations = Array.from(document.querySelectorAll('.session-validation')).map(function(select) {
+        const username = select.dataset.student;
+        const commentInput = document.querySelector('.session-comment[data-student="' + username + '"]');
+        return { username: username, validation: present.includes(username) ? select.value : 'absent', comment: commentInput ? commentInput.value.trim() : '' };
+    });
     if (!learning && !revision) { showToast('اكتب تعلم اليوم أو المراجعة', 'neutral'); return; }
-    const record = { id: 'session_' + Date.now(), date: date, learning: learning, revision: revision, present: present, total: myStudents.length };
+    const record = { id: 'session_' + Date.now(), date: date, learning: learning, revision: revision, present: present, absent: absent, validations: validations, total: myStudents.length };
     const sessions = readSessions();
     sessions.unshift(record);
     writeSessions(sessions);
+    if (typeof Auth.saveClassSession === 'function') await Auth.saveClassSession(session.username, record);
+    if (typeof Auth.saveTeacherNote === 'function') {
+        await Promise.all(validations.map(function(item) {
+            if (!item.comment && item.validation === 'validé') return Promise.resolve();
+            return Auth.saveTeacherNote(item.username, { validation: item.validation, comment: item.comment, learning: learning, revision: revision, source: 'session', date: date });
+        }));
+    }
     const text = 'حصة اليوم ' + date + '\nتعلم: ' + (learning || '-') + '\nمراجعة: ' + (revision || '-');
     await Promise.all(present.map(function(username) { return Auth.sendMessage(username, text); }));
     document.getElementById('session-learning').value = '';
@@ -394,12 +554,14 @@ function renderStudents() {
         const latest = latestCompletion(st);
         const hw = homeworkFor(st).filter(function(d) { return d.statut !== 'termine'; }).length;
         const name = st.prenom + ' ' + st.nom;
+        const current = currentSurah(st);
+        const noteCount = (teacherNotesCache[st.username] || []).length;
         return '<article class="student-card">'
           + '<div class="flex items-center gap-3"><div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black text-lg">' + escapeHtml((st.prenom || '?')[0]) + '</div><div class="min-w-0"><h3 class="font-black text-gray-900 truncate">' + escapeHtml(name) + '</h3><p class="text-xs text-gray-400 font-mono">' + escapeHtml(st.username) + '</p></div></div>'
           + '<div class="flex flex-wrap gap-2 mt-3"><span class="text-xs font-black rounded-full px-2 py-1 ' + (st.isSuspended ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700') + '">' + (st.isSuspended ? 'موقوف' : 'نشط') + '</span><span class="text-xs font-black rounded-full px-2 py-1 bg-amber-50 text-amber-700">' + hw + ' واجب</span><span class="text-xs font-black rounded-full px-2 py-1 bg-sky-50 text-sky-700">' + count + ' سورة</span></div>'
           + '<div class="progress-track mt-3"><div class="progress-fill" style="width:' + pct + '%"></div></div>'
-          + '<p class="text-xs text-gray-500 font-bold mt-2">آخر إنجاز: ' + escapeHtml(latest ? surahName(latest[0]) : 'لا يوجد بعد') + '</p>'
-          + '<div class="grid grid-cols-2 gap-2 mt-4"><button onclick="ouvrirModalDevoir(\'' + escapeArg(st.username) + '\', \'' + escapeArg(name) + '\')" class="btn-primary rounded-xl py-2 font-black text-sm">واجب</button><button onclick="quickMessage(\'' + escapeArg(st.username) + '\', \'' + escapeArg(name) + '\')" class="rounded-xl py-2 font-black text-sm bg-gray-100 text-gray-700">رسالة</button></div>'
+          + '<p class="text-xs text-gray-500 font-bold mt-2">السورة الحالية: ' + escapeHtml(current ? current.nameAr : '-') + '</p><p class="text-xs text-gray-500 font-bold mt-1">آخر إنجاز: ' + escapeHtml(latest ? surahName(latest[0]) : 'لا يوجد بعد') + ' · ملاحظات: ' + noteCount + '</p>'
+          + '<div class="grid grid-cols-2 gap-2 mt-4"><button onclick="ouvrirModalDevoir(\'' + escapeArg(st.username) + '\', \'' + escapeArg(name) + '\')" class="btn-primary rounded-xl py-2 font-black text-sm">واجب</button><button onclick="ouvrirCarnet(\'' + escapeArg(st.username) + '\')" class="rounded-xl py-2 font-black text-sm bg-emerald-50 text-emerald-700">Carnet</button><button onclick="quickMessage(\'' + escapeArg(st.username) + '\', \'' + escapeArg(name) + '\')" class="rounded-xl py-2 font-black text-sm bg-gray-100 text-gray-700 col-span-2">رسالة</button></div>'
           + '</article>';
     }).join('');
 }
@@ -430,6 +592,8 @@ function ouvrirModalDevoir(studentId, studentName) {
     document.getElementById('devoir-surate').value = '';
     document.getElementById('devoir-debut').value = '';
     document.getElementById('devoir-fin').value = '';
+    document.getElementById('devoir-type').value = 'تعلم';
+    document.getElementById('devoir-priority').value = 'عادي';
     document.getElementById('devoir-date').value = new Date().toISOString().slice(0, 10);
     document.getElementById('modal-devoir').classList.add('open');
 }
@@ -437,14 +601,83 @@ function ouvrirModalDevoir(studentId, studentName) {
 function fermerModalDevoir() { document.getElementById('modal-devoir').classList.remove('open'); }
 function handleModalClick(event) { if (event.target === document.getElementById('modal-devoir')) fermerModalDevoir(); }
 
+function findStudent(username) {
+    return myStudents.find(function(st) { return st.username === username; });
+}
+
+function ouvrirCarnet(username) {
+    const st = findStudent(username);
+    if (!st) return;
+    const latest = latestCompletion(st);
+    const current = currentSurah(st);
+    const notes = teacherNotesCache[username] || [];
+    document.getElementById('carnet-student-id').value = username;
+    document.getElementById('carnet-student-name').textContent = st.prenom + ' ' + st.nom;
+    document.getElementById('carnet-validation').value = 'validé';
+    document.getElementById('carnet-weakness').value = '';
+    document.getElementById('carnet-comment').value = '';
+    document.getElementById('carnet-summary').innerHTML = [
+        ['السورة الحالية', current ? current.nameAr : '-'],
+        ['آخر سورة مثبتة', latest ? surahName(latest[0]) : '-'],
+        ['ملاحظات الأستاذ', notes.length]
+    ].map(function(item) {
+        return '<div class="rounded-2xl bg-gray-50 border border-gray-100 p-3"><p class="text-xs font-black text-gray-400">' + escapeHtml(item[0]) + '</p><strong class="block mt-1 text-gray-900">' + escapeHtml(item[1]) + '</strong></div>';
+    }).join('');
+    const sessions = (myClassSessions || []).filter(function(item) {
+        return (item.present || []).includes(username) || (item.absent || []).includes(username) || (item.validations || []).some(function(v) { return v.username === username; });
+    });
+    const noteHtml = notes.slice(0, 10).map(function(note) {
+        return '<div class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3"><div class="flex items-center justify-between gap-2"><strong class="text-emerald-900">' + escapeHtml(note.validation || 'note') + '</strong><span class="text-xs font-black text-gray-400">' + escapeHtml(note.date || '') + '</span></div><p class="text-xs font-bold text-gray-600 mt-2">' + escapeHtml(note.weakness || note.learning || '') + '</p><p class="text-sm font-bold text-gray-800 mt-1 whitespace-pre-line">' + escapeHtml(note.comment || note.revision || '') + '</p></div>';
+    }).join('');
+    const sessionHtml = sessions.slice(0, 8).map(function(item) {
+        const validation = (item.validations || []).find(function(v) { return v.username === username; });
+        return '<div class="rounded-2xl border border-gray-100 bg-white p-3"><strong class="text-gray-900">' + escapeHtml(item.date || '') + '</strong><p class="text-xs text-gray-600 font-bold mt-1">تعلم: ' + escapeHtml(item.learning || '-') + '</p><p class="text-xs text-gray-600 font-bold">مراجعة: ' + escapeHtml(item.revision || '-') + '</p><p class="text-xs text-emerald-700 font-black mt-1">' + escapeHtml(validation ? validation.validation : ((item.present || []).includes(username) ? 'حاضر' : 'غائب')) + '</p></div>';
+    }).join('');
+    document.getElementById('carnet-history').innerHTML = (noteHtml || sessionHtml)
+        ? noteHtml + sessionHtml
+        : '<p class="text-gray-400 text-sm text-center py-6">لا يوجد تاريخ بعد.</p>';
+    document.getElementById('modal-carnet').classList.add('open');
+}
+
+function fermerCarnet() { document.getElementById('modal-carnet').classList.remove('open'); }
+function handleCarnetClick(event) { if (event.target === document.getElementById('modal-carnet')) fermerCarnet(); }
+
+async function saveCarnetNote() {
+    const studentId = document.getElementById('carnet-student-id').value;
+    const validation = document.getElementById('carnet-validation').value;
+    const weakness = document.getElementById('carnet-weakness').value.trim();
+    const comment = document.getElementById('carnet-comment').value.trim();
+    if (!studentId) return;
+    if (!comment && !weakness && validation === 'validé') { showToast('أضف ملاحظة أو نقطة متابعة', 'neutral'); return; }
+    const res = await Auth.saveTeacherNote(studentId, {
+        validation: validation,
+        weakness: weakness,
+        comment: comment,
+        source: 'carnet',
+        date: new Date().toISOString().slice(0, 10)
+    });
+    if (res.ok) {
+        showToast('تم حفظ carnet الطالب', 'success');
+        teacherNotesCache[studentId] = await Auth.getTeacherNotes(studentId);
+        ouvrirCarnet(studentId);
+        renderStudents();
+        renderListenQueue();
+    } else {
+        showToast(res.error || 'تعذر حفظ الملاحظة', 'neutral');
+    }
+}
+
 async function envoyerDevoir() {
     const studentId = document.getElementById('devoir-student-id').value;
     const surate = document.getElementById('devoir-surate').value.trim();
     const debut = document.getElementById('devoir-debut').value;
     const fin = document.getElementById('devoir-fin').value;
     const date = document.getElementById('devoir-date').value;
+    const type = document.getElementById('devoir-type').value;
+    const priority = document.getElementById('devoir-priority').value;
     if (!surate || !debut || !fin || !date) { showToast('املأ كل حقول الواجب', 'neutral'); return; }
-    const res = await Auth.ajouterDevoir(studentId, session.prenom, surate, debut, fin, date);
+    const label = type + ': ' + surate + (priority === 'مهم' ? ' · مهم' : '');
+    const res = await Auth.ajouterDevoir(studentId, session.prenom, label, debut, fin, date);
     if (res.ok) { showToast('تم إرسال الواجب بنجاح', 'success'); fermerModalDevoir(); await refreshProfDashboard(false); }
     else showToast(res.error || 'تعذر إرسال الواجب', 'neutral');
 }
@@ -465,6 +698,15 @@ function renderReportStudentOptions() {
     }).join('');
 }
 
+function renderProfReports() {
+    const box = document.getElementById('prof-reports-history');
+    if (!box) return;
+    box.innerHTML = myReports.length ? myReports.slice(0, 8).map(function(report) {
+        const status = report.status || 'envoyé';
+        return '<div class="rounded-2xl border border-rose-100 bg-rose-50/50 p-3"><div class="flex items-center justify-between gap-2"><strong class="text-rose-900">' + escapeHtml(report.category || 'Signalement') + '</strong><span class="mini-badge bg-white text-rose-700">' + escapeHtml(status) + '</span></div><p class="text-xs text-gray-600 font-bold mt-2 whitespace-pre-line">' + escapeHtml(report.text || '') + '</p></div>';
+    }).join('') : '<p class="text-gray-400 text-sm text-center py-5">لا يوجد signalement مرسل بعد.</p>';
+}
+
 async function sendAdminReport() {
     const category = document.getElementById('report-category').value;
     const student = document.getElementById('report-student').value;
@@ -473,6 +715,8 @@ async function sendAdminReport() {
     const fullText = 'الموضوع: ' + category + '\nالمعني: ' + student + '\n' + text;
     const res = await Auth.sendAdminReport(session.username, session.prenom, session.nom, fullText, category);
     if (res.ok) {
+        myReports = typeof Auth.getProfReports === 'function' ? await Auth.getProfReports(session.username) : myReports;
+        renderProfReports();
         document.getElementById('admin-report-text').value = '';
         showToast('تم إرسال signalement إلى الإدارة', 'success');
     } else {

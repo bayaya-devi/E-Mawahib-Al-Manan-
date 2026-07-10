@@ -9,6 +9,8 @@ const Auth = (() => {
     const REWARDS_KEY_PREFIX = 'mawahib_rewards_';
     const CELEBRATION_KEY = 'mawahib_last_celebration';
     const INACTIVITY_KEY = 'mawahib_last_inactivity';
+    const CLASS_SESSION_PREFIX = '[CLASS_SESSION] ';
+    const TEACHER_NOTE_PREFIX = '[TEACHER_NOTE] ';
     const SURAH_ID_ALIASES = {
         'al-zalzala': 'al-zalzala',
         'al-zalzalah': 'al-zalzala',
@@ -762,6 +764,47 @@ const Auth = (() => {
         });
     }
 
+    function _parsePrefixedPayload(row, prefix) {
+        const raw = row?.text || '';
+        if (!raw.startsWith(prefix)) return null;
+        try { return { id: row.id, date: row.date, createdAt: row.created_at || row.date || '', ...JSON.parse(raw.slice(prefix.length)) }; }
+        catch (error) { return null; }
+    }
+
+    async function saveClassSession(profId, payload) {
+        const date = new Date().toLocaleDateString('ar-MA', { day: 'numeric', month: 'long' });
+        const body = CLASS_SESSION_PREFIX + JSON.stringify({ ...payload, profId, savedAt: new Date().toISOString() });
+        const { error } = await supabase.from('messages').insert([{ username: '__class_session__:' + profId, text: body, date }]);
+        if (error) { logError('saveClassSession', error); return { ok: false, error: error.message }; }
+        return { ok: true };
+    }
+
+    async function getClassSessions(profId) {
+        const { data, error } = await supabase.from('messages').select('*').eq('username', '__class_session__:' + profId).order('id', { ascending: false });
+        if (error) { logError('getClassSessions', error); return []; }
+        return (data || []).map(row => _parsePrefixedPayload(row, CLASS_SESSION_PREFIX)).filter(Boolean);
+    }
+
+    async function saveTeacherNote(studentId, payload) {
+        const session = getSession();
+        const date = new Date().toLocaleDateString('ar-MA', { day: 'numeric', month: 'long' });
+        const body = TEACHER_NOTE_PREFIX + JSON.stringify({ ...payload, studentId, profId: session?.username || '', profName: session?.prenom || '', savedAt: new Date().toISOString() });
+        const { error } = await supabase.from('messages').insert([{ username: '__teacher_notes__:' + studentId, text: body, date }]);
+        if (error) { logError('saveTeacherNote', error); return { ok: false, error: error.message }; }
+        return { ok: true };
+    }
+
+    async function getTeacherNotes(studentId) {
+        const { data, error } = await supabase.from('messages').select('*').eq('username', '__teacher_notes__:' + studentId).order('id', { ascending: false });
+        if (error) { logError('getTeacherNotes', error); return []; }
+        return (data || []).map(row => _parsePrefixedPayload(row, TEACHER_NOTE_PREFIX)).filter(Boolean);
+    }
+
+    async function getProfReports(profId) {
+        const reports = await getAdminReports();
+        return reports.filter(report => report.profId === profId);
+    }
+
     // --- 7. PROFILS ADMINISTRATIFS ---
     async function getProfile(username) {
         const { data, error } = await supabase.from('profils_admin').select('*').eq('username', username).maybeSingle();
@@ -860,7 +903,8 @@ const Auth = (() => {
         register, login, registerProf, loginProf, logout, getSession, getSavedAccounts, switchAccount, requireAuth,
         getAllStudents, getAllUsers, getProfs, deleteStudent, deleteProf, toggleSuspension,
         assignStudentToProf, removeStudentFromProf,
-        getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports,
+        getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports, getProfReports,
+        saveClassSession, getClassSessions, saveTeacherNote, getTeacherNotes,
         getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, getLastCelebration, getLastInactivity, syncRewardsFromSurahs, getClassStarRanking, storeMissionAttempt,
         ajouterDevoir, getDevoirs, annulerDevoir, marquerDevoirTermine,
         getSupabaseClient
