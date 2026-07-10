@@ -82,7 +82,9 @@
       .page { min-height: 420px; padding: 24px 18px; }
       .page-left { display: none; }
     }
-  </style>
+    body { padding-bottom: 96px; }
+  .mawahib-nav-padding { height: 82px; }
+</style>
 </head>
 <body>
   <script>Auth.requireAuth('login.html');</script>
@@ -92,7 +94,7 @@
         <p class="text-xs font-black text-slate-500">دفتر المتابعة</p>
         <h1 id="student-name" class="text-2xl md:text-4xl font-black">...</h1>
       </div>
-      <a href="parent.html" class="rounded-2xl bg-slate-900 text-white px-4 py-2 font-black text-sm">رجوع</a>
+      <a href="dashboard.html" class="rounded-2xl bg-slate-900 text-white px-4 py-2 font-black text-sm">لوحتي</a>
     </header>
 
     <section class="book" id="book">
@@ -193,7 +195,11 @@
 
     async function initCarnet() {
       const params = new URLSearchParams(location.search);
-      const studentId = params.get('student');
+      let studentId = params.get('student');
+      if (!studentId && typeof Auth.getSavedAccounts === 'function') {
+        const savedStudent = Auth.getSavedAccounts().find(account => account && account.role === 'student');
+        studentId = savedStudent ? savedStudent.username : '';
+      }
       if (!studentId) {
         document.getElementById('day-page').innerHTML = '<p class="text-slate-500 font-bold">لم يتم اختيار طالب.</p>';
         return;
@@ -209,5 +215,34 @@
 
     window.addEventListener('DOMContentLoaded', initCarnet);
   </script>
+
+<nav class="nav-bottom">
+  <div class="max-w-4xl mx-auto flex justify-around items-center h-16 px-4">
+    <a href="dashboard.html#surah-focus" class="flex flex-col items-center gap-1 text-emerald-700 hover:text-emerald-900 transition group">
+      <div class="w-10 h-10 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center text-xl transition">📖</div>
+      <span class="text-[11px] font-black">السور</span>
+    </a>
+    <a href="profil.html" class="flex flex-col items-center gap-1 text-blue-700 hover:text-blue-900 transition group">
+      <div class="w-10 h-10 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center text-xl transition">🗂️</div>
+      <span class="text-[11px] font-black">الملف</span>
+    </a>
+    <a href="dashboard.html" class="active flex flex-col items-center gap-1 text-blue-700 hover:text-blue-900 transition group">
+      <div class="w-10 h-10 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center text-xl transition">🏠</div>
+      <span class="text-[11px] font-black">الرئيسية</span>
+    </a>
+    <a href="carnet-suivi.html" class="flex flex-col items-center gap-1 text-amber-700 hover:text-amber-900 transition group">
+      <div class="w-10 h-10 rounded-xl bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center text-xl transition">📘</div>
+      <span class="text-[11px] font-black">دفتر متابعة التعلم</span>
+    </a>
+    <button type="button" data-settings-toggle class="flex flex-col items-center gap-1 text-slate-700 hover:text-slate-900 transition group">
+      <div class="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-slate-100 flex items-center justify-center text-xl transition">⚙</div>
+      <span class="text-[11px] font-black">الإعدادات</span>
+    </button>
+  </div>
+</nav>
+<div class="mawahib-nav-padding"></div>
+
+<script src="app-settings.js"></script>
+<script src="notifications.js"></script>
 </body>
 </html>

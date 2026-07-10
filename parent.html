@@ -24,7 +24,9 @@
             padding-bottom: env(safe-area-inset-bottom);
         }
         body { padding-bottom: 100px; }
-    </style>
+      body { padding-bottom: 96px; }
+  .mawahib-nav-padding { height: 82px; }
+</style>
 </head>
 <body>
     <div class="flex justify-center mb-4 mt-2">
@@ -92,9 +94,6 @@
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-md">
                     إرسال التقييم
                 </button>
-                <a id="feedback-carnet-link" href="carnet-suivi.html" class="hidden block w-full text-center bg-slate-900 hover:bg-slate-800 text-white font-black py-3 rounded-xl transition shadow-md">
-                    فتح دفتر المتابعة
-                </a>
             </form>
             
             <div id="feedback-success" class="hidden text-center py-8">
@@ -202,41 +201,8 @@
             return String(value || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
         }
 
-        function getParentStudentAccounts(session) {
-            const saved = typeof Auth.getSavedAccounts === 'function' ? Auth.getSavedAccounts() : [];
-            const accounts = saved.filter(account => account && account.role === 'student');
-            if (session && session.role === 'student' && !accounts.some(account => account.username === session.username)) {
-                accounts.unshift(session);
-            }
-            const seen = new Set();
-            return accounts.filter(account => {
-                if (!account.username || seen.has(account.username)) return false;
-                seen.add(account.username);
-                return true;
-            });
-        }
-
-        function updateCarnetButton(accounts) {
-            const link = document.getElementById('feedback-carnet-link');
-            if (!link) return;
-            const first = accounts && accounts[0];
-            if (!first || !first.username) {
-                link.classList.add('hidden');
-                return;
-            }
-            link.href = 'carnet-suivi.html?student=' + encodeURIComponent(first.username);
-            link.classList.remove('hidden');
-        }
-
-        async function prepareParentCarnetButton() {
-            const session = Auth.getSession();
-            const accounts = getParentStudentAccounts(session);
-            updateCarnetButton(accounts);
-        }
-
         window.onload = () => {
             buildParentHeader();
-            prepareParentCarnetButton();
         };
     </script>
 
@@ -273,15 +239,6 @@
                 </div>
                 <span class="text-[11px] font-black">الآباء</span>
             </a>
-
-            <button type="button" data-chatbot-toggle
-               class="flex flex-col items-center gap-1 text-purple-700 hover:text-purple-900 transition group">
-                <div class="w-10 h-10 rounded-xl bg-purple-50 group-hover:bg-purple-100 flex items-center justify-center text-xl transition">
-                    <span data-chatbot-icon>💬</span>
-                </div>
-                <span class="text-[11px] font-black">المساعد</span>
-            </button>
-
             <button type="button" data-settings-toggle
                class="flex flex-col items-center gap-1 text-slate-700 hover:text-slate-900 transition group">
                 <div class="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-slate-100 flex items-center justify-center text-xl transition">
@@ -291,9 +248,7 @@
             </button>
         </div>
     </nav>
-<link rel="stylesheet" href="chatbot.css">
-    <script src="chatbot.js"></script>
-    <script src="app-settings.js"></script>
+<script src="app-settings.js"></script>
 <script src="notifications.js"></script>
 </body>
 </html>
