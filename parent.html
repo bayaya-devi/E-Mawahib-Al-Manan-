@@ -245,6 +245,17 @@
             return raw || '-';
         }
 
+        function recitationRangeLabel(note) {
+            if (!note) return '';
+            if (note.scope === 'جزء') {
+                const start = note.ayahStart || '';
+                const end = note.ayahEnd || '';
+                if (start && end) return 'من الآية ' + start + ' إلى ' + end;
+                if (start) return 'من الآية ' + start;
+            }
+            return 'السورة كاملة';
+        }
+
         async function loadParentRecitations() {
             const session = Auth.getSession();
             const container = document.getElementById('parent-recitation-list');
@@ -259,13 +270,14 @@
                 const notes = typeof Auth.getTeacherNotes === 'function' ? await Auth.getTeacherNotes(account.username) : [];
                 const recitations = notes.filter(note => note && (note.source === 'recitation' || note.surah || note.validation)).slice(0, 6);
                 const latest = recitations[0];
-                const mastered = recitations.filter(note => String(note.validation || '').includes('متقن')).length;
-                const review = recitations.filter(note => /إعادة|ضعيف/.test(String(note.validation || ''))).length;
+                const mastered = recitations.filter(note => /ممتاز|جيد جدا|متقن/.test(String(note.validation || ''))).length;
+                const review = recitations.filter(note => /مراجعة|غير متقن|إعادة|ضعيف/.test(String(note.validation || ''))).length;
                 const absent = recitations.filter(note => String(note.validation || '').includes('غائب')).length;
                 const name = ((student.prenom || account.prenom || '') + ' ' + (student.nom || account.nom || '')).trim() || account.username;
                 const lines = recitations.slice(0, 4).map(note => {
                     return '<div class="recitation-line">'
                         + '<div class="flex items-center justify-between gap-2"><strong class="text-slate-900">' + escapeHtml(note.surah || 'تسميع عام') + '</strong><span class="recitation-chip ' + recitationTone(note.validation) + '">' + escapeHtml(note.validation || '-') + '</span></div>'
+                        + '<p class="text-xs text-slate-500 font-black mt-1">' + escapeHtml(recitationRangeLabel(note)) + '</p>'
                         + '<div class="flex items-center justify-between gap-2 mt-1"><span class="text-xs text-slate-400 font-bold">' + escapeHtml(formatRecitationDate(note)) + '</span>' + (note.comment ? '<span class="text-xs text-slate-600 font-bold truncate">' + escapeHtml(note.comment) + '</span>' : '') + '</div>'
                         + '</div>';
                 }).join('');
@@ -276,8 +288,9 @@
                     + '<div class="rounded-2xl bg-amber-50 p-3 text-center"><strong class="block text-lg text-amber-700">' + review + '</strong><span class="text-[11px] font-black text-amber-700">للمراجعة</span></div>'
                     + '<div class="rounded-2xl bg-slate-100 p-3 text-center"><strong class="block text-lg text-slate-600">' + absent + '</strong><span class="text-[11px] font-black text-slate-600">غياب</span></div>'
                     + '</div>'
-                    + (latest ? '<div class="rounded-2xl bg-slate-900 text-white p-4 mb-3"><p class="text-xs text-slate-300 font-black">آخر تسميع</p><strong class="block mt-1">' + escapeHtml(latest.surah || '-') + '</strong>' + (latest.comment ? '<p class="text-sm text-slate-200 mt-1">' + escapeHtml(latest.comment) + '</p>' : '') + '</div>' : '<p class="text-center text-slate-400 font-bold py-5">لم يسجل الأستاذ تسميعا بعد.</p>')
+                    + (latest ? '<div class="rounded-2xl bg-slate-900 text-white p-4 mb-3"><p class="text-xs text-slate-300 font-black">آخر تسميع</p><strong class="block mt-1">' + escapeHtml(latest.surah || '-') + '</strong><p class="text-sm text-slate-300 font-bold mt-1">' + escapeHtml(recitationRangeLabel(latest)) + '</p>' + (latest.comment ? '<p class="text-sm text-slate-200 mt-1">' + escapeHtml(latest.comment) + '</p>' : '') + '</div>' : '<p class="text-center text-slate-400 font-bold py-5">لم يسجل الأستاذ تسميعا بعد.</p>')
                     + '<div class="space-y-2">' + lines + '</div>'
+                    + '<a href="carnet-suivi.html?student=' + encodeURIComponent(account.username) + '" class="block w-full text-center mt-4 rounded-2xl bg-slate-900 text-white py-3 font-black">فتح دفتر المتابعة</a>'
                     + '</article>';
             }));
             container.innerHTML = cards.join('');

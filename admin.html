@@ -1393,6 +1393,17 @@ function formatRecitationDate(item) {
     return raw || '-';
 }
 
+function recitationRangeLabel(note) {
+    if (!note) return '';
+    if (note.scope === 'جزء') {
+        const start = note.ayahStart || '';
+        const end = note.ayahEnd || '';
+        if (start && end) return 'من الآية ' + start + ' إلى ' + end;
+        if (start) return 'من الآية ' + start;
+    }
+    return 'السورة كاملة';
+}
+
 async function loadStudentRecitations() {
     const username = document.getElementById('modal-username').value;
     const container = document.getElementById('modal-recitation-content');
@@ -1404,8 +1415,8 @@ async function loadStudentRecitations() {
         container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لا يوجد تسميع مسجل بعد.</p>';
         return;
     }
-    const mastered = recitations.filter(note => String(note.validation || '').includes('متقن')).length;
-    const review = recitations.filter(note => /إعادة|ضعيف/.test(String(note.validation || ''))).length;
+    const mastered = recitations.filter(note => /ممتاز|جيد جدا|متقن/.test(String(note.validation || ''))).length;
+    const review = recitations.filter(note => /مراجعة|غير متقن|إعادة|ضعيف/.test(String(note.validation || ''))).length;
     const absent = recitations.filter(note => String(note.validation || '').includes('غائب')).length;
     const latest = recitations[0];
     const summary = '<div class="recitation-admin-card bg-emerald-50/60">'
@@ -1415,11 +1426,12 @@ async function loadStudentRecitations() {
         + '<div class="rounded-xl bg-white p-2 text-center"><strong class="block text-amber-700">' + review + '</strong><span class="text-[11px] font-black text-amber-700">مراجعة</span></div>'
         + '<div class="rounded-xl bg-white p-2 text-center"><strong class="block text-slate-600">' + absent + '</strong><span class="text-[11px] font-black text-slate-600">غياب</span></div>'
         + '</div>'
-        + '<div class="mt-3 rounded-xl bg-white p-3"><span class="text-xs font-black text-gray-400">آخر تسميع</span><strong class="block text-gray-900 mt-1">' + escapeHtml(latest.surah || '-') + '</strong></div>'
+        + '<div class="mt-3 rounded-xl bg-white p-3"><span class="text-xs font-black text-gray-400">آخر تسميع</span><strong class="block text-gray-900 mt-1">' + escapeHtml(latest.surah || '-') + '</strong><p class="text-xs font-black text-gray-500 mt-1">' + escapeHtml(recitationRangeLabel(latest)) + '</p></div>'
         + '</div>';
     const rows = recitations.map(note => {
         return '<div class="recitation-admin-line">'
             + '<div class="flex items-center justify-between gap-2"><strong class="text-gray-900">' + escapeHtml(note.surah || 'تسميع عام') + '</strong><span class="recitation-chip ' + recitationTone(note.validation) + '">' + escapeHtml(note.validation || '-') + '</span></div>'
+            + '<p class="text-xs font-black text-gray-500 mt-1">' + escapeHtml(recitationRangeLabel(note)) + '</p>'
             + '<div class="flex items-center justify-between gap-2 mt-2"><span class="text-xs font-bold text-gray-400">' + escapeHtml(formatRecitationDate(note)) + '</span><span class="text-xs font-bold text-emerald-700">' + escapeHtml(note.profName || '') + '</span></div>'
             + (note.comment ? '<p class="text-sm text-gray-700 font-bold mt-2">' + escapeHtml(note.comment) + '</p>' : '')
             + '</div>';

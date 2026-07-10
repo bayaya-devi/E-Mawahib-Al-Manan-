@@ -126,6 +126,13 @@
       padding: 14px;
       box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
     }
+    .recitation-entry {
+      border: 1px solid rgba(17, 24, 39, .08);
+      border-radius: 18px;
+      background: #f8fafc;
+      padding: 10px;
+      margin-top: 10px;
+    }
     .student-card.absent {
       opacity: .62;
       background: rgba(248, 250, 252, .88);
@@ -362,18 +369,47 @@
           + '<div class="min-w-0"><h3 class="text-lg font-black truncate">' + escapeHtml(name) + '</h3><p class="small-muted truncate">' + escapeHtml(student.username) + '</p></div>'
           + '<label class="pill cursor-pointer"><input type="checkbox" class="attendance-check accent-emerald-700" value="' + escapeHtml(student.username) + '" onchange="toggleAbsent(this)" checked> حاضر</label>'
           + '</div>'
-          + '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">'
-          + '<input class="input recited-surah" data-student="' + escapeHtml(student.username) + '" list="surah-list" placeholder="السورة التي سُمِّعت">'
-          + '<select class="input recitation-result" data-student="' + escapeHtml(student.username) + '"><option value="متقن">متقن</option><option value="جيد">جيد</option><option value="إعادة">إعادة</option><option value="ضعيف">ضعيف</option><option value="غائب">غائب</option></select>'
+          + '<div class="recitation-entries" data-student="' + escapeHtml(student.username) + '">'
+          + recitationEntryHtml(student.username, 0)
           + '</div>'
-          + '<textarea class="input recitation-note mt-2" rows="2" data-student="' + escapeHtml(student.username) + '" placeholder="ملاحظة قصيرة"></textarea>'
           + '<div class="student-actions grid grid-cols-[1fr_auto] gap-2 mt-3 items-center">'
-          + '<button onclick="openHomeworkFromStudent(\'' + escapeArg(student.username) + '\', \'' + escapeArg(name) + '\')" class="btn btn-soft">واجب مراجعة</button>'
+          + '<button onclick="addRecitationEntry(\'' + escapeArg(student.username) + '\')" class="btn btn-soft">إضافة تسميع آخر</button>'
           + '<span class="pill">' + pending + ' واجب</span>'
           + '</div>'
+          + '<button onclick="openHomeworkFromStudent(\'' + escapeArg(student.username) + '\', \'' + escapeArg(name) + '\')" class="btn btn-soft w-full mt-2">واجب مراجعة</button>'
           + (note ? '<p class="small-muted mt-3">آخر ملاحظة: ' + escapeHtml(note.validation || '') + ' ' + escapeHtml(note.comment || '') + '</p>' : '')
           + '</article>';
       }).join('');
+    }
+
+    function recitationEntryHtml(username, index) {
+      const key = escapeHtml(username + '_' + index + '_' + Date.now());
+      return '<div class="recitation-entry" data-student="' + escapeHtml(username) + '">'
+        + '<div class="flex items-center justify-between gap-2 mb-2"><span class="small-muted">تسميع</span><button type="button" onclick="removeRecitationEntry(this)" class="text-xs font-black text-rose-600">حذف</button></div>'
+        + '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">'
+        + '<input class="input recited-surah" list="surah-list" placeholder="السورة التي رتلها الطالب">'
+        + '<select class="input recitation-scope" onchange="toggleVerseRangeBySelect(this)"><option value="كاملة">السورة كاملة</option><option value="جزء">من آية إلى آية</option></select>'
+        + '</div>'
+        + '<div class="grid grid-cols-2 gap-2 mt-2 verse-range hidden" data-range="' + key + '">'
+        + '<input type="number" min="1" class="input recitation-start" placeholder="من الآية">'
+        + '<input type="number" min="1" class="input recitation-end" placeholder="إلى الآية">'
+        + '</div>'
+        + '<select class="input recitation-result mt-2"><option value="ممتاز">ممتاز</option><option value="جيد جدا">جيد جدا</option><option value="جيد">جيد</option><option value="يحتاج مراجعة">يحتاج مراجعة</option><option value="غير متقن">غير متقن</option><option value="غائب">غائب</option></select>'
+        + '<textarea class="input recitation-note mt-2" rows="2" placeholder="ملاحظة قصيرة"></textarea>'
+        + '</div>';
+    }
+
+    function addRecitationEntry(username) {
+      const box = document.querySelector('.recitation-entries[data-student="' + username + '"]');
+      if (!box) return;
+      box.insertAdjacentHTML('beforeend', recitationEntryHtml(username, box.querySelectorAll('.recitation-entry').length));
+    }
+
+    function removeRecitationEntry(button) {
+      const entry = button.closest('.recitation-entry');
+      const box = entry ? entry.parentElement : null;
+      if (!entry || !box || box.querySelectorAll('.recitation-entry').length <= 1) return;
+      entry.remove();
     }
 
     function renderListenQueue() {
@@ -415,25 +451,50 @@
     function toggleAbsent(input) {
       const card = document.querySelector('[data-card="' + input.value + '"]');
       if (card) card.classList.toggle('absent', !input.checked);
-      const result = document.querySelector('.recitation-result[data-student="' + input.value + '"]');
-      if (result && !input.checked) result.value = 'غائب';
+      document.querySelectorAll('.recitation-entry[data-student="' + input.value + '"] .recitation-result').forEach(result => {
+        if (!input.checked) result.value = 'غائب';
+      });
+    }
+
+    function toggleVerseRangeBySelect(select) {
+      const entry = select.closest('.recitation-entry');
+      const range = entry ? entry.querySelector('.verse-range') : null;
+      if (!range) return;
+      range.classList.toggle('hidden', select.value !== 'جزء');
+    }
+
+    function toggleVerseRange(username) {
+      const scope = document.querySelector('.recitation-scope[data-student="' + username + '"]');
+      const range = document.querySelector('.verse-range[data-range="' + username + '"]');
+      if (!scope || !range) return;
+      range.classList.toggle('hidden', scope.value !== 'جزء');
     }
 
     async function saveDailySession() {
       const date = document.getElementById('session-date').value || new Date().toISOString().slice(0, 10);
       const present = Array.from(document.querySelectorAll('.attendance-check:checked')).map(input => input.value);
       const absent = myStudents.map(student => student.username).filter(username => !present.includes(username));
-      const validations = myStudents.map(student => {
+      const validations = myStudents.flatMap(student => {
         const username = student.username;
-        const result = document.querySelector('.recitation-result[data-student="' + username + '"]');
-        const surah = document.querySelector('.recited-surah[data-student="' + username + '"]');
-        const note = document.querySelector('.recitation-note[data-student="' + username + '"]');
-        return {
+        const entries = Array.from(document.querySelectorAll('.recitation-entry[data-student="' + username + '"]'));
+        if (!present.includes(username)) return [{ username, validation: 'غائب', surah: '', scope: 'كاملة', ayahStart: '', ayahEnd: '', comment: '' }];
+        return entries.map(entry => {
+          const result = entry.querySelector('.recitation-result');
+          const surah = entry.querySelector('.recited-surah');
+          const scope = entry.querySelector('.recitation-scope');
+          const start = entry.querySelector('.recitation-start');
+          const end = entry.querySelector('.recitation-end');
+          const note = entry.querySelector('.recitation-note');
+          return {
           username,
-          validation: present.includes(username) ? (result ? result.value : 'متقن') : 'غائب',
+          validation: result ? result.value : 'ممتاز',
           surah: surah ? surah.value.trim() : '',
+          scope: scope ? scope.value : 'كاملة',
+          ayahStart: start ? start.value.trim() : '',
+          ayahEnd: end ? end.value.trim() : '',
           comment: note ? note.value.trim() : ''
-        };
+          };
+        });
       });
       const record = {
         id: 'session_' + Date.now(),
@@ -446,11 +507,14 @@
       if (typeof Auth.saveClassSession === 'function') await Auth.saveClassSession(session.username, record);
       if (typeof Auth.saveTeacherNote === 'function') {
         await Promise.all(validations.map(item => {
-          if (!item.comment && !item.surah && item.validation === 'متقن') return Promise.resolve();
+          if (!item.comment && !item.surah && item.validation === 'ممتاز') return Promise.resolve();
           return Auth.saveTeacherNote(item.username, {
             validation: item.validation,
             comment: item.comment,
             surah: item.surah,
+            scope: item.scope,
+            ayahStart: item.ayahStart,
+            ayahEnd: item.ayahEnd,
             source: 'recitation',
             date
           });
@@ -461,7 +525,7 @@
     }
 
     function openHomeworkFromStudent(studentId, studentName) {
-      const surahInput = document.querySelector('.recited-surah[data-student="' + studentId + '"]');
+      const surahInput = document.querySelector('.recitation-entry[data-student="' + studentId + '"] .recited-surah');
       document.getElementById('devoir-student-id').value = studentId;
       document.getElementById('devoir-student-name').textContent = studentName;
       document.getElementById('devoir-surate').value = surahInput ? surahInput.value.trim() : '';
