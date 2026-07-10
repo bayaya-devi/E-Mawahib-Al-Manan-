@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>دفتر المتابعة - مواهب المنان</title>
+  <title>دفتر متابعة التعلم - مواهب المنان</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -15,111 +15,69 @@
       min-height: 100vh;
       margin: 0;
       font-family: 'Cairo', sans-serif;
-      background:
-        radial-gradient(circle at top right, rgba(15, 23, 42, .12), transparent 32rem),
-        linear-gradient(135deg, #f8fafc, #e2e8f0);
+      background: #f8f5f0;
       color: #0f172a;
-      padding: 14px 14px calc(98px + env(safe-area-inset-bottom));
+      padding: 12px 12px calc(96px + env(safe-area-inset-bottom));
     }
-    .shell { width: min(900px, 100%); margin: 0 auto; }
+    .shell { width: min(920px, 100%); margin: 0 auto; }
     .brand-logo {
-      width: 74px;
-      height: 74px;
+      width: 78px;
+      height: 78px;
       object-fit: contain;
       filter: drop-shadow(0 10px 18px rgba(15, 23, 42, .12));
     }
-    .book {
+    .page-head {
+      background: linear-gradient(135deg, var(--platform-primary-dark, #0c4a3b), var(--platform-primary, #14532d));
+      color: white;
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 18px 44px rgba(15, 23, 42, .15);
+    }
+    .list-panel {
+      margin-top: 14px;
+      background: rgba(255,255,255,.96);
+      border: 1px solid rgba(15,23,42,.08);
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .07);
+    }
+    .day-group {
+      padding: 16px 18px;
+      border-top: 1px solid #eef2f7;
+    }
+    .day-group:first-child { border-top: 0; }
+    .day-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .recitation-row {
       position: relative;
-      display: grid;
-      grid-template-columns: minmax(190px, .78fr) minmax(0, 1.22fr);
-      min-height: 360px;
-      border-radius: 18px;
-      background:
-        linear-gradient(90deg, rgba(248, 241, 223, .92), rgba(255, 250, 240, .9) 48%, rgba(217, 198, 163, .45) 50%, rgba(255, 250, 240, .9) 52%, rgba(248, 241, 223, .92));
-      box-shadow: 0 12px 28px rgba(15, 23, 42, .08);
-      overflow: clip;
-      border: 1px solid rgba(120, 92, 45, .1);
+      padding: 12px 14px 12px 0;
+      border-top: 1px solid #f1f5f9;
     }
-    .book::before {
-      content: '';
-      position: absolute;
-      inset-block: 0;
-      right: 50%;
-      width: 12px;
-      transform: translateX(50%);
-      background: linear-gradient(90deg, rgba(61, 43, 24, .18), rgba(255,255,255,.35), rgba(61, 43, 24, .18));
-      z-index: 2;
-    }
-    .page {
-      position: relative;
-      padding: 24px 24px;
-      background:
-        linear-gradient(rgba(15,23,42,.026) 1px, transparent 1px) 0 62px / 100% 30px,
-        radial-gradient(circle at top, rgba(255,255,255,.75), transparent 18rem);
-    }
-    .page-left { box-shadow: inset -12px 0 18px rgba(120, 92, 45, .055); }
-    .page-right { box-shadow: inset 12px 0 18px rgba(120, 92, 45, .055); }
-    .page-title { font-family: 'Amiri', serif; font-size: clamp(24px, 4vw, 36px); font-weight: 700; line-height: 1.1; }
-    .day-link {
-      position: relative;
-      display: block;
-      width: 100%;
-      padding: 11px 16px 11px 10px;
-      text-align: right;
-      font-weight: 900;
-      color: #334155;
-      transition: color .2s ease, transform .2s ease;
-    }
-    .day-link::before {
+    .recitation-row::before {
       content: '';
       position: absolute;
       right: 0;
-      top: 12px;
-      bottom: 12px;
-      width: 4px;
-      border-radius: 999px;
-      background: transparent;
+      top: 17px;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--platform-primary, #14532d);
     }
-    .day-link:hover { color: #0f172a; transform: translateX(-2px); }
-    .day-link.is-active { color: #0f172a; }
-    .day-link.is-active::before { background: #0f766e; }
-    .recitation-row {
-      background: transparent;
-      border-top: 1px solid rgba(120, 92, 45, .16);
-      padding: 14px 0;
-      margin-top: 0;
-    }
+    .recitation-row:first-of-type { border-top: 0; }
     .chip {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       border-radius: 999px;
-      padding: 5px 10px;
-      font-size: 12px;
+      padding: 4px 10px;
+      font-size: 11px;
       font-weight: 900;
       white-space: nowrap;
-    }
-    .turning { animation: pageTurn .42s ease both; transform-origin: right center; }
-    @keyframes pageTurn {
-      from { transform: rotateY(0deg); opacity: .55; }
-      to { transform: rotateY(-5deg); opacity: 1; }
-    }
-    @media (max-width: 760px) {
-      body { padding: 10px 10px calc(104px + env(safe-area-inset-bottom)); }
-      .shell { width: 100%; }
-      .brand-logo { width: 58px; height: 58px; }
-      .book { display: block; min-height: auto; border-radius: 16px; }
-      .book::before { display: none; }
-      .page { min-height: 0; padding: 18px 16px; }
-      .page-right {
-        max-height: 210px;
-        overflow-y: auto;
-        border-bottom: 1px solid rgba(120, 92, 45, .16);
-      }
-      .page-left { display: block; box-shadow: none; }
-      .page-title { font-size: 24px; }
-      .nav-bottom span { font-size: 9px; line-height: 1.1; }
-      .nav-bottom .max-w-4xl { padding-inline: 6px; }
     }
     .nav-bottom {
       position: fixed;
@@ -133,38 +91,42 @@
       padding-bottom: env(safe-area-inset-bottom);
     }
     .mawahib-nav-padding { display: none; }
-</style>
+    @media (max-width: 640px) {
+      body { padding: 10px 10px calc(104px + env(safe-area-inset-bottom)); }
+      .brand-logo { width: 60px; height: 60px; }
+      .page-head { border-radius: 18px; padding: 14px; }
+      .day-group { padding: 14px; }
+      .day-title { align-items: flex-start; flex-direction: column; }
+      .recitation-row { padding-inline-start: 0; }
+      .nav-bottom span { font-size: 9px; line-height: 1.1; }
+      .nav-bottom .max-w-4xl { padding-inline: 6px; }
+    }
+  </style>
 </head>
 <body>
   <script>Auth.requireAuth('login.html');</script>
-  <div class="shell">
+
+  <main class="shell">
     <div class="flex justify-center mb-2">
       <img src="logo.webp" alt="مواهب المنان" class="brand-logo">
     </div>
-    <header class="flex items-center justify-between gap-3 mb-4">
-      <div>
-        <p class="text-xs font-black text-slate-500">دفتر المتابعة</p>
-        <h1 id="student-name" class="text-2xl md:text-4xl font-black">...</h1>
+
+    <header class="page-head">
+      <p class="text-xs font-black opacity-80">دفتر متابعة التعلم</p>
+      <div class="mt-1 flex items-end justify-between gap-3">
+        <h1 id="student-name" class="text-2xl md:text-4xl font-black leading-tight">...</h1>
+        <a href="dashboard.html" class="shrink-0 rounded-full bg-white/14 px-4 py-2 text-sm font-black text-white">لوحتي</a>
       </div>
-      <a href="dashboard.html" class="text-slate-700 hover:text-slate-950 font-black text-sm">لوحتي</a>
     </header>
 
-    <section class="book" id="book">
-      <aside class="page page-right">
-        <p class="text-xs font-black text-slate-500 mb-3">الفهرس</p>
-        <h2 class="page-title mb-5">أيام التسميع</h2>
-        <div id="day-list" class="space-y-2"></div>
-      </aside>
-      <article class="page page-left" id="day-page">
-        <p class="text-slate-500 font-bold">جاري التحميل...</p>
-      </article>
+    <section class="list-panel">
+      <div id="recitation-list" class="min-h-[180px]">
+        <div class="day-group text-slate-500 font-bold">جاري التحميل...</div>
+      </div>
     </section>
-  </div>
+  </main>
 
   <script>
-    let groupedDays = [];
-    let activeDayIndex = 0;
-
     function escapeHtml(value) {
       return String(value || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
     }
@@ -206,43 +168,24 @@
       return Array.from(map.entries()).map(([date, items]) => ({ date, items }));
     }
 
-    function renderDayList() {
-      const box = document.getElementById('day-list');
-      box.innerHTML = groupedDays.length ? groupedDays.map((day, index) => {
-        const active = index === activeDayIndex ? ' is-active' : '';
-        return '<button onclick="openDay(' + index + ')" class="day-link' + active + '">'
-          + '<span class="block">' + escapeHtml(day.date) + '</span>'
-          + '<span class="block text-xs opacity-70 mt-1">' + day.items.length + ' تسميع</span>'
-          + '</button>';
-      }).join('') : '<p class="text-slate-500 font-bold">لا يوجد تسميع مسجل بعد.</p>';
-    }
-
-    function renderActiveDay() {
-      const page = document.getElementById('day-page');
-      const day = groupedDays[activeDayIndex];
-      if (!day) {
-        page.innerHTML = '<h2 class="page-title mb-4">لا يوجد سجل</h2><p class="text-slate-500 font-bold">عندما يسجل الأستاذ التسميع سيظهر هنا.</p>';
+    function renderRecitations(days) {
+      const list = document.getElementById('recitation-list');
+      if (!days.length) {
+        list.innerHTML = '<div class="day-group text-slate-500 font-bold">لا يوجد تسميع مسجل بعد.</div>';
         return;
       }
-      page.classList.remove('turning');
-      void page.offsetWidth;
-      page.classList.add('turning');
-      page.innerHTML = '<p class="text-xs font-black text-slate-500 mb-2">صفحة اليوم</p>'
-        + '<h2 class="page-title">' + escapeHtml(day.date) + '</h2>'
-        + '<p class="text-sm text-slate-500 font-bold mt-2 mb-5">' + day.items.length + ' تسميع في هذا اليوم</p>'
-        + day.items.map(note => {
-          return '<div class="recitation-row">'
-            + '<div class="flex items-start justify-between gap-3"><div><strong class="text-lg text-slate-900">' + escapeHtml(note.surah || 'تسميع عام') + '</strong><p class="text-sm font-black text-slate-500 mt-1">' + escapeHtml(rangeLabel(note)) + '</p></div><span class="chip ' + tone(note.validation) + '">' + escapeHtml(note.validation || '-') + '</span></div>'
-            + (note.comment ? '<p class="text-sm text-slate-700 font-bold mt-3">' + escapeHtml(note.comment) + '</p>' : '')
-            + (note.profName ? '<p class="text-xs text-slate-400 font-black mt-3">الأستاذ: ' + escapeHtml(note.profName) + '</p>' : '')
-            + '</div>';
-        }).join('');
-    }
-
-    function openDay(index) {
-      activeDayIndex = index;
-      renderDayList();
-      renderActiveDay();
+      list.innerHTML = days.map(day => {
+        return '<article class="day-group">'
+          + '<div class="day-title"><h2 class="text-lg font-black text-slate-900">' + escapeHtml(day.date) + '</h2><span class="text-xs font-black text-slate-400">' + day.items.length + ' تسميع</span></div>'
+          + day.items.map(note => {
+            return '<div class="recitation-row">'
+              + '<div class="flex items-start justify-between gap-3"><div><strong class="text-base text-slate-900">' + escapeHtml(note.surah || 'تسميع عام') + '</strong><p class="text-xs font-black text-slate-500 mt-1">' + escapeHtml(rangeLabel(note)) + '</p></div><span class="chip ' + tone(note.validation) + '">' + escapeHtml(note.validation || '-') + '</span></div>'
+              + (note.comment ? '<p class="text-sm text-slate-700 font-bold mt-2">' + escapeHtml(note.comment) + '</p>' : '')
+              + (note.profName ? '<p class="text-xs text-slate-400 font-black mt-2">الأستاذ: ' + escapeHtml(note.profName) + '</p>' : '')
+              + '</div>';
+          }).join('')
+          + '</article>';
+      }).join('');
     }
 
     async function initCarnet() {
@@ -253,48 +196,45 @@
         studentId = savedStudent ? savedStudent.username : '';
       }
       if (!studentId) {
-        document.getElementById('day-page').innerHTML = '<p class="text-slate-500 font-bold">لم يتم اختيار طالب.</p>';
+        document.getElementById('recitation-list').innerHTML = '<div class="day-group text-slate-500 font-bold">لم يتم اختيار طالب.</div>';
         return;
       }
       const users = await Auth.getAllUsers();
       const student = users[studentId] || {};
       document.getElementById('student-name').textContent = ((student.prenom || '') + ' ' + (student.nom || '')).trim() || studentId;
       const notes = typeof Auth.getTeacherNotes === 'function' ? await Auth.getTeacherNotes(studentId) : [];
-      groupedDays = groupByDay(notes.filter(note => note && (note.source === 'recitation' || note.surah || note.validation)));
-      renderDayList();
-      renderActiveDay();
+      renderRecitations(groupByDay(notes.filter(note => note && (note.source === 'recitation' || note.surah || note.validation))));
     }
 
     window.addEventListener('DOMContentLoaded', initCarnet);
   </script>
 
-<nav class="nav-bottom">
-  <div class="max-w-4xl mx-auto flex justify-around items-center h-16 px-4">
-    <a href="dashboard.html#surah-focus" class="flex flex-col items-center gap-1 text-emerald-700 hover:text-emerald-900 transition group">
-      <div class="w-10 h-10 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center text-xl transition">📖</div>
-      <span class="text-[11px] font-black">السور</span>
-    </a>
-    <a href="profil.html" class="flex flex-col items-center gap-1 text-blue-700 hover:text-blue-900 transition group">
-      <div class="w-10 h-10 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center text-xl transition">🗂️</div>
-      <span class="text-[11px] font-black">الملف</span>
-    </a>
-    <a href="dashboard.html" class="active flex flex-col items-center gap-1 text-blue-700 hover:text-blue-900 transition group">
-      <div class="w-10 h-10 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center text-xl transition">🏠</div>
-      <span class="text-[11px] font-black">الرئيسية</span>
-    </a>
-    <a href="carnet-suivi.html" class="flex flex-col items-center gap-1 text-amber-700 hover:text-amber-900 transition group">
-      <div class="w-10 h-10 rounded-xl bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center text-xl transition">📘</div>
-      <span class="text-[11px] font-black">دفتر متابعة التعلم</span>
-    </a>
-    <button type="button" data-settings-toggle class="flex flex-col items-center gap-1 text-slate-700 hover:text-slate-900 transition group">
-      <div class="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-slate-100 flex items-center justify-center text-xl transition">⚙</div>
-      <span class="text-[11px] font-black">الإعدادات</span>
-    </button>
-  </div>
-</nav>
-<div class="mawahib-nav-padding"></div>
+  <nav class="nav-bottom">
+    <div class="max-w-4xl mx-auto flex justify-around items-center h-16 px-4">
+      <a href="dashboard.html#surah-focus" class="flex flex-col items-center gap-1 text-emerald-700 hover:text-emerald-900 transition group">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 flex items-center justify-center text-xl transition">📖</div>
+        <span class="text-[11px] font-black">السور</span>
+      </a>
+      <a href="profil.html" class="flex flex-col items-center gap-1 text-blue-700 hover:text-blue-900 transition group">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center text-xl transition">🗂️</div>
+        <span class="text-[11px] font-black">الملف</span>
+      </a>
+      <a href="dashboard.html" class="flex flex-col items-center gap-1 text-blue-700 hover:text-blue-900 transition group">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center text-xl transition">🏠</div>
+        <span class="text-[11px] font-black">الرئيسية</span>
+      </a>
+      <a href="carnet-suivi.html" class="active flex flex-col items-center gap-1 text-amber-700 hover:text-amber-900 transition group">
+        <div class="w-10 h-10 rounded-xl bg-amber-50 group-hover:bg-amber-100 flex items-center justify-center text-xl transition">📘</div>
+        <span class="text-[11px] font-black">دفتر متابعة التعلم</span>
+      </a>
+      <button type="button" data-settings-toggle class="flex flex-col items-center gap-1 text-slate-700 hover:text-slate-900 transition group">
+        <div class="w-10 h-10 rounded-xl bg-slate-50 group-hover:bg-slate-100 flex items-center justify-center text-xl transition">⚙</div>
+        <span class="text-[11px] font-black">الإعدادات</span>
+      </button>
+    </div>
+  </nav>
 
-<script src="app-settings.js"></script>
-<script src="notifications.js"></script>
+  <script src="app-settings.js"></script>
+  <script src="notifications.js"></script>
 </body>
 </html>

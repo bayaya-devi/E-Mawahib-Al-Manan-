@@ -726,6 +726,7 @@ async function chargerDevoirs() {
             if (typeof Auth.syncRewardsFromSurahs === 'function') Auth.syncRewardsFromSurahs(dashboardState.surahs);
             updateRewardPanel();
             renderSurahLibrary();
+            if (typeof Auth.prepareOfflineLessons === 'function') Auth.prepareOfflineLessons(dashboardState.surahs);
             if (window.location.hash === '#surah-focus') setTimeout(scrollToJourneyFocus, 180);
         }
 

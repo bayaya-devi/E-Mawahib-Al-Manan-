@@ -9,6 +9,9 @@ const Auth = (() => {
     const REWARDS_KEY_PREFIX = 'mawahib_rewards_';
     const CELEBRATION_KEY = 'mawahib_last_celebration';
     const INACTIVITY_KEY = 'mawahib_last_inactivity';
+    const OFFLINE_CACHE_PREFIX = 'mawahib_offline_cache_';
+    const OFFLINE_QUEUE_KEY = 'mawahib_offline_queue';
+    const OFFLINE_STATUS_KEY = 'mawahib_offline_status';
     const CLASS_SESSION_PREFIX = '[CLASS_SESSION] ';
     const TEACHER_NOTE_PREFIX = '[TEACHER_NOTE] ';
     const SURAH_ID_ALIASES = {
@@ -21,6 +24,15 @@ const Auth = (() => {
         'qaria': 'al-qaria',
         'fil': 'al-fil'
     };
+
+    function _registerServiceWorker() {
+        if (!('serviceWorker' in navigator)) return;
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(error => logError('serviceWorker', error));
+        });
+    }
+
+    _registerServiceWorker();
 
     // --- GESTION DE LA SESSION LOCALE ---
     function getSession() {
@@ -63,6 +75,10 @@ const Auth = (() => {
     async function switchAccount(username) {
         const account = _readSavedAccounts().find(item => item.username === username);
         if (!account) return false;
+        if (!_isOnline()) {
+            _setSession(account.username, account.prenom || '', account.nom || '', account.role || 'student');
+            return true;
+        }
         const table = account.role === 'prof' ? 'profs' : 'eleves';
         const { data, error } = await supabase.from(table).select('*').eq('username', account.username).maybeSingle();
         if (error || !data || data.is_suspended) {
@@ -211,6 +227,140 @@ const Auth = (() => {
     function logError(context, error) {
         console.error(`[${context}]`, error);
     }
+
+    function _isOnline() {
+        return typeof navigator === 'undefined' ? true : navigator.onLine !== false;
+    }
+
+    function _safeJsonRead(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw ? JSON.parse(raw) : fallback;
+        } catch (error) {
+            return fallback;
+        }
+    }
+
+    function _safeJsonWrite(key, value) {
+        try { localStorage.setItem(key, JSON.stringify(value)); }
+        catch (error) { logError('localStorage', error); }
+    }
+
+    function _offlineCacheKey(username, scope) {
+        return OFFLINE_CACHE_PREFIX + String(username || 'guest') + '_' + scope;
+    }
+
+    function _readOfflineCache(username, scope, fallback) {
+        return _safeJsonRead(_offlineCacheKey(username, scope), fallback);
+    }
+
+    function _writeOfflineCache(username, scope, value) {
+        _safeJsonWrite(_offlineCacheKey(username, scope), value);
+    }
+
+    function _readOfflineQueue() {
+        return _safeJsonRead(OFFLINE_QUEUE_KEY, []);
+    }
+
+    function _writeOfflineQueue(queue) {
+        _safeJsonWrite(OFFLINE_QUEUE_KEY, queue);
+        _setOfflineStatus(queue.length ? 'pending' : (_isOnline() ? 'synced' : 'offline'));
+    }
+
+    function _setOfflineStatus(status) {
+        const payload = { status, online: _isOnline(), pending: _readOfflineQueue().length, updatedAt: new Date().toISOString() };
+        _safeJsonWrite(OFFLINE_STATUS_KEY, payload);
+        window.dispatchEvent(new CustomEvent('mawahib:offline-status', { detail: payload }));
+    }
+
+    function getOfflineStatus() {
+        return _safeJsonRead(OFFLINE_STATUS_KEY, { status: _isOnline() ? 'synced' : 'offline', online: _isOnline(), pending: _readOfflineQueue().length });
+    }
+
+    function _queueOfflineMutation(type, payload) {
+        const queue = _readOfflineQueue();
+        const key = type + ':' + (payload.username || payload.studentId || '') + ':' + (payload.surahId || payload.id || payload.activityKey || Date.now());
+        const item = { key, type, payload, createdAt: new Date().toISOString(), attempts: 0 };
+        const filtered = queue.filter(existing => existing.key !== key);
+        filtered.push(item);
+        _writeOfflineQueue(filtered);
+        return item;
+    }
+
+    function _mergeProgressCache(username, surahId, patch) {
+        const normalizedId = normalizeSurahId(surahId);
+        const cache = _readOfflineCache(username, 'progress', {});
+        const current = cache[normalizedId] || {};
+        const merged = {
+            ...current,
+            ...patch,
+            activities: { ...(current.activities || {}), ...(patch.activities || {}) },
+            updatedAt: patch.updatedAt || new Date().toISOString()
+        };
+        _progressAliases(normalizedId).forEach(alias => { cache[alias] = merged; });
+        _writeOfflineCache(username, 'progress', cache);
+        return merged;
+    }
+
+    function _cacheList(username, scope, rows) {
+        if (Array.isArray(rows)) _writeOfflineCache(username, scope, rows);
+        return rows || [];
+    }
+
+    function _updateCachedDevoir(username, id, patch) {
+        const cached = _readOfflineCache(username, 'devoirs_student', []);
+        const updated = cached.map(item => item && item.id === id ? { ...item, ...patch } : item);
+        _writeOfflineCache(username, 'devoirs_student', updated);
+    }
+
+    async function _syncQueuedItem(item) {
+        const payload = item.payload || {};
+        if (item.type === 'recordActivity') {
+            const { error } = await supabase.from('progressions').upsert([{
+                username: payload.username,
+                surah_id: payload.surahId,
+                activities: payload.activities || {}
+            }]);
+            if (error) throw error;
+        }
+        if (item.type === 'completeSurah') {
+            const { error } = await supabase.from('progressions').upsert([{
+                username: payload.username,
+                surah_id: payload.surahId,
+                activities: payload.activities || {},
+                completed_at: payload.completedAt,
+                global_score: payload.globalScore || 100
+            }]);
+            if (error) throw error;
+        }
+        if (item.type === 'homeworkDone') {
+            const { error } = await supabase.from('devoirs').update({ statut: 'termine' }).eq('id', payload.id);
+            if (error) throw error;
+        }
+        if (item.type === 'teacherNote') {
+            const { error } = await supabase.from('messages').insert([payload.row]);
+            if (error) throw error;
+        }
+    }
+
+    async function syncOfflineQueue() {
+        if (!_isOnline()) { _setOfflineStatus('offline'); return { ok: false, pending: _readOfflineQueue().length }; }
+        const queue = _readOfflineQueue();
+        if (!queue.length) { _setOfflineStatus('synced'); return { ok: true, pending: 0 }; }
+        _setOfflineStatus('syncing');
+        const failed = [];
+        for (const item of queue) {
+            try { await _syncQueuedItem(item); }
+            catch (error) { failed.push({ ...item, attempts: (item.attempts || 0) + 1, lastError: error.message || String(error) }); }
+        }
+        _writeOfflineQueue(failed);
+        _setOfflineStatus(failed.length ? 'pending' : 'synced');
+        return { ok: failed.length === 0, pending: failed.length };
+    }
+
+    window.addEventListener('online', () => syncOfflineQueue());
+    window.addEventListener('offline', () => _setOfflineStatus('offline'));
+    setTimeout(() => _setOfflineStatus(_isOnline() ? (_readOfflineQueue().length ? 'pending' : 'synced') : 'offline'), 0);
 
     function _todayKey(date = new Date()) {
         return date.toISOString().slice(0, 10);
@@ -608,6 +758,7 @@ const Auth = (() => {
 
     // --- 3. FONCTIONS ADMINISTRATEUR ---
     async function getAllStudents() {
+        if (!_isOnline()) return _readOfflineCache('__admin__', 'all_students', []);
         const [elevesRes, progsRes, msgsRes, profilsRes, devoirsRes, horairesRes] = await Promise.all([
             supabase.from('eleves').select('*'),
             supabase.from('progressions').select('*'),
@@ -630,7 +781,7 @@ const Auth = (() => {
         const scheduleMap = {};
         horaires.forEach(h => { scheduleMap[h.username] = h.schedule_text || ''; });
 
-        return (elevesRes.data || []).map(e => {
+        const students = (elevesRes.data || []).map(e => {
             const userProgs = progs.filter(p => p.username === e.username);
             const progressDict = {};
             userProgs.forEach(p => _rememberProgressAliases(progressDict, p));
@@ -651,6 +802,8 @@ const Auth = (() => {
                 payments
             };
         });
+        _writeOfflineCache('__admin__', 'all_students', students);
+        return students;
     }
 
     async function getAllUsers() {
@@ -710,9 +863,15 @@ const Auth = (() => {
 
     // --- 5. HORAIRES ---
     async function getSchedule(username) {
+        if (!_isOnline()) return _readOfflineCache(username, 'schedule', "لم يتم تحميل أوقات الحصص بعد.");
         const { data, error } = await supabase.from('horaires').select('schedule_text').eq('username', username).maybeSingle();
-        if (error) logError('getSchedule', error);
-        return data ? data.schedule_text : "لم يتم تحديد أوقات الحصص بعد.";
+        if (error) {
+            logError('getSchedule', error);
+            return _readOfflineCache(username, 'schedule', "لم يتم تحديد أوقات الحصص بعد.");
+        }
+        const schedule = data ? data.schedule_text : "لم يتم تحديد أوقات الحصص بعد.";
+        _writeOfflineCache(username, 'schedule', schedule);
+        return schedule;
     }
 
     async function setSchedule(username, schedule_text) {
@@ -722,9 +881,13 @@ const Auth = (() => {
 
     // --- 6. MESSAGES ---
     async function getMessages(username) {
+        if (!_isOnline()) return _readOfflineCache(username, 'messages', []);
         const { data, error } = await supabase.from('messages').select('*').eq('username', username).order('id', { ascending: false });
-        if (error) logError('getMessages', error);
-        return data || [];
+        if (error) {
+            logError('getMessages', error);
+            return _readOfflineCache(username, 'messages', []);
+        }
+        return _cacheList(username, 'messages', data || []);
     }
 
     async function sendMessage(username, text) {
@@ -789,15 +952,28 @@ const Auth = (() => {
         const session = getSession();
         const date = new Date().toLocaleDateString('ar-MA', { day: 'numeric', month: 'long' });
         const body = TEACHER_NOTE_PREFIX + JSON.stringify({ ...payload, studentId, profId: session?.username || '', profName: session?.prenom || '', savedAt: new Date().toISOString() });
-        const { error } = await supabase.from('messages').insert([{ username: '__teacher_notes__:' + studentId, text: body, date }]);
-        if (error) { logError('saveTeacherNote', error); return { ok: false, error: error.message }; }
+        const row = { username: '__teacher_notes__:' + studentId, text: body, date };
+        if (!_isOnline()) {
+            _queueOfflineMutation('teacherNote', { studentId, row });
+            return { ok: true, offline: true };
+        }
+        const { error } = await supabase.from('messages').insert([row]);
+        if (error) {
+            logError('saveTeacherNote', error);
+            _queueOfflineMutation('teacherNote', { studentId, row });
+            return { ok: true, offline: true };
+        }
         return { ok: true };
     }
 
     async function getTeacherNotes(studentId) {
+        if (!_isOnline()) return _readOfflineCache(studentId, 'teacher_notes', []);
         const { data, error } = await supabase.from('messages').select('*').eq('username', '__teacher_notes__:' + studentId).order('id', { ascending: false });
-        if (error) { logError('getTeacherNotes', error); return []; }
-        return (data || []).map(row => _parsePrefixedPayload(row, TEACHER_NOTE_PREFIX)).filter(Boolean);
+        if (error) {
+            logError('getTeacherNotes', error);
+            return _readOfflineCache(studentId, 'teacher_notes', []);
+        }
+        return _cacheList(studentId, 'teacher_notes', (data || []).map(row => _parsePrefixedPayload(row, TEACHER_NOTE_PREFIX)).filter(Boolean));
     }
 
     async function getProfReports(profId) {
@@ -826,40 +1002,109 @@ const Auth = (() => {
 
     // --- 8. PROGRESSIONS ---
     async function getProgress(username) {
+        if (!_isOnline()) return _readOfflineCache(username, 'progress', {});
         const { data, error } = await supabase.from('progressions').select('*').eq('username', username);
-        if (error) logError('getProgress', error);
+        if (error) {
+            logError('getProgress', error);
+            return _readOfflineCache(username, 'progress', {});
+        }
         const res = {};
         (data || []).forEach(p => _rememberProgressAliases(res, p));
+        _writeOfflineCache(username, 'progress', res);
         return res;
     }
 
     async function recordActivity(surahId, activityKey, score) {
         const session = getSession(); if (!session) return;
         const normalizedId = normalizeSurahId(surahId);
+        const cachedProgress = _readOfflineCache(session.username, 'progress', {});
+        let activities = { ...(cachedProgress[normalizedId]?.activities || {}) };
+        const shouldSaveLocally = !activities[activityKey] || score > activities[activityKey].score;
+        if (shouldSaveLocally) {
+            activities[activityKey] = { score, date: new Date().toISOString() };
+            _mergeProgressCache(session.username, normalizedId, { activities });
+        }
+        if (!_isOnline()) {
+            _queueOfflineMutation('recordActivity', { username: session.username, surahId: normalizedId, activities });
+            return { ok: true, offline: true };
+        }
         const { data, error } = await supabase.from('progressions').select('activities')
             .eq('username', session.username).eq('surah_id', normalizedId).maybeSingle();
-        if (error && error.code !== 'PGRST116') logError('recordActivity', error);
-        let activities = data?.activities || {};
-        if (!activities[activityKey] || score > activities[activityKey].score) {
-            activities[activityKey] = { score, date: new Date().toISOString() };
-            await supabase.from('progressions').upsert([{ username: session.username, surah_id: normalizedId, activities }]);
+        if (error && error.code !== 'PGRST116') {
+            logError('recordActivity', error);
+            _queueOfflineMutation('recordActivity', { username: session.username, surahId: normalizedId, activities });
+            return { ok: true, offline: true };
         }
+        const serverActivities = data?.activities || {};
+        activities = { ...serverActivities, ...activities };
+        if (shouldSaveLocally || !serverActivities[activityKey] || score > serverActivities[activityKey].score) {
+            activities[activityKey] = { score, date: new Date().toISOString() };
+            const { error: upsertError } = await supabase.from('progressions').upsert([{ username: session.username, surah_id: normalizedId, activities }]);
+            if (upsertError) _queueOfflineMutation('recordActivity', { username: session.username, surahId: normalizedId, activities });
+        }
+        return { ok: true };
+    }
+
+    function prepareOfflineLessons(surahs) {
+        if (!Array.isArray(surahs) || !('serviceWorker' in navigator)) return;
+        const selected = surahs
+            .filter(surah => surah && surah.available !== false && (surah.isCompleted || surah.isCurrent || surah.isUnlocked))
+            .slice(-8);
+        const next = surahs.find(surah => surah && surah.available !== false && !surah.isCompleted);
+        const urls = Array.from(new Set([
+            'dashboard.html',
+            'carnet-suivi.html',
+            'profil.html',
+            'parent.html',
+            ...(selected.map(surah => surah.file).filter(Boolean)),
+            next && next.file
+        ].filter(Boolean)));
+        const post = registration => {
+            const worker = registration?.active || navigator.serviceWorker.controller;
+            if (worker) worker.postMessage({ type: 'PREFETCH_URLS', urls });
+        };
+        navigator.serviceWorker.ready.then(post).catch(() => {});
     }
 
     async function completeSurah(surahId) {
         const session = getSession(); if (!session) return;
         const normalizedId = normalizeSurahId(surahId);
-        const { data, error } = await supabase.from('progressions').select('activities, completed_at')
-            .eq('username', session.username).eq('surah_id', normalizedId).maybeSingle();
+        const cachedProgress = _readOfflineCache(session.username, 'progress', {});
+        let data = cachedProgress[normalizedId] || null;
+        let error = null;
+        if (_isOnline()) {
+            const response = await supabase.from('progressions').select('activities, completed_at')
+                .eq('username', session.username).eq('surah_id', normalizedId).maybeSingle();
+            data = response.data || data;
+            error = response.error;
+        }
         if (error && error.code !== 'PGRST116') logError('completeSurah', error);
         const wasCompleted = Boolean(data?.completed_at);
         const activities = data?.activities || {};
         const scores = Object.values(activities).map(a => a.score);
         const globalScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 100;
-        await supabase.from('progressions').upsert([{
-            username: session.username, surah_id: normalizedId, activities,
-            completed_at: new Date().toISOString(), global_score: globalScore
-        }]);
+        const completedAt = new Date().toISOString();
+        _mergeProgressCache(session.username, normalizedId, {
+            activities,
+            completed_at: completedAt,
+            completedAt,
+            is_completed: true,
+            global_score: globalScore,
+            globalScore,
+            score: globalScore
+        });
+        if (!_isOnline() || (error && error.code !== 'PGRST116')) {
+            _queueOfflineMutation('completeSurah', { username: session.username, surahId: normalizedId, activities, completedAt, globalScore });
+        } else {
+            const { error: upsertError } = await supabase.from('progressions').upsert([{
+                username: session.username, surah_id: normalizedId, activities,
+                completed_at: completedAt, global_score: globalScore
+            }]);
+            if (upsertError) {
+                logError('completeSurah.upsert', upsertError);
+                _queueOfflineMutation('completeSurah', { username: session.username, surahId: normalizedId, activities, completedAt, globalScore });
+            }
+        }
         const payload = wasCompleted
             ? storeMissionAttempt(normalizedId, globalScore, true)
             : _awardSurahStars(normalizedId);
@@ -881,10 +1126,15 @@ const Auth = (() => {
     }
 
     async function getDevoirs(role, username) {
+        const cacheScope = role === 'prof' ? 'devoirs_prof' : 'devoirs_student';
+        if (!_isOnline()) return _readOfflineCache(username, cacheScope, []);
         const field = role === 'prof' ? 'prof_id' : 'student_id';
         const { data, error } = await supabase.from('devoirs').select('*').eq(field, username).order('date_limite', { ascending: true });
-        if (error) logError('getDevoirs', error);
-        return data || [];
+        if (error) {
+            logError('getDevoirs', error);
+            return _readOfflineCache(username, cacheScope, []);
+        }
+        return _cacheList(username, cacheScope, data || []);
     }
 
     async function annulerDevoir(id) {
@@ -893,8 +1143,19 @@ const Auth = (() => {
     }
 
     async function marquerDevoirTermine(id) {
+        const session = getSession();
+        if (session) _updateCachedDevoir(session.username, id, { statut: 'termine' });
+        if (!_isOnline()) {
+            _queueOfflineMutation('homeworkDone', { id, username: session?.username || '' });
+            return { ok: true, offline: true };
+        }
         const { error } = await supabase.from('devoirs').update({ statut: 'termine' }).eq('id', id);
-        if (error) logError('marquerDevoirTermine', error);
+        if (error) {
+            logError('marquerDevoirTermine', error);
+            _queueOfflineMutation('homeworkDone', { id, username: session?.username || '' });
+            return { ok: true, offline: true };
+        }
+        return { ok: true };
     }
 
     function getSupabaseClient() { return supabase; }
@@ -905,8 +1166,8 @@ const Auth = (() => {
         assignStudentToProf, removeStudentFromProf,
         getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports, getProfReports,
         saveClassSession, getClassSessions, saveTeacherNote, getTeacherNotes,
-        getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, getLastCelebration, getLastInactivity, syncRewardsFromSurahs, getClassStarRanking, storeMissionAttempt,
+        getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, getLastCelebration, getLastInactivity, syncRewardsFromSurahs, getClassStarRanking, storeMissionAttempt, prepareOfflineLessons,
         ajouterDevoir, getDevoirs, annulerDevoir, marquerDevoirTermine,
-        getSupabaseClient
+        getSupabaseClient, syncOfflineQueue, getOfflineStatus
     };
 })();
