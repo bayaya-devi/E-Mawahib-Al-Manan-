@@ -191,12 +191,14 @@
     async function initCarnet() {
       const params = new URLSearchParams(location.search);
       let studentId = params.get('student');
+      const session = typeof Auth.getSession === 'function' ? Auth.getSession() : null;
+      if (!studentId && session && session.role === 'student') studentId = session.username;
       if (!studentId && typeof Auth.getSavedAccounts === 'function') {
         const savedStudent = Auth.getSavedAccounts().find(account => account && account.role === 'student');
         studentId = savedStudent ? savedStudent.username : '';
       }
       if (!studentId) {
-        document.getElementById('recitation-list').innerHTML = '<div class="day-group text-slate-500 font-bold">لم يتم اختيار طالب.</div>';
+        window.location.href = 'dashboard.html';
         return;
       }
       const users = await Auth.getAllUsers();
