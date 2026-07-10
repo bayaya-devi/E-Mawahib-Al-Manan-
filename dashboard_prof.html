@@ -1,757 +1,535 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الأستاذ - مواهب المنان</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js"></script>
-    <script src="registry.js"></script>
-    <link rel="stylesheet" href="platform-theme.css">
-    <script src="platform-theme.js"></script>
-    <style>
-        body { font-family: var(--platform-font-ui, 'Tajawal'), 'Cairo', sans-serif; min-height: 100vh; }
-        .prof-shell { max-width: 1180px; margin: 0 auto; }
-        .prof-hero { background: radial-gradient(circle at 12% 10%, color-mix(in srgb, var(--platform-accent) 36%, transparent), transparent 26rem), linear-gradient(135deg, var(--platform-primary-dark), var(--platform-primary)); color: #fff; border-radius: 28px; padding: 22px; box-shadow: var(--platform-shadow); }
-        .prof-stat { border-radius: 20px; background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.18); padding: 14px; }
-        .prof-stat strong { display: block; font-size: 28px; line-height: 1; font-weight: 900; }
-        .prof-stat span { display: block; margin-top: 7px; color: rgba(255,255,255,.78); font-size: 12px; font-weight: 900; }
-        .tab-btn { min-height: 42px; border: 1px solid var(--platform-border); border-radius: 999px; padding: 9px 14px; font-weight: 900; color: var(--platform-muted); background: color-mix(in srgb, var(--platform-surface) 88%, #fff); }
-        .tab-btn.active { color: #fff; background: linear-gradient(135deg, var(--platform-primary), var(--platform-primary-dark)); border-color: transparent; box-shadow: 0 12px 26px color-mix(in srgb, var(--platform-primary) 28%, transparent); }
-        .panel { background: color-mix(in srgb, var(--platform-surface) 92%, #fff); border: 1px solid var(--platform-border); border-radius: 22px; padding: 16px; box-shadow: var(--platform-shadow-soft); }
-        .student-card { background: #fff; border: 1px solid var(--platform-border); border-radius: 18px; padding: 15px; box-shadow: 0 12px 28px rgba(15,23,42,.06); }
-        .progress-track { height: 9px; border-radius: 999px; overflow: hidden; background: color-mix(in srgb, var(--platform-primary-soft) 45%, #e5e7eb); }
-        .progress-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--platform-primary), var(--platform-accent)); }
-        .mini-badge { display:inline-flex; align-items:center; border-radius:999px; padding:4px 9px; font-size:11px; font-weight:900; }
-        .field-soft { width:100%; border-radius:14px; border:1px solid var(--platform-border); background:#fff; padding:9px 10px; font-size:12px; font-weight:800; }
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.52); z-index: 50; align-items: center; justify-content: center; padding: 16px; }
-        .modal-overlay.open { display: flex; }
-        .quick-action { border-radius: 16px; border: 1px solid var(--platform-border); background: linear-gradient(135deg, #fff, color-mix(in srgb, var(--platform-primary-soft) 28%, #fff)); padding: 12px; font-weight: 900; color: var(--platform-primary-dark); text-align: right; }
-        @media (max-width: 700px) { .prof-hero { border-radius: 22px; } .prof-stat strong { font-size: 22px; } }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>حصة التسميع - مواهب المنان</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+  <script src="registry.js"></script>
+  <link rel="stylesheet" href="platform-theme.css">
+  <script src="platform-theme.js"></script>
+  <style>
+    :root {
+      --teacher-bg: #f5f5f7;
+      --teacher-ink: #111827;
+      --teacher-muted: #6b7280;
+      --teacher-line: rgba(17, 24, 39, .1);
+      --teacher-card: rgba(255, 255, 255, .82);
+      --teacher-shadow: 0 18px 50px rgba(15, 23, 42, .08);
+      --teacher-green: #064e3b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top right, rgba(6, 78, 59, .10), transparent 34rem),
+        linear-gradient(180deg, #fbfbfd, var(--teacher-bg));
+      color: var(--teacher-ink);
+      font-family: 'Tajawal', sans-serif;
+      padding: 18px;
+    }
+    .shell { width: min(1180px, 100%); margin: 0 auto; }
+    .glass {
+      background: var(--teacher-card);
+      border: 1px solid rgba(255, 255, 255, .72);
+      box-shadow: var(--teacher-shadow);
+      backdrop-filter: blur(18px);
+    }
+    .topbar {
+      border-radius: 28px;
+      padding: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .icon-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 18px;
+      background: #fff;
+      object-fit: contain;
+      padding: 5px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, .08);
+    }
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      min-height: 42px;
+      padding: 0 16px;
+      font-weight: 900;
+      font-size: 13px;
+      cursor: pointer;
+      transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+    .btn:active { transform: scale(.97); }
+    .btn-primary {
+      background: var(--teacher-green);
+      color: #fff;
+      box-shadow: 0 12px 28px rgba(6, 78, 59, .18);
+    }
+    .btn-soft { background: rgba(17, 24, 39, .06); color: #111827; }
+    .btn-danger { background: #fff1f2; color: #be123c; }
+    .panel {
+      border-radius: 26px;
+      padding: 16px;
+    }
+    .session-strip {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 12px;
+      align-items: end;
+      margin: 14px 0;
+    }
+    .input {
+      width: 100%;
+      border: 1px solid var(--teacher-line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .9);
+      min-height: 44px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #111827;
+      outline: none;
+    }
+    .input:focus {
+      border-color: rgba(6, 78, 59, .45);
+      box-shadow: 0 0 0 4px rgba(6, 78, 59, .08);
+    }
+    .label {
+      display: block;
+      color: var(--teacher-muted);
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 14px;
+      align-items: start;
+    }
+    .student-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .student-card {
+      border: 1px solid rgba(17, 24, 39, .08);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, .92);
+      padding: 14px;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, .05);
+    }
+    .student-card.absent {
+      opacity: .62;
+      background: rgba(248, 250, 252, .88);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      background: rgba(6, 78, 59, .08);
+      color: var(--teacher-green);
+      white-space: nowrap;
+    }
+    .small-muted { color: var(--teacher-muted); font-size: 12px; font-weight: 800; }
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      padding: 16px;
+      align-items: center;
+      justify-content: center;
+      background: rgba(17, 24, 39, .45);
+      backdrop-filter: blur(10px);
+    }
+    .modal-overlay.open { display: flex; }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      transform: translateX(-50%);
+      background: #111827;
+      color: #fff;
+      border-radius: 18px;
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 900;
+      z-index: 80;
+      box-shadow: 0 18px 40px rgba(15, 23, 42, .22);
+    }
+    @media (max-width: 900px) {
+      body { padding: 10px; }
+      .topbar { border-radius: 22px; padding: 14px; }
+      .layout { grid-template-columns: 1fr; }
+      .session-strip { grid-template-columns: 1fr 1fr; }
+      .session-strip .date-cell { grid-column: 1 / -1; }
+      .student-list { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .topbar { align-items: flex-start; }
+      .topbar-actions { flex-direction: column; width: 92px; }
+      .topbar-actions .btn { width: 100%; padding: 0 10px; }
+      .session-strip { grid-template-columns: 1fr; }
+      .student-card { border-radius: 20px; }
+      .student-actions { grid-template-columns: 1fr !important; }
+    }
+  </style>
 </head>
-<body class="p-4 md:p-6">
-<div class="prof-shell">
-    <header class="prof-hero mb-5">
-        <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-5">
-            <div class="flex items-center gap-4">
-                <img src="logo.webp" alt="مواهب المنان" class="h-16 w-16 rounded-2xl bg-white/90 object-contain p-1" onerror="this.style.display='none'">
-                <div>
-                    <p class="text-white/70 text-xs font-black">غرفة الأستاذ</p>
-                    <h1 class="text-2xl md:text-4xl font-black">مرحباً، <span id="prof-name">...</span></h1>
-                    <p class="text-white/75 text-sm font-bold mt-1">القسم: <span id="prof-classe">...</span></p>
-                </div>
-            </div>
-            <div class="flex gap-2 flex-wrap">
-                <button onclick="refreshProfDashboard()" class="bg-white text-emerald-900 px-4 py-2 rounded-2xl font-black shadow">تحديث</button>
-                <button onclick="deconnexion()" class="bg-white/12 border border-white/20 text-white px-4 py-2 rounded-2xl font-black">خروج</button>
-            </div>
+<body>
+  <div class="shell">
+    <header class="topbar glass">
+      <div class="flex items-center gap-3 min-w-0">
+        <img src="logo.webp" alt="مواهب المنان" class="icon-logo" onerror="this.style.display='none'">
+        <div class="min-w-0">
+          <p class="small-muted">حصة التسميع</p>
+          <h1 class="text-2xl md:text-3xl font-black truncate">أستاذ <span id="prof-name">...</span></h1>
+          <p class="text-sm font-extrabold text-gray-500 truncate">القسم: <span id="prof-classe">...</span></p>
         </div>
-        <div id="prof-kpis" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-5"></div>
+      </div>
+      <div class="topbar-actions flex gap-2">
+        <button onclick="refreshProfDashboard()" class="btn btn-soft">تحديث</button>
+        <button onclick="deconnexion()" class="btn btn-danger">خروج</button>
+      </div>
     </header>
 
-    <nav class="flex gap-2 overflow-x-auto mb-5 pb-1">
-        <button class="tab-btn active" onclick="switchTab('overview')">القيادة</button>
-        <button class="tab-btn" onclick="switchTab('attendance')">الحضور والحصة</button>
-        <button class="tab-btn" onclick="switchTab('students')">الطلاب</button>
-        <button class="tab-btn" onclick="switchTab('devoirs')">الواجبات</button>
-        <button class="tab-btn" onclick="switchTab('messages')">الرسائل</button>
-        <button class="tab-btn" onclick="switchTab('reports')">إبلاغ الإدارة</button>
-    </nav>
+    <section class="session-strip">
+      <div class="date-cell panel glass">
+        <label class="label">تاريخ الحصة</label>
+        <input type="date" id="session-date" class="input">
+      </div>
+      <button onclick="setAllPresent(true)" class="btn btn-soft">الكل حاضر</button>
+      <button onclick="saveDailySession()" class="btn btn-primary">حفظ الحصة</button>
+    </section>
 
-    <main>
-        <section id="tab-overview" class="grid grid-cols-1 xl:grid-cols-3 gap-4">
-            <div class="panel xl:col-span-2">
-                <div class="flex items-center justify-between gap-3 mb-4">
-                    <div>
-                        <p class="text-xs font-black text-gray-400">الأولويات</p>
-                        <h2 class="text-lg font-black text-gray-900">من يحتاج متابعة اليوم؟</h2>
-                    </div>
-                    <span id="class-health" class="text-xs font-black rounded-full bg-emerald-50 text-emerald-700 px-3 py-1"></span>
-                </div>
-                <div id="priority-list" class="space-y-2"></div>
-            </div>
-            <div class="panel">
-                <p class="text-xs font-black text-gray-400 mb-3">أوامر سريعة</p>
-                <div class="grid grid-cols-2 gap-2">
-                    <button class="quick-action" onclick="switchTab('students')">إرسال واجب</button>
-                    <button class="quick-action" onclick="switchTab('messages')">رسالة جماعية</button>
-                    <button class="quick-action" onclick="fillTodayDate()">واجب اليوم</button>
-                    <button class="quick-action" onclick="switchTab('devoirs')">متابعة</button>
-                </div>
-            </div>
-            <div class="panel xl:col-span-3">
-                <p class="text-xs font-black text-gray-400 mb-3">آخر الإنجازات</p>
-                <div id="recent-progress" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3"></div>
-            </div>
-            <div class="panel xl:col-span-2">
-                <p class="text-xs font-black text-gray-400 mb-3">أولوية التسميع</p>
-                <h2 class="text-lg font-black text-gray-900 mb-3">طلاب يُستحسن الاستماع لهم اليوم</h2>
-                <div id="listen-queue" class="space-y-2"></div>
-            </div>
-            <div class="panel">
-                <p class="text-xs font-black text-gray-400 mb-3">إحصائيات القسم</p>
-                <div id="prof-learning-stats" class="space-y-2"></div>
-            </div>
+    <main class="layout">
+      <section class="panel glass">
+        <div class="flex items-center justify-between gap-3 mb-4">
+          <div>
+            <p class="small-muted">قائمة الطلاب</p>
+            <h2 class="text-xl font-black">سجّل التسميع مباشرة</h2>
+          </div>
+          <span id="student-count" class="pill">0 طالب</span>
+        </div>
+        <div id="recitation-list" class="student-list"></div>
+      </section>
+
+      <aside class="space-y-3">
+        <section class="panel glass">
+          <p class="small-muted mb-2">الأولوية اليوم</p>
+          <div id="listen-queue" class="space-y-2"></div>
         </section>
-
-
-        <section id="tab-attendance" class="hidden grid grid-cols-1 xl:grid-cols-3 gap-4">
-            <div class="panel xl:col-span-2">
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-                    <div>
-                        <p class="text-xs font-black text-gray-400">الحضور اليومي</p>
-                        <h2 class="text-lg font-black text-gray-900">اختر الحاضرين وسجل درس اليوم</h2>
-                    </div>
-                    <input type="date" id="session-date" class="rounded-2xl px-3 py-2 font-bold text-sm">
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-                    <div>
-                        <label class="block text-sm font-black text-gray-600 mb-1">تعلم اليوم</label>
-                        <input id="session-learning" class="w-full rounded-2xl px-3 py-3 text-sm" placeholder="مثال: سورة الناس من 1 إلى 3">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-black text-gray-600 mb-1">مراجعة اليوم</label>
-                        <input id="session-revision" class="w-full rounded-2xl px-3 py-3 text-sm" placeholder="مثال: مراجعة سورة الفلق">
-                    </div>
-                </div>
-                <div class="flex flex-wrap gap-2 mb-4">
-                    <button onclick="setAllPresent(true)" class="quick-action">تحديد الكل حاضر</button>
-                    <button onclick="setAllPresent(false)" class="quick-action">إلغاء التحديد</button>
-                </div>
-                <div id="attendance-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-                <button onclick="saveDailySession()" class="btn-primary w-full mt-4 py-3 rounded-2xl font-black">حفظ حصة اليوم</button>
-            </div>
-            <div class="panel">
-                <p class="text-xs font-black text-gray-400 mb-3">آخر الحصص المسجلة</p>
-                <div id="session-history" class="space-y-3"></div>
-            </div>
+        <section class="panel glass">
+          <p class="small-muted mb-2">واجبات مفتوحة</p>
+          <div id="homework-summary" class="space-y-2"></div>
         </section>
-
-        <section id="tab-students" class="hidden">
-            <div class="panel mb-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                <div>
-                    <p class="text-xs font-black text-gray-400">قائمة الطلاب</p>
-                    <h2 class="text-lg font-black text-gray-900">متابعة فردية لكل طالب</h2>
-                </div>
-                <select id="student-filter" onchange="renderStudents()" class="rounded-2xl px-3 py-2 font-bold text-sm">
-                    <option value="all">كل الطلاب</option>
-                    <option value="late">لم يبدأوا</option>
-                    <option value="homework">عندهم واجب</option>
-                    <option value="active">نشطون</option>
-                </select>
-            </div>
-            <div id="students-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+        <section class="panel glass">
+          <p class="small-muted mb-2">إبلاغ الإدارة</p>
+          <select id="report-student" class="input mb-2"></select>
+          <textarea id="admin-report-text" rows="4" class="input" placeholder="اكتب ملاحظة مختصرة للإدارة"></textarea>
+          <button onclick="sendAdminReport()" class="btn btn-primary w-full mt-2">إرسال</button>
         </section>
-
-        <section id="tab-devoirs" class="hidden panel">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-                <div>
-                    <p class="text-xs font-black text-gray-400">متابعة الواجبات</p>
-                    <h2 class="text-lg font-black text-gray-900">الواجبات المرسلة وحالتها</h2>
-                </div>
-                <button onclick="chargerSuiviDevoirs()" class="btn-primary px-4 py-2 rounded-2xl font-black">تحديث الواجبات</button>
-            </div>
-            <div id="liste-suivi-devoirs" class="space-y-3"></div>
-        </section>
-
-        <section id="tab-messages" class="hidden panel">
-            <p class="text-xs font-black text-gray-400 mb-2">رسالة تعليمية جماعية</p>
-            <textarea id="class-message" rows="6" class="w-full rounded-2xl p-3 text-sm" placeholder="مثال: راجعوا سورة الفلق قبل الحصة القادمة..."></textarea>
-            <button onclick="sendClassMessage()" class="btn-primary w-full mt-3 py-3 rounded-2xl font-black">إرسال للطلاب</button>
-        </section>
-
-        <section id="tab-reports" class="hidden panel">
-            <div class="mb-4">
-                <p class="text-xs font-black text-gray-400">Signalement admin</p>
-                <h2 class="text-lg font-black text-gray-900">إبلاغ الإدارة بشيء يحتاج قرارا</h2>
-                <p class="text-sm text-gray-500 font-bold mt-1">استعمله للمشاكل الإدارية أو التربوية التي لا يستطيع الأستاذ حلها وحده.</p>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                <select id="report-category" class="rounded-2xl px-3 py-3 font-bold text-sm">
-                    <option value="غياب متكرر">غياب متكرر</option>
-                    <option value="صعوبة في الحفظ">صعوبة في الحفظ</option>
-                    <option value="سلوك داخل القسم">سلوك داخل القسم</option>
-                    <option value="تواصل مع الولي">تواصل مع الولي</option>
-                    <option value="احتياج إداري">احتياج إداري</option>
-                </select>
-                <select id="report-student" class="rounded-2xl px-3 py-3 font-bold text-sm"></select>
-            </div>
-            <textarea id="admin-report-text" rows="7" class="w-full rounded-2xl p-3 text-sm" placeholder="اكتب signalement واضح: ماذا حدث؟ مع من؟ ماذا تقترح؟"></textarea>
-            <button onclick="sendAdminReport()" class="btn-primary w-full mt-3 py-3 rounded-2xl font-black">إرسال إلى الإدارة</button>
-            <div class="mt-5">
-                <p class="text-xs font-black text-gray-400 mb-2">Signalements envoyés</p>
-                <div id="prof-reports-history" class="space-y-2"></div>
-            </div>
-        </section>
+      </aside>
     </main>
-</div>
+  </div>
 
-<div id="modal-devoir" class="modal-overlay" onclick="handleModalClick(event)">
-    <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-            <div>
-                <h2 class="text-base font-black text-gray-900">إرسال واجب</h2>
-                <p class="text-xs text-gray-500 mt-1">إلى: <span id="devoir-student-name" class="font-black text-emerald-700"></span></p>
-            </div>
-            <button onclick="fermerModalDevoir()" class="text-gray-400 hover:text-gray-700 font-black text-xl px-2">×</button>
+  <div id="modal-devoir" class="modal-overlay" onclick="handleModalClick(event)">
+    <div class="glass w-full max-w-md rounded-[28px] overflow-hidden">
+      <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center">
+        <div>
+          <h2 class="text-lg font-black">واجب مراجعة</h2>
+          <p class="small-muted mt-1">إلى: <span id="devoir-student-name"></span></p>
         </div>
-        <input type="hidden" id="devoir-student-id">
-        <div class="p-6 space-y-4">
-            <div>
-                <label class="block text-sm font-black text-gray-600 mb-1">السورة</label>
-                <input type="text" id="devoir-surate" class="w-full px-3 py-2.5 rounded-xl border bg-gray-50 text-sm" list="surah-list">
-                <datalist id="surah-list"></datalist>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-sm font-black text-gray-600 mb-1">نوع الواجب</label>
-                    <select id="devoir-type" class="w-full px-3 py-2.5 rounded-xl border bg-gray-50 text-sm">
-                        <option value="تعلم">تعلم</option>
-                        <option value="مراجعة">مراجعة</option>
-                        <option value="تسميع">تسميع</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-black text-gray-600 mb-1">الأولوية</label>
-                    <select id="devoir-priority" class="w-full px-3 py-2.5 rounded-xl border bg-gray-50 text-sm">
-                        <option value="عادي">عادي</option>
-                        <option value="مهم">مهم</option>
-                    </select>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                <div><label class="block text-sm font-black text-gray-600 mb-1">من الآية</label><input type="number" id="devoir-debut" min="1" class="w-full px-3 py-2.5 rounded-xl border bg-gray-50 text-sm"></div>
-                <div><label class="block text-sm font-black text-gray-600 mb-1">إلى الآية</label><input type="number" id="devoir-fin" min="1" class="w-full px-3 py-2.5 rounded-xl border bg-gray-50 text-sm"></div>
-            </div>
-            <div><label class="block text-sm font-black text-gray-600 mb-1">آخر أجل</label><input type="date" id="devoir-date" class="w-full px-3 py-2.5 rounded-xl border bg-gray-50 text-sm"></div>
+        <button onclick="fermerModalDevoir()" class="btn btn-soft">إغلاق</button>
+      </div>
+      <input type="hidden" id="devoir-student-id">
+      <div class="p-6 space-y-3">
+        <input type="text" id="devoir-surate" class="input" list="surah-list" placeholder="السورة">
+        <datalist id="surah-list"></datalist>
+        <div class="grid grid-cols-2 gap-3">
+          <input type="number" id="devoir-debut" min="1" class="input" placeholder="من الآية">
+          <input type="number" id="devoir-fin" min="1" class="input" placeholder="إلى الآية">
         </div>
-        <div class="px-6 pb-6 flex gap-3">
-            <button onclick="fermerModalDevoir()" class="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-xl font-black">إلغاء</button>
-            <button onclick="envoyerDevoir()" class="btn-primary flex-1 py-2.5 rounded-xl font-black">إرسال</button>
-        </div>
+        <input type="date" id="devoir-date" class="input">
+        <button onclick="envoyerDevoir()" class="btn btn-primary w-full">إرسال الواجب</button>
+      </div>
     </div>
-</div>
+  </div>
 
-<div id="modal-carnet" class="modal-overlay" onclick="handleCarnetClick(event)">
-    <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-            <div>
-                <h2 class="text-base font-black text-gray-900">Carnet de suivi</h2>
-                <p class="text-xs text-gray-500 mt-1" id="carnet-student-name"></p>
-            </div>
-            <button onclick="fermerCarnet()" class="text-gray-400 hover:text-gray-700 font-black text-xl px-2">×</button>
-        </div>
-        <div class="p-6 overflow-y-auto space-y-4">
-            <input type="hidden" id="carnet-student-id">
-            <div id="carnet-summary" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-sm font-black text-gray-600 mb-1">Validation</label>
-                    <select id="carnet-validation" class="field-soft">
-                        <option value="validé">validé</option>
-                        <option value="à revoir">à revoir</option>
-                        <option value="absent">absent</option>
-                        <option value="récitation insuffisante">récitation insuffisante</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-black text-gray-600 mb-1">Point faible</label>
-                    <input id="carnet-weakness" class="field-soft" placeholder="ex: ordre des versets, hésitation, tajwid">
-                </div>
-            </div>
-            <div>
-                <label class="block text-sm font-black text-gray-600 mb-1">Remarque courte</label>
-                <textarea id="carnet-comment" rows="3" class="field-soft" placeholder="Note pédagogique pour le prochain cours"></textarea>
-            </div>
-            <button onclick="saveCarnetNote()" class="btn-primary w-full py-3 rounded-2xl font-black">Enregistrer dans le carnet</button>
-            <div>
-                <p class="text-xs font-black text-gray-400 mb-2">Historique apprentissage / révision</p>
-                <div id="carnet-history" class="space-y-2"></div>
-            </div>
-        </div>
-    </div>
-</div>
+  <script>
+    let session = null;
+    let myStudents = [];
+    let myDevoirs = [];
+    let myProf = null;
+    let myClassSessions = [];
+    let teacherNotesCache = {};
 
-<script>
-let session = null;
-let myStudents = [];
-let myDevoirs = [];
-let myProf = null;
-let myClassSessions = [];
-let teacherNotesCache = {};
-let myReports = [];
-
-function escapeHtml(value) {
-    return String(value || '').replace(/[&<>"']/g, function(ch) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]; });
-}
-
-function escapeArg(value) {
-    return escapeHtml(String(value || '').split('\\').join('\\\\').split("'").join("\\'").split('\n').join(' '));
-}
-
-function completedCount(student) {
-    return Object.values(student.progress || {}).filter(function(p) { return p && p.completedAt; }).length;
-}
-
-function latestCompletion(student) {
-    const entries = Object.entries(student.progress || {}).filter(function(item) { return item[1] && item[1].completedAt; });
-    entries.sort(function(a, b) { return new Date(b[1].completedAt) - new Date(a[1].completedAt); });
-    return entries[0] || null;
-}
-
-function currentSurah(student) {
-    const completed = new Set(Object.entries(student.progress || {}).filter(function(item) { return item[1] && item[1].completedAt; }).map(function(item) { return item[0]; }));
-    if (typeof SURAH_REGISTRY === 'undefined') return null;
-    const order = SURAH_REGISTRY.filter(function(s) { return s.available; }).sort(function(a, b) { return b.num - a.num; });
-    return order.find(function(s) { return !completed.has(s.id); }) || order[order.length - 1] || null;
-}
-
-function studentRisk(student) {
-    const count = completedCount(student);
-    const pendingHw = homeworkFor(student).filter(function(d) { return d.statut !== 'termine'; }).length;
-    const sessions = myClassSessions || [];
-    const absences = sessions.filter(function(item) { return (item.absent || []).includes(student.username); }).length;
-    const notes = teacherNotesCache[student.username] || [];
-    const weak = notes.filter(function(n) { return /revoir|insuffisante|absent|صعوبة|ضعف/i.test((n.validation || '') + ' ' + (n.weakness || '') + ' ' + (n.comment || '')); }).length;
-    return pendingHw * 3 + absences * 2 + weak * 2 + (count === 0 ? 4 : 0);
-}
-
-function surahName(id) {
-    const s = typeof SURAH_REGISTRY !== 'undefined' ? SURAH_REGISTRY.find(function(item) { return item.id === id; }) : null;
-    return s ? s.nameAr : id;
-}
-
-function homeworkFor(student) {
-    return myDevoirs.filter(function(d) { return d.student_id === student.username; });
-}
-
-function snapshot() {
-    const total = myStudents.length;
-    const active = myStudents.filter(function(s) { return !s.isSuspended; }).length;
-    const pending = myDevoirs.filter(function(d) { return d.statut !== 'termine'; }).length;
-    const done = myDevoirs.filter(function(d) { return d.statut === 'termine'; }).length;
-    const totalCompleted = myStudents.reduce(function(sum, s) { return sum + completedCount(s); }, 0);
-    const zero = myStudents.filter(function(s) { return completedCount(s) === 0; }).length;
-    return { total: total, active: active, pending: pending, done: done, avg: total ? Math.round(totalCompleted / total) : 0, zero: zero };
-}
-
-function switchTab(name) {
-    ['overview','attendance','students','devoirs','messages','reports'].forEach(function(t) {
-        document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
-    });
-    document.querySelectorAll('.tab-btn').forEach(function(btn, i) {
-        btn.classList.toggle('active', ['overview','attendance','students','devoirs','messages','reports'][i] === name);
-    });
-    if (name === 'attendance') renderAttendance();
-    if (name === 'students') renderStudents();
-    if (name === 'devoirs') chargerSuiviDevoirs();
-    if (name === 'reports') renderProfReports();
-}
-
-async function initProfDashboard() {
-    session = Auth.getSession();
-    if (!session || session.role !== 'prof') { window.location.href = 'login.html'; return; }
-    document.getElementById('prof-name').textContent = session.prenom;
-    document.getElementById('prof-classe').textContent = session.nom;
-    if (typeof SURAH_REGISTRY !== 'undefined') {
-        document.getElementById('surah-list').innerHTML = SURAH_REGISTRY.map(function(s) { return '<option value="' + escapeHtml(s.nameFr || s.id) + '">' + escapeHtml(s.nameAr) + '</option>'; }).join('');
+    function escapeHtml(value) {
+      return String(value || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
     }
-    await refreshProfDashboard(false);
-}
 
-async function refreshProfDashboard(show) {
-    const profs = await Auth.getProfs();
-    const users = await Auth.getAllUsers();
-    myDevoirs = await Auth.getDevoirs('prof', session.username);
-    myClassSessions = typeof Auth.getClassSessions === 'function' ? await Auth.getClassSessions(session.username) : [];
-    myReports = typeof Auth.getProfReports === 'function' ? await Auth.getProfReports(session.username) : [];
-    myProf = profs[session.username] || { students: [] };
-    myStudents = (myProf.students || []).map(function(id) { return users[id]; }).filter(Boolean);
-    teacherNotesCache = {};
-    if (typeof Auth.getTeacherNotes === 'function') {
-        await Promise.all(myStudents.map(async function(st) {
-            teacherNotesCache[st.username] = await Auth.getTeacherNotes(st.username);
+    function escapeArg(value) {
+      return escapeHtml(String(value || '').split('\\').join('\\\\').split("'").join("\\'").split('\n').join(' '));
+    }
+
+    function homeworkFor(student) {
+      return myDevoirs.filter(d => d.student_id === student.username);
+    }
+
+    function lastTeacherNote(student) {
+      const notes = teacherNotesCache[student.username] || [];
+      return notes[0] || null;
+    }
+
+    function studentPriority(student) {
+      const pending = homeworkFor(student).filter(d => d.statut !== 'termine').length;
+      const absences = (myClassSessions || []).filter(item => (item.absent || []).includes(student.username)).length;
+      const notes = teacherNotesCache[student.username] || [];
+      const weak = notes.filter(n => /ضعيف|إعادة|غائب|متردد|ناقص/.test((n.validation || '') + ' ' + (n.comment || ''))).length;
+      return pending * 3 + absences * 2 + weak * 2;
+    }
+
+    function surahOptions() {
+      if (typeof SURAH_REGISTRY === 'undefined') return '';
+      return SURAH_REGISTRY
+        .filter(s => s.available)
+        .map(s => '<option value="' + escapeHtml(s.nameAr) + '">' + escapeHtml(s.nameFr || s.id) + '</option>')
+        .join('');
+    }
+
+    async function initProfDashboard() {
+      session = Auth.getSession();
+      if (!session || session.role !== 'prof') {
+        window.location.href = 'login.html';
+        return;
+      }
+      document.getElementById('prof-name').textContent = session.prenom;
+      document.getElementById('prof-classe').textContent = session.nom;
+      document.getElementById('session-date').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('surah-list').innerHTML = surahOptions();
+      await refreshProfDashboard(false);
+    }
+
+    async function refreshProfDashboard(show = true) {
+      const profs = await Auth.getProfs();
+      const users = await Auth.getAllUsers();
+      myDevoirs = await Auth.getDevoirs('prof', session.username);
+      myClassSessions = typeof Auth.getClassSessions === 'function' ? await Auth.getClassSessions(session.username) : [];
+      myProf = profs[session.username] || { students: [] };
+      myStudents = (myProf.students || []).map(id => users[id]).filter(Boolean);
+      teacherNotesCache = {};
+      if (typeof Auth.getTeacherNotes === 'function') {
+        await Promise.all(myStudents.map(async student => {
+          teacherNotesCache[student.username] = await Auth.getTeacherNotes(student.username);
         }));
+      }
+      renderAll();
+      if (show) showToast('تم التحديث');
     }
-    renderAll();
-    if (show !== false) showToast('تم تحديث بيانات القسم', 'success');
-}
 
-function renderAll() {
-    renderKpis();
-    renderOverview();
-    renderListenQueue();
-    renderLearningStats();
-    renderAttendance();
-    renderStudents();
-    renderHomework();
-    renderReportStudentOptions();
-    renderProfReports();
-}
-
-function renderListenQueue() {
-    const box = document.getElementById('listen-queue');
-    if (!box) return;
-    const queue = myStudents
-        .map(function(st) {
-            const score = studentRisk(st);
-            const current = currentSurah(st);
-            return { st: st, score: score, current: current };
-        })
-        .filter(function(item) { return item.score > 0; })
-        .sort(function(a, b) { return b.score - a.score; })
-        .slice(0, 8);
-    box.innerHTML = queue.length ? queue.map(function(item, index) {
-        const name = item.st.prenom + ' ' + item.st.nom;
-        return '<div class="rounded-2xl border border-amber-100 bg-amber-50/60 p-3 flex items-center justify-between gap-3"><div><strong class="text-gray-900">' + escapeHtml(index + 1 + '. ' + name) + '</strong><p class="text-xs font-bold text-gray-500 mt-1">السورة الحالية: ' + escapeHtml(item.current ? item.current.nameAr : '-') + '</p></div><button onclick="ouvrirCarnet(\'' + escapeArg(item.st.username) + '\')" class="rounded-xl bg-white text-amber-700 px-3 py-2 text-xs font-black">Carnet</button></div>';
-    }).join('') : '<div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 text-sm font-black text-emerald-700 text-center">لا توجد أولوية تسميع عاجلة الآن.</div>';
-}
-
-function renderLearningStats() {
-    const box = document.getElementById('prof-learning-stats');
-    if (!box) return;
-    const total = myStudents.length || 1;
-    const counts = myStudents.map(completedCount);
-    const avg = Math.round(counts.reduce(function(sum, n) { return sum + n; }, 0) / total);
-    const advanced = myStudents.filter(function(st) { return completedCount(st) > avg && completedCount(st) > 0; }).length;
-    const blocked = myStudents.filter(function(st) { return studentRisk(st) >= 4; }).length;
-    const absences = myStudents.filter(function(st) {
-        return (myClassSessions || []).filter(function(item) { return (item.absent || []).includes(st.username); }).length >= 2;
-    }).length;
-    const undone = myDevoirs.filter(function(d) { return d.statut !== 'termine'; }).length;
-    box.innerHTML = [
-        ['متوسط القسم', avg + ' سورة', 'bg-emerald-50 text-emerald-700'],
-        ['في تقدم جيد', advanced, 'bg-sky-50 text-sky-700'],
-        ['بحاجة لمتابعة', blocked, 'bg-rose-50 text-rose-700'],
-        ['غياب متكرر', absences, 'bg-amber-50 text-amber-700'],
-        ['واجبات غير منجزة', undone, 'bg-purple-50 text-purple-700']
-    ].map(function(item) {
-        return '<div class="rounded-2xl ' + item[2] + ' p-3 flex items-center justify-between gap-3"><span class="text-xs font-black">' + item[0] + '</span><strong class="text-lg">' + item[1] + '</strong></div>';
-    }).join('');
-}
-
-function renderKpis() {
-    const s = snapshot();
-    document.getElementById('prof-kpis').innerHTML = [
-        ['الطلاب', s.total], ['النشطون', s.active], ['واجبات مفتوحة', s.pending], ['واجبات منجزة', s.done], ['متوسط الحفظ', s.avg]
-    ].map(function(item) { return '<div class="prof-stat"><strong>' + item[1] + '</strong><span>' + item[0] + '</span></div>'; }).join('');
-}
-
-function renderOverview() {
-    const s = snapshot();
-    document.getElementById('class-health').textContent = s.zero ? 'يحتاج متابعة' : 'مستقر';
-    const priorities = [];
-    myStudents.forEach(function(st) {
-        const hw = homeworkFor(st).filter(function(d) { return d.statut !== 'termine'; }).length;
-        if (completedCount(st) === 0) priorities.push({ name: st.prenom + ' ' + st.nom, text: 'لم يبدأ الحفظ بعد', tone: 'rose' });
-        else if (hw > 0) priorities.push({ name: st.prenom + ' ' + st.nom, text: hw + ' واجب مفتوح', tone: 'amber' });
-    });
-    const box = document.getElementById('priority-list');
-    box.innerHTML = priorities.length ? priorities.slice(0, 8).map(function(p) {
-        const cls = p.tone === 'rose' ? 'bg-rose-50 border-rose-100 text-rose-700' : 'bg-amber-50 border-amber-100 text-amber-700';
-        return '<div class="rounded-2xl border ' + cls + ' p-3 flex items-center justify-between gap-3"><strong>' + escapeHtml(p.name) + '</strong><span class="text-xs font-black">' + escapeHtml(p.text) + '</span></div>';
-    }).join('') : '<div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 text-sm font-black text-emerald-700 text-center">لا توجد أولوية عاجلة الآن.</div>';
-
-    const recent = [];
-    myStudents.forEach(function(st) {
-        const latest = latestCompletion(st);
-        if (latest) recent.push({ student: st, surah: latest[0], data: latest[1] });
-    });
-    recent.sort(function(a, b) { return new Date(b.data.completedAt) - new Date(a.data.completedAt); });
-    document.getElementById('recent-progress').innerHTML = recent.length ? recent.slice(0, 6).map(function(r) {
-        const date = r.data.completedAt ? new Date(r.data.completedAt).toLocaleDateString('fr-FR') : '';
-        return '<div class="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-3"><p class="font-black text-gray-900">' + escapeHtml(r.student.prenom + ' ' + r.student.nom) + '</p><p class="text-sm font-bold text-emerald-700 mt-1">' + escapeHtml(surahName(r.surah)) + '</p><p class="text-xs text-gray-500 mt-1">' + escapeHtml(date) + '</p></div>';
-    }).join('') : '<div class="rounded-2xl bg-gray-50 border border-gray-100 p-4 text-sm font-bold text-gray-500 text-center xl:col-span-3">لا توجد إنجازات مسجلة بعد.</div>';
-}
-
-
-
-function sessionKey() {
-    return 'mawahib_prof_sessions_' + session.username;
-}
-
-function readSessions() {
-    try { return JSON.parse(localStorage.getItem(sessionKey()) || '[]'); }
-    catch (e) { return []; }
-}
-
-function writeSessions(items) {
-    localStorage.setItem(sessionKey(), JSON.stringify(items.slice(0, 30)));
-}
-
-function renderAttendance() {
-    const dateInput = document.getElementById('session-date');
-    if (!dateInput) return;
-    if (!dateInput.value) dateInput.value = new Date().toISOString().slice(0, 10);
-    const list = document.getElementById('attendance-list');
-    list.innerHTML = myStudents.length ? myStudents.map(function(st) {
-        const name = st.prenom + ' ' + st.nom;
-        return '<div class="rounded-2xl border border-gray-100 bg-white p-3 space-y-3"><label class="flex items-center justify-between gap-3 cursor-pointer"><span><strong class="block text-gray-900">' + escapeHtml(name) + '</strong><small class="text-gray-400 font-bold">' + escapeHtml(st.username) + '</small></span><input type="checkbox" class="attendance-check w-5 h-5 accent-emerald-600" value="' + escapeHtml(st.username) + '" checked></label><div class="grid grid-cols-1 md:grid-cols-2 gap-2"><select class="session-validation field-soft" data-student="' + escapeHtml(st.username) + '"><option value="validé">validé</option><option value="à revoir">à revoir</option><option value="absent">absent</option><option value="récitation insuffisante">récitation insuffisante</option></select><input class="session-comment field-soft" data-student="' + escapeHtml(st.username) + '" placeholder="commentaire court"></div></div>';
-    }).join('') : '<p class="text-gray-400 text-sm text-center py-8">لا يوجد طلاب في هذا القسم.</p>';
-    renderSessionHistory();
-}
-
-function renderSessionHistory() {
-    const box = document.getElementById('session-history');
-    if (!box) return;
-    const remoteIds = new Set((myClassSessions || []).map(function(item) { return item.id; }));
-    const items = [...(myClassSessions || []), ...readSessions().filter(function(item) { return !remoteIds.has(item.id); })]
-        .sort(function(a, b) { return new Date(b.savedAt || b.date) - new Date(a.savedAt || a.date); });
-    box.innerHTML = items.length ? items.slice(0, 6).map(function(item) {
-        return '<div class="rounded-2xl border border-gray-100 bg-white p-3"><p class="font-black text-gray-900">' + escapeHtml(item.date) + '</p><p class="text-xs text-emerald-700 font-black mt-1">حضور: ' + item.present.length + ' / ' + item.total + '</p><p class="text-xs text-gray-600 font-bold mt-2">تعلم: ' + escapeHtml(item.learning || '-') + '</p><p class="text-xs text-gray-600 font-bold">مراجعة: ' + escapeHtml(item.revision || '-') + '</p></div>';
-    }).join('') : '<p class="text-gray-400 text-sm text-center py-6">لا توجد حصة مسجلة بعد.</p>';
-}
-
-function setAllPresent(value) {
-    document.querySelectorAll('.attendance-check').forEach(function(input) { input.checked = value; });
-}
-
-async function saveDailySession() {
-    const date = document.getElementById('session-date').value || new Date().toISOString().slice(0, 10);
-    const learning = document.getElementById('session-learning').value.trim();
-    const revision = document.getElementById('session-revision').value.trim();
-    const present = Array.from(document.querySelectorAll('.attendance-check:checked')).map(function(input) { return input.value; });
-    const absent = myStudents.map(function(st) { return st.username; }).filter(function(username) { return !present.includes(username); });
-    const validations = Array.from(document.querySelectorAll('.session-validation')).map(function(select) {
-        const username = select.dataset.student;
-        const commentInput = document.querySelector('.session-comment[data-student="' + username + '"]');
-        return { username: username, validation: present.includes(username) ? select.value : 'absent', comment: commentInput ? commentInput.value.trim() : '' };
-    });
-    if (!learning && !revision) { showToast('اكتب تعلم اليوم أو المراجعة', 'neutral'); return; }
-    const record = { id: 'session_' + Date.now(), date: date, learning: learning, revision: revision, present: present, absent: absent, validations: validations, total: myStudents.length };
-    const sessions = readSessions();
-    sessions.unshift(record);
-    writeSessions(sessions);
-    if (typeof Auth.saveClassSession === 'function') await Auth.saveClassSession(session.username, record);
-    if (typeof Auth.saveTeacherNote === 'function') {
-        await Promise.all(validations.map(function(item) {
-            if (!item.comment && item.validation === 'validé') return Promise.resolve();
-            return Auth.saveTeacherNote(item.username, { validation: item.validation, comment: item.comment, learning: learning, revision: revision, source: 'session', date: date });
-        }));
+    function renderAll() {
+      document.getElementById('student-count').textContent = myStudents.length + ' طالب';
+      renderReportOptions();
+      renderRecitationList();
+      renderListenQueue();
+      renderHomeworkSummary();
     }
-    const text = 'حصة اليوم ' + date + '\nتعلم: ' + (learning || '-') + '\nمراجعة: ' + (revision || '-');
-    await Promise.all(present.map(function(username) { return Auth.sendMessage(username, text); }));
-    document.getElementById('session-learning').value = '';
-    document.getElementById('session-revision').value = '';
-    renderSessionHistory();
-    showToast('تم حفظ الحضور وحصة اليوم', 'success');
-}
 
-function renderStudents() {
-    const filter = document.getElementById('student-filter') ? document.getElementById('student-filter').value : 'all';
-    let list = myStudents.slice();
-    if (filter === 'late') list = list.filter(function(s) { return completedCount(s) === 0; });
-    if (filter === 'homework') list = list.filter(function(s) { return homeworkFor(s).some(function(d) { return d.statut !== 'termine'; }); });
-    if (filter === 'active') list = list.filter(function(s) { return !s.isSuspended; });
-    const grid = document.getElementById('students-grid');
-    if (!list.length) { grid.innerHTML = '<p class="text-gray-400 text-sm col-span-full text-center py-8">لا توجد نتائج.</p>'; return; }
-    grid.innerHTML = list.map(function(st) {
-        const count = completedCount(st);
-        const pct = Math.min(100, Math.round(count / 114 * 100));
-        const latest = latestCompletion(st);
-        const hw = homeworkFor(st).filter(function(d) { return d.statut !== 'termine'; }).length;
-        const name = st.prenom + ' ' + st.nom;
-        const current = currentSurah(st);
-        const noteCount = (teacherNotesCache[st.username] || []).length;
-        return '<article class="student-card">'
-          + '<div class="flex items-center gap-3"><div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-black text-lg">' + escapeHtml((st.prenom || '?')[0]) + '</div><div class="min-w-0"><h3 class="font-black text-gray-900 truncate">' + escapeHtml(name) + '</h3><p class="text-xs text-gray-400 font-mono">' + escapeHtml(st.username) + '</p></div></div>'
-          + '<div class="flex flex-wrap gap-2 mt-3"><span class="text-xs font-black rounded-full px-2 py-1 ' + (st.isSuspended ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700') + '">' + (st.isSuspended ? 'موقوف' : 'نشط') + '</span><span class="text-xs font-black rounded-full px-2 py-1 bg-amber-50 text-amber-700">' + hw + ' واجب</span><span class="text-xs font-black rounded-full px-2 py-1 bg-sky-50 text-sky-700">' + count + ' سورة</span></div>'
-          + '<div class="progress-track mt-3"><div class="progress-fill" style="width:' + pct + '%"></div></div>'
-          + '<p class="text-xs text-gray-500 font-bold mt-2">السورة الحالية: ' + escapeHtml(current ? current.nameAr : '-') + '</p><p class="text-xs text-gray-500 font-bold mt-1">آخر إنجاز: ' + escapeHtml(latest ? surahName(latest[0]) : 'لا يوجد بعد') + ' · ملاحظات: ' + noteCount + '</p>'
-          + '<div class="grid grid-cols-2 gap-2 mt-4"><button onclick="ouvrirModalDevoir(\'' + escapeArg(st.username) + '\', \'' + escapeArg(name) + '\')" class="btn-primary rounded-xl py-2 font-black text-sm">واجب</button><button onclick="ouvrirCarnet(\'' + escapeArg(st.username) + '\')" class="rounded-xl py-2 font-black text-sm bg-emerald-50 text-emerald-700">Carnet</button><button onclick="quickMessage(\'' + escapeArg(st.username) + '\', \'' + escapeArg(name) + '\')" class="rounded-xl py-2 font-black text-sm bg-gray-100 text-gray-700 col-span-2">رسالة</button></div>'
+    function renderRecitationList() {
+      const box = document.getElementById('recitation-list');
+      if (!myStudents.length) {
+        box.innerHTML = '<p class="text-center text-gray-400 font-extrabold py-8">لا يوجد طلاب في هذا القسم.</p>';
+        return;
+      }
+      box.innerHTML = myStudents.map(student => {
+        const name = student.prenom + ' ' + student.nom;
+        const pending = homeworkFor(student).filter(d => d.statut !== 'termine').length;
+        const note = lastTeacherNote(student);
+        return '<article class="student-card" data-card="' + escapeHtml(student.username) + '">'
+          + '<div class="flex items-start justify-between gap-3">'
+          + '<div class="min-w-0"><h3 class="text-lg font-black truncate">' + escapeHtml(name) + '</h3><p class="small-muted truncate">' + escapeHtml(student.username) + '</p></div>'
+          + '<label class="pill cursor-pointer"><input type="checkbox" class="attendance-check accent-emerald-700" value="' + escapeHtml(student.username) + '" onchange="toggleAbsent(this)" checked> حاضر</label>'
+          + '</div>'
+          + '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">'
+          + '<input class="input recited-surah" data-student="' + escapeHtml(student.username) + '" list="surah-list" placeholder="السورة التي سُمِّعت">'
+          + '<select class="input recitation-result" data-student="' + escapeHtml(student.username) + '"><option value="متقن">متقن</option><option value="جيد">جيد</option><option value="إعادة">إعادة</option><option value="ضعيف">ضعيف</option><option value="غائب">غائب</option></select>'
+          + '</div>'
+          + '<textarea class="input recitation-note mt-2" rows="2" data-student="' + escapeHtml(student.username) + '" placeholder="ملاحظة قصيرة"></textarea>'
+          + '<div class="student-actions grid grid-cols-[1fr_auto] gap-2 mt-3 items-center">'
+          + '<button onclick="openHomeworkFromStudent(\'' + escapeArg(student.username) + '\', \'' + escapeArg(name) + '\')" class="btn btn-soft">واجب مراجعة</button>'
+          + '<span class="pill">' + pending + ' واجب</span>'
+          + '</div>'
+          + (note ? '<p class="small-muted mt-3">آخر ملاحظة: ' + escapeHtml(note.validation || '') + ' ' + escapeHtml(note.comment || '') + '</p>' : '')
           + '</article>';
-    }).join('');
-}
-
-function renderHomework() {
-    const container = document.getElementById('liste-suivi-devoirs');
-    if (!container) return;
-    if (!myDevoirs.length) { container.innerHTML = '<p class="text-gray-400 text-sm text-center py-8">لا يوجد أي واجب مسجل.</p>'; return; }
-    const userMap = {};
-    myStudents.forEach(function(s) { userMap[s.username] = s; });
-    container.innerHTML = myDevoirs.map(function(d) {
-        const st = userMap[d.student_id];
-        const status = d.statut === 'termine' ? '<span class="text-emerald-700 bg-emerald-50">تم</span>' : '<span class="text-amber-700 bg-amber-50">مفتوح</span>';
-        return '<div class="rounded-2xl border border-gray-100 bg-white p-4 flex flex-col md:flex-row md:items-center justify-between gap-3"><div><p class="font-black text-gray-900">' + escapeHtml(st ? st.prenom + ' ' + st.nom : d.student_id) + '</p><p class="text-sm text-gray-600 font-bold mt-1">سورة ' + escapeHtml(d.surate) + ' · الآية ' + escapeHtml(d.aya_debut) + ' إلى ' + escapeHtml(d.aya_fin) + '</p><p class="text-xs text-gray-400 mt-1">آخر أجل: ' + escapeHtml(d.date_limite || '-') + '</p></div><div class="flex items-center gap-2"><span class="text-xs font-black rounded-full px-3 py-1">' + status + '</span><button onclick="confirmerAnnulationDevoir(\'' + escapeArg(d.id) + '\')" class="text-xs font-black rounded-xl bg-rose-50 text-rose-700 px-3 py-2">إلغاء</button></div></div>';
-    }).join('');
-}
-
-function chargerSuiviDevoirs() { return refreshProfDashboard(false); }
-
-function fillTodayDate() {
-    switchTab('students');
-    showToast('اختر الطالب ثم افتح زر الواجب، وسيتم وضع تاريخ اليوم تلقائيا.', 'neutral');
-}
-
-function ouvrirModalDevoir(studentId, studentName) {
-    document.getElementById('devoir-student-id').value = studentId;
-    document.getElementById('devoir-student-name').textContent = studentName;
-    document.getElementById('devoir-surate').value = '';
-    document.getElementById('devoir-debut').value = '';
-    document.getElementById('devoir-fin').value = '';
-    document.getElementById('devoir-type').value = 'تعلم';
-    document.getElementById('devoir-priority').value = 'عادي';
-    document.getElementById('devoir-date').value = new Date().toISOString().slice(0, 10);
-    document.getElementById('modal-devoir').classList.add('open');
-}
-
-function fermerModalDevoir() { document.getElementById('modal-devoir').classList.remove('open'); }
-function handleModalClick(event) { if (event.target === document.getElementById('modal-devoir')) fermerModalDevoir(); }
-
-function findStudent(username) {
-    return myStudents.find(function(st) { return st.username === username; });
-}
-
-function ouvrirCarnet(username) {
-    const st = findStudent(username);
-    if (!st) return;
-    const latest = latestCompletion(st);
-    const current = currentSurah(st);
-    const notes = teacherNotesCache[username] || [];
-    document.getElementById('carnet-student-id').value = username;
-    document.getElementById('carnet-student-name').textContent = st.prenom + ' ' + st.nom;
-    document.getElementById('carnet-validation').value = 'validé';
-    document.getElementById('carnet-weakness').value = '';
-    document.getElementById('carnet-comment').value = '';
-    document.getElementById('carnet-summary').innerHTML = [
-        ['السورة الحالية', current ? current.nameAr : '-'],
-        ['آخر سورة مثبتة', latest ? surahName(latest[0]) : '-'],
-        ['ملاحظات الأستاذ', notes.length]
-    ].map(function(item) {
-        return '<div class="rounded-2xl bg-gray-50 border border-gray-100 p-3"><p class="text-xs font-black text-gray-400">' + escapeHtml(item[0]) + '</p><strong class="block mt-1 text-gray-900">' + escapeHtml(item[1]) + '</strong></div>';
-    }).join('');
-    const sessions = (myClassSessions || []).filter(function(item) {
-        return (item.present || []).includes(username) || (item.absent || []).includes(username) || (item.validations || []).some(function(v) { return v.username === username; });
-    });
-    const noteHtml = notes.slice(0, 10).map(function(note) {
-        return '<div class="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-3"><div class="flex items-center justify-between gap-2"><strong class="text-emerald-900">' + escapeHtml(note.validation || 'note') + '</strong><span class="text-xs font-black text-gray-400">' + escapeHtml(note.date || '') + '</span></div><p class="text-xs font-bold text-gray-600 mt-2">' + escapeHtml(note.weakness || note.learning || '') + '</p><p class="text-sm font-bold text-gray-800 mt-1 whitespace-pre-line">' + escapeHtml(note.comment || note.revision || '') + '</p></div>';
-    }).join('');
-    const sessionHtml = sessions.slice(0, 8).map(function(item) {
-        const validation = (item.validations || []).find(function(v) { return v.username === username; });
-        return '<div class="rounded-2xl border border-gray-100 bg-white p-3"><strong class="text-gray-900">' + escapeHtml(item.date || '') + '</strong><p class="text-xs text-gray-600 font-bold mt-1">تعلم: ' + escapeHtml(item.learning || '-') + '</p><p class="text-xs text-gray-600 font-bold">مراجعة: ' + escapeHtml(item.revision || '-') + '</p><p class="text-xs text-emerald-700 font-black mt-1">' + escapeHtml(validation ? validation.validation : ((item.present || []).includes(username) ? 'حاضر' : 'غائب')) + '</p></div>';
-    }).join('');
-    document.getElementById('carnet-history').innerHTML = (noteHtml || sessionHtml)
-        ? noteHtml + sessionHtml
-        : '<p class="text-gray-400 text-sm text-center py-6">لا يوجد تاريخ بعد.</p>';
-    document.getElementById('modal-carnet').classList.add('open');
-}
-
-function fermerCarnet() { document.getElementById('modal-carnet').classList.remove('open'); }
-function handleCarnetClick(event) { if (event.target === document.getElementById('modal-carnet')) fermerCarnet(); }
-
-async function saveCarnetNote() {
-    const studentId = document.getElementById('carnet-student-id').value;
-    const validation = document.getElementById('carnet-validation').value;
-    const weakness = document.getElementById('carnet-weakness').value.trim();
-    const comment = document.getElementById('carnet-comment').value.trim();
-    if (!studentId) return;
-    if (!comment && !weakness && validation === 'validé') { showToast('أضف ملاحظة أو نقطة متابعة', 'neutral'); return; }
-    const res = await Auth.saveTeacherNote(studentId, {
-        validation: validation,
-        weakness: weakness,
-        comment: comment,
-        source: 'carnet',
-        date: new Date().toISOString().slice(0, 10)
-    });
-    if (res.ok) {
-        showToast('تم حفظ carnet الطالب', 'success');
-        teacherNotesCache[studentId] = await Auth.getTeacherNotes(studentId);
-        ouvrirCarnet(studentId);
-        renderStudents();
-        renderListenQueue();
-    } else {
-        showToast(res.error || 'تعذر حفظ الملاحظة', 'neutral');
+      }).join('');
     }
-}
 
-async function envoyerDevoir() {
-    const studentId = document.getElementById('devoir-student-id').value;
-    const surate = document.getElementById('devoir-surate').value.trim();
-    const debut = document.getElementById('devoir-debut').value;
-    const fin = document.getElementById('devoir-fin').value;
-    const date = document.getElementById('devoir-date').value;
-    const type = document.getElementById('devoir-type').value;
-    const priority = document.getElementById('devoir-priority').value;
-    if (!surate || !debut || !fin || !date) { showToast('املأ كل حقول الواجب', 'neutral'); return; }
-    const label = type + ': ' + surate + (priority === 'مهم' ? ' · مهم' : '');
-    const res = await Auth.ajouterDevoir(studentId, session.prenom, label, debut, fin, date);
-    if (res.ok) { showToast('تم إرسال الواجب بنجاح', 'success'); fermerModalDevoir(); await refreshProfDashboard(false); }
-    else showToast(res.error || 'تعذر إرسال الواجب', 'neutral');
-}
+    function renderListenQueue() {
+      const box = document.getElementById('listen-queue');
+      const queue = myStudents
+        .map(student => ({ student, score: studentPriority(student) }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+      box.innerHTML = queue.length ? queue.map((item, index) => {
+        const name = item.student.prenom + ' ' + item.student.nom;
+        return '<div class="rounded-2xl bg-white/70 border border-gray-100 p-3"><strong>' + (index + 1) + '. ' + escapeHtml(name) + '</strong><p class="small-muted mt-1">' + (item.score > 0 ? 'يحتاج متابعة' : 'جاهز للتسميع') + '</p></div>';
+      }).join('') : '<p class="small-muted text-center py-4">لا توجد أولوية الآن.</p>';
+    }
 
-async function confirmerAnnulationDevoir(id) {
-    if (!confirm('هل أنت متأكد من إلغاء هذا الواجب؟')) return;
-    await Auth.annulerDevoir(id);
-    await refreshProfDashboard(false);
-    showToast('تم سحب الواجب', 'neutral');
-}
+    function renderHomeworkSummary() {
+      const box = document.getElementById('homework-summary');
+      const open = myDevoirs.filter(d => d.statut !== 'termine').slice(0, 5);
+      box.innerHTML = open.length ? open.map(item => {
+        return '<div class="rounded-2xl bg-white/70 border border-gray-100 p-3"><strong>' + escapeHtml(item.surate) + '</strong><p class="small-muted mt-1">آية ' + escapeHtml(item.aya_debut) + ' إلى ' + escapeHtml(item.aya_fin) + '</p></div>';
+      }).join('') : '<p class="small-muted text-center py-4">لا توجد واجبات مفتوحة.</p>';
+    }
 
+    function renderReportOptions() {
+      document.getElementById('report-student').innerHTML =
+        '<option value="القسم كاملا">القسم كاملا</option>' +
+        myStudents.map(student => {
+          const name = student.prenom + ' ' + student.nom;
+          return '<option value="' + escapeHtml(name) + '">' + escapeHtml(name) + '</option>';
+        }).join('');
+    }
 
-function renderReportStudentOptions() {
-    const select = document.getElementById('report-student');
-    if (!select) return;
-    select.innerHTML = '<option value="القسم كاملا">القسم كاملا</option>' + myStudents.map(function(s) {
-        return '<option value="' + escapeHtml(s.prenom + ' ' + s.nom) + '">' + escapeHtml(s.prenom + ' ' + s.nom) + '</option>';
-    }).join('');
-}
+    function setAllPresent(value) {
+      document.querySelectorAll('.attendance-check').forEach(input => {
+        input.checked = value;
+        toggleAbsent(input);
+      });
+    }
 
-function renderProfReports() {
-    const box = document.getElementById('prof-reports-history');
-    if (!box) return;
-    box.innerHTML = myReports.length ? myReports.slice(0, 8).map(function(report) {
-        const status = report.status || 'envoyé';
-        return '<div class="rounded-2xl border border-rose-100 bg-rose-50/50 p-3"><div class="flex items-center justify-between gap-2"><strong class="text-rose-900">' + escapeHtml(report.category || 'Signalement') + '</strong><span class="mini-badge bg-white text-rose-700">' + escapeHtml(status) + '</span></div><p class="text-xs text-gray-600 font-bold mt-2 whitespace-pre-line">' + escapeHtml(report.text || '') + '</p></div>';
-    }).join('') : '<p class="text-gray-400 text-sm text-center py-5">لا يوجد signalement مرسل بعد.</p>';
-}
+    function toggleAbsent(input) {
+      const card = document.querySelector('[data-card="' + input.value + '"]');
+      if (card) card.classList.toggle('absent', !input.checked);
+      const result = document.querySelector('.recitation-result[data-student="' + input.value + '"]');
+      if (result && !input.checked) result.value = 'غائب';
+    }
 
-async function sendAdminReport() {
-    const category = document.getElementById('report-category').value;
-    const student = document.getElementById('report-student').value;
-    const text = document.getElementById('admin-report-text').value.trim();
-    if (!text) { showToast('اكتب نص signalement أولا', 'neutral'); return; }
-    const fullText = 'الموضوع: ' + category + '\nالمعني: ' + student + '\n' + text;
-    const res = await Auth.sendAdminReport(session.username, session.prenom, session.nom, fullText, category);
-    if (res.ok) {
-        myReports = typeof Auth.getProfReports === 'function' ? await Auth.getProfReports(session.username) : myReports;
-        renderProfReports();
+    async function saveDailySession() {
+      const date = document.getElementById('session-date').value || new Date().toISOString().slice(0, 10);
+      const present = Array.from(document.querySelectorAll('.attendance-check:checked')).map(input => input.value);
+      const absent = myStudents.map(student => student.username).filter(username => !present.includes(username));
+      const validations = myStudents.map(student => {
+        const username = student.username;
+        const result = document.querySelector('.recitation-result[data-student="' + username + '"]');
+        const surah = document.querySelector('.recited-surah[data-student="' + username + '"]');
+        const note = document.querySelector('.recitation-note[data-student="' + username + '"]');
+        return {
+          username,
+          validation: present.includes(username) ? (result ? result.value : 'متقن') : 'غائب',
+          surah: surah ? surah.value.trim() : '',
+          comment: note ? note.value.trim() : ''
+        };
+      });
+      const record = {
+        id: 'session_' + Date.now(),
+        date,
+        present,
+        absent,
+        validations,
+        total: myStudents.length
+      };
+      if (typeof Auth.saveClassSession === 'function') await Auth.saveClassSession(session.username, record);
+      if (typeof Auth.saveTeacherNote === 'function') {
+        await Promise.all(validations.map(item => {
+          if (!item.comment && !item.surah && item.validation === 'متقن') return Promise.resolve();
+          return Auth.saveTeacherNote(item.username, {
+            validation: item.validation,
+            comment: item.comment,
+            surah: item.surah,
+            source: 'recitation',
+            date
+          });
+        }));
+      }
+      await refreshProfDashboard(false);
+      showToast('تم حفظ الحصة');
+    }
+
+    function openHomeworkFromStudent(studentId, studentName) {
+      const surahInput = document.querySelector('.recited-surah[data-student="' + studentId + '"]');
+      document.getElementById('devoir-student-id').value = studentId;
+      document.getElementById('devoir-student-name').textContent = studentName;
+      document.getElementById('devoir-surate').value = surahInput ? surahInput.value.trim() : '';
+      document.getElementById('devoir-debut').value = '1';
+      document.getElementById('devoir-fin').value = '';
+      document.getElementById('devoir-date').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('modal-devoir').classList.add('open');
+    }
+
+    function fermerModalDevoir() {
+      document.getElementById('modal-devoir').classList.remove('open');
+    }
+
+    function handleModalClick(event) {
+      if (event.target === document.getElementById('modal-devoir')) fermerModalDevoir();
+    }
+
+    async function envoyerDevoir() {
+      const studentId = document.getElementById('devoir-student-id').value;
+      const surate = document.getElementById('devoir-surate').value.trim();
+      const debut = document.getElementById('devoir-debut').value;
+      const fin = document.getElementById('devoir-fin').value;
+      const date = document.getElementById('devoir-date').value;
+      if (!surate || !debut || !fin || !date) {
+        showToast('أكمل حقول الواجب');
+        return;
+      }
+      const result = await Auth.ajouterDevoir(studentId, session.prenom, 'مراجعة: ' + surate, debut, fin, date);
+      if (result.ok) {
+        fermerModalDevoir();
+        await refreshProfDashboard(false);
+        showToast('تم إرسال الواجب');
+      } else {
+        showToast(result.error || 'تعذر إرسال الواجب');
+      }
+    }
+
+    async function sendAdminReport() {
+      const student = document.getElementById('report-student').value;
+      const text = document.getElementById('admin-report-text').value.trim();
+      if (!text) {
+        showToast('اكتب الملاحظة أولا');
+        return;
+      }
+      const result = await Auth.sendAdminReport(session.username, session.prenom, session.nom, 'المعني: ' + student + '\n' + text, 'حصة التسميع');
+      if (result.ok) {
         document.getElementById('admin-report-text').value = '';
-        showToast('تم إرسال signalement إلى الإدارة', 'success');
-    } else {
-        showToast(res.error || 'تعذر إرسال signalement', 'neutral');
+        showToast('تم الإرسال');
+      } else {
+        showToast(result.error || 'تعذر الإرسال');
+      }
     }
-}
 
-async function quickMessage(studentId, name) {
-    const text = prompt('رسالة إلى ' + name + ':');
-    if (!text || !text.trim()) return;
-    await Auth.sendMessage(studentId, text.trim());
-    showToast('تم إرسال الرسالة', 'success');
-}
+    function deconnexion() {
+      Auth.logout();
+      window.location.href = 'login.html';
+    }
 
-async function sendClassMessage() {
-    const text = document.getElementById('class-message').value.trim();
-    if (!text) { showToast('اكتب الرسالة أولا', 'neutral'); return; }
-    await Promise.all(myStudents.map(function(s) { return Auth.sendMessage(s.username, text); }));
-    document.getElementById('class-message').value = '';
-    showToast('تم إرسال الرسالة لكل القسم', 'success');
-}
+    function showToast(text) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = text;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 2600);
+    }
 
-
-function deconnexion() { Auth.logout(); window.location.href = 'login.html'; }
-
-function showToast(text, type) {
-    const t = document.createElement('div');
-    t.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 text-white px-5 py-3 rounded-2xl font-black text-sm shadow-lg z-[100] ' + (type === 'success' ? 'bg-emerald-600' : 'bg-gray-700');
-    t.textContent = text;
-    document.body.appendChild(t);
-    setTimeout(function() { t.remove(); }, 3000);
-}
-
-window.addEventListener('DOMContentLoaded', initProfDashboard);
-</script>
-<script src="notifications.js"></script>
+    window.addEventListener('DOMContentLoaded', initProfDashboard);
+  </script>
+  <script src="notifications.js"></script>
 </body>
 </html>
