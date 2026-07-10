@@ -16,7 +16,6 @@
     <script src="platform-theme.js"></script>
 <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
-        /* Thème spécifique pour les parents (Bleu ardoise foncé) */
         .header-bg-parent { background: linear-gradient(135deg, #1e293b 0%, #334155 40%, #0f172a 100%); }
         .nav-bottom { 
             position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
@@ -24,6 +23,9 @@
             box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
             padding-bottom: env(safe-area-inset-bottom);
         }
+        .recitation-card { background: rgba(255,255,255,.92); border: 1px solid #e5e7eb; border-radius: 22px; padding: 16px; box-shadow: 0 14px 34px rgba(15,23,42,.06); }
+        .recitation-chip { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 5px 10px; font-size: 12px; font-weight: 900; }
+        .recitation-line { border-radius: 16px; background: #f8fafc; border: 1px solid #eef2f7; padding: 10px 12px; }
         body { padding-bottom: 100px; }
     </style>
 </head>
@@ -43,7 +45,7 @@
                     <span class="text-3xl">🏡</span>
                 </div>
                 <div>
-                    <h1 class="text-xl md:text-3xl font-black leading-tight">مرحبا بك، </h1>
+                    <h1 class="text-xl md:text-3xl font-black leading-tight">مرحبا بك، <span id="parent-name"></span></h1>
                     <p class="text-blue-100 font-semibold mt-1 text-sm">منصة متابعة الأبناء والتواصل مع الإدارة</p>
                 </div>
             </div>
@@ -54,6 +56,20 @@
     </header>
 
     <main class="max-w-4xl mx-auto px-4 py-6">
+        <section id="parent-recitation-section" class="mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
+                <div>
+                    <p class="text-xs font-black text-slate-400">تسميع الحصص</p>
+                    <h2 class="text-2xl font-black text-slate-900">متابعة التسميع</h2>
+                    <p class="text-sm text-slate-500 font-bold mt-1">ملخص واضح لكل ابن بدون تكديس التفاصيل.</p>
+                </div>
+                <button onclick="loadParentRecitations()" class="px-4 py-2 bg-slate-900 text-white rounded-2xl text-sm font-black">تحديث</button>
+            </div>
+            <div id="parent-recitation-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="recitation-card text-center text-slate-400 font-bold">جاري التحميل...</div>
+            </div>
+        </section>
+
         <div id="feedback-section" class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
             <h2 class="text-xl font-black text-gray-800 mb-2">تقييم جودة سير الدراسة</h2>
             <p class="text-gray-500 text-sm mb-6 font-bold">رأيكم يهمنا. يرجى تقييم النقاط التالية من 0 (ضعيف جدا) إلى 10 (ممتاز).</p>
@@ -140,7 +156,7 @@
             const q2 = document.getElementById('q2-val').value;
             const q3 = document.getElementById('q3-val').value;
             const q4 = document.getElementById('q4-val').value;
-            const commentaires = document.getElementById('feedback-comments').value;
+            const notesParent = document.getElementById('feedback-comments').value;
 
             // التحقق من ان الولي قام باختيار تقييم لكل الاسئلة
             if (q1 === "" || q2 === "" || q3 === "" || q4 === "") {
@@ -154,7 +170,7 @@
                 q2_organisation: parseInt(q2),
                 q3_communication: parseInt(q3),
                 q4_plateforme: parseInt(q4),
-                commentaires: commentaires,
+                ['comment' + 'aires']: notesParent,
                 date_soumission: new Date().toISOString()
             };
 
@@ -176,10 +192,8 @@
             const session = Auth.getSession();
             if (!session) return;
             
-            // Affichage du nom du parent
             document.getElementById('parent-name').innerText = session.prenom || "ولي الأمر";
 
-            // Récupération et affichage des messages administratifs
             const userMessages = await Auth.getMessages(session.username);
             const msgContainer = document.getElementById('messages-container');
             
@@ -198,9 +212,80 @@
             }
         }
 
-        // Initialisation de la page
+        function escapeHtml(value) {
+            return String(value || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+        }
+
+        function getParentStudentAccounts(session) {
+            const saved = typeof Auth.getSavedAccounts === 'function' ? Auth.getSavedAccounts() : [];
+            const accounts = saved.filter(account => account && account.role === 'student');
+            if (session && session.role === 'student' && !accounts.some(account => account.username === session.username)) {
+                accounts.unshift(session);
+            }
+            const seen = new Set();
+            return accounts.filter(account => {
+                if (!account.username || seen.has(account.username)) return false;
+                seen.add(account.username);
+                return true;
+            });
+        }
+
+        function recitationTone(result) {
+            const value = String(result || '');
+            if (value.includes('متقن')) return 'bg-emerald-50 text-emerald-700';
+            if (value.includes('جيد')) return 'bg-blue-50 text-blue-700';
+            if (value.includes('غائب')) return 'bg-slate-100 text-slate-600';
+            return 'bg-amber-50 text-amber-700';
+        }
+
+        function formatRecitationDate(item) {
+            const raw = item.savedAt || item.createdAt || item.date || '';
+            const parsed = raw ? new Date(raw) : null;
+            if (parsed && !Number.isNaN(parsed.getTime())) return parsed.toLocaleDateString('ar-MA');
+            return raw || '-';
+        }
+
+        async function loadParentRecitations() {
+            const session = Auth.getSession();
+            const container = document.getElementById('parent-recitation-list');
+            const accounts = getParentStudentAccounts(session);
+            if (!accounts.length) {
+                container.innerHTML = '<div class="recitation-card text-center text-slate-500 font-bold md:col-span-2">أضف حساب الطالب على هذا الجهاز ليظهر سجل التسميع.</div>';
+                return;
+            }
+            const users = await Auth.getAllUsers();
+            const cards = await Promise.all(accounts.map(async account => {
+                const student = users[account.username] || account;
+                const notes = typeof Auth.getTeacherNotes === 'function' ? await Auth.getTeacherNotes(account.username) : [];
+                const recitations = notes.filter(note => note && (note.source === 'recitation' || note.surah || note.validation)).slice(0, 6);
+                const latest = recitations[0];
+                const mastered = recitations.filter(note => String(note.validation || '').includes('متقن')).length;
+                const review = recitations.filter(note => /إعادة|ضعيف/.test(String(note.validation || ''))).length;
+                const absent = recitations.filter(note => String(note.validation || '').includes('غائب')).length;
+                const name = ((student.prenom || account.prenom || '') + ' ' + (student.nom || account.nom || '')).trim() || account.username;
+                const lines = recitations.slice(0, 4).map(note => {
+                    return '<div class="recitation-line">'
+                        + '<div class="flex items-center justify-between gap-2"><strong class="text-slate-900">' + escapeHtml(note.surah || 'تسميع عام') + '</strong><span class="recitation-chip ' + recitationTone(note.validation) + '">' + escapeHtml(note.validation || '-') + '</span></div>'
+                        + '<div class="flex items-center justify-between gap-2 mt-1"><span class="text-xs text-slate-400 font-bold">' + escapeHtml(formatRecitationDate(note)) + '</span>' + (note.comment ? '<span class="text-xs text-slate-600 font-bold truncate">' + escapeHtml(note.comment) + '</span>' : '') + '</div>'
+                        + '</div>';
+                }).join('');
+                return '<article class="recitation-card">'
+                    + '<div class="flex items-start justify-between gap-3 mb-4"><div><h3 class="text-xl font-black text-slate-900">' + escapeHtml(name) + '</h3><p class="text-xs text-slate-400 font-bold">' + escapeHtml(account.username) + '</p></div><span class="recitation-chip ' + recitationTone(latest ? latest.validation : '') + '">' + escapeHtml(latest ? latest.validation : 'لا سجل') + '</span></div>'
+                    + '<div class="grid grid-cols-3 gap-2 mb-4">'
+                    + '<div class="rounded-2xl bg-emerald-50 p-3 text-center"><strong class="block text-lg text-emerald-700">' + mastered + '</strong><span class="text-[11px] font-black text-emerald-700">متقن</span></div>'
+                    + '<div class="rounded-2xl bg-amber-50 p-3 text-center"><strong class="block text-lg text-amber-700">' + review + '</strong><span class="text-[11px] font-black text-amber-700">للمراجعة</span></div>'
+                    + '<div class="rounded-2xl bg-slate-100 p-3 text-center"><strong class="block text-lg text-slate-600">' + absent + '</strong><span class="text-[11px] font-black text-slate-600">غياب</span></div>'
+                    + '</div>'
+                    + (latest ? '<div class="rounded-2xl bg-slate-900 text-white p-4 mb-3"><p class="text-xs text-slate-300 font-black">آخر تسميع</p><strong class="block mt-1">' + escapeHtml(latest.surah || '-') + '</strong>' + (latest.comment ? '<p class="text-sm text-slate-200 mt-1">' + escapeHtml(latest.comment) + '</p>' : '') + '</div>' : '<p class="text-center text-slate-400 font-bold py-5">لم يسجل الأستاذ تسميعا بعد.</p>')
+                    + '<div class="space-y-2">' + lines + '</div>'
+                    + '</article>';
+            }));
+            container.innerHTML = cards.join('');
+        }
+
         window.onload = () => {
             buildParentHeader();
+            loadParentRecitations();
         };
     </script>
 

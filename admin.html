@@ -125,6 +125,11 @@
         .feed-item:last-child { border-bottom: none; }
         .control-shell { display: grid; grid-template-columns: 230px minmax(0,1fr); gap: 18px; align-items: start; }
         .control-sidebar { position: sticky; top: 16px; border-radius: 24px; background: linear-gradient(180deg,#0c4a3b,#14532d); color: #fff; padding: 16px; box-shadow: 0 22px 50px rgba(12,74,59,.24); }
+        .control-sidebar { transition: transform .28s ease, opacity .28s ease; }
+        .control-sidebar.admin-nav-hidden { transform: translateY(-16px); opacity: .08; pointer-events: none; }
+        .recitation-chip { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 900; }
+        .recitation-admin-card { border-radius: 16px; border: 1px solid #d1fae5; background: #fff; padding: 12px; }
+        .recitation-admin-line { border-radius: 14px; background: #f8fafc; border: 1px solid #eef2f7; padding: 10px; }
         .control-sidebar-title { font-size: 13px; font-weight: 900; color: #d1fae5; margin-bottom: 12px; }
         .control-sidebar .tab-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 12px; margin-bottom: 7px; border: 0; border-radius: 16px; color: #d1fae5; background: rgba(255,255,255,.06); font-weight: 900; }
         .control-sidebar .tab-btn.active { color: #064e3b; background: #fff; box-shadow: 0 12px 24px rgba(0,0,0,.16); }
@@ -150,7 +155,7 @@
         .focus\:border-purple-400:focus { border-color: #059669 !important; }
         .accent-purple-600 { accent-color: #047857 !important; }
         #total-badge { background: #ecfdf5; color: #047857; }
-        @media (max-width: 900px) { .control-shell { grid-template-columns: 1fr; } .control-sidebar { position: static; } .control-sidebar .tab-btn { display: inline-flex; width: auto; } .control-nav-scroll { display: flex; gap: 8px; overflow-x: auto; } .cockpit-kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+        @media (max-width: 900px) { .control-shell { grid-template-columns: 1fr; } .control-sidebar { position: sticky; top: 8px; z-index: 30; } .control-sidebar .tab-btn { display: inline-flex; width: auto; } .control-nav-scroll { display: flex; gap: 8px; overflow-x: auto; } .cockpit-kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 
     </style>
 </head>
@@ -214,7 +219,7 @@
                 </div>
                 <div id="ops-alerts" class="space-y-2"></div>
                 <div class="mt-4 border-t border-emerald-100 pt-4">
-                    <p class="section-heading">Signalements professeurs</p>
+                    <p class="section-heading">بلاغات الأساتذة</p>
                     <div id="admin-reports-list" class="space-y-2"></div>
                 </div>
             </div>
@@ -560,6 +565,10 @@
                     class="modal-tab-btn px-3 py-1.5 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100">
                 📊 التقدم
             </button>
+            <button onclick="switchModalTab('recitation')" id="mtab-recitation"
+                    class="modal-tab-btn px-3 py-1.5 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100">
+                تسميع
+            </button>
         </div>
         <div class="p-6">
             <div id="modal-content-profile">
@@ -625,6 +634,11 @@
             </div>
             <div id="modal-content-progress" class="hidden">
                 <div id="modal-progress-content" class="space-y-2">
+                    <p class="text-gray-400 text-sm text-center">جاري التحميل...</p>
+                </div>
+            </div>
+            <div id="modal-content-recitation" class="hidden">
+                <div id="modal-recitation-content" class="space-y-2">
                     <p class="text-gray-400 text-sm text-center">جاري التحميل...</p>
                 </div>
             </div>
@@ -1294,7 +1308,7 @@ function closeStudentModal(event) {
 }
 
 function switchModalTab(name) {
-    ['profile','schedule','message','progress'].forEach(t => {
+    ['profile','schedule','message','progress','recitation'].forEach(t => {
         document.getElementById('modal-content-' + t).classList.toggle('hidden', t !== name);
         const btn = document.getElementById('mtab-' + t);
         if (t === name) { btn.classList.add('bg-purple-100','text-purple-700'); btn.classList.remove('text-gray-500'); }
@@ -1302,6 +1316,7 @@ function switchModalTab(name) {
     });
     if (name === 'schedule') loadStudentSchedule();
     if (name === 'progress') loadStudentProgress();
+    if (name === 'recitation') loadStudentRecitations();
 }
 
 async function loadStudentSchedule() {
@@ -1361,6 +1376,55 @@ async function loadStudentProgress() {
         }).join('');
     }
     container.innerHTML = html;
+}
+
+function recitationTone(result) {
+    const value = String(result || '');
+    if (value.includes('متقن')) return 'bg-emerald-50 text-emerald-700';
+    if (value.includes('جيد')) return 'bg-blue-50 text-blue-700';
+    if (value.includes('غائب')) return 'bg-slate-100 text-slate-600';
+    return 'bg-amber-50 text-amber-700';
+}
+
+function formatRecitationDate(item) {
+    const raw = item.savedAt || item.createdAt || item.date || '';
+    const parsed = raw ? new Date(raw) : null;
+    if (parsed && !Number.isNaN(parsed.getTime())) return parsed.toLocaleDateString('ar-MA');
+    return raw || '-';
+}
+
+async function loadStudentRecitations() {
+    const username = document.getElementById('modal-username').value;
+    const container = document.getElementById('modal-recitation-content');
+    if (!container) return;
+    container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">جاري التحميل...</p>';
+    const notes = typeof Auth.getTeacherNotes === 'function' ? await Auth.getTeacherNotes(username) : [];
+    const recitations = notes.filter(note => note && (note.source === 'recitation' || note.surah || note.validation)).slice(0, 12);
+    if (!recitations.length) {
+        container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لا يوجد تسميع مسجل بعد.</p>';
+        return;
+    }
+    const mastered = recitations.filter(note => String(note.validation || '').includes('متقن')).length;
+    const review = recitations.filter(note => /إعادة|ضعيف/.test(String(note.validation || ''))).length;
+    const absent = recitations.filter(note => String(note.validation || '').includes('غائب')).length;
+    const latest = recitations[0];
+    const summary = '<div class="recitation-admin-card bg-emerald-50/60">'
+        + '<p class="text-xs font-black text-emerald-700 mb-2">ملخص التسميع</p>'
+        + '<div class="grid grid-cols-3 gap-2">'
+        + '<div class="rounded-xl bg-white p-2 text-center"><strong class="block text-emerald-700">' + mastered + '</strong><span class="text-[11px] font-black text-emerald-700">متقن</span></div>'
+        + '<div class="rounded-xl bg-white p-2 text-center"><strong class="block text-amber-700">' + review + '</strong><span class="text-[11px] font-black text-amber-700">مراجعة</span></div>'
+        + '<div class="rounded-xl bg-white p-2 text-center"><strong class="block text-slate-600">' + absent + '</strong><span class="text-[11px] font-black text-slate-600">غياب</span></div>'
+        + '</div>'
+        + '<div class="mt-3 rounded-xl bg-white p-3"><span class="text-xs font-black text-gray-400">آخر تسميع</span><strong class="block text-gray-900 mt-1">' + escapeHtml(latest.surah || '-') + '</strong></div>'
+        + '</div>';
+    const rows = recitations.map(note => {
+        return '<div class="recitation-admin-line">'
+            + '<div class="flex items-center justify-between gap-2"><strong class="text-gray-900">' + escapeHtml(note.surah || 'تسميع عام') + '</strong><span class="recitation-chip ' + recitationTone(note.validation) + '">' + escapeHtml(note.validation || '-') + '</span></div>'
+            + '<div class="flex items-center justify-between gap-2 mt-2"><span class="text-xs font-bold text-gray-400">' + escapeHtml(formatRecitationDate(note)) + '</span><span class="text-xs font-bold text-emerald-700">' + escapeHtml(note.profName || '') + '</span></div>'
+            + (note.comment ? '<p class="text-sm text-gray-700 font-bold mt-2">' + escapeHtml(note.comment) + '</p>' : '')
+            + '</div>';
+    }).join('');
+    container.innerHTML = summary + rows;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1563,12 +1627,27 @@ function showToast(text, type) {
     setTimeout(() => t.remove(), 3000);
 }
 
+function initAdminNavAutoHide() {
+    const nav = document.querySelector('.control-sidebar');
+    if (!nav) return;
+    let revealTimer = null;
+    window.addEventListener('scroll', () => {
+        const nearTop = (window.scrollY || 0) < 80;
+        nav.classList.toggle('admin-nav-hidden', !nearTop);
+        clearTimeout(revealTimer);
+        revealTimer = setTimeout(() => {
+            nav.classList.remove('admin-nav-hidden');
+        }, 620);
+    }, { passive: true });
+}
+
 /* ══════════════════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════════════════ */
 window.addEventListener('DOMContentLoaded', async () => {
     await renderAll();
     startStatsAutoRefresh();
+    initAdminNavAutoHide();
 });
 </script>
 </body>
