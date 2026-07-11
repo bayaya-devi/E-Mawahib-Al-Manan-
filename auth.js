@@ -1119,6 +1119,7 @@ const Auth = (() => {
         const payload = wasCompleted
             ? storeMissionAttempt(normalizedId, globalScore, true)
             : _awardSurahStars(normalizedId);
+        window.dispatchEvent(new CustomEvent('mawahib:surah-completed', { detail: { surahId: normalizedId } }));
         _maybeOpenCelebration(payload);
         return payload;
     }

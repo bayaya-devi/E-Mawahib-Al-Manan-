@@ -20,6 +20,64 @@
     window.__mawahibAudioInstrumented = true;
   }
 
+  function createLessonXp(phases) {
+    const isSurahPage = /(^|\/)surah-|Al_|al_kadr|quraysh|fil|bayina|qaria/.test(location.pathname);
+    if (!isSurahPage) return null;
+    const session = typeof Auth !== 'undefined' && Auth.getSession ? Auth.getSession() : null;
+    const storageId = 'mawahib_lesson_xp_' + (session?.username || 'local') + '_' + location.pathname.split('/').pop();
+    let state = { xp: 0, awards: [] };
+    try { state = { ...state, ...(JSON.parse(sessionStorage.getItem(storageId) || 'null') || {}) }; } catch (error) {}
+    state.awards = Array.isArray(state.awards) ? state.awards : [];
+
+    let label = document.getElementById('xp-label');
+    let bar = document.getElementById('xp-bar');
+    if (!label) {
+      const panel = document.createElement('section');
+      panel.className = 'mawahib-unified-xp';
+      panel.innerHTML = '<div><strong>نقاط الخبرة</strong><span id="xp-label">0</span></div><div class="mawahib-unified-xp-track"><span id="xp-bar"></span></div>';
+      const anchor = document.querySelector('main') || document.body.firstElementChild;
+      if (anchor?.parentNode) anchor.parentNode.insertBefore(panel, anchor);
+      label = panel.querySelector('#xp-label');
+      bar = panel.querySelector('#xp-bar');
+    }
+
+    function save() {
+      try { sessionStorage.setItem(storageId, JSON.stringify(state)); } catch (error) {}
+    }
+
+    function render() {
+      const value = String(Math.max(0, Math.min(100, state.xp || 0)));
+      const width = value + '%';
+      if (label && label.textContent !== value) label.textContent = value;
+      if (bar && bar.style.width !== width) bar.style.width = width;
+    }
+
+    function award(key) {
+      if (!key || state.awards.includes(key)) return false;
+      const partCount = Math.max(1, document.querySelectorAll('.part-btn').length);
+      const totalSteps = Math.max(1, partCount * phases.length);
+      state.awards.push(key);
+      state.xp = Math.min(100, Math.round(state.awards.length / totalSteps * 100));
+      save();
+      queueMicrotask(render);
+      return true;
+    }
+
+    function finish() {
+      state.xp = 100;
+      save();
+      render();
+    }
+
+    const observer = new MutationObserver(() => queueMicrotask(render));
+    if (label) observer.observe(label, { childList: true, characterData: true, subtree: true });
+    if (bar) observer.observe(bar, { attributes: true, attributeFilter: ['style'] });
+    const api = { award, finish, state };
+    window.__mawahibLessonXp = api;
+    render();
+    return api;
+  }
+
   function initLessonGuard() {
     const phases = [...document.querySelectorAll('[id^="phase-"]')]
       .filter(element => /^phase-\d+$/.test(element.id))
@@ -32,6 +90,13 @@
     const originalGoToPhase = window.goToPhase;
     const originalUpdateStats = typeof window.updateStats === 'function' ? window.updateStats : null;
     const originalFinishMission = typeof window.finishMission === 'function' ? window.finishMission : null;
+    const lessonXp = createLessonXp(phases);
+    (lessonXp?.state.awards || []).forEach(key => {
+      if (/^\d+:\d+$/.test(key)) {
+        completed.add(key);
+        awarded.add(key);
+      }
+    });
 
     function currentPartIndex() {
       const buttons = [...document.querySelectorAll('.part-btn')];
@@ -102,6 +167,7 @@
       completed.add(key);
       awarded.add(key);
       if (originalUpdateStats) originalUpdateStats(10, true);
+      lessonXp?.award(key);
       if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') {
         Auth.recordActivity(surahId(), 'listening-part-' + currentPartIndex(), 100);
       }
@@ -124,7 +190,11 @@
     window.goToPhase = function guardedGoToPhase(target) {
       const phase = Number(target);
       const current = currentPhaseIndex();
-      if (phase === current + 1 && current > 0 && visibleSuccess(phases[current])) completed.add(stepKey(current));
+      if (phase === current + 1 && current > 0 && visibleSuccess(phases[current])) {
+        const key = stepKey(current);
+        completed.add(key);
+        lessonXp?.award(key);
+      }
       if (phase > currentPhaseIndex() && !canOpenPhase(phase)) {
         const feedback = document.getElementById('fill-feedback');
         if (phase === 3 && feedback && /100\s*%/.test(feedback.textContent || '')) {
@@ -144,17 +214,25 @@
         const key = stepKey(phase);
         if (Number(delta) <= 0) return originalUpdateStats.call(this, delta, ok);
         if (phase === 0 || awarded.has(key)) {
-          if (phase === 2 && /100\s*%/.test(document.getElementById('fill-feedback')?.textContent || '')) completed.add(key);
+          if (phase === 2 && /100\s*%/.test(document.getElementById('fill-feedback')?.textContent || '')) {
+            completed.add(key);
+            lessonXp?.award(key);
+          }
           return originalUpdateStats.call(this, 0, ok);
         }
         if (phase === 2) {
           awarded.add(key);
-          if (/100\s*%/.test(document.getElementById('fill-feedback')?.textContent || '')) completed.add(key);
+          if (/100\s*%/.test(document.getElementById('fill-feedback')?.textContent || '')) {
+            completed.add(key);
+            lessonXp?.award(key);
+          }
           return originalUpdateStats.call(this, delta, ok);
         }
         completed.add(key);
         awarded.add(key);
-        return originalUpdateStats.call(this, phase === phases.length - 1 ? 100 : delta, ok);
+        const result = originalUpdateStats.call(this, phase === phases.length - 1 ? 100 : delta, ok);
+        lessonXp?.award(key);
+        return result;
       };
     }
 
@@ -188,8 +266,11 @@
       .sort((a, b) => Number(a.id.split('-')[1]) - Number(b.id.split('-')[1]));
     if (screens.length < 2 || typeof window.validateCurrentScreen !== 'function') return;
     const originalValidate = window.validateCurrentScreen;
+    const originalGoNext = typeof window.goNext === 'function' ? window.goNext : null;
     const heard = new Set();
     let listeningCompleted = false;
+    const lessonXp = createLessonXp(screens);
+    listeningCompleted = Boolean(lessonXp?.state.awards?.includes('screen:0'));
 
     function visibleScreen() {
       const index = screens.findIndex(screen => !screen.classList.contains('hidden'));
@@ -217,6 +298,7 @@
       const expected = document.querySelectorAll('#audio-verses-box > *, #audio-list > *').length;
       if (expected > 0 && heard.size >= expected) {
         listeningCompleted = true;
+        lessonXp?.award('screen:0');
         setTimeout(() => window.validateCurrentScreen(), 650);
       }
     });
@@ -228,6 +310,13 @@
       }
       return originalValidate.apply(this, arguments);
     };
+
+    if (originalGoNext) {
+      window.goNext = function guardedScreenAdvance() {
+        lessonXp?.award('screen:' + visibleScreen());
+        return originalGoNext.apply(this, arguments);
+      };
+    }
   }
 
   function readTheme() {
@@ -398,7 +487,16 @@
         '.app-shell {',
         '  background: linear-gradient(180deg, color-mix(in srgb, var(--platform-surface) 92%, #ffffff), color-mix(in srgb, var(--platform-primary-soft) 38%, #ffffff)) !important;',
         '  border-color: color-mix(in srgb, var(--platform-primary) 22%, transparent) !important;',
-        '}'
+        '}',
+        'body { background: color-mix(in srgb, var(--platform-primary-soft) 24%, #f8fafc) !important; }',
+        'main { border-radius: 18px !important; border-color: color-mix(in srgb, var(--platform-primary) 18%, #e2e8f0) !important; box-shadow: 0 12px 32px rgba(15,23,42,.08) !important; }',
+        'button, a[class*="rounded"] { border-radius: 12px !important; }',
+        '[id^="tab-"] { min-height: 48px; display:flex; align-items:center; justify-content:center; }',
+        '.mawahib-unified-xp { width:min(calc(100% - 24px),64rem); margin:12px auto; padding:12px 16px; border:1px solid color-mix(in srgb,var(--platform-primary) 20%,#e2e8f0); border-radius:14px; background:#fff; box-shadow:0 8px 24px rgba(15,23,42,.06); }',
+        '.mawahib-unified-xp>div:first-child { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--platform-primary-dark); font-weight:900; }',
+        '.mawahib-unified-xp-track { height:7px; margin-top:8px; overflow:hidden; border-radius:999px; background:#e2e8f0; }',
+        '.mawahib-unified-xp-track>span { display:block; height:100%; width:0; border-radius:inherit; background:linear-gradient(90deg,var(--platform-primary),var(--platform-primary-dark)); transition:width .35s ease; }',
+        '@media(max-width:640px){main{border-radius:14px !important}.mawahib-unified-xp{width:calc(100% - 16px);margin:8px auto;padding:10px 12px}}'
       ].join('\n');
       document.head.appendChild(style);
     }
@@ -411,6 +509,9 @@
     initNavAutoHide();
     initLessonGuard();
     initScreenLessonGuard();
+    window.addEventListener('mawahib:surah-completed', () => {
+      if (window.__mawahibLessonXp) window.__mawahibLessonXp.finish();
+    });
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) initScrollAnimations();
   }
 
