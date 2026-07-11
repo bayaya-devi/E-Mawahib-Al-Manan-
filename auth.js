@@ -1002,14 +1002,22 @@ const Auth = (() => {
 
     // --- 8. PROGRESSIONS ---
     async function getProgress(username) {
-        if (!_isOnline()) return _readOfflineCache(username, 'progress', {});
+        const cached = _readOfflineCache(username, 'progress', {});
+        if (!_isOnline()) return cached;
         const { data, error } = await supabase.from('progressions').select('*').eq('username', username);
         if (error) {
             logError('getProgress', error);
-            return _readOfflineCache(username, 'progress', {});
+            return cached;
         }
         const res = {};
         (data || []).forEach(p => _rememberProgressAliases(res, p));
+        Object.entries(cached).forEach(([id, local]) => {
+            if (!local || typeof local !== 'object') return;
+            const remote = res[id] || {};
+            const localIsNewer = Boolean(local.completed_at || local.completedAt || local.is_completed) &&
+                !Boolean(remote.completed_at || remote.completedAt || remote.is_completed);
+            if (localIsNewer) _rememberProgressAliases(res, { ...remote, ...local, surah_id: id });
+        });
         _writeOfflineCache(username, 'progress', res);
         return res;
     }
@@ -1066,7 +1074,9 @@ const Auth = (() => {
         navigator.serviceWorker.ready.then(post).catch(() => {});
     }
 
-    async function completeSurah(surahId) {
+    const completionRequests = new Map();
+
+    async function _completeSurahOnce(surahId) {
         const session = getSession(); if (!session) return;
         const normalizedId = normalizeSurahId(surahId);
         const cachedProgress = _readOfflineCache(session.username, 'progress', {});
@@ -1079,7 +1089,8 @@ const Auth = (() => {
             error = response.error;
         }
         if (error && error.code !== 'PGRST116') logError('completeSurah', error);
-        const wasCompleted = Boolean(data?.completed_at);
+        const wasCompleted = Boolean(data?.completed_at || data?.completedAt || data?.is_completed);
+        if (wasCompleted) return { alreadyCompleted: true, surahId: normalizedId };
         const activities = data?.activities || {};
         const scores = Object.values(activities).map(a => a.score);
         const globalScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 100;
@@ -1110,6 +1121,16 @@ const Auth = (() => {
             : _awardSurahStars(normalizedId);
         _maybeOpenCelebration(payload);
         return payload;
+    }
+
+    function completeSurah(surahId) {
+        const session = getSession(); if (!session) return Promise.resolve(null);
+        const normalizedId = normalizeSurahId(surahId);
+        const requestKey = session.username + ':' + normalizedId;
+        if (completionRequests.has(requestKey)) return completionRequests.get(requestKey);
+        const request = _completeSurahOnce(normalizedId).finally(() => completionRequests.delete(requestKey));
+        completionRequests.set(requestKey, request);
+        return request;
     }
 
     // --- 9. DEVOIRS ---
