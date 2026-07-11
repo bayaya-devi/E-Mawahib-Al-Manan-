@@ -177,10 +177,90 @@
       z-index: 80;
       box-shadow: 0 18px 40px rgba(15, 23, 42, .22);
     }
+    .prof-tab-panel.hidden { display: none; }
+    .prof-nav {
+      position: fixed;
+      left: 50%;
+      bottom: 14px;
+      z-index: 70;
+      transform: translateX(-50%);
+      width: min(520px, calc(100% - 20px));
+      border-radius: 24px;
+      background: rgba(255,255,255,.94);
+      border: 1px solid rgba(17,24,39,.08);
+      box-shadow: 0 18px 44px rgba(15,23,42,.16);
+      backdrop-filter: blur(18px);
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 6px;
+      padding: 8px;
+      transition: transform .22s ease, opacity .22s ease;
+    }
+    .prof-nav.is-hidden {
+      transform: translate(-50%, calc(100% + 24px));
+      opacity: .08;
+      pointer-events: none;
+    }
+    .prof-nav button {
+      border: 0;
+      border-radius: 18px;
+      min-height: 50px;
+      background: transparent;
+      color: #475569;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+    }
+    .prof-nav button.active {
+      background: var(--teacher-green);
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(6,78,59,.18);
+    }
+    .prof-nav .icon { font-size: 20px; line-height: 1; }
+    .student-history-grid {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+    .student-history-list {
+      display: grid;
+      gap: 8px;
+    }
+    .student-history-button {
+      width: 100%;
+      border: 1px solid rgba(17, 24, 39, .08);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .86);
+      padding: 12px;
+      text-align: right;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .student-history-button.active {
+      border-color: rgba(6, 78, 59, .38);
+      background: rgba(6, 78, 59, .08);
+      color: var(--teacher-green);
+    }
+    .history-timeline {
+      display: grid;
+      gap: 10px;
+    }
+    .history-item {
+      border: 1px solid rgba(17, 24, 39, .08);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, .76);
+      padding: 12px;
+    }
     @media (max-width: 900px) {
-      body { padding: 10px; }
+      body { padding: 10px 10px 96px; }
       .topbar { border-radius: 22px; padding: 14px; }
       .layout { grid-template-columns: 1fr; }
+      .student-history-grid { grid-template-columns: 1fr; }
       .session-strip { grid-template-columns: 1fr 1fr; }
       .session-strip .date-cell { grid-column: 1 / -1; }
       .student-list { grid-template-columns: 1fr; }
@@ -192,6 +272,8 @@
       .session-strip { grid-template-columns: 1fr; }
       .student-card { border-radius: 20px; }
       .student-actions { grid-template-columns: 1fr !important; }
+      .prof-nav { bottom: 8px; border-radius: 20px; }
+      .prof-nav button { min-height: 48px; font-size: 12px; }
     }
   </style>
 </head>
@@ -212,7 +294,7 @@
       </div>
     </header>
 
-    <section class="session-strip">
+    <section class="session-strip prof-tab-panel" data-prof-panel="recitation">
       <div class="date-cell panel glass">
         <label class="label">تاريخ الحصة</label>
         <input type="date" id="session-date" class="input">
@@ -221,7 +303,7 @@
       <button onclick="saveDailySession()" class="btn btn-primary">حفظ الحصة</button>
     </section>
 
-    <main class="layout">
+    <main class="layout prof-tab-panel" data-prof-panel="recitation">
       <section class="panel glass">
         <div class="flex items-center justify-between gap-3 mb-4">
           <div>
@@ -238,19 +320,62 @@
           <p class="small-muted mb-2">الأولوية اليوم</p>
           <div id="listen-queue" class="space-y-2"></div>
         </section>
-        <section class="panel glass">
-          <p class="small-muted mb-2">واجبات مفتوحة</p>
-          <div id="homework-summary" class="space-y-2"></div>
-        </section>
-        <section class="panel glass">
-          <p class="small-muted mb-2">إبلاغ الإدارة</p>
-          <select id="report-student" class="input mb-2"></select>
-          <textarea id="admin-report-text" rows="4" class="input" placeholder="اكتب ملاحظة مختصرة للإدارة"></textarea>
-          <button onclick="sendAdminReport()" class="btn btn-primary w-full mt-2">إرسال</button>
-        </section>
       </aside>
     </main>
+
+    <section class="panel glass prof-tab-panel hidden" data-prof-panel="homework">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <p class="small-muted">واجب منفصل</p>
+          <h2 class="text-xl font-black">إرسال واجب مراجعة</h2>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <select id="homework-student" class="input"></select>
+        <input type="text" id="homework-surate" class="input" list="surah-list" placeholder="السورة">
+        <input type="number" id="homework-debut" min="1" class="input" placeholder="من الآية">
+        <input type="number" id="homework-fin" min="1" class="input" placeholder="إلى الآية">
+        <input type="date" id="homework-date" class="input md:col-span-2">
+      </div>
+      <button onclick="sendHomeworkFromTab()" class="btn btn-primary w-full mt-3">إرسال الواجب</button>
+      <div class="mt-5">
+        <p class="small-muted mb-2">واجبات مفتوحة</p>
+        <div id="homework-summary" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <section class="panel glass prof-tab-panel hidden" data-prof-panel="report">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <p class="small-muted">رسالة للإدارة</p>
+          <h2 class="text-xl font-black">إبلاغ الإدارة</h2>
+        </div>
+      </div>
+      <select id="report-student" class="input mb-3"></select>
+      <textarea id="admin-report-text" rows="6" class="input" placeholder="اكتب ملاحظة مختصرة للإدارة"></textarea>
+      <button onclick="sendAdminReport()" class="btn btn-primary w-full mt-3">إرسال</button>
+    </section>
+
+    <section class="panel glass prof-tab-panel hidden" data-prof-panel="students">
+      <div class="flex items-center justify-between gap-3 mb-4">
+        <div>
+          <p class="small-muted">متابعة التعلم</p>
+          <h2 class="text-xl font-black">ملف الطالب</h2>
+        </div>
+      </div>
+      <div class="student-history-grid">
+        <div id="student-history-list" class="student-history-list"></div>
+        <div id="student-history-detail" class="history-timeline"></div>
+      </div>
+    </section>
   </div>
+
+  <nav class="prof-nav" id="prof-nav">
+    <button type="button" class="active" data-prof-tab="recitation" onclick="switchProfTab('recitation')"><span class="icon">🎙️</span><span>تسميع</span></button>
+    <button type="button" data-prof-tab="students" onclick="switchProfTab('students')"><span class="icon">👤</span><span>الطلاب</span></button>
+    <button type="button" data-prof-tab="homework" onclick="switchProfTab('homework')"><span class="icon">📘</span><span>واجبات</span></button>
+    <button type="button" data-prof-tab="report" onclick="switchProfTab('report')"><span class="icon">📩</span><span>الإدارة</span></button>
+  </nav>
 
   <div id="modal-devoir" class="modal-overlay" onclick="handleModalClick(event)">
     <div class="glass w-full max-w-md rounded-[28px] overflow-hidden">
@@ -282,6 +407,8 @@
     let myProf = null;
     let myClassSessions = [];
     let teacherNotesCache = {};
+    let progressCache = {};
+    let selectedHistoryStudent = '';
 
     function escapeHtml(value) {
       return String(value || '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
@@ -298,6 +425,46 @@
     function lastTeacherNote(student) {
       const notes = teacherNotesCache[student.username] || [];
       return notes[0] || null;
+    }
+
+    function normalizeSurahId(value) {
+      return String(value || '').trim().toLowerCase().replace(/_/g, '-');
+    }
+
+    function surahMeta(id) {
+      const normalized = normalizeSurahId(id);
+      if (typeof SURAH_REGISTRY === 'undefined') return null;
+      return SURAH_REGISTRY.find(s => normalizeSurahId(s.id) === normalized || normalizeSurahId(s.nameAr) === normalized) || null;
+    }
+
+    function formatDate(value) {
+      if (!value) return '';
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
+      return date.toLocaleDateString('ar-MA', { day: 'numeric', month: 'long' });
+    }
+
+    function studentProgressItems(student) {
+      const progress = progressCache[student.username] || {};
+      const seen = new Set();
+      return Object.keys(progress).map(id => {
+        const row = progress[id] || {};
+        const meta = surahMeta(id);
+        const normalized = normalizeSurahId(meta?.id || id);
+        if (seen.has(normalized)) return null;
+        seen.add(normalized);
+        const activities = row.activities || {};
+        const activityDates = Object.values(activities).map(item => item && item.date).filter(Boolean);
+        const lastDate = row.completed_at || row.completedAt || activityDates.sort().slice(-1)[0] || '';
+        return {
+          id: normalized,
+          name: meta?.nameAr || id,
+          completed: Boolean(row.completed_at || row.completedAt || row.is_completed),
+          score: row.global_score || row.globalScore || row.score || '',
+          activityCount: Object.keys(activities).length,
+          lastDate
+        };
+      }).filter(Boolean).sort((a, b) => String(b.lastDate).localeCompare(String(a.lastDate)));
     }
 
     function studentPriority(student) {
@@ -337,11 +504,18 @@
       myProf = profs[session.username] || { students: [] };
       myStudents = (myProf.students || []).map(id => users[id]).filter(Boolean);
       teacherNotesCache = {};
+      progressCache = {};
       if (typeof Auth.getTeacherNotes === 'function') {
         await Promise.all(myStudents.map(async student => {
           teacherNotesCache[student.username] = await Auth.getTeacherNotes(student.username);
         }));
       }
+      if (typeof Auth.getProgress === 'function') {
+        await Promise.all(myStudents.map(async student => {
+          progressCache[student.username] = await Auth.getProgress(student.username);
+        }));
+      }
+      if (!selectedHistoryStudent && myStudents[0]) selectedHistoryStudent = myStudents[0].username;
       renderAll();
       if (show) showToast('تم التحديث');
     }
@@ -349,9 +523,21 @@
     function renderAll() {
       document.getElementById('student-count').textContent = myStudents.length + ' طالب';
       renderReportOptions();
+      renderHomeworkOptions();
       renderRecitationList();
       renderListenQueue();
       renderHomeworkSummary();
+      renderStudentHistory();
+    }
+
+    function renderHomeworkOptions() {
+      const select = document.getElementById('homework-student');
+      if (!select) return;
+      select.innerHTML = myStudents.map(student => {
+        const name = student.prenom + ' ' + student.nom;
+        return '<option value="' + escapeHtml(student.username) + '">' + escapeHtml(name) + '</option>';
+      }).join('');
+      document.getElementById('homework-date').value = new Date().toISOString().slice(0, 10);
     }
 
     function renderRecitationList() {
@@ -376,10 +562,65 @@
           + '<button onclick="addRecitationEntry(\'' + escapeArg(student.username) + '\')" class="btn btn-soft">إضافة تسميع آخر</button>'
           + '<span class="pill">' + pending + ' واجب</span>'
           + '</div>'
+          + '<button onclick="openStudentHistory(\'' + escapeArg(student.username) + '\')" class="btn btn-soft w-full mt-2">ملف الطالب</button>'
           + '<button onclick="openHomeworkFromStudent(\'' + escapeArg(student.username) + '\', \'' + escapeArg(name) + '\')" class="btn btn-soft w-full mt-2">واجب مراجعة</button>'
           + (note ? '<p class="small-muted mt-3">آخر ملاحظة: ' + escapeHtml(note.validation || '') + ' ' + escapeHtml(note.comment || '') + '</p>' : '')
           + '</article>';
       }).join('');
+    }
+
+    function renderStudentHistory() {
+      const list = document.getElementById('student-history-list');
+      const detail = document.getElementById('student-history-detail');
+      if (!list || !detail) return;
+      if (!myStudents.length) {
+        list.innerHTML = '';
+        detail.innerHTML = '<p class="small-muted text-center py-6">لا يوجد طلاب.</p>';
+        return;
+      }
+      if (!myStudents.some(student => student.username === selectedHistoryStudent)) selectedHistoryStudent = myStudents[0].username;
+      list.innerHTML = myStudents.map(student => {
+        const name = student.prenom + ' ' + student.nom;
+        const items = studentProgressItems(student);
+        const completed = items.filter(item => item.completed).length;
+        return '<button type="button" class="student-history-button ' + (student.username === selectedHistoryStudent ? 'active' : '') + '" onclick="selectStudentHistory(\'' + escapeArg(student.username) + '\')">'
+          + '<div>' + escapeHtml(name) + '</div>'
+          + '<p class="small-muted mt-1">' + completed + ' سورة</p>'
+          + '</button>';
+      }).join('');
+      const student = myStudents.find(item => item.username === selectedHistoryStudent) || myStudents[0];
+      const name = student.prenom + ' ' + student.nom;
+      const progressItems = studentProgressItems(student);
+      const completed = progressItems.filter(item => item.completed);
+      const lastProgress = progressItems[0] || null;
+      const notes = teacherNotesCache[student.username] || [];
+      const homeworks = homeworkFor(student);
+      const pending = homeworks.filter(item => item.statut !== 'termine');
+      const recentNotes = notes.slice(0, 5).map(note => {
+        const range = note.scope === 'جزء' && (note.ayahStart || note.ayahEnd)
+          ? ' من ' + escapeHtml(note.ayahStart || '?') + ' إلى ' + escapeHtml(note.ayahEnd || '?')
+          : '';
+        return '<div class="history-item"><strong>' + escapeHtml(note.surah || 'تسميع') + range + '</strong><p class="small-muted mt-1">' + escapeHtml(note.validation || '') + ' ' + escapeHtml(note.comment || '') + '</p><p class="small-muted mt-1">' + escapeHtml(formatDate(note.savedAt || note.date)) + '</p></div>';
+      }).join('');
+      const recentProgress = progressItems.slice(0, 6).map(item => {
+        return '<div class="history-item"><strong>' + escapeHtml(item.name) + '</strong><p class="small-muted mt-1">' + (item.completed ? 'مكتملة' : 'قيد التعلم') + (item.score ? ' · ' + escapeHtml(item.score) + '%' : '') + '</p><p class="small-muted mt-1">' + escapeHtml(formatDate(item.lastDate)) + '</p></div>';
+      }).join('');
+      detail.innerHTML =
+        '<div class="history-item"><h3 class="text-xl font-black">' + escapeHtml(name) + '</h3><p class="small-muted mt-1">تعلم ' + completed.length + ' سورة. آخر نشاط: ' + escapeHtml(lastProgress ? lastProgress.name : 'لا يوجد') + '</p></div>'
+        + '<div class="grid grid-cols-2 gap-2"><div class="history-item"><strong>' + pending.length + '</strong><p class="small-muted mt-1">واجب مفتوح</p></div><div class="history-item"><strong>' + notes.length + '</strong><p class="small-muted mt-1">تسميع مسجل</p></div></div>'
+        + '<div><p class="small-muted mb-2">آخر تعلم في المنصة</p>' + (recentProgress || '<div class="history-item small-muted">لا يوجد نشاط بعد.</div>') + '</div>'
+        + '<div><p class="small-muted mb-2">آخر تسميع عند الأستاذ</p>' + (recentNotes || '<div class="history-item small-muted">لا يوجد تسميع محفوظ.</div>') + '</div>';
+    }
+
+    function selectStudentHistory(username) {
+      selectedHistoryStudent = username;
+      renderStudentHistory();
+    }
+
+    function openStudentHistory(username) {
+      selectedHistoryStudent = username;
+      switchProfTab('students');
+      renderStudentHistory();
     }
 
     function recitationEntryHtml(username, index) {
@@ -439,6 +680,30 @@
           const name = student.prenom + ' ' + student.nom;
           return '<option value="' + escapeHtml(name) + '">' + escapeHtml(name) + '</option>';
         }).join('');
+    }
+
+    function switchProfTab(name) {
+      document.querySelectorAll('[data-prof-panel]').forEach(panel => {
+        panel.classList.toggle('hidden', panel.dataset.profPanel !== name);
+      });
+      document.querySelectorAll('[data-prof-tab]').forEach(button => {
+        button.classList.toggle('active', button.dataset.profTab === name);
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function initProfNavAutoHide() {
+      const nav = document.getElementById('prof-nav');
+      if (!nav) return;
+      let timer = null;
+      const hide = () => {
+        nav.classList.add('is-hidden');
+        clearTimeout(timer);
+        timer = setTimeout(() => nav.classList.remove('is-hidden'), 560);
+      };
+      window.addEventListener('scroll', hide, { passive: true });
+      window.addEventListener('touchmove', hide, { passive: true });
+      window.addEventListener('wheel', hide, { passive: true });
     }
 
     function setAllPresent(value) {
@@ -563,6 +828,29 @@
       }
     }
 
+    async function sendHomeworkFromTab() {
+      const studentId = document.getElementById('homework-student').value;
+      const surate = document.getElementById('homework-surate').value.trim();
+      const debut = document.getElementById('homework-debut').value;
+      const fin = document.getElementById('homework-fin').value;
+      const date = document.getElementById('homework-date').value;
+      if (!studentId || !surate || !debut || !fin || !date) {
+        showToast('أكمل حقول الواجب');
+        return;
+      }
+      const result = await Auth.ajouterDevoir(studentId, session.prenom, 'مراجعة: ' + surate, debut, fin, date);
+      if (result.ok) {
+        document.getElementById('homework-surate').value = '';
+        document.getElementById('homework-debut').value = '';
+        document.getElementById('homework-fin').value = '';
+        await refreshProfDashboard(false);
+        switchProfTab('homework');
+        showToast('تم إرسال الواجب');
+      } else {
+        showToast(result.error || 'تعذر إرسال الواجب');
+      }
+    }
+
     async function sendAdminReport() {
       const student = document.getElementById('report-student').value;
       const text = document.getElementById('admin-report-text').value.trim();
@@ -592,7 +880,10 @@
       setTimeout(() => toast.remove(), 2600);
     }
 
-    window.addEventListener('DOMContentLoaded', initProfDashboard);
+    window.addEventListener('DOMContentLoaded', () => {
+      initProfDashboard();
+      initProfNavAutoHide();
+    });
   </script>
   <script src="notifications.js"></script>
 </body>
