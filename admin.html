@@ -156,6 +156,24 @@
         .accent-purple-600 { accent-color: #047857 !important; }
         #total-badge { background: #ecfdf5; color: #047857; }
         @media (max-width: 900px) { .control-shell { grid-template-columns: 1fr; } .control-sidebar { position: sticky; top: 8px; z-index: 30; } .control-sidebar .tab-btn { display: inline-flex; width: auto; } .control-nav-scroll { display: flex; gap: 8px; overflow-x: auto; } .cockpit-kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+        @media (max-width: 640px) {
+            body { padding: 10px !important; overflow-x: hidden; }
+            .max-w-7xl > .flex:first-child { align-items: stretch; margin-bottom: 12px; }
+            .max-w-7xl > .flex:first-child > div:last-child { width: 100%; justify-content: space-between; }
+            .control-shell { gap: 10px; }
+            .control-sidebar { margin-inline: -2px; padding: 8px; border-radius: 16px; }
+            .control-sidebar-title { display: none; }
+            .control-nav-scroll { padding-bottom: 3px; scrollbar-width: none; }
+            .control-nav-scroll::-webkit-scrollbar { display: none; }
+            .control-sidebar .tab-btn { min-height: 44px; margin: 0; padding: 9px 11px; white-space: nowrap; border-radius: 12px; }
+            .cockpit-hero { padding: 14px; border-radius: 18px; }
+            .cockpit-kpi-grid { gap: 7px; }
+            .cockpit-kpi { padding: 10px; border-radius: 14px; }
+            .cockpit-kpi strong { font-size: 21px; }
+            .cockpit-panel { padding: 12px; border-radius: 16px; }
+            .parent-link-card { padding: 20px 14px; border-radius: 16px; }
+            .pill { min-height: 40px; }
+        }
 
     </style>
 </head>

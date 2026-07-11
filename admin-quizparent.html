@@ -14,6 +14,14 @@
 <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
         .table-header { background-color: #1e293b; color: white; }
+        @media (max-width: 640px) {
+            body { padding: 10px !important; }
+            .max-w-7xl > .flex { align-items: stretch; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+            h1 { font-size: 1.35rem !important; line-height: 1.35; }
+            .max-w-7xl > .flex a { min-height: 44px; display: flex; align-items: center; justify-content: center; }
+            table { min-width: 760px; }
+            th, td { padding: 10px !important; }
+        }
     </style>
 </head>
 <body class="p-6">

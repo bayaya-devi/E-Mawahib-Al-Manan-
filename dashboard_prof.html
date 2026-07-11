@@ -266,14 +266,20 @@
       .student-list { grid-template-columns: 1fr; }
     }
     @media (max-width: 560px) {
-      .topbar { align-items: flex-start; }
-      .topbar-actions { flex-direction: column; width: 92px; }
-      .topbar-actions .btn { width: 100%; padding: 0 10px; }
+      body { padding-inline: 8px; }
+      .topbar { align-items: stretch; flex-direction: column; padding: 12px; border-radius: 18px; }
+      .topbar > div:first-child { width: 100%; }
+      .topbar-actions { flex-direction: row; width: 100%; }
+      .topbar-actions .btn { flex: 1 1 0; width: auto; min-height: 44px; padding: 0 10px; }
+      .icon-logo { width: 48px; height: 48px; border-radius: 14px; }
+      .panel { padding: 12px; border-radius: 18px; }
+      .student-history-button, .history-item, .recitation-entry { border-radius: 14px; }
       .session-strip { grid-template-columns: 1fr; }
       .student-card { border-radius: 20px; }
       .student-actions { grid-template-columns: 1fr !important; }
-      .prof-nav { bottom: 8px; border-radius: 20px; }
-      .prof-nav button { min-height: 48px; font-size: 12px; }
+      .prof-nav { bottom: max(6px, env(safe-area-inset-bottom)); width: calc(100% - 12px); border-radius: 16px; padding: 5px; }
+      .prof-nav button { min-height: 54px; border-radius: 12px; font-size: 10px; padding-inline: 2px; }
+      .prof-nav .icon { font-size: 18px; }
     }
   </style>
 </head>

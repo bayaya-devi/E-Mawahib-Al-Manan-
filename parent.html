@@ -26,6 +26,16 @@
         body { padding-bottom: 100px; }
       body { padding-bottom: 96px; }
   .mawahib-nav-padding { height: 82px; }
+        @media (max-width: 640px) {
+            body { padding-bottom: calc(86px + env(safe-area-inset-bottom)); }
+            header { margin-bottom: 12px !important; padding-block: 14px !important; }
+            header .max-w-4xl { align-items: stretch; gap: 12px; }
+            header .max-w-4xl > button { width: 100%; min-height: 44px; }
+            main { padding: 10px !important; }
+            #feedback-section { padding: 14px !important; margin-bottom: 14px !important; }
+            [id^="rating-q"] { display: grid !important; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px !important; }
+            [id^="rating-q"] button { width: 100% !important; height: 44px !important; min-width: 0; }
+        }
 </style>
 </head>
 <body>
