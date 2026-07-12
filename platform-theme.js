@@ -450,13 +450,12 @@
       const delta = Math.abs(y - lastY);
       if (delta < 10) return;
 
-      navs.forEach(nav => nav.classList.add('nav-scroll-hidden'));
+      const scrollingDown = y > lastY;
+      const nearTop = y < 80;
+      navs.forEach(nav => nav.classList.toggle('nav-scroll-hidden', scrollingDown && !nearTop));
       lastY = y;
 
       clearTimeout(revealTimer);
-      revealTimer = setTimeout(() => {
-        navs.forEach(nav => nav.classList.remove('nav-scroll-hidden'));
-      }, 520);
     }, { passive: true });
   }
 

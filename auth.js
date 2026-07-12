@@ -14,6 +14,7 @@ const Auth = (() => {
     const OFFLINE_STATUS_KEY = 'mawahib_offline_status';
     const CLASS_SESSION_PREFIX = '[CLASS_SESSION] ';
     const TEACHER_NOTE_PREFIX = '[TEACHER_NOTE] ';
+    const ADMIN_FINANCE_PREFIX = '[ADMIN_FINANCE] ';
     const SURAH_ID_ALIASES = {
         'al-zalzala': 'al-zalzala',
         'al-zalzalah': 'al-zalzala',
@@ -924,6 +925,43 @@ const Auth = (() => {
         if (error) logError('clearMessages', error);
     }
 
+    async function saveFinanceEntry(payload) {
+        const date = new Date().toLocaleDateString('ar-MA', { day: 'numeric', month: 'long', year: 'numeric' });
+        const entry = {
+            id: payload.id || ('finance_' + Date.now()),
+            operationDate: payload.operationDate || new Date().toISOString().slice(0, 10),
+            type: payload.type || 'other',
+            label: String(payload.label || '').trim(),
+            amount: Number(payload.amount) || 0,
+            note: String(payload.note || '').trim(),
+            createdAt: new Date().toISOString()
+        };
+        const { error } = await supabase.from('messages').insert([{
+            username: '__admin_finance__',
+            text: ADMIN_FINANCE_PREFIX + JSON.stringify(entry),
+            date
+        }]);
+        if (error) { logError('saveFinanceEntry', error); return { ok: false, error: error.message }; }
+        return { ok: true, entry };
+    }
+
+    async function getFinanceEntries() {
+        const { data, error } = await supabase.from('messages').select('*').eq('username', '__admin_finance__').order('id', { ascending: false });
+        if (error) { logError('getFinanceEntries', error); return []; }
+        return (data || []).map(row => {
+            const raw = row.text || '';
+            if (!raw.startsWith(ADMIN_FINANCE_PREFIX)) return null;
+            try { return { rowId: row.id, ...JSON.parse(raw.slice(ADMIN_FINANCE_PREFIX.length)) }; }
+            catch (parseError) { return null; }
+        }).filter(Boolean);
+    }
+
+    async function deleteFinanceEntry(rowId) {
+        const { error } = await supabase.from('messages').delete().eq('id', rowId).eq('username', '__admin_finance__');
+        if (error) { logError('deleteFinanceEntry', error); return { ok: false, error: error.message }; }
+        return { ok: true };
+    }
+
     async function sendAdminReport(profId, profName, classe, text, category = 'متابعة') {
         const date = new Date().toLocaleDateString('ar-MA', { day: 'numeric', month: 'long' });
         const body = '[SIGNAL_ADMIN] ' + JSON.stringify({ profId, profName, classe, category, text, sentAt: new Date().toISOString() });
@@ -1213,6 +1251,7 @@ const Auth = (() => {
         getAllStudents, getAllUsers, getProfs, deleteStudent, deleteProf, toggleSuspension,
         assignStudentToProf, removeStudentFromProf,
         getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports, getProfReports,
+        saveFinanceEntry, getFinanceEntries, deleteFinanceEntry,
         saveClassSession, getClassSessions, saveTeacherNote, getTeacherNotes,
         getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, getLastCelebration, getLastInactivity, syncRewardsFromSurahs, getClassStarRanking, storeMissionAttempt, prepareOfflineLessons,
         ajouterDevoir, getDevoirs, annulerDevoir, marquerDevoirTermine,

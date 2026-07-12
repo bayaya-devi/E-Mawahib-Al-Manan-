@@ -749,14 +749,13 @@
       const nav = document.getElementById('prof-nav');
       if (!nav) return;
       let timer = null;
-      const hide = () => {
-        nav.classList.add('is-hidden');
-        clearTimeout(timer);
-        timer = setTimeout(() => nav.classList.remove('is-hidden'), 560);
+      let lastY = window.scrollY || 0;
+      const update = () => {
+        const y = window.scrollY || 0;
+        nav.classList.toggle('is-hidden', y > lastY && y > 80);
+        lastY = y;
       };
-      window.addEventListener('scroll', hide, { passive: true });
-      window.addEventListener('touchmove', hide, { passive: true });
-      window.addEventListener('wheel', hide, { passive: true });
+      window.addEventListener('scroll', update, { passive: true });
     }
 
     function setAllPresent(value) {
