@@ -184,7 +184,12 @@
 
     <script>
         function getRedirectTarget() {
-            return sessionStorage.getItem('loading_redirect') || 'dashboard.html';
+            const session = typeof Auth !== 'undefined' ? Auth.getSession() : null;
+            const requested = sessionStorage.getItem('loading_redirect');
+            sessionStorage.removeItem('loading_redirect');
+            if (session && session.role === 'admin') return 'controle-mawahib-7x9k.html';
+            if (session && session.role === 'prof') return 'prof-recitation.html';
+            return requested === 'dashboard.html' ? requested : 'dashboard.html';
         }
         const REDIRECT_TO = getRedirectTarget();
 

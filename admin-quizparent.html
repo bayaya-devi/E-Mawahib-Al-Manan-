@@ -29,7 +29,7 @@
     <div class="max-w-7xl mx-auto">
         <div class="flex justify-between items-center mb-8">
             <h1 class="text-3xl font-black text-gray-800">نتائج استبيان أولياء الأمور</h1>
-            <a href="admin.html" class="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300">عودة للإدارة</a>
+            <a href="controle-mawahib-7x9k.html" class="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300">عودة للإدارة</a>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -56,8 +56,13 @@
     </div>
 
     <script>
-        // التحقق من صلاحيات الإدارة (قم بتفعيلها حسب نظامك)
-        // Auth.requireAdmin();
+        if (localStorage.getItem('adminAuth') !== 'true') {
+            window.location.replace('controle-mawahib-7x9k.html');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+        }
 
         async function loadFeedback() {
             const tbody = document.getElementById('feedback-table-body');
@@ -83,12 +88,12 @@
                 const date = new Date(item.date_soumission).toLocaleDateString('ar-MA');
                 html += `
                     <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
-                        <td class="p-4 font-bold text-blue-700">${item.parent_id}</td>
+                        <td class="p-4 font-bold text-blue-700">${escapeHtml(item.parent_id)}</td>
                         <td class="p-4 text-center font-bold text-gray-700">${item.q1_enseignement}/10</td>
                         <td class="p-4 text-center font-bold text-gray-700">${item.q2_organisation}/10</td>
                         <td class="p-4 text-center font-bold text-gray-700">${item.q3_communication}/10</td>
                         <td class="p-4 text-center font-bold text-gray-700">${item.q4_plateforme}/10</td>
-                        <td class="p-4 text-gray-600 text-sm max-w-xs break-words">${item.commentaires || '-'}</td>
+                        <td class="p-4 text-gray-600 text-sm max-w-xs break-words">${escapeHtml(item.commentaires || '-')}</td>
                         <td class="p-4 text-gray-500 text-sm dir-ltr text-right">${date}</td>
                     </tr>
                 `;

@@ -179,6 +179,55 @@
             .pill { min-height: 40px; }
         }
 
+        /* Administration moderne, fidèle au tableau historique */
+        body { background: #f4f7f5; padding-bottom: 92px !important; }
+        .control-shell { display: block; }
+        .control-main { width: 100%; }
+        .control-sidebar {
+            position: fixed; z-index: 45; top: auto; right: auto;
+            left: 50%; bottom: max(8px, env(safe-area-inset-bottom));
+            width: min(calc(100% - 20px), 820px); padding: 5px;
+            border: 1px solid #d7e2dc; border-radius: 14px;
+            background: rgba(255,255,255,.96); color: #405149;
+            box-shadow: 0 12px 34px rgba(15,50,34,.18);
+            transform: translateX(-50%); backdrop-filter: blur(14px);
+        }
+        .control-sidebar.admin-nav-hidden { transform: translate(-50%, calc(100% + 24px)); opacity: 0; }
+        .control-sidebar-title { display: none; }
+        .control-nav-scroll { display: grid; grid-template-columns: repeat(6,minmax(0,1fr)); gap: 3px; }
+        .control-sidebar .tab-btn {
+            min-width: 0; min-height: 50px; margin: 0; padding: 6px 4px;
+            border-radius: 10px; color: #64716b; background: transparent;
+            flex-direction: column-reverse; justify-content: center; font-size: 10px;
+        }
+        .control-sidebar .tab-btn span:first-child { overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; }
+        .control-sidebar .tab-btn span:last-child { font-size: 17px; line-height: 1; }
+        .control-sidebar .tab-btn.active { color: #fff; background: #0f5137; box-shadow: none; }
+        .cockpit-hero { border-radius: 16px; background: #0f5137; box-shadow: 0 14px 36px rgba(12,74,59,.18); }
+        .cockpit-kpi { border-radius: 10px; backdrop-filter: none; }
+        .cockpit-panel, .class-card, .recitation-admin-card { border-radius: 12px; box-shadow: 0 5px 18px rgba(12,74,59,.06); }
+        .cockpit-action { min-height: 68px; border-radius: 10px; background: #f7faf8; }
+        .class-card-header { background: #12603f; }
+        .accordion-body.open { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+        .student-row { min-width: 0; margin: 0; padding: 11px; align-content: start; border-radius: 10px; }
+        .student-row > .w-full { grid-column: 1/-1; }
+        .modal-overlay { padding: 8px; backdrop-filter: blur(4px); }
+        .modal-overlay > div { border-radius: 14px !important; }
+        @media (max-width: 900px) {
+            .control-sidebar { top: auto; }
+            .control-sidebar .tab-btn { width: auto; display: flex; }
+            .accordion-body.open { grid-template-columns: repeat(2,minmax(0,1fr)); }
+        }
+        @media (max-width: 520px) {
+            body { padding: 8px !important; padding-bottom: 82px !important; }
+            .control-sidebar { width: calc(100% - 10px); bottom: max(5px,env(safe-area-inset-bottom)); padding: 4px; }
+            .control-nav-scroll { overflow: visible; padding: 0; }
+            .control-sidebar .tab-btn { min-height: 48px; padding: 5px 2px; font-size: 8px; }
+            .control-sidebar .tab-btn span:last-child { font-size: 16px; }
+            .accordion-body.open { grid-template-columns: 1fr; padding: 8px !important; }
+            .cockpit-hero { padding: 13px; }
+        }
+
     </style>
 </head>
 <body class="p-4 md:p-6">
@@ -718,18 +767,6 @@
 /* ══════════════════════════════════════════════════════════
    AUTH GUARD
 ══════════════════════════════════════════════════════════ */
-const ADMIN_PASSWORD = 'admin1234';
-if (localStorage.getItem('adminAuth') !== 'true') {
-    const pwd = prompt("الرجاء إدخال رمز الإدارة:");
-    if (pwd === ADMIN_PASSWORD) {
-        localStorage.setItem('adminAuth', 'true');
-    } else {
-        alert("رمز غير صحيح!");
-        document.body.innerHTML = "";
-        window.location.replace("login.html");
-    }
-}
-
 /* ══════════════════════════════════════════════════════════
    STATE
 ══════════════════════════════════════════════════════════ */
