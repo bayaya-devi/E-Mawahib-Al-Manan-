@@ -8,6 +8,8 @@
   let queueToken = 0;
   let autoplayStarted = false;
   let autoplayAttempting = false;
+  let observedSection = '';
+  let sectionTimer = null;
 
   function prepareConnection() {
     if (document.querySelector('link[data-warsh-preconnect]')) return;
@@ -141,6 +143,25 @@
     return playCodes(codes, { onComplete: () => awardListeningOnce(codes) });
   }
 
+  function sectionSignature(codes) {
+    return normalizeCodes(codes).join('-');
+  }
+
+  function watchSectionChange() {
+    clearTimeout(sectionTimer);
+    sectionTimer = setTimeout(() => {
+      const codes = currentSectionCodes();
+      const signature = sectionSignature(codes);
+      if (!signature || signature === observedSection) return;
+      observedSection = signature;
+      autoplayStarted = false;
+      autoplayAttempting = false;
+      stopPlayback();
+      warm(codes[0]);
+      window.setTimeout(attemptAutoplay, 180);
+    }, 90);
+  }
+
   function installPageControls() {
     window.stopAudio = stopPlayback;
     window.playAll = playCurrentSection;
@@ -169,15 +190,19 @@
   function initialize() {
     installPageControls();
     const codes = currentSectionCodes();
+    observedSection = sectionSignature(codes);
     if (codes[0]) warm(codes[0]);
     window.setTimeout(attemptAutoplay, 250);
+
+    const observer = new MutationObserver(watchSectionChange);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 
     const unlockAudio = () => {
       if (!autoplayStarted) attemptAutoplay();
     };
     document.addEventListener('pointerdown', unlockAudio, true);
     document.addEventListener('keydown', unlockAudio, true);
-    window.addEventListener('pagehide', stopPlayback);
+    window.addEventListener('pagehide', () => { observer.disconnect(); stopPlayback(); });
     document.addEventListener('visibilitychange', () => {
       if (document.hidden && currentAudio) currentAudio.pause();
       else if (!document.hidden && currentAudio && currentAudio.paused && !currentAudio.ended) currentAudio.play().catch(() => {});

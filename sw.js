@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v8-prof-mobile';
+const CACHE_VERSION = 'mawahib-offline-v9-audio-sections';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
