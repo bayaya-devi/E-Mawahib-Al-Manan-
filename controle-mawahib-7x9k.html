@@ -9,8 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
     <script>
-      const adminSession = Auth.getSession();
-      location.replace(adminSession && adminSession.role === 'admin' ? 'controle-487-eleves.html' : 'login.html');
+        const adminSession = Auth.getSession();
+        if (!adminSession || adminSession.role !== 'admin') location.replace('login.html');
     </script>
     <script src="registry.js"></script>
 <style>
@@ -1676,14 +1676,11 @@ function showToast(text, type) {
 function initAdminNavAutoHide() {
     const nav = document.querySelector('.control-sidebar');
     if (!nav) return;
-    let revealTimer = null;
+    let lastY = window.scrollY || 0;
     window.addEventListener('scroll', () => {
-        const nearTop = (window.scrollY || 0) < 80;
-        nav.classList.toggle('admin-nav-hidden', !nearTop);
-        clearTimeout(revealTimer);
-        revealTimer = setTimeout(() => {
-            nav.classList.remove('admin-nav-hidden');
-        }, 620);
+        const y = window.scrollY || 0;
+        nav.classList.toggle('admin-nav-hidden', y > lastY && y > 80);
+        lastY = y;
     }, { passive: true });
 }
 

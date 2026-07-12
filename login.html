@@ -189,7 +189,7 @@
     <script>
         if (Auth.getSession()) {
             const s = Auth.getSession();
-            sessionStorage.setItem('loading_redirect', s.role === 'admin' ? 'controle-487-eleves.html' : (s.role === 'prof' ? 'prof-recitation.html' : 'dashboard.html'));
+            sessionStorage.setItem('loading_redirect', s.role === 'admin' ? 'controle-mawahib-7x9k.html' : (s.role === 'prof' ? 'prof-recitation.html' : 'dashboard.html'));
             window.location.href = 'loading.html';
         }
 
@@ -249,7 +249,7 @@
                 const classe = document.getElementById('login-classe').value.trim(); // ✅
                 const result = await Auth.loginProf(prenom, classe, password);
                 if (result.ok) {
-                sessionStorage.setItem('loading_redirect', result.role === 'admin' ? 'controle-487-eleves.html' : 'prof-recitation.html');
+                sessionStorage.setItem('loading_redirect', result.role === 'admin' ? 'controle-mawahib-7x9k.html' : 'prof-recitation.html');
     window.location.href = 'loading.html';
 }
                 else { showError(result.error); }

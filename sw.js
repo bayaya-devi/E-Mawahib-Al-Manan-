@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v10-admin-control';
+const CACHE_VERSION = 'mawahib-offline-v11-admin-restored';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -27,6 +27,7 @@ const STATIC_ASSETS = [
   './prof-report.html',
   './admin-simple.js',
   './admin-simple.css',
+  './controle-mawahib-7x9k.html',
   './controle-487-eleves.html',
   './controle-487-profs.html',
   './controle-487-classes.html',
