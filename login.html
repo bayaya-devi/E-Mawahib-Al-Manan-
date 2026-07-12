@@ -187,13 +187,9 @@
     </div>
     
     <script>
-        if ('caches' in window) {
-            caches.keys().then(keys => keys.forEach(key => caches.delete(key))).catch(() => {});
-        }
-
         if (Auth.getSession()) {
             const s = Auth.getSession();
-            sessionStorage.setItem('loading_redirect', s.role === 'prof' ? 'dashboard_prof.html' : 'dashboard.html');
+            sessionStorage.setItem('loading_redirect', s.role === 'prof' ? 'prof-recitation.html' : 'dashboard.html');
             window.location.href = 'loading.html';
         }
 
@@ -253,7 +249,7 @@
                 const classe = document.getElementById('login-classe').value.trim(); // ✅
                 const result = await Auth.loginProf(prenom, classe, password);
                 if (result.ok) {
-    sessionStorage.setItem('loading_redirect', 'dashboard_prof.html');
+                sessionStorage.setItem('loading_redirect', 'prof-recitation.html');
     window.location.href = 'loading.html';
 }
                 else { showError(result.error); }
