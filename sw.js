@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v5';
+const CACHE_VERSION = 'mawahib-offline-v7-audio';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -18,6 +18,7 @@ const STATIC_ASSETS = [
   './platform-theme.js',
   './platform-theme.css',
   './notifications.js',
+  './surah-autoplay.js',
   './registry.js',
   './logo.webp'
 ];
@@ -59,7 +60,10 @@ async function networkFirst(request) {
   } catch (error) {
     const cached = await cache.match(request);
     if (cached) return cached;
-    return (await caches.match('./dashboard.html')) || (await caches.match('./login.html'));
+    return new Response(`<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>مواهب المنان</title><body style="margin:0;min-height:100vh;display:grid;place-items:center;font-family:system-ui;background:#f8faf9;color:#174b36"><main style="padding:24px;text-align:center"><img src="./logo.webp" alt="" width="72" height="72"><p>تعذر فتح هذه الصفحة الآن.</p><button onclick="location.reload()" style="font:inherit;padding:10px 18px;border:0;border-radius:8px;background:#174b36;color:white">إعادة المحاولة</button></main></body></html>`, {
+      status: 503,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' }
+    });
   }
 }
 
@@ -68,7 +72,7 @@ async function staleWhileRevalidate(request) {
   const cached = await cache.match(request);
   const fetched = fetch(request)
     .then(response => {
-      if (response && response.ok) cache.put(request, response.clone());
+      if (response && (response.ok || response.type === 'opaque')) cache.put(request, response.clone());
       return response;
     })
     .catch(() => cached);
@@ -102,7 +106,7 @@ self.addEventListener('message', event => {
       try {
         const request = new Request(url, { credentials: 'same-origin' });
         const response = await fetch(request);
-        if (response && response.ok) await cache.put(request, response.clone());
+        if (response && (response.ok || response.type === 'opaque')) await cache.put(request, response.clone());
       } catch (error) {}
     }));
   })());

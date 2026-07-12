@@ -270,8 +270,38 @@ body { padding-bottom: 80px; }
             const index = order.findIndex(item => item.num === surah.num);
             const firstOpenIndex = order.findIndex(item => !item.isCompleted);
             if (surah.isCompleted) return 'done';
-            if (firstOpenIndex === -1 || index === firstOpenIndex) return 'current';
+            if ((firstOpenIndex === -1 || index === firstOpenIndex) && isSurahAllowedByJuzExam(surah)) return 'current';
             return 'locked';
+        }
+
+        function getJuzExamKey(juzNumber) {
+            const student = dashboardState.studentKey || 'guest';
+            return 'mawahib_juz_exam_' + student + '_' + juzNumber;
+        }
+
+        function getJuzExamResult(juzNumber) {
+            try { return JSON.parse(localStorage.getItem(getJuzExamKey(juzNumber)) || 'null'); }
+            catch (error) { return null; }
+        }
+
+        function isJuzExamPassed(juz) {
+            const result = juz && getJuzExamResult(juz.num);
+            return !!(result && result.passed === true && result.score === 100);
+        }
+
+        function getJuzSurahs(juz) {
+            return getJourneyOrder().filter(surah => surah.num >= juz.start && surah.num <= juz.end);
+        }
+
+        function isJuzSurahWorkComplete(juz) {
+            const surahs = getJuzSurahs(juz);
+            return surahs.length > 0 && surahs.every(surah => surah.isCompleted);
+        }
+
+        function isSurahAllowedByJuzExam(surah) {
+            const juzIndex = juzJourney.findIndex(juz => surah.num >= juz.start && surah.num <= juz.end);
+            if (juzIndex <= 0) return true;
+            return juzJourney.slice(0, juzIndex).every(juz => isJuzSurahWorkComplete(juz) && isJuzExamPassed(juz));
         }
 
         function getJourneyLabel(state, surah) {
@@ -382,12 +412,43 @@ body { padding-bottom: 80px; }
             return [...items].sort(() => Math.random() - 0.5);
         }
 
+        function readLocalArray(html, variableName) {
+            const assignment = new RegExp('(?:const|let|var)\\s+' + variableName + '\\s*=');
+            const match = assignment.exec(html);
+            if (!match) return null;
+            const start = html.indexOf('[', match.index + match[0].length);
+            if (start < 0) return null;
+            let depth = 0;
+            let quote = '';
+            let escaped = false;
+            for (let index = start; index < html.length; index++) {
+                const char = html[index];
+                if (quote) {
+                    if (escaped) escaped = false;
+                    else if (char === '\\') escaped = true;
+                    else if (char === quote) quote = '';
+                    continue;
+                }
+                if (char === '"' || char === "'" || char === '`') { quote = char; continue; }
+                if (char === '[') depth++;
+                if (char === ']' && --depth === 0) {
+                    const literal = html.slice(start, index + 1);
+                    try { return Function('"use strict"; return (' + literal + ');')(); }
+                    catch (error) { return null; }
+                }
+            }
+            return null;
+        }
+
         async function loadSurahVerses(surah) {
             if (!surah || !surah.file) return { surah, verses: [] };
             try {
                 const html = await fetch(surah.file, { cache: 'no-store' }).then(response => response.text());
-                const match = html.match(/const verses = (\[[\s\S]*?\]);/);
-                const verses = match ? JSON.parse(match[1]) : [];
+                const directVerses = readLocalArray(html, 'verses');
+                const sections = readLocalArray(html, 'surahData');
+                const verses = Array.isArray(directVerses)
+                    ? directVerses
+                    : (Array.isArray(sections) ? sections.flatMap(section => Array.isArray(section.verses) ? section.verses : []) : []);
                 return {
                     surah,
                     verses: verses
@@ -459,7 +520,7 @@ body { padding-bottom: 80px; }
                 prompt: 'إلى أي سورة تنتمي هذه الآية؟',
                 source: shortVerseText(entry.text, 150),
                 answer: entry.surah.nameAr,
-                options: shuffleItems([entry.surah.nameAr, ...group.filter(surah => surah.id !== entry.surah.id).map(surah => surah.nameAr)]).slice(0, 4)
+                options: shuffleItems([entry.surah.nameAr, ...shuffleItems(group.filter(surah => surah.id !== entry.surah.id)).slice(0, 3).map(surah => surah.nameAr)])
             };
         }
 
@@ -564,9 +625,115 @@ body { padding-bottom: 80px; }
             body.innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black ' + (passed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') + '">' + score + '%</div><h4 class="text-xl font-black text-gray-900 mb-2">' + (passed ? 'ممتاز، الاختبار مكتمل' : 'محاولة جيدة، أعد الاختبار') + '</h4><p class="text-sm font-bold text-gray-500 mb-4">نتيجتك: ' + activeMiniExam.correct + ' / ' + activeMiniExam.questions.length + '</p><button type="button" onclick="closeMiniExam(); renderSurahLibrary();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
         }
 
+        function getJuzExamState(juz) {
+            if (isJuzExamPassed(juz)) return 'done';
+            return isJuzSurahWorkComplete(juz) ? 'current' : 'locked';
+        }
+
+        function renderJuzExamCard(juz) {
+            const state = getJuzExamState(juz);
+            const icon = state === 'done' ? '✓' : state === 'current' ? '★' : '🔒';
+            const action = state === 'current' || state === 'done' ? 'onclick="openJuzExam(' + juz.num + ')"' : '';
+            const disabled = state === 'locked' ? 'disabled aria-disabled="true"' : '';
+            const label = state === 'done' ? 'تم الامتحان • 100%' : state === 'current' ? 'الامتحان مفتوح' : 'أكمل سور الجزء';
+            return '<div class="journey-step mini-exam-step juz-final-exam">' +
+                '<div class="journey-orb mini-exam-orb ' + state + '" aria-hidden="true">' + icon + '</div>' +
+                '<button type="button" ' + action + ' ' + disabled + ' class="journey-node mini-exam-node ' + state + '">' +
+                    '<div class="min-w-0 flex-grow"><div class="flex items-center justify-between gap-2 mb-1">' +
+                        '<h3 class="text-lg font-black">امتحان الجزء الكامل</h3><span class="journey-state">' + label + '</span>' +
+                    '</div><p class="journey-meta">5 تمارين كحد أقصى • يشمل جميع سور الجزء • خطأ واحد مسموح في كل تمرين</p></div>' +
+                '</button></div>';
+        }
+
+        let activeJuzExam = null;
+
+        async function buildJuzExamExercises(juz) {
+            const group = getJuzSurahs(juz);
+            const banks = await Promise.all(group.map(async surah => ({ surah, bank: await loadVerseBank([surah]) })));
+            const exerciseCount = Math.min(5, Math.max(1, group.length));
+            const exercises = Array.from({ length: exerciseCount }, () => []);
+            banks.forEach((item, index) => {
+                const bank = item.bank;
+                const entry = bank[Math.floor(bank.length / 2)] || bank[0];
+                if (!entry) return;
+                const type = index % 4;
+                const question = type === 0 ? buildSurahMatchQuestion(entry, group)
+                    : type === 1 ? buildMissingWordQuestion(entry, bank)
+                    : type === 2 ? buildNextVerseQuestion(entry, bank)
+                    : buildEndingQuestion(entry, bank);
+                exercises[index % exerciseCount].push(question);
+            });
+            return exercises.filter(exercise => exercise.length > 0);
+        }
+
+        async function openJuzExam(juzNumber) {
+            const juz = juzJourney.find(item => item.num === juzNumber);
+            if (!juz || !isJuzSurahWorkComplete(juz)) return;
+            ensureMiniExamModal().classList.add('open');
+            document.getElementById('mini-exam-title').textContent = 'امتحان ' + juz.name;
+            document.getElementById('mini-exam-body').innerHTML = '<div class="py-8 text-center font-black text-gray-500">جاري تجهيز امتحان الجزء...</div>';
+            const exercises = await buildJuzExamExercises(juz);
+            activeJuzExam = { juz, exercises, exerciseIndex: 0, questionIndex: 0, exerciseErrors: 0 };
+            renderJuzExamQuestion();
+        }
+
+        function renderJuzExamQuestion(message) {
+            const body = document.getElementById('mini-exam-body');
+            if (!activeJuzExam || !body) return;
+            activeJuzExam.answerLocked = false;
+            const exercise = activeJuzExam.exercises[activeJuzExam.exerciseIndex];
+            const q = exercise[activeJuzExam.questionIndex];
+            document.getElementById('mini-exam-title').textContent = 'امتحان ' + activeJuzExam.juz.name;
+            body.innerHTML = '<div class="mb-2 text-sm font-black text-orange-600">التمرين ' + (activeJuzExam.exerciseIndex + 1) + ' / ' + activeJuzExam.exercises.length + '</div>' +
+                '<div class="mb-3 text-xs font-bold text-gray-500">السورة ' + (activeJuzExam.questionIndex + 1) + ' / ' + exercise.length + ' • الخطأ المسموح: 1</div>' +
+                (message ? '<div class="mb-3 rounded-xl bg-amber-50 p-3 text-center text-sm font-black text-amber-700">' + message + '</div>' : '') +
+                '<div class="rounded-2xl bg-orange-50 border border-orange-100 p-4 font-black text-gray-900 mb-3">' + escapeMiniExamText(q.prompt) + '</div>' +
+                '<div class="quran-font rounded-2xl bg-white border border-gray-100 p-4 text-lg leading-loose text-gray-800 mb-4">' + escapeMiniExamText(q.source || '') + '</div>' +
+                '<div class="space-y-2">' + q.options.map(option => '<button type="button" class="mini-exam-option" data-answer="' + escapeMiniExamText(option) + '">' + escapeMiniExamText(option) + '</button>').join('') + '</div>';
+            body.querySelectorAll('.mini-exam-option').forEach(button => button.addEventListener('click', () => answerJuzExam(button, button.dataset.answer)));
+        }
+
+        function answerJuzExam(button, answer) {
+            if (!activeJuzExam || activeJuzExam.answerLocked) return;
+            activeJuzExam.answerLocked = true;
+            const exercise = activeJuzExam.exercises[activeJuzExam.exerciseIndex];
+            const q = exercise[activeJuzExam.questionIndex];
+            if (answer !== q.answer) {
+                activeJuzExam.exerciseErrors++;
+                button.classList.add('wrong');
+                if (activeJuzExam.exerciseErrors > 1) {
+                    activeJuzExam.questionIndex = 0;
+                    activeJuzExam.exerciseErrors = 0;
+                    setTimeout(() => renderJuzExamQuestion('خطآن: أعد هذا التمرين من بدايته.'), 650);
+                } else {
+                    setTimeout(() => renderJuzExamQuestion('صحح الإجابة قبل المتابعة.'), 650);
+                }
+                return;
+            }
+            button.classList.add('correct');
+            setTimeout(() => {
+                activeJuzExam.questionIndex++;
+                if (activeJuzExam.questionIndex < exercise.length) return renderJuzExamQuestion();
+                activeJuzExam.exerciseIndex++;
+                activeJuzExam.questionIndex = 0;
+                activeJuzExam.exerciseErrors = 0;
+                if (activeJuzExam.exerciseIndex < activeJuzExam.exercises.length) renderJuzExamQuestion();
+                else finishJuzExam();
+            }, 550);
+        }
+
+        function finishJuzExam() {
+            localStorage.setItem(getJuzExamKey(activeJuzExam.juz.num), JSON.stringify({
+                passed: true, score: 100, date: new Date().toISOString(),
+                exerciseCount: activeJuzExam.exercises.length,
+                surahCount: getJuzSurahs(activeJuzExam.juz).length
+            }));
+            document.getElementById('mini-exam-body').innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black bg-emerald-100 text-emerald-700">100%</div><h4 class="text-xl font-black text-gray-900 mb-2">تم إتقان الجزء</h4><p class="text-sm font-bold text-gray-500 mb-4">تم فتح الجزء التالي.</p><button type="button" onclick="closeMiniExam(); renderSurahLibrary();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
+        }
+
         function getCurrentSurah() {
             const order = getJourneyOrder();
-            return order.find(surah => !surah.isCompleted) || order[order.length - 1] || null;
+            return order.find(surah => !surah.isCompleted && isSurahAllowedByJuzExam(surah)) || null;
         }
 
         function getLastCompletedSurah() {
@@ -601,7 +768,7 @@ body { padding-bottom: 80px; }
         }
 
         function getActiveJuzIndex() {
-            const index = juzJourney.findIndex(juz => isCurrentJuz(juz));
+            const index = juzJourney.findIndex(juz => !isJuzSurahWorkComplete(juz) || !isJuzExamPassed(juz));
             return index >= 0 ? index : Math.max(0, juzJourney.length - 1);
         }
 
@@ -645,6 +812,7 @@ body { padding-bottom: 80px; }
                                 const miniExam = sectionState !== 'is-muted' && ((globalIndex + 1) % 4 === 0) ? renderMiniExamCard(groupNumber) : '';
                                 return renderSurahCard(surah) + miniExam;
                             }).join('')}
+                            ${sectionState !== 'is-muted' ? renderJuzExamCard(juz) : ''}
                         </div>
                         ${mutedMessage}
                     </section>
@@ -652,6 +820,14 @@ body { padding-bottom: 80px; }
             }).join('');
         }
         // Ajoute ceci dans la fonction d'initialisation de ta page (ex: window.onload)
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+        }
+
+        function escapeJsArg(value) {
+            return escapeHtml(String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
+        }
+
 async function chargerDevoirs() {
             const session = Auth.getSession();
             if (!session) return;
@@ -662,9 +838,9 @@ async function chargerDevoirs() {
             if (devoirsEnAttente.length > 0) {
                 zoneDevoirs.innerHTML = devoirsEnAttente.map(function(devoir) {
                     return '<div class="mb-2 rounded-xl bg-rose-50 border border-rose-100 p-2">' +
-                        '<div class="font-black text-rose-700">سورة ' + devoir.surate + '</div>' +
-                        '<div class="text-[11px] text-gray-600">من الآية ' + devoir.aya_debut + ' إلى ' + devoir.aya_fin + '</div>' +
-                        '<button onclick="validerDevoir(\'' + devoir.id + '\')" class="mt-2 rounded-full bg-rose-600 text-white px-3 py-1 text-[11px] font-black">حفظت الواجب</button>' +
+                        '<div class="font-black text-rose-700">سورة ' + escapeHtml(devoir.surate) + '</div>' +
+                        '<div class="text-[11px] text-gray-600">من الآية ' + escapeHtml(devoir.aya_debut) + ' إلى ' + escapeHtml(devoir.aya_fin) + '</div>' +
+                        '<button onclick="validerDevoir(\'' + escapeJsArg(devoir.id) + '\')" class="mt-2 rounded-full bg-rose-600 text-white px-3 py-1 text-[11px] font-black">حفظت الواجب</button>' +
                     '</div>';
                 }).join('');
             } else {
@@ -685,8 +861,8 @@ async function chargerDevoirs() {
                     msgContainer.innerHTML = userMessages.map(function(m) {
                         return '<div class="mb-2 rounded-xl bg-blue-50 border border-blue-100 p-2">' +
                             '<div class="font-black text-blue-800 text-xs">رسالة من الإدارة</div>' +
-                            '<p class="text-blue-900 mt-1">' + m.text + '</p>' +
-                            '<button onclick="Auth.clearMessages(\'' + session.username + '\'); window.location.reload();" class="mt-2 rounded-full bg-white text-blue-600 px-3 py-1 text-[11px] font-black shadow-sm">إخفاء</button>' +
+                            '<p class="text-blue-900 mt-1">' + escapeHtml(m.text) + '</p>' +
+                            '<button onclick="Auth.clearMessages(\'' + escapeJsArg(session.username) + '\'); window.location.reload();" class="mt-2 rounded-full bg-white text-blue-600 px-3 py-1 text-[11px] font-black shadow-sm">إخفاء</button>' +
                         '</div>';
                     }).join('');
                 } else {
