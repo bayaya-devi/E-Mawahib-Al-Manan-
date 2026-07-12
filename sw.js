@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v7-audio';
+const CACHE_VERSION = 'mawahib-offline-v8-prof-mobile';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -19,6 +19,12 @@ const STATIC_ASSETS = [
   './platform-theme.css',
   './notifications.js',
   './surah-autoplay.js',
+  './prof-simple.js',
+  './prof-simple.css',
+  './prof-recitation.html',
+  './prof-students.html',
+  './prof-homework.html',
+  './prof-report.html',
   './registry.js',
   './logo.webp'
 ];
