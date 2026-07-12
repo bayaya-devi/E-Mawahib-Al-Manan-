@@ -53,6 +53,11 @@
         }
         .journey-node.done, .journey-orb.done { background: linear-gradient(135deg, #10b981, #047857); color: white; }
         .journey-node.current, .journey-orb.current { background: linear-gradient(135deg, var(--platform-primary), var(--platform-accent)); color: white; }
+        .journey-node.current, .journey-orb.current { animation: nextSurahPulse 1.8s ease-in-out infinite; }
+        @keyframes nextSurahPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(20,83,45,.10); } 50% { box-shadow: 0 0 0 8px rgba(20,83,45,.24); } }
+        .completed-juz-picker { display:flex; gap:8px; overflow-x:auto; padding:2px 1px 8px; scrollbar-width:none; }
+        .completed-juz-picker::-webkit-scrollbar { display:none; }
+        .completed-juz-button { flex:0 0 auto; min-height:42px; border:1px solid #dbe5df; border-radius:10px; padding:0 13px; background:#fff; color:#405049; font-weight:900; font-size:12px; }
         .journey-node.locked { background: #f3f4f6; color: #94a3b8; box-shadow: inset 0 0 0 1px rgba(148,163,184,.18); }
         .mini-exam-node { background: linear-gradient(135deg, #fff7ed, #ffffff); border: 1px solid rgba(249,115,22,.22); }
         .mini-exam-node.done { background: linear-gradient(135deg, #10b981, #047857); color: #fff; }
@@ -203,7 +208,7 @@ body { padding-bottom: 80px; }
 
     <script>
         function toArabicNum(n) { return String(n); }
-        const dashboardState = { surahs: [] };
+        const dashboardState = { surahs: [], openedJuzIndex: null };
         const juzJourney = [
             { num: 30, name: 'جزء عمّ', start: 78, end: 114 },
             { num: 29, name: 'جزء تبارك', start: 67, end: 77 },
@@ -772,6 +777,11 @@ body { padding-bottom: 80px; }
             return index >= 0 ? index : Math.max(0, juzJourney.length - 1);
         }
 
+        function toggleCompletedJuz(index) {
+            dashboardState.openedJuzIndex = dashboardState.openedJuzIndex === index ? null : index;
+            renderSurahLibrary();
+        }
+
         function renderSurahLibrary() {
             const container = document.getElementById('available-grid');
             const filtered = getJourneyOrder();
@@ -780,10 +790,14 @@ body { padding-bottom: 80px; }
                 return;
             }
             const activeJuzIndex = getActiveJuzIndex();
-            container.innerHTML = juzJourney.map((juz, index) => {
+            const completedPicker = activeJuzIndex > 0
+                ? '<div class="completed-juz-picker">' + juzJourney.slice(0, activeJuzIndex).map((juz, index) => '<button type="button" class="completed-juz-button" onclick="toggleCompletedJuz(' + index + ')">' + juz.name + '</button>').join('') + '</div>'
+                : '';
+            container.innerHTML = completedPicker + juzJourney.map((juz, index) => {
                 const isActiveSection = index === activeJuzIndex;
                 const isNextSection = index === activeJuzIndex + 1;
-                if (!isActiveSection && !isNextSection) return '';
+                const isOpenedCompleted = index === dashboardState.openedJuzIndex && index < activeJuzIndex;
+                if (!isActiveSection && !isNextSection && !isOpenedCompleted) return '';
                 const items = filtered.filter(s => s.num >= juz.start && s.num <= juz.end);
                 if (items.length === 0) return '';
                 const allJuzSurahs = dashboardState.surahs.filter(s => s.num >= juz.start && s.num <= juz.end).sort((a, b) => b.num - a.num);
@@ -791,8 +805,8 @@ body { padding-bottom: 80px; }
                 const toSurah = allJuzSurahs[allJuzSurahs.length - 1];
                 const completedInJuz = allJuzSurahs.filter(s => s.isCompleted).length;
                 const rangeLabel = fromSurah && toSurah ? `من سورة ${fromSurah.nameAr} إلى سورة ${toSurah.nameAr}` : '';
-                const sectionState = isActiveSection ? 'is-active' : 'is-muted';
-                const visibleItems = isActiveSection ? items : items.slice(0, 2);
+                const sectionState = isActiveSection ? 'is-active' : (isOpenedCompleted ? 'is-complete' : 'is-muted');
+                const visibleItems = (isActiveSection || isOpenedCompleted) ? items : items.slice(0, 2);
                 const mutedMessage = isNextSection
                     ? '<div class="mx-4 mb-4 rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-center text-xs font-black text-gray-500">أكمل هذا الجزء أولاً، ثم يظهر هذا الجزء كاملاً.</div>'
                     : '';

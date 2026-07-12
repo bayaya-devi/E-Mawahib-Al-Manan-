@@ -8,6 +8,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
+    <script>
+      const adminSession = Auth.getSession();
+      location.replace(adminSession && adminSession.role === 'admin' ? 'controle-487-eleves.html' : 'login.html');
+    </script>
     <script src="registry.js"></script>
 <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f0fdf4; }
@@ -751,9 +755,21 @@ function escapeJsArg(value) {
 function getCompletedSurahCount(student) {
     if (Array.isArray(student.completedSurahs)) return student.completedSurahs.length;
     if (student.progress && typeof student.progress === 'object') {
-        return Object.values(student.progress).filter(p => p && (p.completedAt || p.completed_at)).length;
+        return canonicalProgressEntries(student.progress).filter(([, p]) => p && (p.completedAt || p.completed_at)).length;
     }
     return Number(student.souratesTerminees || student.completedSurahsCount || 0) || 0;
+}
+
+function canonicalProgressEntries(progress) {
+    const canonical = new Map();
+    Object.entries(progress || {}).forEach(([id, value]) => {
+        const key = typeof Auth.normalizeSurahId === 'function' ? Auth.normalizeSurahId(id) : id;
+        const existing = canonical.get(key);
+        if (!existing || (!existing.completedAt && !existing.completed_at && (value?.completedAt || value?.completed_at))) {
+            canonical.set(key, value);
+        }
+    });
+    return Array.from(canonical.entries());
 }
 
 function getAssignedSet() {
@@ -938,7 +954,7 @@ async function renderStats() {
 
     _allStudents.forEach(s => {
         const prog    = s.progress || {};
-        const entries = Object.entries(prog);
+        const entries = canonicalProgressEntries(prog);
         const completed = entries.filter(([id, p]) =>
             p && p.completedAt
         );
@@ -1368,7 +1384,7 @@ async function loadStudentProgress() {
     const container = document.getElementById('modal-progress-content');
     if (!student) { container.innerHTML = '<p class="text-gray-400 text-sm">لا توجد بيانات</p>'; return; }
     const progress  = student.progress || {};
-    const entries   = Object.entries(progress);
+    const entries   = canonicalProgressEntries(progress);
     if (entries.length === 0) { container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لم يبدأ أي سورة بعد</p>'; return; }
     const completed  = entries.filter(([id, p]) => p && p.completedAt);
     const inProgress = entries.filter(([id, p]) => !p.completedAt || Object.keys(p.activities || {}).length === 0);

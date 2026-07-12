@@ -239,6 +239,11 @@ a.bg-green-600,
   opacity: .08;
   pointer-events: none;
 }
+.prof-nav.nav-scroll-hidden {
+  transform: translate(-50%, calc(100% + 24px)) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 
 .nav-bottom a,
 .nav-bottom button {

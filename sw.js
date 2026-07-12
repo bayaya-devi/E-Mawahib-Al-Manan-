@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v9-audio-sections';
+const CACHE_VERSION = 'mawahib-offline-v10-admin-control';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -25,6 +25,14 @@ const STATIC_ASSETS = [
   './prof-students.html',
   './prof-homework.html',
   './prof-report.html',
+  './admin-simple.js',
+  './admin-simple.css',
+  './controle-487-eleves.html',
+  './controle-487-profs.html',
+  './controle-487-classes.html',
+  './controle-487-finance.html',
+  './controle-487-stats.html',
+  './controle-487-messages.html',
   './registry.js',
   './logo.webp'
 ];

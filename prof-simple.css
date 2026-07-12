@@ -1,9 +1,9 @@
 .prof-simple-shell{width:min(100%,700px);margin:0 auto;padding:10px 10px 92px}
-.prof-simple-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 2px 16px;border-bottom:1px solid #dfe7e2}
+.prof-simple-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px;border:0;border-radius:14px;background:#124c35;color:#fff;box-shadow:0 8px 22px rgba(18,76,53,.16)}
 .prof-simple-identity{display:flex;align-items:center;gap:10px;min-width:0}
 .prof-simple-logo{width:46px;height:46px;object-fit:contain;border-radius:10px;background:#fff}
-.prof-simple-title{font-size:20px;font-weight:900;color:#13231d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.prof-simple-subtitle{font-size:12px;font-weight:800;color:#68756f}
+.prof-simple-title{font-size:20px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prof-simple-subtitle{font-size:12px;font-weight:800;color:rgba(255,255,255,.76)}
 .prof-simple-main{padding-top:18px}
 .prof-simple-heading{font-size:24px;font-weight:900;color:#13231d;margin:0 0 4px}
 .prof-simple-help{font-size:13px;font-weight:700;color:#68756f;margin:0 0 18px}

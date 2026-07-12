@@ -12,6 +12,9 @@
       audio.addEventListener('ended', () => {
         window.dispatchEvent(new CustomEvent(lessonAudioEvent, { detail: { src: audio.currentSrc || audio.src || '' } }));
       });
+      audio.addEventListener('error', () => {
+        window.dispatchEvent(new CustomEvent(lessonAudioEvent, { detail: { src: audio.currentSrc || audio.src || '', failed: true } }));
+      });
       return audio;
     }
     TrackedAudio.prototype = NativeAudio.prototype;
@@ -437,8 +440,8 @@
   }
 
   function initNavAutoHide() {
-    const nav = document.querySelector('.nav-bottom');
-    if (!nav) return;
+    const navs = Array.from(document.querySelectorAll('.nav-bottom, .prof-nav, .admin-nav, .admin-simple-nav'));
+    if (!navs.length) return;
     let lastY = window.scrollY || 0;
     let revealTimer = null;
 
@@ -447,14 +450,12 @@
       const delta = Math.abs(y - lastY);
       if (delta < 10) return;
 
-      const scrollingDown = y > lastY;
-      const nearTop = y < 80;
-      nav.classList.toggle('nav-scroll-hidden', scrollingDown && !nearTop);
+      navs.forEach(nav => nav.classList.add('nav-scroll-hidden'));
       lastY = y;
 
       clearTimeout(revealTimer);
       revealTimer = setTimeout(() => {
-        nav.classList.remove('nav-scroll-hidden');
+        navs.forEach(nav => nav.classList.remove('nav-scroll-hidden'));
       }, 520);
     }, { passive: true });
   }
