@@ -416,7 +416,13 @@ function hideFeedback() {
     document.getElementById('feedback-message').classList.add('hidden');
 }
 
-function triggerCelebration() {
+async function triggerCelebration() {
+    if (triggerCelebration.started) return;
+    triggerCelebration.started = true;
+    stopAudio();
+    if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') await Auth.completeSurah('quraysh');
+    window.location.href = 'celebration.html';
+    return;
     stopAudio();
     const end = Date.now() + 5000;
     (function frame() {

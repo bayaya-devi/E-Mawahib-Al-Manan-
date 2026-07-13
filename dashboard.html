@@ -520,12 +520,13 @@ body { padding-bottom: 80px; }
         }
 
         function buildSurahMatchQuestion(entry, group) {
+            const surahPool = group.length > 1 ? group : SURAH_REGISTRY;
             return {
                 kind: 'surah-match',
                 prompt: 'إلى أي سورة تنتمي هذه الآية؟',
                 source: shortVerseText(entry.text, 150),
                 answer: entry.surah.nameAr,
-                options: shuffleItems([entry.surah.nameAr, ...shuffleItems(group.filter(surah => surah.id !== entry.surah.id)).slice(0, 3).map(surah => surah.nameAr)])
+                options: shuffleItems([entry.surah.nameAr, ...shuffleItems(surahPool.filter(surah => surah.id !== entry.surah.id)).slice(0, 3).map(surah => surah.nameAr)])
             };
         }
 
@@ -535,12 +536,18 @@ body { padding-bottom: 80px; }
             const splitAt = Math.max(2, Math.floor(words.length / 2));
             const start = words.slice(0, splitAt).join(' ');
             const answer = words.slice(splitAt).join(' ');
+            const endings = bank
+                .map(item => {
+                    const itemWords = splitVerseWords(item.text);
+                    return shortVerseText(itemWords.slice(Math.floor(itemWords.length / 2)).join(' '), 90);
+                })
+                .filter(text => text && text !== answer);
             return {
                 kind: 'ending',
                 prompt: 'أكمل نهاية الآية:',
                 source: shortVerseText(start + ' ...', 130),
                 answer,
-                options: optionTexts({ text: answer }, bank, item => shortVerseText(splitVerseWords(item.text).slice(Math.floor(splitVerseWords(item.text).length / 2)).join(' '), 90))
+                options: shuffleItems([answer, ...Array.from(new Set(shuffleItems(endings))).slice(0, 3)])
             };
         }
 

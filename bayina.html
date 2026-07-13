@@ -526,7 +526,13 @@
             document.getElementById('feedback-message').classList.add('hidden');
         }
 
-        function triggerCelebration() {
+        async function triggerCelebration() {
+            if (triggerCelebration.started) return;
+            triggerCelebration.started = true;
+            stopAudio();
+            if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') await Auth.completeSurah('al-bayyina');
+            window.location.href = 'celebration.html';
+            return;
             stopAudio();
             let duration = 5 * 1000;
             let end = Date.now() + duration;

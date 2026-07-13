@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v13-asr-flow';
+const CACHE_VERSION = 'mawahib-offline-v14-student-crash-test';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 

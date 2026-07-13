@@ -386,14 +386,18 @@ function showFb(id, msg, type) {
   el.classList.remove('hidden');
 }
 
-function triggerCelebration() {
+async function triggerCelebration() {
+  if (triggerCelebration.started) return;
+  triggerCelebration.started = true;
   // ✅ Enregistrement de la progression dans Supabase
   if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') {
-    Auth.recordActivity('al-zalzala', 'completion', 100);
+    await Auth.recordActivity('al-zalzala', 'completion', 100);
   }
   if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') {
-    Auth.completeSurah('al-zalzala');
+    await Auth.completeSurah('al-zalzala');
   }
+  window.location.href = 'celebration.html';
+  return;
   stopAudio();
   let end = Date.now() + 5000;
   (function frame() {

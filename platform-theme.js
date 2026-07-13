@@ -1,4 +1,6 @@
 (function () {
+  if (typeof window.confetti !== 'function') window.confetti = function () {};
+
   const storageKey = 'mawahib_theme';
   const fallback = 'traditional';
   const themes = ['traditional', 'emerald', 'indigo', 'rose', 'amber'];
@@ -94,6 +96,41 @@
     const originalUpdateStats = typeof window.updateStats === 'function' ? window.updateStats : null;
     const originalFinishMission = typeof window.finishMission === 'function' ? window.finishMission : null;
     const lessonXp = createLessonXp(phases);
+
+    if (typeof window.buildSpeedGame === 'function' && typeof window.currentVerses === 'function' && typeof window.answerSpeed === 'function') {
+      const originalBuildSpeedGame = window.buildSpeedGame;
+      window.buildSpeedGame = function buildSpeedGameWithDistinctChoices() {
+        const result = originalBuildSpeedGame.apply(this, arguments);
+        const container = document.getElementById('speed-options');
+        if (!container) return result;
+        let question = null;
+        try { question = window.eval('speedQuestion'); } catch (error) {}
+        if (!question?.answer) return result;
+        const source = window.currentVerses();
+        const seen = new Set([question.answer.text]);
+        const distractors = source
+          .filter(verse => verse.num !== question.answer.num && verse.num !== question.base?.num && verse.text !== question.answer.text)
+          .sort(() => Math.random() - 0.5)
+          .filter(verse => {
+            if (seen.has(verse.text)) return false;
+            seen.add(verse.text);
+            return true;
+          })
+          .slice(0, 3);
+        if (!distractors.length) return result;
+        container.innerHTML = '';
+        [question.answer, ...distractors].sort(() => Math.random() - 0.5).forEach(verse => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'verse-card bg-white rounded-xl p-4 quran-text text-xl md:text-2xl font-bold text-right';
+          button.textContent = verse.text;
+          button.onclick = () => window.answerSpeed(verse.num);
+          container.appendChild(button);
+        });
+        return result;
+      };
+    }
+
     (lessonXp?.state.awards || []).forEach(key => {
       if (/^\d+:\d+$/.test(key)) {
         completed.add(key);
@@ -273,6 +310,8 @@
     const originalGoNext = typeof window.goNext === 'function' ? window.goNext : null;
     const heard = new Set();
     let listeningCompleted = false;
+    let validationInProgress = false;
+    let delayedAdvanceAllowed = false;
     const lessonXp = createLessonXp(screens);
     listeningCompleted = Boolean(lessonXp?.state.awards?.includes('screen:0'));
 
@@ -312,11 +351,26 @@
         showMessage();
         return false;
       }
-      return originalValidate.apply(this, arguments);
+      const screenBeforeValidation = visibleScreen();
+      validationInProgress = true;
+      try {
+        const result = originalValidate.apply(this, arguments);
+        const feedback = document.querySelector('#feedback-message, [id*="feedback"]');
+        const showsSuccess = feedback && !feedback.classList.contains('hidden') && /green|emerald|success/.test(feedback.className);
+        if (visibleScreen() === screenBeforeValidation && showsSuccess) delayedAdvanceAllowed = true;
+        return result;
+      } finally {
+        validationInProgress = false;
+      }
     };
 
     if (originalGoNext) {
       window.goNext = function guardedScreenAdvance() {
+        if (!validationInProgress && !delayedAdvanceAllowed) {
+          showMessage();
+          return false;
+        }
+        delayedAdvanceAllowed = false;
         lessonXp?.award('screen:' + visibleScreen());
         return originalGoNext.apply(this, arguments);
       };
