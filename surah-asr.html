@@ -205,6 +205,7 @@ let versesDone = [];
 let recognition = null;
 let isRecording = false;
 let quizAnswers = new Array(quizQuestions.length).fill(null);
+let celebrationStarted = false;
 
 // ===== AUDIO =====
 function buildAudioScreen() {
@@ -257,6 +258,7 @@ function stopAudio() {
 function initVoicePhase() {
   currentVerseIndex = 0;
   versesDone = new Array(verses.length).fill(false);
+  document.getElementById('phase-1').dataset.mawahibCompleted = 'false';
   updateVerseDisplay();
   buildVerseProgressList();
   
@@ -319,9 +321,8 @@ function confirmVerseAndNext() {
     updateVerseDisplay();
     document.getElementById('speech-result-box').classList.add('hidden');
   } else {
-    // All done
-    document.getElementById('next-verse-btn').textContent = 'متابعة ✔️';
-    document.getElementById('next-verse-btn').onclick = () => goToPhase(2);
+    document.getElementById('phase-1').dataset.mawahibCompleted = 'true';
+    goToPhase(2);
   }
 }
 
@@ -341,11 +342,11 @@ function updateVerseDisplay() {
   document.getElementById('progress-bar').style.width = `${(done / verses.length) * 100}%`;
   
   const nextBtn = document.getElementById('next-verse-btn');
+  nextBtn.onclick = confirmVerseAndNext;
   if (currentVerseIndex === verses.length - 1) {
     nextBtn.textContent = 'انتهيت ✔️';
   } else {
     nextBtn.textContent = 'الآية التالية ▶';
-    nextBtn.onclick = confirmVerseAndNext;
   }
 }
 
@@ -457,13 +458,18 @@ function showFb(id, msg, type) {
   el.classList.remove('hidden');
 }
 
-function triggerCelebration() {
+async function triggerCelebration() {
+  if (celebrationStarted) return;
+  celebrationStarted = true;
+
   // ✅ Enregistrement de la progression dans Supabase
-  if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') {
-    Auth.recordActivity('al-asr', 'completion', 100);
-  }
-  if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') {
-    Auth.completeSurah('al-asr');
+  if (typeof Auth !== 'undefined') {
+    if (typeof Auth.recordActivity === 'function') {
+      await Auth.recordActivity('al-asr', 'completion', 100);
+    }
+    if (typeof Auth.completeSurah === 'function') {
+      await Auth.completeSurah('al-asr');
+    }
   }
   stopAudio();
   let end = Date.now() + 5000;

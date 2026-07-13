@@ -143,6 +143,7 @@
     }
 
     function visibleSuccess(phase) {
+      if (phase.dataset.mawahibCompleted === 'true') return true;
       const pairsLeft = phase.querySelector('#pairs-left');
       if (pairsLeft && /^\s*0\b/.test(pairsLeft.textContent || '')) return true;
       const wordsFound = phase.querySelector('#words-found');
