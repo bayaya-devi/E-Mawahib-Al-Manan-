@@ -12,6 +12,7 @@ const Auth = (() => {
     const OFFLINE_CACHE_PREFIX = 'mawahib_offline_cache_';
     const OFFLINE_QUEUE_KEY = 'mawahib_offline_queue';
     const OFFLINE_STATUS_KEY = 'mawahib_offline_status';
+    const SERVICE_WORKER_VERSION = '20260713-emergency-refresh-1';
     const CLASS_SESSION_PREFIX = '[CLASS_SESSION] ';
     const TEACHER_NOTE_PREFIX = '[TEACHER_NOTE] ';
     const ADMIN_FINANCE_PREFIX = '[ADMIN_FINANCE] ';
@@ -28,8 +29,24 @@ const Auth = (() => {
 
     function _registerServiceWorker() {
         if (!('serviceWorker' in navigator)) return;
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('sw.js').catch(error => logError('serviceWorker', error));
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            const refreshKey = 'mawahib_sw_refresh_' + SERVICE_WORKER_VERSION;
+            if (refreshing || sessionStorage.getItem(refreshKey) === '1') return;
+            refreshing = true;
+            sessionStorage.setItem(refreshKey, '1');
+            window.location.reload();
+        });
+        window.addEventListener('load', async () => {
+            try {
+                const registration = await navigator.serviceWorker.register(
+                    'sw.js?v=' + SERVICE_WORKER_VERSION,
+                    { updateViaCache: 'none' }
+                );
+                await registration.update();
+            } catch (error) {
+                logError('serviceWorker', error);
+            }
         });
     }
 

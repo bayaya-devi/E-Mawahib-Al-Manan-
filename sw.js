@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v14-student-crash-test';
+const CACHE_VERSION = 'mawahib-offline-v15-emergency-refresh-20260713';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -40,7 +40,12 @@ function isSameOrigin(url) {
 
 async function cacheStaticAssets() {
   const cache = await caches.open(STATIC_CACHE);
-  await cache.addAll(STATIC_ASSETS);
+  await Promise.all(STATIC_ASSETS.map(async asset => {
+    const request = new Request(asset, { cache: 'reload', credentials: 'same-origin' });
+    const response = await fetch(new Request(request, { cache: 'no-store' }));
+    if (!response.ok) throw new Error(`Unable to cache ${asset}: ${response.status}`);
+    await cache.put(asset, response);
+  }));
 }
 
 self.addEventListener('install', event => {
@@ -61,7 +66,7 @@ self.addEventListener('activate', event => {
 async function networkFirst(request) {
   const cache = await caches.open(RUNTIME_CACHE);
   try {
-    const response = await fetch(request);
+    const response = await fetch(new Request(request, { cache: 'no-store' }));
     if (response && response.ok) cache.put(request, response.clone());
     return response;
   } catch (error) {
@@ -91,12 +96,13 @@ self.addEventListener('fetch', event => {
   if (!isHttpRequest(request) || request.method !== 'GET') return;
 
   const url = new URL(request.url);
+  if (url.hostname.endsWith('.supabase.co')) return;
   if (!isSameOrigin(url)) {
     event.respondWith(staleWhileRevalidate(request));
     return;
   }
 
-  if (request.mode === 'navigate' || url.pathname.endsWith('.html')) {
+  if (request.mode === 'navigate' || url.pathname.endsWith('.html') || /\.(?:js|css|json)$/.test(url.pathname)) {
     event.respondWith(networkFirst(request));
     return;
   }
@@ -111,7 +117,7 @@ self.addEventListener('message', event => {
     const cache = await caches.open(RUNTIME_CACHE);
     await Promise.all(data.urls.map(async url => {
       try {
-        const request = new Request(url, { credentials: 'same-origin' });
+        const request = new Request(url, { credentials: 'same-origin', cache: 'reload' });
         const response = await fetch(request);
         if (response && (response.ok || response.type === 'opaque')) await cache.put(request, response.clone());
       } catch (error) {}
