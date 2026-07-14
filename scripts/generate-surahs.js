@@ -228,7 +228,7 @@ function makeTemplate(meta) {
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <link rel="stylesheet" href="platform-theme.css">
-<script src="platform-theme.js"></script>
+<script src="platform-theme.js?v=20260714-optional-media-1"></script>
 <style>
   :root { --surah:${color}; }
   body { font-family:'Cairo',sans-serif; background:#f8fafc; min-height:100vh; user-select:none; }
@@ -651,6 +651,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStats(0, true);
 });
 </script>
+<script src="surah-autoplay.js?v=20260714-optional-media-1"></script>
 </body>
 </html>
 `;

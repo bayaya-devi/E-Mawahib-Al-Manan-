@@ -153,6 +153,15 @@
       return part + ':' + phase;
     }
 
+    function isOptionalPhase(index) {
+      const phase = phases[index];
+      if (!phase) return false;
+      if (index === 0) return true;
+      return Boolean(phase.querySelector(
+        '#mic-btn, [onclick*="toggleMic"], [onclick*="startMic"], [onclick*="skipVoice"]'
+      ));
+    }
+
     function showBlockedMessage() {
       let toast = document.getElementById('mawahib-lesson-lock-message');
       if (!toast) {
@@ -174,6 +183,7 @@
 
     function canOpenPhase(target, part = currentPartIndex()) {
       for (let phase = 0; phase < target; phase++) {
+        if (isOptionalPhase(phase)) continue;
         if (!completed.has(stepKey(phase, part))) return false;
       }
       return true;
@@ -369,8 +379,7 @@
 
     window.validateCurrentScreen = function guardedValidation() {
       if (visibleScreen() === 0 && !listeningCompleted) {
-        showMessage();
-        return false;
+        return originalGoNext ? originalGoNext.call(this) : originalValidate.apply(this, arguments);
       }
       const screenBeforeValidation = visibleScreen();
       validationInProgress = true;
