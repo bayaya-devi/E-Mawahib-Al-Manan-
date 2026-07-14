@@ -43,7 +43,9 @@ const Auth = (() => {
                     'sw.js?v=' + SERVICE_WORKER_VERSION,
                     { updateViaCache: 'none' }
                 );
-                await registration.update();
+                if (registration && typeof registration.update === 'function') {
+                    await registration.update();
+                }
             } catch (error) {
                 logError('serviceWorker', error);
             }
