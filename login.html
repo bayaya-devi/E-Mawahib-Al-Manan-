@@ -193,6 +193,12 @@
             window.location.href = 'loading.html';
         }
 
+        function targetForSession(session) {
+            if (session?.role === 'admin') return 'controle-mawahib-7x9k.html';
+            if (session?.role === 'prof') return 'prof-recitation.html';
+            return 'dashboard.html';
+        }
+
         function showTab(tab) {
             const isLogin = tab === 'login';
             document.getElementById('form-login').classList.toggle('hidden', !isLogin);
@@ -249,7 +255,7 @@
                 const classe = document.getElementById('login-classe').value.trim(); // ✅
                 const result = await Auth.loginProf(prenom, classe, password);
                 if (result.ok) {
-                sessionStorage.setItem('loading_redirect', result.role === 'admin' ? 'controle-mawahib-7x9k.html' : 'prof-recitation.html');
+                sessionStorage.setItem('loading_redirect', targetForSession(Auth.getSession()));
     window.location.href = 'loading.html';
 }
                 else { showError(result.error); }

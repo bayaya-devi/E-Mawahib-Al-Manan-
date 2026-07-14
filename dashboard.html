@@ -141,7 +141,15 @@ body { padding-bottom: 80px; }
     <img src="logo.webp" alt="مواهب المنان" class="h-24 object-contain drop-shadow-md">
 </div>
 
-    <script>Auth.requireAuth('login.html');</script>
+    <script>
+        (() => {
+            const session = Auth.getSession();
+            if (!session) return location.replace('login.html');
+            if (session.role === 'admin') return location.replace('controle-mawahib-7x9k.html');
+            if (session.role === 'prof') return location.replace('prof-recitation.html');
+            if (session.role !== 'student') location.replace('login.html');
+        })();
+    </script>
 
     <header class="header-bg text-white py-3 px-4 shadow-xl">
         <div class="max-w-4xl mx-auto flex flex-row items-center justify-between gap-3">

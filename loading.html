@@ -184,12 +184,15 @@
 
     <script>
         function getRedirectTarget() {
-            const session = typeof Auth !== 'undefined' ? Auth.getSession() : null;
-            const requested = sessionStorage.getItem('loading_redirect');
+            let session = null;
+            try {
+                session = JSON.parse(localStorage.getItem('quran_session') || 'null');
+            } catch (error) {}
             sessionStorage.removeItem('loading_redirect');
             if (session && session.role === 'admin') return 'controle-mawahib-7x9k.html';
             if (session && session.role === 'prof') return 'prof-recitation.html';
-            return requested === 'dashboard.html' ? requested : 'dashboard.html';
+            if (session && session.role === 'student') return 'dashboard.html';
+            return 'login.html';
         }
         const REDIRECT_TO = getRedirectTarget();
 
