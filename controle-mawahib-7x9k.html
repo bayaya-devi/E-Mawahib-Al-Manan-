@@ -847,7 +847,7 @@ function renderControlRoom() {
     }
     const reportsBox = document.getElementById('admin-reports-list');
     if (reportsBox) {
-        reportsBox.innerHTML = (_adminReports || []).length ? _adminReports.slice(0, 5).map(r => '<div class="rounded-2xl bg-rose-50 border border-rose-100 p-3"><div class="flex items-center justify-between gap-2"><strong class="text-rose-900 text-sm">' + escapeHtml(r.category || 'Signalement') + '</strong><span class="text-xs font-black text-rose-700">' + escapeHtml(r.profName || '') + '</span></div><p class="text-xs text-gray-600 font-bold mt-2 whitespace-pre-line">' + escapeHtml(r.text || '') + '</p></div>').join('') : '<div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-3 text-sm font-black text-emerald-700 text-center">لا توجد signalements حاليا.</div>';
+        reportsBox.innerHTML = (_adminReports || []).length ? _adminReports.slice(0, 5).map(r => '<div class="rounded-2xl bg-rose-50 border border-rose-100 p-3"><div class="flex items-center justify-between gap-2"><strong class="text-rose-900 text-sm">' + escapeHtml(r.category || 'بلاغ') + '</strong><span class="text-xs font-black text-rose-700">' + escapeHtml(r.profName || '') + '</span></div><p class="text-xs text-gray-600 font-bold mt-2 whitespace-pre-line">' + escapeHtml(r.text || '') + '</p></div>').join('') : '<div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-3 text-sm font-black text-emerald-700 text-center">لا توجد بلاغات حاليا.</div>';
     }
 
     const classMap = document.getElementById('cockpit-classes');
