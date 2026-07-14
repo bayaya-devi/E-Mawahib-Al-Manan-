@@ -525,13 +525,13 @@
   }
 
   function initNavAutoHide() {
-    const navs = Array.from(document.querySelectorAll('.nav-bottom, .prof-nav, .admin-nav, .admin-simple-nav'));
-    if (!navs.length) return;
     let lastY = window.scrollY || 0;
     let revealTimer = null;
 
     window.addEventListener('scroll', () => {
       const y = window.scrollY || 0;
+      const navs = Array.from(document.querySelectorAll('.nav-bottom, .prof-nav, .admin-nav, .admin-simple-nav'));
+      if (!navs.length) { lastY = y; return; }
       const delta = Math.abs(y - lastY);
       if (delta < 10) return;
 

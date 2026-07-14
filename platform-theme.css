@@ -8,6 +8,7 @@
 
 html,
 body {
+  margin: 0;
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
@@ -226,6 +227,11 @@ a.bg-green-600,
 }
 
 .nav-bottom {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
   background: linear-gradient(135deg, color-mix(in srgb, var(--platform-surface) 90%, transparent), color-mix(in srgb, var(--platform-primary-soft) 74%, transparent)) !important;
   border-top: 1px solid var(--platform-border) !important;
   box-shadow: 0 -14px 36px rgba(15, 23, 42, 0.08);

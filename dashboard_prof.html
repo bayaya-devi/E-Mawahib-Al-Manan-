@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+  <script>
+    try {
+      const legacySession = JSON.parse(localStorage.getItem("quran_session") || "null");
+      location.replace(legacySession?.role === "prof" ? "prof-recitation.html" : "login.html");
+    } catch (_) {
+      location.replace("login.html");
+    }
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>حصة التسميع - مواهب المنان</title>
