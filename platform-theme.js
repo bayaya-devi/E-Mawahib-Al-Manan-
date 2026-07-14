@@ -215,17 +215,30 @@
       setTimeout(() => window.goToPhase(1), 650);
     }
 
+    function expectedListeningState() {
+      let codes = [];
+      try {
+        if (window.MawahibSurahAudio?.currentCodes) codes = window.MawahibSurahAudio.currentCodes();
+        else if (typeof window.currentVerses === 'function') codes = window.currentVerses().map(verse => verse?.audio);
+      } catch (error) {}
+      const normalized = new Set((codes || []).map(String).filter(code => /^\d{6}$/.test(code)));
+      const fallbackCount = document.querySelectorAll('#audio-list > *, #audio-verses-box > *').length;
+      return { codes: normalized, count: normalized.size || fallbackCount };
+    }
+
     window.addEventListener(lessonAudioEvent, event => {
-      if (currentPhaseIndex() !== 0) return;
+      if (currentPhaseIndex() !== 0 || event.detail?.failed) return;
       const src = String(event.detail?.src || '');
       const audioCode = (src.match(/(\d{6})(?:\.mp3)?(?:\?|$)/) || [])[1] || src;
+      if (!audioCode) return;
       const part = currentPartIndex();
       const key = String(part);
       const heard = listened.get(key) || new Set();
+      const expected = expectedListeningState();
+      if (expected.codes.size && !expected.codes.has(audioCode)) return;
       heard.add(audioCode);
       listened.set(key, heard);
-      const expected = document.querySelectorAll('#audio-list > *').length;
-      if (expected > 0 && heard.size >= expected) completeListening();
+      if (expected.count > 0 && heard.size >= expected.count) completeListening();
     });
 
     window.goToPhase = function guardedGoToPhase(target) {
@@ -335,10 +348,18 @@
     }
 
     window.addEventListener(lessonAudioEvent, event => {
-      if (visibleScreen() !== 0 || listeningCompleted) return;
+      if (visibleScreen() !== 0 || listeningCompleted || event.detail?.failed) return;
       const src = String(event.detail?.src || '');
-      heard.add((src.match(/(\d{6})(?:\.mp3)?(?:\?|$)/) || [])[1] || src);
-      const expected = document.querySelectorAll('#audio-verses-box > *, #audio-list > *').length;
+      const audioCode = (src.match(/(\d{6})(?:\.mp3)?(?:\?|$)/) || [])[1] || src;
+      if (!audioCode) return;
+      let expectedCodes = [];
+      try {
+        if (window.MawahibSurahAudio?.currentCodes) expectedCodes = window.MawahibSurahAudio.currentCodes();
+      } catch (error) {}
+      const normalized = new Set((expectedCodes || []).map(String).filter(code => /^\d{6}$/.test(code)));
+      if (normalized.size && !normalized.has(audioCode)) return;
+      heard.add(audioCode);
+      const expected = normalized.size || document.querySelectorAll('#audio-verses-box > *, #audio-list > *').length;
       if (expected > 0 && heard.size >= expected) {
         listeningCompleted = true;
         lessonXp?.award('screen:0');

@@ -1,7 +1,10 @@
 (function () {
   'use strict';
 
-  const AUDIO_ROOT = 'https://everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps/';
+  const AUDIO_ROOTS = [
+    'https://everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps/',
+    'https://everyayah.com/data/warsh/warsh_yassin_al_jazaery_64kbps/'
+  ];
   const NativeAudio = window.Audio;
   let currentAudio = null;
   let preloadAudio = null;
@@ -45,10 +48,11 @@
     return normalizeCodes(Array.from(scripts.matchAll(/["']?audio["']?\s*:\s*["'](\d{6})["']/g), match => match[1]));
   }
 
-  function createAudio(code) {
+  function createAudio(code, sourceIndex = 0) {
     const audio = new NativeAudio();
     audio.preload = 'auto';
-    audio.src = AUDIO_ROOT + code + '.mp3';
+    audio.src = AUDIO_ROOTS[sourceIndex] + code + '.mp3';
+    audio.dataset.mawahibSourceIndex = String(sourceIndex);
     audio.setAttribute('playsinline', '');
     audio.addEventListener('loadedmetadata', () => {
       try { audio.currentTime = 0; } catch (error) {}
@@ -115,15 +119,26 @@
         if (token !== queueToken) return;
         if (!retried) {
           retried = true;
-          const retry = createAudio(code);
+          const retry = createAudio(code, 1);
           currentAudio = retry;
           retry.onended = () => { index++; playNext(); };
-          retry.play().catch(() => {});
+          retry.onerror = () => {
+            if (token !== queueToken) return;
+            if (options && typeof options.onError === 'function') options.onError(code);
+          };
+          retry.play().then(() => { autoplayStarted = true; }).catch(error => {
+            if (token !== queueToken) return;
+            if (options && typeof options.onError === 'function') options.onError(code, error);
+          });
         }
       };
+      currentAudio.onstalled = currentAudio.onerror;
       const promise = currentAudio.play();
       if (!firstPlay) firstPlay = promise;
-      promise.then(() => { autoplayStarted = true; }).catch(() => {});
+      promise.then(() => { autoplayStarted = true; }).catch(error => {
+        if (token !== queueToken || error?.name === 'NotAllowedError') return;
+        if (!retried && typeof currentAudio.onerror === 'function') currentAudio.onerror();
+      });
     }
 
     playNext();
@@ -175,6 +190,12 @@
       document.querySelectorAll('.verse-play-btn').forEach(button => button.classList.remove('bg-emerald-200', 'animate-pulse'));
       if (element) element.classList.add('bg-emerald-200', 'animate-pulse');
       return playCodes([code], { onComplete: () => { if (element) element.classList.remove('bg-emerald-200', 'animate-pulse'); } });
+    };
+    window.MawahibSurahAudio = {
+      currentCodes: currentSectionCodes,
+      playAll: playCurrentSection,
+      playVerse: (code, element) => window.playVerse(code, element),
+      stop: stopPlayback
     };
   }
 

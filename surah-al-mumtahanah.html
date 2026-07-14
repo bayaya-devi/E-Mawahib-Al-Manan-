@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <link rel="stylesheet" href="platform-theme.css">
-<script src="platform-theme.js"></script>
+<script src="platform-theme.js?v=20260714-audio-flow-1"></script>
 <style>
   :root { --surah:#3b0764; }
   body { font-family:'Cairo',sans-serif; background:#f8fafc; min-height:100vh; user-select:none; }
@@ -278,7 +278,6 @@ function buildAudioScreen() {
     div.className = 'verse-card w-full flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm text-right';
     div.onclick = () => {
       playVerse(v.audio, div);
-      updateStats(2, true);
     };
     div.innerHTML = `
       <span class="inline-flex items-center justify-center w-10 h-10 rounded-full text-white text-sm font-black shrink-0" style="background:${SURAH_COLOR}">${v.numAr}</span>
@@ -300,7 +299,6 @@ function playVerse(audioCode, el) {
 
 function playAll() {
   stopAudio();
-  updateStats(8, true);
   const items = currentVerses();
   let i = 0;
   function next() {
@@ -567,6 +565,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script src="app-settings.js"></script>
 <script src="notifications.js"></script>
-<script src="surah-autoplay.js"></script>
+<script src="surah-autoplay.js?v=20260714-audio-flow-1"></script>
 </body>
 </html>
