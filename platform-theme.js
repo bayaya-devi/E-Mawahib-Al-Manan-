@@ -96,6 +96,24 @@
     const originalUpdateStats = typeof window.updateStats === 'function' ? window.updateStats : null;
     const originalFinishMission = typeof window.finishMission === 'function' ? window.finishMission : null;
     const lessonXp = createLessonXp(phases);
+    const interacted = new Set();
+    const session = typeof Auth !== 'undefined' && Auth.getSession ? Auth.getSession() : null;
+    const lessonFile = location.pathname.split('/').pop();
+    const completionStorageId = 'mawahib_lesson_steps_' + (session?.username || 'local') + '_' + lessonFile;
+    let completionState = { completed: [] };
+    let transitionSequence = 0;
+    let finishing = false;
+
+    try {
+      completionState = { ...completionState, ...(JSON.parse(localStorage.getItem(completionStorageId) || 'null') || {}) };
+    } catch (error) {}
+    completionState.completed = Array.isArray(completionState.completed)
+      ? [...new Set(completionState.completed.filter(key => /^\d+:\d+$/.test(key)))]
+      : [];
+
+    function saveCompletedSteps() {
+      try { localStorage.setItem(completionStorageId, JSON.stringify(completionState)); } catch (error) {}
+    }
 
     if (typeof window.buildSpeedGame === 'function' && typeof window.currentVerses === 'function' && typeof window.answerSpeed === 'function') {
       const originalBuildSpeedGame = window.buildSpeedGame;
@@ -133,10 +151,10 @@
 
     (lessonXp?.state.awards || []).forEach(key => {
       if (/^\d+:\d+$/.test(key)) {
-        completed.add(key);
         awarded.add(key);
       }
     });
+    completionState.completed.forEach(key => completed.add(key));
 
     function currentPartIndex() {
       const buttons = [...document.querySelectorAll('.part-btn')];
@@ -203,6 +221,43 @@
       );
     }
 
+    function verifiedSuccess(index) {
+      const phase = phases[index];
+      if (!phase) return false;
+      const fillFeedback = phase.querySelector('#fill-feedback');
+      if (fillFeedback) {
+        const percentage = (fillFeedback.textContent || '').match(/(\d+)\s*%/);
+        if (percentage) return Number(percentage[1]) === 100;
+      }
+      return visibleSuccess(phase);
+    }
+
+    function scheduleVerifiedAdvance(phase, part, delay = 950) {
+      const key = stepKey(phase, part);
+      const sequence = ++transitionSequence;
+      setTimeout(() => {
+        if (sequence !== transitionSequence || currentPhaseIndex() !== phase || currentPartIndex() !== part) return;
+        if (!completed.has(key)) return;
+        if (phase < phases.length - 1) {
+          window.goToPhase(phase + 1);
+        } else if (originalFinishMission && !finishing) {
+          window.finishMission();
+        }
+      }, delay);
+    }
+
+    function completeVerifiedStep(phase = currentPhaseIndex(), part = currentPartIndex()) {
+      const key = stepKey(phase, part);
+      completed.add(key);
+      if (!completionState.completed.includes(key)) {
+        completionState.completed.push(key);
+        saveCompletedSteps();
+      }
+      lessonXp?.award(key);
+      scheduleVerifiedAdvance(phase, part);
+      return key;
+    }
+
     function surahId() {
       const file = location.pathname.split('/').pop();
       if (typeof SURAH_REGISTRY !== 'undefined' && Array.isArray(SURAH_REGISTRY)) {
@@ -254,10 +309,10 @@
     window.goToPhase = function guardedGoToPhase(target) {
       const phase = Number(target);
       const current = currentPhaseIndex();
-      if (phase === current + 1 && current > 0 && visibleSuccess(phases[current])) {
-        const key = stepKey(current);
-        completed.add(key);
-        lessonXp?.award(key);
+      if (!Number.isInteger(phase) || phase < 0 || phase >= phases.length) return false;
+      if (phase === current) return true;
+      if (phase === current + 1 && current > 0 && verifiedSuccess(current)) {
+        completeVerifiedStep(current);
       }
       if (phase > currentPhaseIndex() && !canOpenPhase(phase)) {
         const feedback = document.getElementById('fill-feedback');
@@ -269,6 +324,8 @@
         showBlockedMessage();
         return false;
       }
+      transitionSequence++;
+      if (phase === 0) finishing = false;
       return originalGoToPhase.apply(this, arguments);
     };
 
@@ -276,27 +333,13 @@
       window.updateStats = function guardedUpdateStats(delta = 0, ok = true) {
         const phase = currentPhaseIndex();
         const key = stepKey(phase);
-        if (Number(delta) <= 0) return originalUpdateStats.call(this, delta, ok);
-        if (phase === 0 || awarded.has(key)) {
-          if (phase === 2 && /100\s*%/.test(document.getElementById('fill-feedback')?.textContent || '')) {
-            completed.add(key);
-            lessonXp?.award(key);
-          }
-          return originalUpdateStats.call(this, 0, ok);
-        }
-        if (phase === 2) {
-          awarded.add(key);
-          if (/100\s*%/.test(document.getElementById('fill-feedback')?.textContent || '')) {
-            completed.add(key);
-            lessonXp?.award(key);
-          }
-          return originalUpdateStats.call(this, delta, ok);
-        }
-        completed.add(key);
-        awarded.add(key);
-        const result = originalUpdateStats.call(this, phase === phases.length - 1 ? 100 : delta, ok);
-        lessonXp?.award(key);
-        return result;
+        if (Number(delta) <= 0 || ok !== true) return originalUpdateStats.call(this, delta, ok);
+        if (phase === 0) return originalUpdateStats.call(this, 0, ok);
+        const isVerified = phase === 2 ? verifiedSuccess(phase) : true;
+        if (isVerified) completeVerifiedStep(phase);
+        const xpDelta = awarded.has(key) ? 0 : (phase === phases.length - 1 ? 100 : delta);
+        if (!awarded.has(key)) awarded.add(key);
+        return originalUpdateStats.call(this, xpDelta, ok);
       };
     }
 
@@ -306,9 +349,35 @@
           showBlockedMessage();
           return false;
         }
+        if (finishing) return false;
+        finishing = true;
+        transitionSequence++;
         return originalFinishMission.apply(this, arguments);
       };
     }
+
+    document.addEventListener('click', event => {
+      const phase = event.target.closest('[id^="phase-"]');
+      if (phase && !phase.classList.contains('hidden')) interacted.add(stepKey(currentPhaseIndex()));
+    }, true);
+
+    const successObserver = new MutationObserver(() => {
+      const phase = currentPhaseIndex();
+      if (phase === 0) return;
+      const key = stepKey(phase);
+      const wordsFound = phases[phase]?.querySelector('#words-found');
+      const values = (wordsFound?.textContent || '').match(/\d+/g) || [];
+      const completedWordExplorer = values.length >= 2 && Number(values[0]) > 0 && Number(values[0]) === Number(values[1]);
+      if ((!interacted.has(key) && !completedWordExplorer) || completed.has(key) || !verifiedSuccess(phase)) return;
+      completeVerifiedStep(phase);
+    });
+    phases.forEach(phase => successObserver.observe(phase, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['class', 'data-mawahib-completed']
+    }));
 
     document.addEventListener('click', event => {
       const partButton = event.target.closest('.part-btn');
@@ -336,7 +405,38 @@
     let validationInProgress = false;
     let delayedAdvanceAllowed = false;
     const lessonXp = createLessonXp(screens);
+    const session = typeof Auth !== 'undefined' && Auth.getSession ? Auth.getSession() : null;
+    const lessonFile = location.pathname.split('/').pop();
+    const completionStorageId = 'mawahib_lesson_steps_' + (session?.username || 'local') + '_' + lessonFile;
+    let completionState = { completed: [] };
     listeningCompleted = Boolean(lessonXp?.state.awards?.includes('screen:0'));
+    try {
+      completionState = { ...completionState, ...(JSON.parse(localStorage.getItem(completionStorageId) || 'null') || {}) };
+    } catch (error) {}
+    completionState.completed = Array.isArray(completionState.completed)
+      ? [...new Set(completionState.completed.filter(key => /^\d+:\d+$/.test(key)))]
+      : [];
+
+    function screenPartIndex() {
+      try {
+        const value = window.eval(
+          'typeof currentPart === "number" ? currentPart : ' +
+          '(typeof currentQuarterIndex === "number" ? currentQuarterIndex : 0)'
+        );
+        return Number.isInteger(Number(value)) ? Number(value) : 0;
+      } catch (error) {
+        return 0;
+      }
+    }
+
+    function saveScreenStep(screen = visibleScreen(), part = screenPartIndex()) {
+      const key = part + ':' + screen;
+      if (!completionState.completed.includes(key)) {
+        completionState.completed.push(key);
+        try { localStorage.setItem(completionStorageId, JSON.stringify(completionState)); } catch (error) {}
+      }
+      return key;
+    }
 
     function visibleScreen() {
       const index = screens.findIndex(screen => !screen.classList.contains('hidden'));
@@ -401,10 +501,26 @@
           return false;
         }
         delayedAdvanceAllowed = false;
-        lessonXp?.award('screen:' + visibleScreen());
+        const screen = visibleScreen();
+        const part = screenPartIndex();
+        saveScreenStep(screen, part);
+        lessonXp?.award(part + ':' + screen);
         return originalGoNext.apply(this, arguments);
       };
     }
+
+    queueMicrotask(() => {
+      const part = screenPartIndex();
+      const completedScreens = completionState.completed
+        .filter(key => key.startsWith(part + ':'))
+        .map(key => Number(key.split(':')[1]))
+        .filter(Number.isInteger);
+      const resumeTarget = completedScreens.length ? Math.min(screens.length - 1, Math.max(...completedScreens) + 1) : 0;
+      let safety = screens.length;
+      while (originalGoNext && visibleScreen() < resumeTarget && safety-- > 0) {
+        originalGoNext.call(window);
+      }
+    });
   }
 
   function readTheme() {

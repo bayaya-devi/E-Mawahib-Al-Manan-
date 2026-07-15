@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v17-total-crash-20260714';
+const CACHE_VERSION = 'mawahib-offline-v18-exercise-flow-20260715';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
