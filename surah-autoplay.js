@@ -12,6 +12,7 @@
   let autoplayStarted = false;
   let autoplayAttempting = false;
   let observedSection = '';
+  let observedListening = false;
   let sectionTimer = null;
 
   function prepareConnection() {
@@ -162,12 +163,30 @@
     return normalizeCodes(codes).join('-');
   }
 
+  function isListeningSectionVisible() {
+    const phase = document.getElementById('phase-0');
+    if (phase) return !phase.classList.contains('hidden');
+    const screen = document.getElementById('screen-0');
+    if (screen) return !screen.classList.contains('hidden');
+    return true;
+  }
+
   function watchSectionChange() {
     clearTimeout(sectionTimer);
     sectionTimer = setTimeout(() => {
       const codes = currentSectionCodes();
       const signature = sectionSignature(codes);
-      if (!signature || signature === observedSection) return;
+      const listening = isListeningSectionVisible();
+      const enteredListening = listening && !observedListening;
+      const sectionChanged = signature && signature !== observedSection;
+      observedListening = listening;
+
+      if (!listening) {
+        autoplayAttempting = false;
+        stopPlayback();
+        return;
+      }
+      if (!signature || (!enteredListening && !sectionChanged)) return;
       observedSection = signature;
       autoplayStarted = false;
       autoplayAttempting = false;
@@ -200,7 +219,7 @@
   }
 
   function attemptAutoplay() {
-    if (autoplayStarted || autoplayAttempting || document.hidden) return;
+    if (autoplayStarted || autoplayAttempting || document.hidden || !isListeningSectionVisible()) return;
     autoplayAttempting = true;
     playCurrentSection()
       .then(() => { autoplayStarted = true; })
@@ -212,6 +231,7 @@
     installPageControls();
     const codes = currentSectionCodes();
     observedSection = sectionSignature(codes);
+    observedListening = isListeningSectionVisible();
     if (codes[0]) warm(codes[0]);
     window.setTimeout(attemptAutoplay, 250);
 
