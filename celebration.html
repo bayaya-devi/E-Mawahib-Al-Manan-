@@ -142,6 +142,10 @@
     .variant-mastery .orbit { width: 210px; height: 210px; }
     .variant-elite .sigil { width: 132px; height: 132px; }
     .variant-steady .wave { animation-duration: 5.6s; }
+    .failure-mode, .failure-mode * { animation: none !important; }
+    .failure-mode .beam, .failure-mode .orbit, .failure-mode .wave { display: none; }
+    .failure-mode .victory-visual { background: #7f1d1d; }
+    .failure-mode .sigil { color: #fff; text-shadow: none; box-shadow: none; }
 
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes pulseWin { 0%,100% { transform: scale(1); } 50% { transform: scale(1.055); } }
@@ -172,14 +176,14 @@
         <p class="kicker" id="victory-kicker">إنجاز جديد</p>
         <h1 class="title" id="victory-title">خطوة قوية</h1>
         <p class="subtitle mt-3" id="victory-subtitle">تم تسجيل تقدمك بنجاح.</p>
-        <div class="stats">
+        <div class="stats" id="victory-stats">
           <div class="stat"><span>نجوم جديدة</span><strong id="victory-points" class="star-number">0</strong></div>
           <div class="stat"><span>رصيدك الآن</span><strong id="victory-stars" class="star-number">0</strong></div>
           <div class="stat"><span>السلسلة</span><strong id="victory-streak">0</strong></div>
         </div>
         <div class="actions">
           <a id="next-link" href="dashboard.html" class="primary-action">متابعة المسار</a>
-          <a href="dashboard.html" class="secondary-action">العودة للوحة</a>
+          <a id="dashboard-link" href="dashboard.html" class="secondary-action">العودة للوحة</a>
         </div>
       </section>
     </article>
@@ -197,7 +201,7 @@
       'deep-focus': ['تركيز عميق', 'مرحلة أعلى', 'أنت الآن تدخل منطقة تحتاج مراجعة أذكى، لا مجهودا أكثر فقط.', '◈'],
       mastery: ['تمكن', 'رصيد واضح', 'عدد السور المنجزة صار له وزن. المرحلة القادمة تحتاج تثبيت ومراجعة.', '20'],
       elite: ['مستوى متقدم', 'إنجاز كبير', 'هذا مستوى لا يصل إليه الإنسان بالصدفة. الاستمرار صار جزءا من هويتك.', '50'],
-      'try-again': ['محاولة محفوظة', 'أعدها بثبات', 'لم تُفتح السورة التالية بعد، لكن المحاولة سُجلت.', '↻']
+      'try-again': ['إعادة مطلوبة', 'أخطاء كثيرة', 'أعد تمارين السورة قبل الانتقال إلى السورة التالية.', '↻']
     };
 
     function getPayload() {
@@ -218,8 +222,32 @@
       document.getElementById('victory-points').textContent = '+' + (payload.points || 0);
       document.getElementById('victory-stars').textContent = payload.stars || 0;
       document.getElementById('victory-streak').textContent = payload.streak || 0;
+      const nextLink = document.getElementById('next-link');
+      const failed = payload.failed === true || variant === 'try-again';
+      if (failed) {
+        document.title = 'إعادة السورة - مواهب المنان';
+        card.className = 'victory-card failure-mode';
+        document.getElementById('victory-kicker').textContent = 'إعادة مطلوبة';
+        document.getElementById('victory-title').textContent = 'أخطاء كثيرة';
+        const score = Math.max(0, Math.min(100, Number(payload.score || 0)));
+        const surahName = payload.surahName || 'السورة';
+        document.getElementById('victory-subtitle').textContent =
+          'نتيجتك ' + score + '%. كثرت الأخطاء، لذلك يجب إعادة تمارين ' + surahName + ' قبل فتح السورة التالية.';
+        document.getElementById('victory-symbol').textContent = '↻';
+        document.getElementById('victory-stats').hidden = true;
+        const retryFile = /^[a-zA-Z0-9_-]+\.html$/.test(payload.surahFile || '') ? payload.surahFile : 'dashboard.html#surah-focus';
+        nextLink.href = retryFile;
+        nextLink.textContent = 'إعادة السورة';
+        nextLink.addEventListener('click', () => {
+          const session = typeof Auth !== 'undefined' && Auth.getSession ? Auth.getSession() : null;
+          const account = session?.username || 'local';
+          localStorage.removeItem('mawahib_lesson_steps_' + account + '_' + retryFile);
+          sessionStorage.removeItem('mawahib_lesson_xp_' + account + '_' + retryFile);
+        }, { once: true });
+        return;
+      }
       const returnUrl = 'dashboard.html#surah-focus';
-      document.getElementById('next-link').href = returnUrl;
+      nextLink.href = returnUrl;
       setTimeout(() => { window.location.href = returnUrl; }, 3600);
       if (window.confetti) {
         const intensity = Math.min(150, 55 + Number(payload.points || 0) * 10);
