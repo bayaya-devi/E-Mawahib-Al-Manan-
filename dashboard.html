@@ -979,10 +979,32 @@ async function chargerDevoirs() {
             if (window.location.hash === '#surah-focus') setTimeout(scrollToJourneyFocus, 180);
         }
 
-        let latestClassRanking = null;
-        let rankingRequestInFlight = false;
+        const rankingSession = typeof Auth !== 'undefined' && Auth.getSession ? Auth.getSession() : null;
+        const rankingCacheKey = 'mawahib_class_ranking_' + (rankingSession?.username || 'local');
         const previousClassStanding = new Map();
         const classTrendState = new Map();
+        let rankingRequestInFlight = null;
+
+        function readCachedClassRanking() {
+            try {
+                const cached = JSON.parse(localStorage.getItem(rankingCacheKey) || 'null');
+                return cached?.ranking?.students?.length ? cached.ranking : null;
+            } catch (error) {
+                return null;
+            }
+        }
+
+        function cacheClassRanking(ranking) {
+            if (!ranking?.students?.length) return;
+            try {
+                localStorage.setItem(rankingCacheKey, JSON.stringify({ ranking, savedAt: Date.now() }));
+            } catch (error) {}
+        }
+
+        let latestClassRanking = readCachedClassRanking();
+        (latestClassRanking?.students || []).forEach(student => {
+            previousClassStanding.set(student.id, { rank: student.rank, stars: student.stars });
+        });
 
         function applyClassRankingTrends(ranking) {
             if (!ranking?.students?.length) return ranking;
@@ -1056,7 +1078,27 @@ async function chargerDevoirs() {
             });
         }
 
-        async function openClassRanking() {
+        function showClassRankingUnavailable() {
+            const modal = document.getElementById('class-ranking-modal');
+            const list = document.getElementById('class-ranking-list');
+            if (!modal || modal.hidden || latestClassRanking?.students || !list) return;
+            list.replaceChildren();
+            const message = document.createElement('p');
+            message.className = 'py-5 text-center text-sm font-bold text-slate-500';
+            message.textContent = 'تعذر عرض الترتيب الآن.';
+            const retry = document.createElement('button');
+            retry.type = 'button';
+            retry.className = 'mx-auto mb-5 block rounded-xl bg-emerald-700 px-5 py-3 text-sm font-black text-white';
+            retry.textContent = 'إعادة المحاولة';
+            retry.addEventListener('click', () => {
+                list.textContent = 'جارٍ تجهيز الترتيب...';
+                updateRewardPanel();
+                setTimeout(showClassRankingUnavailable, 3500);
+            }, { once: true });
+            list.append(message, retry);
+        }
+
+        function openClassRanking() {
             const modal = document.getElementById('class-ranking-modal');
             const list = document.getElementById('class-ranking-list');
             if (!modal || !list) return;
@@ -1065,48 +1107,67 @@ async function chargerDevoirs() {
             document.getElementById('close-class-ranking')?.focus();
             if (latestClassRanking?.students) renderClassRanking(latestClassRanking);
             else {
-                list.textContent = 'جارٍ تحميل الترتيب...';
-                await updateRewardPanel();
+                list.textContent = 'جارٍ تجهيز الترتيب...';
+                updateRewardPanel();
+                setTimeout(showClassRankingUnavailable, 3500);
             }
         }
 
-        async function updateRewardPanel() {
-            if (typeof Auth === 'undefined' || typeof Auth.getRewardState !== 'function') return;
+        function updateRewardPanel() {
+            if (typeof Auth === 'undefined' || typeof Auth.getRewardState !== 'function') return Promise.resolve(null);
             const rewards = Auth.getRewardState();
-            if (!rewards) return;
+            if (!rewards) return Promise.resolve(null);
             const starsEl = document.getElementById('reward-stars');
             const noteEl = document.getElementById('reward-decay-note');
             if (starsEl) starsEl.textContent = rewards.stars || 0;
             if (noteEl && rewards.lostNow > 0) noteEl.textContent = 'نقصت ' + rewards.lostNow + ' نجوم فقط بسبب فترة توقف.';
             const rankValueEl = document.getElementById('class-rank-value');
             const rankNoteEl = document.getElementById('class-rank-note');
-            if (!rankValueEl || typeof Auth.getClassStarRanking !== 'function') return;
-            if (!latestClassRanking) rankValueEl.textContent = '...';
-            if (rankingRequestInFlight) return;
-            rankingRequestInFlight = true;
-            try {
-                const ranking = applyClassRankingTrends(await Auth.getClassStarRanking());
-                latestClassRanking = ranking;
-                const modal = document.getElementById('class-ranking-modal');
-                if (modal && !modal.hidden) renderClassRanking(ranking);
-                if (!ranking) {
-                    rankValueEl.textContent = '-';
-                    if (rankNoteEl) rankNoteEl.textContent = 'الترتيب غير متاح الآن.';
-                    return;
-                }
-                if (!ranking.isAssigned || !ranking.total) {
-                    rankValueEl.textContent = '-';
-                    if (rankNoteEl) rankNoteEl.textContent = 'سيظهر بعد ربطك بقسم.';
-                    return;
-                }
-                rankValueEl.textContent = ranking.rank + ' / ' + ranking.total;
+            if (!rankValueEl || typeof Auth.getClassStarRanking !== 'function') return Promise.resolve(null);
+
+            if (latestClassRanking?.total) {
+                rankValueEl.textContent = latestClassRanking.rank + ' / ' + latestClassRanking.total;
                 if (rankNoteEl) rankNoteEl.textContent = 'اضغط هنا لاكتشاف الترتيب الكامل';
-            } catch (error) {
-                rankValueEl.textContent = '-';
-                if (rankNoteEl) rankNoteEl.textContent = 'الترتيب غير متاح الآن.';
-            } finally {
-                rankingRequestInFlight = false;
+            } else {
+                rankValueEl.textContent = '...';
             }
+            if (rankingRequestInFlight) return rankingRequestInFlight;
+
+            rankingRequestInFlight = Promise.resolve(Auth.getClassStarRanking())
+                .then(result => {
+                    if (!result) {
+                        if (!latestClassRanking) {
+                            rankValueEl.textContent = '-';
+                            if (rankNoteEl) rankNoteEl.textContent = 'الترتيب غير متاح الآن.';
+                        }
+                        return latestClassRanking;
+                    }
+                    if (!result.isAssigned || !result.total) {
+                        if (!latestClassRanking) {
+                            rankValueEl.textContent = '-';
+                            if (rankNoteEl) rankNoteEl.textContent = 'سيظهر بعد ربطك بقسم.';
+                        }
+                        return latestClassRanking;
+                    }
+                    cacheClassRanking(result);
+                    latestClassRanking = applyClassRankingTrends(result);
+                    rankValueEl.textContent = latestClassRanking.rank + ' / ' + latestClassRanking.total;
+                    if (rankNoteEl) rankNoteEl.textContent = 'اضغط هنا لاكتشاف الترتيب الكامل';
+                    const modal = document.getElementById('class-ranking-modal');
+                    if (modal && !modal.hidden) renderClassRanking(latestClassRanking);
+                    return latestClassRanking;
+                })
+                .catch(() => {
+                    if (!latestClassRanking) {
+                        rankValueEl.textContent = '-';
+                        if (rankNoteEl) rankNoteEl.textContent = 'الترتيب غير متاح الآن.';
+                    }
+                    return latestClassRanking;
+                })
+                .finally(() => {
+                    rankingRequestInFlight = null;
+                });
+            return rankingRequestInFlight;
         }
 
         document.getElementById('open-class-ranking')?.addEventListener('click', openClassRanking);
