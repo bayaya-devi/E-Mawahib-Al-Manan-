@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=20260715-exercise-flow-1"></script>
+    <script src="auth.js?v=20260716-class-ranking-1"></script>
     <script src="registry.js"></script>
 
         <link rel="stylesheet" href="platform-theme.css?v=20260714-total-crash-1">
@@ -105,6 +105,25 @@
         .reward-stars-value { color: #d97706; text-shadow: 0 2px 12px rgba(250, 204, 21, .45); animation: starPulse 2.4s ease-in-out infinite; }
         .reward-rank-value { color: var(--platform-primary-dark); }
         .reward-note { margin-top: 5px; font-size: 10px; color: #64748b; font-weight: 800; line-height: 1.25; }
+        .reward-rank-button { width: 100%; color: inherit; font: inherit; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
+        .reward-rank-button:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(15,118,110,.14); }
+        .reward-rank-button:focus-visible { outline: 3px solid var(--platform-accent); outline-offset: 3px; }
+        .ranking-modal { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 18px; background: rgba(15,23,42,.58); backdrop-filter: blur(5px); }
+        .ranking-modal[hidden] { display: none; }
+        .ranking-panel { width: min(520px, 100%); max-height: min(720px, calc(100dvh - 36px)); overflow: hidden; display: flex; flex-direction: column; background: #fff; border-radius: 18px; box-shadow: 0 28px 70px rgba(15,23,42,.26); border: 1px solid rgba(255,255,255,.55); }
+        .ranking-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px 12px; border-bottom: 1px solid #e5e7eb; }
+        .ranking-title { color: var(--platform-primary-dark); font-size: 19px; font-weight: 900; }
+        .ranking-class { margin-top: 2px; color: #64748b; font-size: 12px; font-weight: 800; }
+        .ranking-close { flex: 0 0 38px; width: 38px; height: 38px; border-radius: 50%; background: #f1f5f9; color: #334155; font-size: 22px; font-weight: 900; line-height: 1; }
+        .ranking-message { margin: 12px 16px 8px; color: #7c5a0b; background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 10px 12px; text-align: center; font-size: 13px; font-weight: 900; }
+        .ranking-list { overflow-y: auto; overscroll-behavior: contain; padding: 4px 12px 16px; }
+        .ranking-row { min-height: 56px; display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 8px 10px; border-bottom: 1px solid #eef2f7; }
+        .ranking-position { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: #f1f5f9; color: #475569; font-size: 18px; font-weight: 900; }
+        .ranking-name { min-width: 0; color: #1e293b; font-size: 14px; font-weight: 900; overflow-wrap: anywhere; }
+        .ranking-stars { white-space: nowrap; color: #b45309; font-size: 14px; font-weight: 900; }
+        .ranking-row.is-current { margin-block: 5px; border: 1px solid var(--platform-primary); border-radius: 12px; background: var(--platform-primary-soft); animation: currentStudentPulse 5.2s ease-in-out infinite; }
+        .ranking-row.is-current .ranking-name::after { content: '  •  أنت'; color: var(--platform-primary-dark); font-size: 11px; }
+        @keyframes currentStudentPulse { 0%, 12%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16,185,129,0); } 6% { transform: scale(1.012); box-shadow: 0 0 0 4px rgba(16,185,129,.12); } }
         @keyframes starPulse { 0%,100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.08); filter: brightness(1.18); } }
         .header-bg { background: linear-gradient(135deg, #1a3c34 0%, #0c4a3b 40%, #14532d 100%); }
 
@@ -196,14 +215,28 @@ body { padding-bottom: 80px; }
                     <div class="reward-value reward-stars-value"><span id="reward-stars">0</span> ★</div>
                     <div class="reward-note" id="reward-decay-note">كل سورة تضيف رصيدا جديدا.</div>
                 </div>
-                <div class="reward-pill" aria-label="ترتيبك في القسم">
+                <button type="button" class="reward-pill reward-rank-button" id="open-class-ranking" aria-haspopup="dialog" aria-controls="class-ranking-modal" aria-label="عرض ترتيب القسم">
                     <div class="reward-kicker">ترتيبك في القسم</div>
                     <div class="reward-value reward-rank-value" id="class-rank-value">...</div>
-                    <div class="reward-note" id="class-rank-note"></div>
-                </div>
+                    <div class="reward-note" id="class-rank-note">اضغط هنا لاكتشاف الترتيب الكامل</div>
+                </button>
             </div>
         </div>
     </section>
+
+    <div class="ranking-modal" id="class-ranking-modal" role="dialog" aria-modal="true" aria-labelledby="class-ranking-title" hidden>
+        <section class="ranking-panel">
+            <div class="ranking-head">
+                <div>
+                    <h2 class="ranking-title" id="class-ranking-title">ترتيب القسم</h2>
+                    <div class="ranking-class" id="class-ranking-name"></div>
+                </div>
+                <button type="button" class="ranking-close" id="close-class-ranking" aria-label="إغلاق">×</button>
+            </div>
+            <p class="ranking-message">اعمل كل يوم لتصل إلى المرتبة الأولى في قسمك! 😎</p>
+            <div class="ranking-list" id="class-ranking-list"></div>
+        </section>
+    </div>
 
     <main class="max-w-5xl mx-auto px-4 py-6">
         <h2 id="section-available" class="hidden text-lg font-black text-gray-700 mb-4 items-center gap-2">
@@ -935,6 +968,63 @@ async function chargerDevoirs() {
             if (window.location.hash === '#surah-focus') setTimeout(scrollToJourneyFocus, 180);
         }
 
+        let latestClassRanking = null;
+        let rankingRequestInFlight = false;
+
+        function closeClassRanking() {
+            const modal = document.getElementById('class-ranking-modal');
+            if (!modal) return;
+            modal.hidden = true;
+            document.body.style.overflow = '';
+            document.getElementById('open-class-ranking')?.focus();
+        }
+
+        function renderClassRanking(ranking) {
+            const list = document.getElementById('class-ranking-list');
+            const className = document.getElementById('class-ranking-name');
+            if (!list || !className) return;
+            list.replaceChildren();
+            className.textContent = ranking?.classe ? 'القسم: ' + ranking.classe : '';
+            if (!ranking?.students?.length) {
+                const empty = document.createElement('p');
+                empty.className = 'py-8 text-center text-sm font-bold text-slate-500';
+                empty.textContent = 'الترتيب غير متاح الآن.';
+                list.appendChild(empty);
+                return;
+            }
+            ranking.students.forEach(student => {
+                const row = document.createElement('div');
+                row.className = 'ranking-row' + (student.isCurrent ? ' is-current' : '');
+                if (student.isCurrent) row.setAttribute('aria-current', 'true');
+
+                const position = document.createElement('span');
+                position.className = 'ranking-position';
+                position.textContent = student.rank === 1 ? '🥇' : student.rank === 2 ? '🥈' : student.rank === 3 ? '🥉' : student.rank;
+                const name = document.createElement('span');
+                name.className = 'ranking-name';
+                name.textContent = [student.prenom, student.nom].filter(Boolean).join(' ') || 'طالب';
+                const stars = document.createElement('span');
+                stars.className = 'ranking-stars';
+                stars.textContent = student.stars + ' ★';
+                row.append(position, name, stars);
+                list.appendChild(row);
+            });
+        }
+
+        async function openClassRanking() {
+            const modal = document.getElementById('class-ranking-modal');
+            const list = document.getElementById('class-ranking-list');
+            if (!modal || !list) return;
+            modal.hidden = false;
+            document.body.style.overflow = 'hidden';
+            document.getElementById('close-class-ranking')?.focus();
+            if (latestClassRanking?.students) renderClassRanking(latestClassRanking);
+            else {
+                list.textContent = 'جارٍ تحميل الترتيب...';
+                await updateRewardPanel();
+            }
+        }
+
         async function updateRewardPanel() {
             if (typeof Auth === 'undefined' || typeof Auth.getRewardState !== 'function') return;
             const rewards = Auth.getRewardState();
@@ -946,9 +1036,14 @@ async function chargerDevoirs() {
             const rankValueEl = document.getElementById('class-rank-value');
             const rankNoteEl = document.getElementById('class-rank-note');
             if (!rankValueEl || typeof Auth.getClassStarRanking !== 'function') return;
-            rankValueEl.textContent = '...';
+            if (!latestClassRanking) rankValueEl.textContent = '...';
+            if (rankingRequestInFlight) return;
+            rankingRequestInFlight = true;
             try {
                 const ranking = await Auth.getClassStarRanking();
+                latestClassRanking = ranking;
+                const modal = document.getElementById('class-ranking-modal');
+                if (modal && !modal.hidden) renderClassRanking(ranking);
                 if (!ranking) {
                     rankValueEl.textContent = '-';
                     if (rankNoteEl) rankNoteEl.textContent = 'الترتيب غير متاح الآن.';
@@ -960,12 +1055,26 @@ async function chargerDevoirs() {
                     return;
                 }
                 rankValueEl.textContent = ranking.rank + ' / ' + ranking.total;
-                if (rankNoteEl) rankNoteEl.textContent = '';
+                if (rankNoteEl) rankNoteEl.textContent = 'اضغط هنا لاكتشاف الترتيب الكامل';
             } catch (error) {
                 rankValueEl.textContent = '-';
                 if (rankNoteEl) rankNoteEl.textContent = 'الترتيب غير متاح الآن.';
+            } finally {
+                rankingRequestInFlight = false;
             }
         }
+
+        document.getElementById('open-class-ranking')?.addEventListener('click', openClassRanking);
+        document.getElementById('close-class-ranking')?.addEventListener('click', closeClassRanking);
+        document.getElementById('class-ranking-modal')?.addEventListener('click', event => {
+            if (event.target.id === 'class-ranking-modal') closeClassRanking();
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !document.getElementById('class-ranking-modal')?.hidden) closeClassRanking();
+        });
+        setInterval(() => {
+            if (!document.hidden) updateRewardPanel();
+        }, 5000);
 
         chargerDevoirs();
         buildStudentDashboard();

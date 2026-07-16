@@ -649,15 +649,24 @@ const Auth = (() => {
             }
 
             const classStudents = Array.from(new Set(klass.students.filter(Boolean)));
-            const { data: rows, error: progressError } = await supabase
-                .from('progressions')
-                .select('username, surah_id, completed_at')
-                .in('username', classStudents);
+            const [progressResult, studentsResult] = await Promise.all([
+                supabase
+                    .from('progressions')
+                    .select('username, surah_id, completed_at')
+                    .in('username', classStudents),
+                supabase
+                    .from('eleves')
+                    .select('username, prenom, nom')
+                    .in('username', classStudents)
+            ]);
+            const { data: rows, error: progressError } = progressResult;
             if (progressError) {
                 logError('getClassStarRanking.progressions', progressError);
                 return null;
             }
+            if (studentsResult.error) logError('getClassStarRanking.students', studentsResult.error);
 
+            const identityByUsername = new Map((studentsResult.data || []).map(student => [student.username, student]));
             const scores = classStudents.map(id => {
                 const completedIds = new Set();
                 (rows || []).forEach(row => {
@@ -667,20 +676,37 @@ const Auth = (() => {
                 const stars = Array.from(completedIds).reduce((sum, surahId) => {
                     return sum + _starsForSurah(_getSurahMeta(surahId));
                 }, 0);
-                return { id, stars, completedCount: completedIds.size };
+                const identity = identityByUsername.get(id) || {};
+                return {
+                    id,
+                    prenom: identity.prenom || '',
+                    nom: identity.nom || '',
+                    stars,
+                    completedCount: completedIds.size
+                };
             }).sort((a, b) => (b.stars - a.stars) || (b.completedCount - a.completedCount) || a.id.localeCompare(b.id));
 
-            const ownIndex = scores.findIndex(item => item.id === studentId);
+            let previousScore = null;
+            let previousCompleted = null;
+            let displayedRank = 0;
+            const rankedStudents = scores.map((student, index) => {
+                if (student.stars !== previousScore || student.completedCount !== previousCompleted) displayedRank = index + 1;
+                previousScore = student.stars;
+                previousCompleted = student.completedCount;
+                return { ...student, rank: displayedRank, isCurrent: student.id === studentId };
+            });
+
+            const ownIndex = rankedStudents.findIndex(item => item.id === studentId);
             if (ownIndex < 0) return null;
-            const own = scores[ownIndex];
-            const betterCount = scores.filter(item => item.stars > own.stars || (item.stars === own.stars && item.completedCount > own.completedCount)).length;
+            const own = rankedStudents[ownIndex];
             return {
-                rank: betterCount + 1,
-                total: scores.length,
+                rank: own.rank,
+                total: rankedStudents.length,
                 stars: own.stars,
                 completedCount: own.completedCount,
                 classe: klass.classe || '',
-                isAssigned: true
+                isAssigned: true,
+                students: rankedStudents
             };
         } catch (error) {
             logError('getClassStarRanking', error);
