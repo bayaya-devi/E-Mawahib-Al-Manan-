@@ -123,6 +123,13 @@
         .ranking-stars { white-space: nowrap; color: #b45309; font-size: 14px; font-weight: 900; }
         .ranking-row.is-current { margin-block: 5px; border: 1px solid var(--platform-primary); border-radius: 12px; background: var(--platform-primary-soft); animation: currentStudentPulse 5.2s ease-in-out infinite; }
         .ranking-row.is-current .ranking-name::after { content: '  •  أنت'; color: var(--platform-primary-dark); font-size: 11px; }
+        .ranking-row.rank-gold { margin-block: 5px; border: 1px solid #d6a514; border-radius: 12px; background: #fff4bd; box-shadow: inset 4px 0 0 #d6a514; }
+        .ranking-row.rank-silver { margin-block: 5px; border: 1px solid #a8b1bd; border-radius: 12px; background: #edf1f5; box-shadow: inset 4px 0 0 #a8b1bd; }
+        .ranking-row.rank-bronze { margin-block: 5px; border: 1px solid #b87333; border-radius: 12px; background: #f5dfcf; box-shadow: inset 4px 0 0 #b87333; }
+        .ranking-row.rank-gold .ranking-name, .ranking-row.rank-silver .ranking-name, .ranking-row.rank-bronze .ranking-name { color: #172033; text-shadow: none; }
+        .ranking-row.rank-gold .ranking-stars { color: #765300; }
+        .ranking-row.rank-silver .ranking-stars { color: #485463; }
+        .ranking-row.rank-bronze .ranking-stars { color: #713d16; }
         @keyframes currentStudentPulse { 0%, 12%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16,185,129,0); } 6% { transform: scale(1.012); box-shadow: 0 0 0 4px rgba(16,185,129,.12); } }
         @keyframes starPulse { 0%,100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.08); filter: brightness(1.18); } }
         .header-bg { background: linear-gradient(135deg, #1a3c34 0%, #0c4a3b 40%, #14532d 100%); }
@@ -994,7 +1001,8 @@ async function chargerDevoirs() {
             }
             ranking.students.forEach(student => {
                 const row = document.createElement('div');
-                row.className = 'ranking-row' + (student.isCurrent ? ' is-current' : '');
+                const podiumClass = student.rank === 1 ? ' rank-gold' : student.rank === 2 ? ' rank-silver' : student.rank === 3 ? ' rank-bronze' : '';
+                row.className = 'ranking-row' + podiumClass + (student.isCurrent ? ' is-current' : '');
                 if (student.isCurrent) row.setAttribute('aria-current', 'true');
 
                 const position = document.createElement('span');
