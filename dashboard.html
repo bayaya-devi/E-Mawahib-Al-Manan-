@@ -119,7 +119,11 @@
         .ranking-list { overflow-y: auto; overscroll-behavior: contain; padding: 4px 12px 16px; }
         .ranking-row { min-height: 56px; display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 8px 10px; border-bottom: 1px solid #eef2f7; }
         .ranking-position { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: #f1f5f9; color: #475569; font-size: 18px; font-weight: 900; }
+        .ranking-identity { min-width: 0; display: flex; align-items: center; gap: 6px; }
         .ranking-name { min-width: 0; color: #1e293b; font-size: 14px; font-weight: 900; overflow-wrap: anywhere; }
+        .ranking-trend { flex: 0 0 auto; font-size: 15px; font-weight: 900; line-height: 1; }
+        .ranking-trend.is-up { color: #15803d; }
+        .ranking-trend.is-down { color: #dc2626; }
         .ranking-stars { white-space: nowrap; color: #b45309; font-size: 14px; font-weight: 900; }
         .ranking-row.is-current { margin-block: 5px; border: 1px solid var(--platform-primary); border-radius: 12px; background: var(--platform-primary-soft); animation: currentStudentPulse 5.2s ease-in-out infinite; }
         .ranking-row.is-current .ranking-name::after { content: '  •  أنت'; color: var(--platform-primary-dark); font-size: 11px; }
@@ -977,6 +981,29 @@ async function chargerDevoirs() {
 
         let latestClassRanking = null;
         let rankingRequestInFlight = false;
+        const previousClassStanding = new Map();
+        const classTrendState = new Map();
+
+        function applyClassRankingTrends(ranking) {
+            if (!ranking?.students?.length) return ranking;
+            const now = Date.now();
+            const students = ranking.students.map(student => {
+                const previous = previousClassStanding.get(student.id);
+                let direction = '';
+                if (previous) {
+                    if (student.rank < previous.rank) direction = 'up';
+                    else if (student.rank > previous.rank) direction = 'down';
+                    else if (student.stars > previous.stars) direction = 'up';
+                    else if (student.stars < previous.stars) direction = 'down';
+                }
+                if (direction) classTrendState.set(student.id, { direction, expiresAt: now + 30000 });
+                const savedTrend = classTrendState.get(student.id);
+                if (savedTrend && savedTrend.expiresAt <= now) classTrendState.delete(student.id);
+                previousClassStanding.set(student.id, { rank: student.rank, stars: student.stars });
+                return { ...student, trend: classTrendState.get(student.id)?.direction || '' };
+            });
+            return { ...ranking, students };
+        }
 
         function closeClassRanking() {
             const modal = document.getElementById('class-ranking-modal');
@@ -1008,13 +1035,23 @@ async function chargerDevoirs() {
                 const position = document.createElement('span');
                 position.className = 'ranking-position';
                 position.textContent = student.rank === 1 ? '🥇' : student.rank === 2 ? '🥈' : student.rank === 3 ? '🥉' : student.rank;
+                const identity = document.createElement('span');
+                identity.className = 'ranking-identity';
                 const name = document.createElement('span');
                 name.className = 'ranking-name';
                 name.textContent = [student.prenom, student.nom].filter(Boolean).join(' ') || 'طالب';
+                identity.appendChild(name);
+                if (student.trend === 'up' || student.trend === 'down') {
+                    const trend = document.createElement('span');
+                    trend.className = 'ranking-trend is-' + student.trend;
+                    trend.textContent = student.trend === 'up' ? '↑' : '↓';
+                    trend.setAttribute('aria-label', student.trend === 'up' ? 'ترتيب صاعد' : 'ترتيب متراجع');
+                    identity.appendChild(trend);
+                }
                 const stars = document.createElement('span');
                 stars.className = 'ranking-stars';
                 stars.textContent = student.stars + ' ★';
-                row.append(position, name, stars);
+                row.append(position, identity, stars);
                 list.appendChild(row);
             });
         }
@@ -1048,7 +1085,7 @@ async function chargerDevoirs() {
             if (rankingRequestInFlight) return;
             rankingRequestInFlight = true;
             try {
-                const ranking = await Auth.getClassStarRanking();
+                const ranking = applyClassRankingTrends(await Auth.getClassStarRanking());
                 latestClassRanking = ranking;
                 const modal = document.getElementById('class-ranking-modal');
                 if (modal && !modal.hidden) renderClassRanking(ranking);
