@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v19-prof-dashboard-surah-fixes-20260718';
+const CACHE_VERSION = 'mawahib-offline-v20-speed-challenge-20260718';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
