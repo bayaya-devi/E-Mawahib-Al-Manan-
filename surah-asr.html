@@ -93,7 +93,7 @@
       <button onclick="playAll()" class="px-6 py-4 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-2xl shadow-md transition flex items-center gap-2 text-sm">🔊 استمع للسورة</button>
     </div>
     <div class="flex justify-end mt-6">
-      <button onclick="goToPhase(1)" class="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition">متابعة ✔️</button>
+      <button onclick="advanceFromAudio()" class="px-7 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition">متابعة ✔️</button>
     </div>
   </div>
 
@@ -206,6 +206,7 @@ let recognition = null;
 let isRecording = false;
 let quizAnswers = new Array(quizQuestions.length).fill(null);
 let celebrationStarted = false;
+let maxUnlockedPhase = 0;
 
 // ===== AUDIO =====
 function buildAudioScreen() {
@@ -328,6 +329,7 @@ function confirmVerseAndNext() {
 
 function skipVoice() {
   if (isRecording) stopMic();
+  maxUnlockedPhase = Math.max(maxUnlockedPhase, 2);
   goToPhase(2);
 }
 
@@ -438,7 +440,16 @@ function checkQuiz() {
 }
 
 // ===== NAVIGATION =====
+function advanceFromAudio() {
+  maxUnlockedPhase = Math.max(maxUnlockedPhase, 1);
+  goToPhase(1);
+}
+
 function goToPhase(n) {
+  if (n > maxUnlockedPhase) {
+    showFb("quiz-feedback", "أكمل المرحلة الحالية أولا.", "error");
+    return;
+  }
   stopAudio();
   if (isRecording) stopMic();
   [0,1,2].forEach(i => {

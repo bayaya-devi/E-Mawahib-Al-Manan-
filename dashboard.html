@@ -72,6 +72,40 @@
         .mini-exam-option:hover { border-color: var(--platform-primary); background: var(--platform-primary-soft); }
         .mini-exam-option.correct { background: #dcfce7; color: #166534; border-color: #22c55e; }
         .mini-exam-option.wrong { background: #fee2e2; color: #991b1b; border-color: #f87171; }
+        .juz-header-actions { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; }
+        .juz-game-button { min-height: 34px; border: 1px solid color-mix(in srgb, var(--platform-primary) 28%, #dbe5df); border-radius: 10px; padding: 0 11px; background: #fff; color: var(--platform-primary-dark); font-size: 11px; font-weight: 900; cursor: pointer; }
+        .juz-game-button:focus-visible { outline: 3px solid var(--platform-accent); outline-offset: 2px; }
+        .juz-swipe-modal { position: fixed; inset: 0; z-index: 110; display: none; align-items: center; justify-content: center; padding: 12px; background: rgba(15,23,42,.68); }
+        .juz-swipe-modal.open { display: flex; }
+        .juz-swipe-panel { width: min(100%, 520px); max-height: calc(100dvh - 24px); overflow: auto; border-radius: 20px; background: #fff; box-shadow: 0 28px 80px rgba(15,23,42,.34); padding: 16px; }
+        .juz-swipe-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+        .juz-swipe-title { color: var(--platform-primary-dark); font-size: 20px; font-weight: 900; }
+        .juz-swipe-close { width: 38px; height: 38px; flex: 0 0 38px; border: 0; border-radius: 50%; background: #f1f5f9; color: #334155; font-size: 22px; font-weight: 900; }
+        .juz-swipe-rules { display: grid; gap: 9px; margin: 12px 0 16px; color: #475569; font-size: 13px; font-weight: 800; line-height: 1.7; }
+        .juz-swipe-start { width: 100%; min-height: 50px; border: 0; border-radius: 13px; background: var(--platform-primary); color: #fff; font-size: 15px; font-weight: 900; }
+        .juz-swipe-countdown { min-height: 260px; display: grid; place-items: center; color: var(--platform-primary); font-size: 72px; font-weight: 900; }
+        .juz-swipe-status { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 9px; margin-bottom: 11px; color: #475569; font-size: 12px; font-weight: 900; }
+        .juz-swipe-hearts { color: #e11d48; font-size: 18px; letter-spacing: 2px; }
+        .juz-swipe-timer { direction: ltr; font-variant-numeric: tabular-nums; }
+        .juz-swipe-card { position: relative; min-height: 275px; display: grid; align-content: center; gap: 13px; border: 2px solid #dfe8e3; border-radius: 18px; padding: 18px; background: #fbfdfc; touch-action: pan-y; user-select: none; overflow: hidden; }
+        .juz-swipe-card.is-correct { border-color: #22c55e; background: #ecfdf3; }
+        .juz-swipe-card.is-wrong { border-color: #ef4444; background: #fff1f2; }
+        .juz-swipe-surah { text-align: center; color: var(--platform-primary-dark); font-size: 13px; font-weight: 900; }
+        .juz-swipe-verse { font-family: 'Amiri', serif; text-align: center; color: #1f2937; font-size: 20px; font-weight: 700; line-height: 1.9; }
+        .juz-swipe-arrow { text-align: center; color: #94a3b8; font-size: 22px; font-weight: 900; }
+        .juz-swipe-speed { height: 6px; margin-top: 11px; border-radius: 999px; background: #e5e7eb; overflow: hidden; }
+        .juz-swipe-speed > span { display: block; width: 100%; height: 100%; background: var(--platform-accent); transform-origin: right; animation: juzSwipeTime linear forwards; }
+        @keyframes juzSwipeTime { to { transform: scaleX(0); } }
+        .juz-swipe-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+        .juz-swipe-control { min-height: 50px; border: 0; border-radius: 13px; font-size: 14px; font-weight: 900; }
+        .juz-swipe-control.is-false { background: #fee2e2; color: #991b1b; }
+        .juz-swipe-control.is-true { background: #dcfce7; color: #166534; }
+        .juz-swipe-records { width: 100%; margin-top: 14px; border-collapse: collapse; font-size: 13px; }
+        .juz-swipe-records th, .juz-swipe-records td { padding: 9px 7px; border-bottom: 1px solid #edf1ef; text-align: right; }
+        .juz-swipe-records th { color: #64748b; font-size: 11px; font-weight: 900; }
+        .juz-swipe-records td { color: #24332d; font-weight: 800; }
+        @media(max-width:480px){.juz-road-header{align-items:flex-start}.juz-header-actions{flex-direction:column-reverse;align-items:flex-end}.juz-game-button{min-height:32px;padding-inline:9px}.juz-swipe-panel{padding:13px;border-radius:17px}.juz-swipe-card{min-height:245px;padding:14px}.juz-swipe-verse{font-size:18px}}
+        @media(prefers-reduced-motion:reduce){.juz-swipe-speed>span{animation:none}}
         .journey-orb.locked { background: #e5e7eb; color: #94a3b8; }
         .journey-meta { font-size: 11px; font-weight: 800; opacity: .78; }
         .journey-state { font-size: 11px; font-weight: 900; border-radius: 999px; padding: 4px 9px; background: rgba(255,255,255,.76); color: inherit; }
@@ -89,6 +123,10 @@
         .daily-title { font-size: 11px; font-weight: 900; color: var(--platform-primary-dark); margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
         .daily-title::before { content: ''; width: 6px; height: 6px; border-radius: 999px; background: var(--platform-accent); box-shadow: 0 0 0 3px var(--platform-primary-soft); }
         .daily-text { color: #334155; font-size: 12px; font-weight: 700; line-height: 1.45; max-height: 72px; overflow: auto; }
+        .student-homework-alert { margin-bottom: 8px; border: 1px solid #f3a8b8; border-radius: 12px; background: #fff1f4; padding: 8px; animation: homeworkAlertPulse .8s ease-in-out infinite; }
+        .student-homework-alert:last-child { margin-bottom: 0; }
+        @keyframes homeworkAlertPulse { 0%, 100% { background: #fff1f4; box-shadow: 0 0 0 0 rgba(225,29,72,.08); } 50% { background: #ffe3ea; box-shadow: 0 0 0 3px rgba(225,29,72,.18); } }
+        @media (prefers-reduced-motion: reduce) { .student-homework-alert { animation: none; } }
         .daily-text:empty::after { content: 'لا يوجد جديد اليوم'; color: #94a3b8; font-weight: 800; }
         .daily-progress { display: grid; grid-template-columns: auto minmax(160px, 1fr) auto; gap: 10px; align-items: center; margin-top: 10px; color: #475569; font-size: 12px; font-weight: 900; }
         .daily-progress-track { height: 8px; background: rgba(148,163,184,.16); border-radius: 999px; overflow: hidden; }
@@ -533,6 +571,233 @@ body { padding-bottom: 80px; }
             ]);
         }
 
+        let activeJuzSwipeGame = null;
+        const JUZ_SWIPE_RECORD_PREFIX = '[JUZ_SWIPE_RECORD]';
+
+        function ensureJuzSwipeModal() {
+            let modal = document.getElementById('juz-swipe-modal');
+            if (modal) return modal;
+            modal = document.createElement('div');
+            modal.id = 'juz-swipe-modal';
+            modal.className = 'juz-swipe-modal';
+            modal.setAttribute('role', 'dialog');
+            modal.setAttribute('aria-modal', 'true');
+            modal.innerHTML = '<div class="juz-swipe-panel" dir="rtl"><div class="juz-swipe-head"><h3 id="juz-swipe-title" class="juz-swipe-title"></h3><button type="button" class="juz-swipe-close" onclick="closeJuzSwipeGame()" aria-label="إغلاق">×</button></div><div id="juz-swipe-body"></div></div>';
+            document.body.appendChild(modal);
+            modal.addEventListener('click', event => { if (event.target === modal) closeJuzSwipeGame(); });
+            document.addEventListener('keydown', event => {
+                if (!activeJuzSwipeGame || activeJuzSwipeGame.phase !== 'playing') return;
+                if (event.key === 'ArrowRight') { event.preventDefault(); answerJuzSwipeGame('right'); }
+                if (event.key === 'ArrowLeft') { event.preventDefault(); answerJuzSwipeGame('left'); }
+            });
+            return modal;
+        }
+
+        function clearJuzSwipeTimers() {
+            if (!activeJuzSwipeGame) return;
+            clearTimeout(activeJuzSwipeGame.roundTimer);
+            clearTimeout(activeJuzSwipeGame.countdownTimer);
+            clearInterval(activeJuzSwipeGame.stopwatchTimer);
+        }
+
+        function openJuzSwipeGame(juzNumber) {
+            const juz = juzJourney.find(item => item.num === Number(juzNumber));
+            if (!juz) return;
+            closeJuzSwipeGame();
+            activeJuzSwipeGame = { juz, phase: 'rules', rounds: [], index: 0, hearts: 3, answerLocked: false };
+            ensureJuzSwipeModal().classList.add('open');
+            document.getElementById('juz-swipe-title').textContent = juz.name + ' · لعبة الترتيب';
+            document.getElementById('juz-swipe-body').innerHTML =
+                '<div class="juz-swipe-rules">' +
+                    '<p>اقرأ الآية الأولى، ثم قرر هل الآية الثانية تأتي بعدها مباشرة.</p>' +
+                    '<p>اسحب يمينا إذا كان الترتيب صحيحا، ويسارا إذا كان خاطئا.</p>' +
+                    '<p>على الحاسوب استعمل السهمين أو الزرين. لديك 3 قلوب، والوقت يقل تدريجيا.</p>' +
+                '</div>' +
+                '<button type="button" class="juz-swipe-start" onclick="startJuzSwipeGame()">ابدأ اللعبة</button>';
+        }
+
+        function closeJuzSwipeGame() {
+            clearJuzSwipeTimers();
+            const modal = document.getElementById('juz-swipe-modal');
+            if (modal) modal.classList.remove('open');
+            activeJuzSwipeGame = null;
+        }
+
+        async function buildJuzSwipeRounds(juz) {
+            const loaded = await Promise.all(getJuzSurahs(juz).map(loadSurahVerses));
+            const allVerses = loaded.flatMap(item => item.verses);
+            return loaded.map((item, surahIndex) => {
+                const sources = item.verses.filter(verse => item.verses.some(candidate => candidate.num === verse.num + 1));
+                if (!sources.length) return null;
+                const source = sources[surahIndex % sources.length];
+                const next = item.verses.find(verse => verse.num === source.num + 1);
+                const sameSurahWrong = item.verses.filter(verse => verse.num !== next.num && verse.num !== source.num);
+                const anyWrong = allVerses.filter(verse => verse.text !== next.text && verse.text !== source.text);
+                const wrongPool = sameSurahWrong.length ? sameSurahWrong : anyWrong;
+                const shouldBeCorrect = wrongPool.length === 0 || Math.random() >= .48;
+                const candidate = shouldBeCorrect ? next : wrongPool[Math.floor(Math.random() * wrongPool.length)];
+                return { surah: item.surah, source, candidate, isCorrect: shouldBeCorrect };
+            }).filter(Boolean);
+        }
+
+        async function startJuzSwipeGame() {
+            if (!activeJuzSwipeGame || activeJuzSwipeGame.phase !== 'rules') return;
+            activeJuzSwipeGame.phase = 'loading';
+            document.getElementById('juz-swipe-body').innerHTML = '<div class="py-10 text-center font-black text-gray-500">جاري تجهيز الآيات...</div>';
+            const rounds = await buildJuzSwipeRounds(activeJuzSwipeGame.juz);
+            if (!activeJuzSwipeGame) return;
+            if (!rounds.length) {
+                document.getElementById('juz-swipe-body').innerHTML = '<div class="py-8 text-center font-black text-gray-500">تعذر تحميل الآيات الآن.</div>';
+                return;
+            }
+            activeJuzSwipeGame.rounds = rounds;
+            activeJuzSwipeGame.phase = 'countdown';
+            let count = 3;
+            const showCount = () => {
+                if (!activeJuzSwipeGame || activeJuzSwipeGame.phase !== 'countdown') return;
+                document.getElementById('juz-swipe-body').innerHTML = '<div class="juz-swipe-countdown">' + (count > 0 ? count : 'هيا!') + '</div>';
+                if (count < 0) return beginJuzSwipeRounds();
+                count--;
+                activeJuzSwipeGame.countdownTimer = setTimeout(showCount, count < 0 ? 550 : 750);
+            };
+            showCount();
+        }
+
+        function beginJuzSwipeRounds() {
+            if (!activeJuzSwipeGame) return;
+            activeJuzSwipeGame.phase = 'playing';
+            activeJuzSwipeGame.startedAt = Date.now();
+            activeJuzSwipeGame.stopwatchTimer = setInterval(updateJuzSwipeStopwatch, 100);
+            renderJuzSwipeRound();
+        }
+
+        function updateJuzSwipeStopwatch() {
+            const timer = document.getElementById('juz-swipe-timer');
+            if (!timer || !activeJuzSwipeGame?.startedAt) return;
+            timer.textContent = ((Date.now() - activeJuzSwipeGame.startedAt) / 1000).toFixed(1) + ' ث';
+        }
+
+        function renderJuzSwipeRound() {
+            if (!activeJuzSwipeGame || activeJuzSwipeGame.phase !== 'playing') return;
+            clearTimeout(activeJuzSwipeGame.roundTimer);
+            activeJuzSwipeGame.answerLocked = false;
+            const round = activeJuzSwipeGame.rounds[activeJuzSwipeGame.index];
+            const duration = Math.max(2800, 7000 - activeJuzSwipeGame.index * 120);
+            const hearts = '♥'.repeat(activeJuzSwipeGame.hearts) + '♡'.repeat(3 - activeJuzSwipeGame.hearts);
+            document.getElementById('juz-swipe-body').innerHTML =
+                '<div class="juz-swipe-status"><span>' + (activeJuzSwipeGame.index + 1) + ' / ' + activeJuzSwipeGame.rounds.length + '</span><span class="juz-swipe-hearts">' + hearts + '</span><span id="juz-swipe-timer" class="juz-swipe-timer">0.0 ث</span></div>' +
+                '<div id="juz-swipe-card" class="juz-swipe-card" tabindex="0">' +
+                    '<div class="juz-swipe-surah">' + escapeMiniExamText(round.surah.nameAr) + '</div>' +
+                    '<div class="juz-swipe-verse">' + escapeMiniExamText(round.source.text) + '</div>' +
+                    '<div class="juz-swipe-arrow">↓</div>' +
+                    '<div class="juz-swipe-verse">' + escapeMiniExamText(round.candidate.text) + '</div>' +
+                '</div>' +
+                '<div class="juz-swipe-speed"><span style="animation-duration:' + duration + 'ms"></span></div>' +
+                '<div class="juz-swipe-controls"><button type="button" class="juz-swipe-control is-false" onclick="answerJuzSwipeGame(\'left\')">← خطأ</button><button type="button" class="juz-swipe-control is-true" onclick="answerJuzSwipeGame(\'right\')">صحيح →</button></div>';
+            updateJuzSwipeStopwatch();
+            const card = document.getElementById('juz-swipe-card');
+            let pointerStart = null;
+            card.addEventListener('pointerdown', event => { pointerStart = { x: event.clientX, y: event.clientY }; });
+            card.addEventListener('pointerup', event => {
+                if (!pointerStart) return;
+                const dx = event.clientX - pointerStart.x;
+                const dy = event.clientY - pointerStart.y;
+                pointerStart = null;
+                if (Math.abs(dx) < 44 || Math.abs(dx) < Math.abs(dy)) return;
+                answerJuzSwipeGame(dx > 0 ? 'right' : 'left');
+            });
+            activeJuzSwipeGame.roundTimer = setTimeout(() => answerJuzSwipeGame('timeout'), duration);
+        }
+
+        function answerJuzSwipeGame(direction) {
+            if (!activeJuzSwipeGame || activeJuzSwipeGame.phase !== 'playing' || activeJuzSwipeGame.answerLocked) return;
+            activeJuzSwipeGame.answerLocked = true;
+            clearTimeout(activeJuzSwipeGame.roundTimer);
+            const round = activeJuzSwipeGame.rounds[activeJuzSwipeGame.index];
+            const expected = round.isCorrect ? 'right' : 'left';
+            const correct = direction === expected;
+            const card = document.getElementById('juz-swipe-card');
+            if (card) card.classList.add(correct ? 'is-correct' : 'is-wrong');
+            if (!correct) activeJuzSwipeGame.hearts--;
+            setTimeout(() => {
+                if (!activeJuzSwipeGame) return;
+                if (activeJuzSwipeGame.hearts <= 0) return finishJuzSwipeGame(false);
+                activeJuzSwipeGame.index++;
+                if (activeJuzSwipeGame.index >= activeJuzSwipeGame.rounds.length) finishJuzSwipeGame(true);
+                else renderJuzSwipeRound();
+            }, 420);
+        }
+
+        function juzSwipeLocalKey(juzNumber) {
+            return 'mawahib_juz_swipe_records_' + (dashboardState.studentKey || 'guest') + '_' + juzNumber;
+        }
+
+        function readJuzSwipeLocalRecords(juzNumber) {
+            try { const rows = JSON.parse(localStorage.getItem(juzSwipeLocalKey(juzNumber)) || '[]'); return Array.isArray(rows) ? rows : []; }
+            catch (error) { return []; }
+        }
+
+        async function getJuzSwipeClassName() {
+            try { const currentSession = Auth.getSession(); const ranking = currentSession ? await Auth.getClassStarRanking(currentSession.username) : null; return ranking?.classe || ''; }
+            catch (error) { return ''; }
+        }
+
+        function juzSwipeMailbox(className, juzNumber) {
+            return '__juz_swipe__' + encodeURIComponent(className) + '__' + juzNumber;
+        }
+
+        async function saveAndLoadJuzSwipeRecords(won, durationMs) {
+            const currentSession = Auth.getSession() || {};
+            const studentId = currentSession.username || dashboardState.studentKey || 'guest';
+            const name = ((currentSession.prenom || '') + ' ' + (currentSession.nom || '')).trim() || studentId;
+            const juzNumber = activeJuzSwipeGame.juz.num;
+            const className = await getJuzSwipeClassName();
+            let local = readJuzSwipeLocalRecords(juzNumber);
+            if (won) {
+                const record = { studentId, name, durationMs, juzNumber, className, savedAt: new Date().toISOString() };
+                local.push(record);
+                localStorage.setItem(juzSwipeLocalKey(juzNumber), JSON.stringify(local.slice(-20)));
+                if (className) {
+                    try { await Auth.sendMessage(juzSwipeMailbox(className, juzNumber), JUZ_SWIPE_RECORD_PREFIX + JSON.stringify(record)); }
+                    catch (error) { /* Le record local reste disponible hors connexion. */ }
+                }
+            }
+            let records = [...local];
+            if (className) {
+                try {
+                    const messages = await Auth.getMessages(juzSwipeMailbox(className, juzNumber));
+                    records.push(...messages.map(message => {
+                        const text = String(message.text || '');
+                        if (!text.startsWith(JUZ_SWIPE_RECORD_PREFIX)) return null;
+                        try { return JSON.parse(text.slice(JUZ_SWIPE_RECORD_PREFIX.length)); }
+                        catch (error) { return null; }
+                    }).filter(record => record && record.juzNumber === juzNumber));
+                } catch (error) { /* Affichage des records locaux si le réseau manque. */ }
+            }
+            const bestByStudent = new Map();
+            records.forEach(record => {
+                if (!record.studentId || !Number.isFinite(Number(record.durationMs))) return;
+                const previous = bestByStudent.get(record.studentId);
+                if (!previous || Number(record.durationMs) < Number(previous.durationMs)) bestByStudent.set(record.studentId, record);
+            });
+            return { className, records: [...bestByStudent.values()].sort((a, b) => Number(a.durationMs) - Number(b.durationMs)).slice(0, 10) };
+        }
+
+        function renderJuzSwipeRecords(result) {
+            const box = document.getElementById('juz-swipe-record-box');
+            if (!box) return;
+            if (!result.records.length) { box.innerHTML = '<p class="mt-4 text-center text-sm font-bold text-gray-500">لا يوجد رقم مسجل بعد.</p>'; return; }
+            box.innerHTML = '<h4 class="mt-5 text-base font-black text-gray-900">أفضل الأوقات' + (result.className ? ' · ' + escapeMiniExamText(result.className) : '') + '</h4><table class="juz-swipe-records"><thead><tr><th>الرتبة</th><th>الطالب</th><th>الوقت</th></tr></thead><tbody>' + result.records.map((record, index) => '<tr><td>' + (index + 1) + '</td><td>' + escapeMiniExamText(record.name || record.studentId) + '</td><td>' + (Number(record.durationMs) / 1000).toFixed(1) + ' ث</td></tr>').join('') + '</tbody></table>';
+        }
+
+        async function finishJuzSwipeGame(won) {
+            if (!activeJuzSwipeGame) return;
+            clearJuzSwipeTimers();
+            activeJuzSwipeGame.phase = 'finished';
+            const durationMs = Date.now() - activeJuzSwipeGame.startedAt;
+            document.getElementById('juz-swipe-body').innerHTML = '<div class="py-4 text-center"><div class="text-4xl mb-3">' + (won ? '✓' : '♡') + '</div><h4 class="text-xl font-black text-gray-900">' + (won ? 'أحسنت!' : 'انتهت القلوب') + '</h4><p class="mt-2 text-sm font-bold text-gray-500">' + (won ? 'وقتك: ' + (durationMs / 1000).toFixed(1) + ' ثانية' : 'حاول مرة أخرى وحافظ على القلوب.') + '</p><button type="button" class="juz-swipe-start mt-4" onclick="openJuzSwipeGame(' + activeJuzSwipeGame.juz.num + ')">إعادة اللعب</button><div id="juz-swipe-record-box"><p class="mt-4 text-sm font-bold text-gray-400">جاري تحميل الأوقات...</p></div></div>';
+            renderJuzSwipeRecords(await saveAndLoadJuzSwipeRecords(won, durationMs));
+        }
         function optionTexts(correct, pool, mapper, count = 4) {
             const correctText = mapper(correct);
             const distractors = shuffleItems(pool)
@@ -863,7 +1128,7 @@ body { padding-bottom: 80px; }
                 const fromSurah = allJuzSurahs[0];
                 const toSurah = allJuzSurahs[allJuzSurahs.length - 1];
                 const completedInJuz = allJuzSurahs.filter(s => s.isCompleted).length;
-                const rangeLabel = fromSurah && toSurah ? `من سورة ${fromSurah.nameAr} إلى سورة ${toSurah.nameAr}` : '';
+                const rangeLabel = fromSurah && toSurah ? `من ${fromSurah.nameAr} إلى ${toSurah.nameAr}` : '';
                 const sectionState = isActiveSection ? 'is-active' : (isOpenedCompleted ? 'is-complete' : 'is-muted');
                 const visibleItems = (isActiveSection || isOpenedCompleted) ? items : items.slice(0, 2);
                 const mutedMessage = isNextSection
@@ -876,7 +1141,10 @@ body { padding-bottom: 80px; }
                                 <h3 class="font-black text-gray-900 text-lg">${juz.name}</h3>
                                 <p class="text-xs text-gray-500 font-bold quran-font">${rangeLabel}</p>
                             </div>
-                            <span class="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs font-black text-emerald-700">${toArabicNum(completedInJuz)} / ${toArabicNum(allJuzSurahs.length)}</span>
+                            <div class="juz-header-actions">
+                                <button type="button" class="juz-game-button" onclick="openJuzSwipeGame(${juz.num})" aria-label="لعبة ترتيب آيات ${juz.name}">⇆ لعبة</button>
+                                <span class="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs font-black text-emerald-700">${toArabicNum(completedInJuz)} / ${toArabicNum(allJuzSurahs.length)}</span>
+                            </div>
                         </div>
                         <div class="surah-journey">
                             ${visibleItems.map(surah => {
@@ -905,22 +1173,34 @@ async function chargerDevoirs() {
             const session = Auth.getSession();
             if (!session) return;
             const devoirs = await Auth.getDevoirs('student', session.username);
-            const devoirsEnAttente = devoirs.filter(d => d.statut === 'en_attente');
+            const now = Date.now();
+            const expiration = function(dateLimite) {
+                const parts = String(dateLimite || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+                if (!parts) return Number.POSITIVE_INFINITY;
+                const endOfDueDay = new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]), 23, 59, 59, 999).getTime();
+                return endOfDueDay + 24 * 60 * 60 * 1000;
+            };
+            const devoirsVisibles = devoirs.filter(d => d.statut === 'en_attente' && now < expiration(d.date_limite));
             const zoneDevoirs = document.getElementById('zone-devoirs');
             if (!zoneDevoirs) return;
-            if (devoirsEnAttente.length > 0) {
-                zoneDevoirs.innerHTML = devoirsEnAttente.map(function(devoir) {
-                    return '<div class="mb-2 rounded-xl bg-rose-50 border border-rose-100 p-2">' +
+            if (devoirsVisibles.length > 0) {
+                zoneDevoirs.innerHTML = devoirsVisibles.map(function(devoir) {
+                    return '<div class="student-homework-alert">' +
                         '<div class="font-black text-rose-700">سورة ' + escapeHtml(devoir.surate) + '</div>' +
                         '<div class="text-[11px] text-gray-600">من الآية ' + escapeHtml(devoir.aya_debut) + ' إلى ' + escapeHtml(devoir.aya_fin) + '</div>' +
-                        '<button onclick="validerDevoir(\'' + escapeJsArg(devoir.id) + '\')" class="mt-2 rounded-full bg-rose-600 text-white px-3 py-1 text-[11px] font-black">حفظت الواجب</button>' +
+                        '<div class="text-[10px] text-rose-700 mt-1">الأجل: ' + escapeHtml(devoir.date_limite) + '</div>' +
                     '</div>';
                 }).join('');
             } else {
                 zoneDevoirs.innerHTML = '<span class="text-gray-500">لا يوجد واجب حاليًا.</span>';
             }
+            clearTimeout(window.studentHomeworkExpiryTimer);
+            const nextExpiration = devoirsVisibles.reduce((nearest, devoir) => Math.min(nearest, expiration(devoir.date_limite)), Number.POSITIVE_INFINITY);
+            if (Number.isFinite(nextExpiration)) {
+                const delay = Math.min(Math.max(nextExpiration - now + 1000, 1000), 2147483647);
+                window.studentHomeworkExpiryTimer = setTimeout(chargerDevoirs, delay);
+            }
         }
-
         async function buildStudentDashboard() {
             const session = Auth.getSession();
             if (!session) return;
@@ -1114,13 +1394,14 @@ async function chargerDevoirs() {
         }
 
         function updateRewardPanel() {
-            if (typeof Auth === 'undefined' || typeof Auth.getRewardState !== 'function') return Promise.resolve(null);
-            const rewards = Auth.getRewardState();
-            if (!rewards) return Promise.resolve(null);
-            const starsEl = document.getElementById('reward-stars');
-            const noteEl = document.getElementById('reward-decay-note');
-            if (starsEl) starsEl.textContent = rewards.stars || 0;
-            if (noteEl && rewards.lostNow > 0) noteEl.textContent = 'نقصت ' + rewards.lostNow + ' نجوم فقط بسبب فترة توقف.';
+            if (typeof Auth === 'undefined') return Promise.resolve(null);
+            const rewards = typeof Auth.getRewardState === 'function' ? Auth.getRewardState() : null;
+            if (rewards) {
+                const starsEl = document.getElementById('reward-stars');
+                const noteEl = document.getElementById('reward-decay-note');
+                if (starsEl) starsEl.textContent = rewards.stars || 0;
+                if (noteEl && rewards.lostNow > 0) noteEl.textContent = 'نقصت ' + rewards.lostNow + ' نجوم فقط بسبب فترة توقف.';
+            }
             const rankValueEl = document.getElementById('class-rank-value');
             const rankNoteEl = document.getElementById('class-rank-note');
             if (!rankValueEl || typeof Auth.getClassStarRanking !== 'function') return Promise.resolve(null);
@@ -1129,11 +1410,12 @@ async function chargerDevoirs() {
                 rankValueEl.textContent = latestClassRanking.rank + ' / ' + latestClassRanking.total;
                 if (rankNoteEl) rankNoteEl.textContent = 'اضغط هنا لاكتشاف الترتيب الكامل';
             } else {
-                rankValueEl.textContent = '...';
+                rankValueEl.textContent = '-';
             }
             if (rankingRequestInFlight) return rankingRequestInFlight;
 
-            rankingRequestInFlight = Promise.resolve(Auth.getClassStarRanking())
+            const rankingTimeout = new Promise(resolve => setTimeout(() => resolve(null), 4500));
+            rankingRequestInFlight = Promise.race([Promise.resolve(Auth.getClassStarRanking()), rankingTimeout])
                 .then(result => {
                     if (!result) {
                         if (!latestClassRanking) {

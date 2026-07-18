@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v18-exercise-flow-20260715';
+const CACHE_VERSION = 'mawahib-offline-v19-prof-dashboard-surah-fixes-20260718';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -21,6 +21,7 @@ const STATIC_ASSETS = [
   './surah-autoplay.js',
   './prof-simple.js',
   './prof-simple.css',
+  './dashboard_prof.html',
   './prof-recitation.html',
   './prof-students.html',
   './prof-homework.html',

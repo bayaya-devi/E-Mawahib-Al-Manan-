@@ -8,7 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="platform-theme.css?v=20260714-total-crash-1">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=20260715-exercise-flow-1"></script>
+    <script src="auth.js?v=20260718-admin-student-edit-1"></script>
     <script>
         const adminSession = Auth.getSession();
         if (!adminSession || adminSession.role !== 'admin') location.replace('login.html');
@@ -645,6 +645,19 @@
         <div class="p-6">
             <div id="modal-content-profile">
                 <div class="space-y-4">
+                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100">
+                        <h3 class="font-bold text-emerald-900 mb-3 text-sm">بيانات الحساب</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <label class="text-xs font-black text-gray-600">الاسم الشخصي<input id="modal-account-prenom" type="text" class="mt-1 w-full p-2.5 border rounded-xl bg-white text-base" autocomplete="off"></label>
+                            <label class="text-xs font-black text-gray-600">الاسم العائلي<input id="modal-account-nom" type="text" class="mt-1 w-full p-2.5 border rounded-xl bg-white text-base" autocomplete="off"></label>
+                        </div>
+                        <label class="block mt-3 text-xs font-black text-gray-600">كلمة مرور جديدة<input id="modal-account-password" type="password" dir="ltr" class="mt-1 w-full p-2.5 border rounded-xl bg-white text-base" placeholder="اتركها فارغة للحفاظ على الحالية" autocomplete="new-password"></label>
+                    </div>
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <h3 class="font-bold text-blue-900 mb-1 text-sm">الأساتذة المرتبطون</h3>
+                        <p class="text-xs text-blue-700 font-bold mb-3">يمكن اختيار أكثر من أستاذ.</p>
+                        <div id="modal-professors-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+                    </div>
                     <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
                         <h3 class="font-bold text-gray-700 mb-3 text-sm">الوثائق المقدمة</h3>
                         <label class="flex items-center gap-2 cursor-pointer mb-2">
@@ -676,7 +689,7 @@
                     </div>
                     <button onclick="saveAdminProfile()"
                             class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition text-sm">
-                        حفظ الملف ✔️
+                        حفظ التعديلات ✔️
                     </button>
                 </div>
             </div>
@@ -1364,6 +1377,16 @@ async function openStudentModal(username, fullName) {
     document.getElementById('modal-username').value = username;
     document.getElementById('modal-student-name').innerText = fullName;
     document.getElementById('modal-student-username').innerText = '@' + username;
+    const student = _allStudents.find(item => item.username === username) || {};
+    document.getElementById('modal-account-prenom').value = student.prenom || '';
+    document.getElementById('modal-account-nom').value = student.nom || '';
+    document.getElementById('modal-account-password').value = '';
+    const professorList = document.getElementById('modal-professors-list');
+    const professors = Object.entries(_allProfs || {});
+    professorList.innerHTML = professors.length ? professors.map(([profId, prof]) => {
+        const checked = Array.isArray(prof.students) && prof.students.includes(username) ? ' checked' : '';
+        return '<label class="flex items-center gap-2 rounded-xl border border-blue-100 bg-white p-2.5 cursor-pointer"><input type="checkbox" class="modal-professor-check w-4 h-4 accent-blue-600" data-prof-id="' + escapeHtml(profId) + '"' + checked + '><span class="min-w-0"><strong class="block text-sm text-gray-800">' + escapeHtml(prof.prenom || profId) + '</strong><small class="block text-[10px] text-gray-500">' + escapeHtml(prof.classe || '') + '</small></span></label>';
+    }).join('') : '<p class="text-xs font-bold text-gray-500">لا يوجد أستاذ مسجل.</p>';
     switchModalTab('profile');
     const profile = await Auth.getProfile(username);
     document.getElementById('modal-cin').checked = profile.cinProvided;
@@ -1546,22 +1569,31 @@ function addPaymentRow(month, amount, status) {
 }
 
 async function saveAdminProfile() {
-    const username          = document.getElementById('modal-username').value;
-    const cinProvided       = document.getElementById('modal-cin').checked;
+    const username = document.getElementById('modal-username').value;
+    const prenom = document.getElementById('modal-account-prenom').value.trim();
+    const nom = document.getElementById('modal-account-nom').value.trim();
+    const password = document.getElementById('modal-account-password').value;
+    if (!prenom || !nom) { showToast('الاسم الشخصي والعائلي مطلوبان', 'error'); return; }
+    if (password.trim() && password.trim().length < 4) { showToast('كلمة المرور يجب أن تكون 4 أحرف على الأقل', 'error'); return; }
+    const professorIds = Array.from(document.querySelectorAll('.modal-professor-check:checked')).map(input => input.dataset.profId).filter(Boolean);
+    const accountResult = await Auth.updateStudentAccount(username, { prenom, nom, password });
+    if (!accountResult?.ok) { showToast(accountResult?.error || 'تعذر حفظ الحساب', 'error'); return; }
+    const linksResult = await Auth.setStudentProfessors(username, professorIds);
+    if (!linksResult?.ok) { showToast(linksResult?.error || 'تعذر حفظ الأساتذة', 'error'); return; }
+    const cinProvided = document.getElementById('modal-cin').checked;
     const birthCertProvided = document.getElementById('modal-birthcert').checked;
     const payments = [];
     document.querySelectorAll('.payment-row').forEach(row => {
-        const month  = row.querySelector('.month-input').value.trim();
+        const month = row.querySelector('.month-input').value.trim();
         const amount = parseFloat(row.querySelector('.amount-input').value) || 0;
         const status = row.querySelector('.status-input').value;
         if (month) payments.push({ month, amount, status });
     });
     await Auth.updateProfile(username, { cinProvided, birthCertProvided, payments });
-    showToast('تم حفظ الملف ✔️', 'success');
+    showToast('تم حفظ التعديلات ✔️', 'success');
     document.getElementById('student-modal').classList.remove('open');
     await renderAll();
 }
-
 /* ══════════════════════════════════════════════════════════
    CLASS MODAL
 ══════════════════════════════════════════════════════════ */
@@ -1574,12 +1606,14 @@ function openClassModal(profId, event) {
     document.getElementById('class-msg-text').value = '';
     document.getElementById('class-schedule-text').value = '';
     const sel = document.getElementById('assign-student-select');
-    const assignedAll = Object.values(_allProfs).flatMap(p => p.students || []);
-    const unassigned  = _allStudents.filter(s => !assignedAll.includes(s.username));
-    sel.innerHTML = unassigned.length === 0
-        ? '<option>لا يوجد طلاب غير مُرتَّبين</option>'
-        : unassigned.map(s => `<option value="${s.username}">${s.prenom} ${s.nom}</option>`).join('');
-    document.getElementById('class-modal').classList.add('open');
+    const available = _allStudents.filter(s => !(prof.students || []).includes(s.username));
+    sel.innerHTML = available.length === 0
+        ? '<option value="">كل الطلاب مرتبطون بهذا الأستاذ</option>'
+        : available.map(s => {
+            const links = Object.values(_allProfs).filter(item => Array.isArray(item.students) && item.students.includes(s.username)).length;
+            const suffix = links ? ` · مرتبط بـ ${links} أستاذ` : '';
+            return `<option value="${s.username}">${s.prenom} ${s.nom}${suffix}</option>`;
+        }).join('');    document.getElementById('class-modal').classList.add('open');
 }
 
 function closeClassModal(event) {

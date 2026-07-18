@@ -11,7 +11,7 @@
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>حصة التسميع - مواهب المنان</title>
+  <title>حصة القراءة - مواهب المنان</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -317,7 +317,7 @@
     }
 
   </style>
-  <link rel="stylesheet" href="prof-simple.css">
+  <link rel="stylesheet" href="prof-simple.css?v=20260718-prof-reading-1">
 </head>
 <body data-prof-page="recitation">
   <div class="shell">
@@ -325,7 +325,7 @@
       <div class="flex items-center gap-3 min-w-0">
         <img src="logo.webp" alt="مواهب المنان" class="icon-logo" onerror="this.style.display='none'">
         <div class="min-w-0">
-          <p class="small-muted" id="prof-page-kicker">حصة التسميع</p>
+          <p class="small-muted" id="prof-page-kicker">حصة القراءة</p>
           <h1 class="text-2xl md:text-3xl font-black truncate">أستاذ <span id="prof-name">...</span></h1>
           <p class="text-sm font-extrabold text-gray-500 truncate">القسم: <span id="prof-classe">...</span></p>
         </div>
@@ -350,7 +350,7 @@
         <div class="flex items-center justify-between gap-3 mb-4">
           <div>
             <p class="small-muted">قائمة الطلاب</p>
-            <h2 class="text-xl font-black">سجّل التسميع مباشرة</h2>
+            <h2 class="text-xl font-black">سجّل القراءة مباشرة</h2>
           </div>
           <span id="student-count" class="pill">0 طالب</span>
         </div>
@@ -413,7 +413,7 @@
   </div>
 
   <nav class="prof-nav" id="prof-nav" aria-label="التنقل">
-    <a href="prof-recitation.html" data-prof-tab="recitation"><span class="icon">🎙️</span><span>التسميع</span></a>
+    <a href="prof-recitation.html" data-prof-tab="recitation"><span class="icon">📖</span><span>القراءة</span></a>
     <a href="prof-students.html" data-prof-tab="students"><span class="icon">👤</span><span>الطلاب</span></a>
     <a href="prof-homework.html" data-prof-tab="homework"><span class="icon">📘</span><span>الواجبات</span></a>
     <a href="prof-report.html" data-prof-tab="report"><span class="icon">📩</span><span>الإدارة</span></a>
@@ -600,12 +600,12 @@
           + '<div class="min-w-0"><h3 class="text-lg font-black truncate">' + escapeHtml(name) + '</h3><p class="small-muted truncate">' + escapeHtml(student.username) + '</p></div>'
           + '<label class="pill cursor-pointer"><input type="checkbox" class="attendance-check accent-emerald-700" value="' + escapeHtml(student.username) + '" onchange="toggleAbsent(this)" checked> حاضر</label>'
           + '</div>'
-          + '<button type="button" onclick="toggleStudentCard(\'' + escapeArg(student.username) + '\')" class="btn btn-primary student-card-toggle">تسجيل التسميع</button>'
+          + '<button type="button" onclick="toggleStudentCard(\'' + escapeArg(student.username) + '\')" class="btn btn-primary student-card-toggle">تسجيل القراءة</button>'
           + '<div class="recitation-entries" data-student="' + escapeHtml(student.username) + '">'
           + recitationEntryHtml(student.username, 0)
           + '</div>'
           + '<div class="student-actions grid grid-cols-[1fr_auto] gap-2 mt-3 items-center">'
-          + '<button onclick="addRecitationEntry(\'' + escapeArg(student.username) + '\')" class="btn btn-soft">إضافة تسميع آخر</button>'
+          + '<button onclick="addRecitationEntry(\'' + escapeArg(student.username) + '\')" class="btn btn-soft">إضافة قراءة آخر</button>'
           + '<span class="pill">' + pending + ' واجب</span>'
           + '</div>'
           + '<button onclick="openStudentHistory(\'' + escapeArg(student.username) + '\')" class="btn btn-soft w-full mt-2">ملف الطالب</button>'
@@ -655,16 +655,16 @@
         const range = note.scope === 'جزء' && (note.ayahStart || note.ayahEnd)
           ? ' من ' + escapeHtml(note.ayahStart || '?') + ' إلى ' + escapeHtml(note.ayahEnd || '?')
           : '';
-        return '<div class="history-item"><strong>' + escapeHtml(note.surah || 'تسميع') + range + '</strong><p class="small-muted mt-1">' + escapeHtml(note.validation || '') + ' ' + escapeHtml(note.comment || '') + '</p><p class="small-muted mt-1">' + escapeHtml(formatDate(note.savedAt || note.date)) + '</p></div>';
+        return '<div class="history-item"><strong>' + escapeHtml(note.surah || 'قراءة') + range + '</strong><p class="small-muted mt-1">' + escapeHtml(note.validation || '') + ' ' + escapeHtml(note.comment || '') + '</p><p class="small-muted mt-1">' + escapeHtml(formatDate(note.savedAt || note.date)) + '</p></div>';
       }).join('');
       const recentProgress = progressItems.slice(0, 6).map(item => {
         return '<div class="history-item"><strong>' + escapeHtml(item.name) + '</strong><p class="small-muted mt-1">' + (item.completed ? 'مكتملة' : 'قيد التعلم') + (item.score ? ' · ' + escapeHtml(item.score) + '%' : '') + '</p><p class="small-muted mt-1">' + escapeHtml(formatDate(item.lastDate)) + '</p></div>';
       }).join('');
       detail.innerHTML =
         '<div class="history-item"><h3 class="text-xl font-black">' + escapeHtml(name) + '</h3><p class="small-muted mt-1">تعلم ' + completed.length + ' سورة. آخر نشاط: ' + escapeHtml(lastProgress ? lastProgress.name : 'لا يوجد') + '</p></div>'
-        + '<div class="grid grid-cols-2 gap-2"><div class="history-item"><strong>' + pending.length + '</strong><p class="small-muted mt-1">واجب مفتوح</p></div><div class="history-item"><strong>' + notes.length + '</strong><p class="small-muted mt-1">تسميع مسجل</p></div></div>'
+        + '<div class="grid grid-cols-2 gap-2"><div class="history-item"><strong>' + pending.length + '</strong><p class="small-muted mt-1">واجب مفتوح</p></div><div class="history-item"><strong>' + notes.length + '</strong><p class="small-muted mt-1">قراءة مسجل</p></div></div>'
         + '<div><p class="small-muted mb-2">آخر تعلم في المنصة</p>' + (recentProgress || '<div class="history-item small-muted">لا يوجد نشاط بعد.</div>') + '</div>'
-        + '<div><p class="small-muted mb-2">آخر تسميع عند الأستاذ</p>' + (recentNotes || '<div class="history-item small-muted">لا يوجد تسميع محفوظ.</div>') + '</div>';
+        + '<div><p class="small-muted mb-2">آخر قراءة عند الأستاذ</p>' + (recentNotes || '<div class="history-item small-muted">لا يوجد قراءة محفوظ.</div>') + '</div>';
     }
 
     function selectStudentHistory(username) {
@@ -680,7 +680,7 @@
     function recitationEntryHtml(username, index) {
       const key = escapeHtml(username + '_' + index + '_' + Date.now());
       return '<div class="recitation-entry" data-student="' + escapeHtml(username) + '">'
-        + '<div class="flex items-center justify-between gap-2 mb-2"><span class="small-muted">تسميع</span><button type="button" onclick="removeRecitationEntry(this)" class="text-xs font-black text-rose-600">حذف</button></div>'
+        + '<div class="flex items-center justify-between gap-2 mb-2"><span class="small-muted">قراءة</span><button type="button" onclick="removeRecitationEntry(this)" class="text-xs font-black text-rose-600">حذف</button></div>'
         + '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">'
         + '<input class="input recited-surah" list="surah-list" placeholder="السورة التي رتلها الطالب">'
         + '<select class="input recitation-scope" onchange="toggleVerseRangeBySelect(this)"><option value="كاملة">السورة كاملة</option><option value="جزء">من آية إلى آية</option></select>'
@@ -715,7 +715,7 @@
         .slice(0, 5);
       box.innerHTML = queue.length ? queue.map((item, index) => {
         const name = item.student.prenom + ' ' + item.student.nom;
-        return '<div class="rounded-2xl bg-white/70 border border-gray-100 p-3"><strong>' + (index + 1) + '. ' + escapeHtml(name) + '</strong><p class="small-muted mt-1">' + (item.score > 0 ? 'يحتاج متابعة' : 'جاهز للتسميع') + '</p></div>';
+        return '<div class="rounded-2xl bg-white/70 border border-gray-100 p-3"><strong>' + (index + 1) + '. ' + escapeHtml(name) + '</strong><p class="small-muted mt-1">' + (item.score > 0 ? 'يحتاج متابعة' : 'جاهز للقراءة') + '</p></div>';
       }).join('') : '<p class="small-muted text-center py-4">لا توجد أولوية الآن.</p>';
     }
 
@@ -737,7 +737,7 @@
     }
 
     function updateProfPageTitle() {
-      const labels = { recitation: 'حصة التسميع', students: 'متابعة الطلاب', homework: 'إرسال الواجبات', report: 'التواصل مع الإدارة' };
+      const labels = { recitation: 'حصة القراءة', students: 'متابعة الطلاب', homework: 'إرسال الواجبات', report: 'التواصل مع الإدارة' };
       const kicker = document.getElementById('prof-page-kicker');
       if (kicker) kicker.textContent = labels[PROF_PAGE] || labels.recitation;
       document.title = (labels[PROF_PAGE] || labels.recitation) + ' | مواهب المنان';
@@ -918,7 +918,7 @@
         showToast('اكتب الملاحظة أولا');
         return;
       }
-      const result = await Auth.sendAdminReport(session.username, session.prenom, session.nom, 'المعني: ' + student + '\n' + text, 'حصة التسميع');
+      const result = await Auth.sendAdminReport(session.username, session.prenom, session.nom, 'المعني: ' + student + '\n' + text, 'حصة القراءة');
       if (result.ok) {
         document.getElementById('admin-report-text').value = '';
         showToast('تم الإرسال');
@@ -946,6 +946,6 @@
     });
   </script>
   <script src="notifications.js"></script>
-  <script src="prof-simple.js"></script>
+  <script src="prof-simple.js?v=20260718-prof-reading-1"></script>
 </body>
 </html>

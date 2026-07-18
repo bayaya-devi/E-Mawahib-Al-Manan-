@@ -616,7 +616,7 @@ function checkOrderGame() {
   box.textContent = ok ? 'ترتيب ممتاز. +20 XP' : 'فيه خلل في السلسلة. أعدها بهدوء.';
   updateStats(ok ? 20 : -8, ok);
   if (ok) {
-    Auth.recordActivity(SURAH_ID, 'teen-order-part-' + currentPart, 100);
+    if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') Auth.recordActivity(SURAH_ID, 'teen-order-part-' + currentPart, 100);
     autoAdvancePhase(2);
   }
 }
@@ -670,7 +670,7 @@ async function checkFillGame() {
   box.className = 'p-3 rounded-xl text-center font-bold text-sm my-4 ' + (ok ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700');
   box.textContent = ok ? 'نتيجة قوية: ' + score + '%. +25 XP' : 'نتيجتك ' + score + '%. أعد المحاولة لتثبيت الحفظ.';
   updateStats(ok ? 25 : -5, ok);
-  await Auth.recordActivity(SURAH_ID, 'teen-fill-part-' + currentPart, score);
+  if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') await Auth.recordActivity(SURAH_ID, 'teen-fill-part-' + currentPart, score);
   if (score === 100) autoAdvancePhase(3);
 }
 
@@ -705,14 +705,14 @@ function answerSpeed(num) {
   box.textContent = ok ? 'صحيح. سرعة وتركيز! +15 XP' : 'ليست هي. خذ نفسا وأعد السؤال.';
   updateStats(ok ? 15 : -5, ok);
   if (ok) {
-    Auth.recordActivity(SURAH_ID, 'teen-speed-part-' + currentPart, 100);
+    if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') Auth.recordActivity(SURAH_ID, 'teen-speed-part-' + currentPart, 100);
     completeExerciseSet();
   }
 }
 
 async function finishMission() {
   const score = Math.max(0, Math.min(100, xp));
-  await Auth.recordActivity(SURAH_ID, 'teen-mission-part-' + currentPart, score);
+  if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') await Auth.recordActivity(SURAH_ID, 'teen-mission-part-' + currentPart, score);
   if (typeof confetti === 'function') confetti({ particleCount: score >= 70 ? 120 : 45, spread: 70, origin: { y: .65 } });
   if (score >= 70 && currentPart < partCount - 1) {
     currentPart++;
@@ -722,11 +722,11 @@ async function finishMission() {
     return;
   }
   if (score >= 70 && currentPart === partCount - 1) {
-    await Auth.completeSurah(SURAH_ID);
+    if (typeof Auth !== 'undefined' && typeof Auth.completeSurah === 'function') await Auth.completeSurah(SURAH_ID);
     window.location.href = 'celebration.html';
     return;
   }
-  if (typeof Auth.storeMissionAttempt === 'function') Auth.storeMissionAttempt(SURAH_ID, score, false);
+  if (typeof Auth !== 'undefined' && typeof Auth.storeMissionAttempt === 'function') Auth.storeMissionAttempt(SURAH_ID, score, false);
   window.location.href = 'celebration.html';
 }
 
@@ -753,7 +753,7 @@ function buildAll() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  Auth.requireAuth();
+  if (typeof Auth !== 'undefined' && typeof Auth.requireAuth === 'function') Auth.requireAuth();
   buildAll();
   updateStats(0, true);
 });

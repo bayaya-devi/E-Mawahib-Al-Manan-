@@ -906,6 +906,53 @@ const Auth = (() => {
         if (data) await supabase.from('eleves').update({ is_suspended: !data.is_suspended }).eq('username', username);
     }
 
+    async function updateStudentAccount(username, changes = {}) {
+        if (getSession()?.role !== 'admin') return { ok: false, error: 'غير مسموح' };
+        const prenom = String(changes.prenom || '').trim();
+        const nom = String(changes.nom || '').trim();
+        const password = String(changes.password || '').trim();
+        if (!username || !prenom || !nom) return { ok: false, error: 'الاسم الشخصي والعائلي مطلوبان' };
+        if (password && password.length < 4) return { ok: false, error: 'كلمة المرور يجب أن تكون 4 أحرف على الأقل' };
+        const duplicateQuery = await supabase.from('eleves').select('username').eq('prenom', prenom).eq('nom', nom).neq('username', username).limit(1);
+        if (duplicateQuery.error) {
+            logError('updateStudentAccount.duplicate', duplicateQuery.error);
+            return { ok: false, error: 'تعذر التحقق من الاسم' };
+        }
+        if ((duplicateQuery.data || []).length) return { ok: false, error: 'يوجد حساب آخر بنفس الاسم' };
+        const patch = { prenom, nom };
+        if (password) patch.password = _encodePassword(password);
+        const { error } = await supabase.from('eleves').update(patch).eq('username', username);
+        if (error) {
+            logError('updateStudentAccount', error);
+            return { ok: false, error: error.message || 'تعذر حفظ الحساب' };
+        }
+        return { ok: true };
+    }
+
+    async function setStudentProfessors(studentId, professorIds = []) {
+        if (getSession()?.role !== 'admin') return { ok: false, error: 'غير مسموح' };
+        const selected = new Set((Array.isArray(professorIds) ? professorIds : []).filter(Boolean));
+        const { data: professors, error } = await supabase.from('profs').select('username, students');
+        if (error) {
+            logError('setStudentProfessors.read', error);
+            return { ok: false, error: 'تعذر تحميل الأساتذة' };
+        }
+        const updates = (professors || []).map(async professor => {
+            const current = Array.from(new Set(Array.isArray(professor.students) ? professor.students.filter(Boolean) : []));
+            const hasStudent = current.includes(studentId);
+            const shouldHaveStudent = selected.has(professor.username);
+            if (hasStudent === shouldHaveStudent) return null;
+            const students = shouldHaveStudent ? [...current, studentId] : current.filter(id => id !== studentId);
+            const result = await supabase.from('profs').update({ students }).eq('username', professor.username);
+            return result.error || null;
+        });
+        const errors = (await Promise.all(updates)).filter(Boolean);
+        if (errors.length) {
+            errors.forEach(item => logError('setStudentProfessors.update', item));
+            return { ok: false, error: 'تعذر حفظ بعض الارتباطات' };
+        }
+        return { ok: true };
+    }
     async function assignStudentToProf(profId, studentId) {
         const { data, error } = await supabase.from('profs').select('students').eq('username', profId).single();
         if (error) { logError('assignStudentToProf', error); return; }
@@ -1294,7 +1341,7 @@ const Auth = (() => {
     return {
         register, login, registerProf, loginProf, logout, getSession, getSavedAccounts, switchAccount, requireAuth,
         getAllStudents, getAllUsers, getProfs, deleteStudent, deleteProf, toggleSuspension,
-        assignStudentToProf, removeStudentFromProf,
+        assignStudentToProf, removeStudentFromProf, setStudentProfessors, updateStudentAccount,
         getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports, getProfReports,
         saveFinanceEntry, getFinanceEntries, deleteFinanceEntry,
         saveClassSession, getClassSessions, saveTeacherNote, getTeacherNotes,
