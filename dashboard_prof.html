@@ -192,16 +192,16 @@
       bottom: 14px;
       z-index: 70;
       transform: translateX(-50%);
-      width: min(520px, calc(100% - 20px));
+      width: min(680px, calc(100% - 12px));
       border-radius: 24px;
       background: rgba(255,255,255,.94);
       border: 1px solid rgba(17,24,39,.08);
       box-shadow: 0 18px 44px rgba(15,23,42,.16);
       backdrop-filter: blur(18px);
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 6px;
-      padding: 8px;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 4px;
+      padding: 6px;
       transition: transform .22s ease, opacity .22s ease;
     }
     .prof-nav.is-hidden {
@@ -211,8 +211,8 @@
     }
     .prof-nav button, .prof-nav a {
       border: 0;
-      border-radius: 18px;
-      min-height: 50px;
+      border-radius: 14px;
+      min-height: 48px;
       background: transparent;
       color: #475569;
       font-weight: 900;
@@ -222,13 +222,25 @@
       align-items: center;
       justify-content: center;
       gap: 2px;
+      min-width: 0;
+      overflow: hidden;
+      font-size: 11px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+    .prof-nav button span:last-child, .prof-nav a span:last-child {
+      display: block;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .prof-nav button.active, .prof-nav a.active {
       background: var(--teacher-green);
       color: #fff;
       box-shadow: 0 10px 24px rgba(6,78,59,.18);
     }
-    .prof-nav .icon { font-size: 20px; line-height: 1; }
+    .prof-nav .icon { font-size: 18px; line-height: 1; flex: 0 0 auto; }
     .student-history-grid {
       display: grid;
       grid-template-columns: 280px minmax(0, 1fr);
@@ -285,14 +297,19 @@
       .session-strip { grid-template-columns: 1fr; }
       .student-card { border-radius: 20px; }
       .student-actions { grid-template-columns: 1fr !important; }
-      .prof-nav { bottom: max(6px, env(safe-area-inset-bottom)); width: calc(100% - 12px); border-radius: 16px; padding: 5px; }
-      .prof-nav button, .prof-nav a { min-height: 54px; border-radius: 12px; font-size: 10px; padding-inline: 2px; }
-      .prof-nav .icon { font-size: 18px; }
+      .prof-nav { bottom: max(6px, env(safe-area-inset-bottom)); width: calc(100% - 8px); border-radius: 14px; padding: 4px; gap: 3px; }
+      .prof-nav button, .prof-nav a { min-height: 50px; border-radius: 10px; font-size: 9px; padding-inline: 1px; }
+      .prof-nav .icon { font-size: 16px; }
     }
 
     .label { display:block; margin:0 2px 7px; color:#52606d; font-size:12px; font-weight:900; }
     .student-card-toggle { display:none; }
-    .prof-nav a { text-decoration:none; }
+.prof-nav a { text-decoration:none; }
+    @media (max-width: 360px) {
+      .prof-nav button, .prof-nav a { font-size: 0; gap: 0; }
+      .prof-nav button span:last-child, .prof-nav a span:last-child { display: none; }
+      .prof-nav .icon { font-size: 20px; }
+    }
     body[data-prof-page="homework"] [data-prof-panel]:not([data-prof-panel="homework"]),
     body[data-prof-page="students"] [data-prof-panel]:not([data-prof-panel="students"]),
     body[data-prof-page="report"] [data-prof-panel]:not([data-prof-panel="report"]) { display:none !important; }
