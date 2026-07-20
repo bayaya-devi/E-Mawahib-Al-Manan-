@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=20260715-exercise-flow-1"></script>
+    <script src="auth.js?v=20260720-global-latest-1"></script>
 <style>
         body {
             font-family: 'Cairo', sans-serif;
@@ -189,13 +189,13 @@
     <script>
         if (Auth.getSession()) {
             const s = Auth.getSession();
-            sessionStorage.setItem('loading_redirect', s.role === 'admin' ? 'controle-mawahib-7x9k.html' : (s.role === 'prof' ? 'prof-recitation.html' : 'dashboard.html'));
+            sessionStorage.setItem('loading_redirect', s.role === 'admin' ? 'controle-mawahib-7x9k.html' : (s.role === 'prof' ? 'dashboard_prof.html' : 'dashboard.html'));
             window.location.href = 'loading.html';
         }
 
         function targetForSession(session) {
             if (session?.role === 'admin') return 'controle-mawahib-7x9k.html';
-            if (session?.role === 'prof') return 'prof-recitation.html';
+            if (session?.role === 'prof') return 'dashboard_prof.html';
             return 'dashboard.html';
         }
 

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v20-speed-challenge-20260718';
+const CACHE_VERSION = 'mawahib-offline-v21-global-latest-20260720';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -21,12 +21,21 @@ const STATIC_ASSETS = [
   './surah-autoplay.js',
   './prof-simple.js',
   './prof-simple.css',
+  './admin-simple.css',
+  './admin-simple.js',
   './dashboard_prof.html',
   './prof-recitation.html',
   './prof-students.html',
   './prof-homework.html',
   './prof-report.html',
   './controle-mawahib-7x9k.html',
+  './controle-487-stats.html',
+  './controle-487-profs.html',
+  './controle-487-messages.html',
+  './controle-487-finance.html',
+  './controle-487-eleves.html',
+  './controle-487-classes.html',
+  './admin.html',
   './registry.js',
   './logo.webp'
 ];

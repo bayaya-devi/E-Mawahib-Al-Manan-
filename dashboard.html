@@ -12,11 +12,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=20260716-class-ranking-1"></script>
+    <script src="auth.js?v=20260720-global-latest-1"></script>
     <script src="registry.js"></script>
 
-        <link rel="stylesheet" href="platform-theme.css?v=20260714-total-crash-1">
-    <script src="platform-theme.js?v=20260715-exercise-flow-1"></script>
+        <link rel="stylesheet" href="platform-theme.css?v=20260720-global-latest-1">
+    <script src="platform-theme.js?v=20260720-global-latest-1"></script>
 <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
         .quran-font { font-family: 'Amiri', serif; }
@@ -139,6 +139,7 @@
         .daily-text { color: #334155; font-size: 12px; font-weight: 700; line-height: 1.45; max-height: 72px; overflow: auto; }
         .student-homework-alert { margin-bottom: 8px; border: 1px solid #f3a8b8; border-radius: 12px; background: #fff1f4; padding: 8px; animation: homeworkAlertPulse .8s ease-in-out infinite; }
         .student-homework-alert:last-child { margin-bottom: 0; }
+        .student-homework-alert.not-done { border-color: #ef4444; background: #fff1f2; color: #7f1d1d; }
         @keyframes homeworkAlertPulse { 0%, 100% { background: #fff1f4; box-shadow: 0 0 0 0 rgba(225,29,72,.08); } 50% { background: #ffe3ea; box-shadow: 0 0 0 3px rgba(225,29,72,.18); } }
         @media (prefers-reduced-motion: reduce) { .student-homework-alert { animation: none; } }
         .daily-text:empty::after { content: 'لا يوجد جديد اليوم'; color: #94a3b8; font-weight: 800; }
@@ -1239,6 +1240,20 @@ body { padding-bottom: 80px; }
             return escapeHtml(String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
         }
 
+const HOMEWORK_NOT_DONE_PREFIX = '__mawahib_homework_not_done__';
+
+        function parseHomeworkNotDoneMessage(message) {
+            const text = String(message && message.text || '');
+            if (!text.startsWith(HOMEWORK_NOT_DONE_PREFIX)) return null;
+            try {
+                const payload = JSON.parse(text.slice(HOMEWORK_NOT_DONE_PREFIX.length));
+                if (!payload || payload.type !== 'homework_not_done') return null;
+                return payload;
+            } catch (error) {
+                return null;
+            }
+        }
+
 async function chargerDevoirs() {
             const session = Auth.getSession();
             if (!session) return;
@@ -1251,21 +1266,29 @@ async function chargerDevoirs() {
                 return endOfDueDay + 24 * 60 * 60 * 1000;
             };
             const devoirsVisibles = devoirs.filter(d => d.statut === 'en_attente' && now < expiration(d.date_limite));
+            const userMessages = await Auth.getMessages(session.username);
+            const warnings = userMessages.map(parseHomeworkNotDoneMessage).filter(payload => payload && now < Number(payload.expiresAt || 0));
             const zoneDevoirs = document.getElementById('zone-devoirs');
             if (!zoneDevoirs) return;
-            if (devoirsVisibles.length > 0) {
-                zoneDevoirs.innerHTML = devoirsVisibles.map(function(devoir) {
-                    return '<div class="student-homework-alert">' +
-                        '<div class="font-black text-rose-700">سورة ' + escapeHtml(devoir.surate) + '</div>' +
-                        '<div class="text-[11px] text-gray-600">من الآية ' + escapeHtml(devoir.aya_debut) + ' إلى ' + escapeHtml(devoir.aya_fin) + '</div>' +
-                        '<div class="text-[10px] text-rose-700 mt-1">الأجل: ' + escapeHtml(devoir.date_limite) + '</div>' +
-                    '</div>';
-                }).join('');
-            } else {
-                zoneDevoirs.innerHTML = '<span class="text-gray-500">لا يوجد واجب حاليًا.</span>';
-            }
+            const warningHtml = warnings.map(function(payload) {
+                return '<div class="student-homework-alert not-done">' +
+                    '<div class="font-black text-rose-700">لم تعمل الواجب</div>' +
+                    '<div class="text-[11px] text-gray-700">سورة ' + escapeHtml(payload.surah || '') + '</div>' +
+                    '<div class="text-[10px] text-rose-700 mt-1">يبقى هذا التنبيه 24 ساعة.</div>' +
+                '</div>';
+            }).join('');
+            const homeworkHtml = devoirsVisibles.map(function(devoir) {
+                return '<div class="student-homework-alert">' +
+                    '<div class="font-black text-rose-700">سورة ' + escapeHtml(devoir.surate) + '</div>' +
+                    '<div class="text-[11px] text-gray-600">من الآية ' + escapeHtml(devoir.aya_debut) + ' إلى ' + escapeHtml(devoir.aya_fin) + '</div>' +
+                    '<div class="text-[10px] text-rose-700 mt-1">الأجل: ' + escapeHtml(devoir.date_limite) + '</div>' +
+                '</div>';
+            }).join('');
+            zoneDevoirs.innerHTML = warningHtml + homeworkHtml || '<span class="text-gray-500">لا يوجد واجب حاليًا.</span>';
             clearTimeout(window.studentHomeworkExpiryTimer);
-            const nextExpiration = devoirsVisibles.reduce((nearest, devoir) => Math.min(nearest, expiration(devoir.date_limite)), Number.POSITIVE_INFINITY);
+            const nextHomeworkExpiration = devoirsVisibles.reduce((nearest, devoir) => Math.min(nearest, expiration(devoir.date_limite)), Number.POSITIVE_INFINITY);
+            const nextWarningExpiration = warnings.reduce((nearest, warning) => Math.min(nearest, Number(warning.expiresAt || Infinity)), Number.POSITIVE_INFINITY);
+            const nextExpiration = Math.min(nextHomeworkExpiration, nextWarningExpiration);
             if (Number.isFinite(nextExpiration)) {
                 const delay = Math.min(Math.max(nextExpiration - now + 1000, 1000), 2147483647);
                 window.studentHomeworkExpiryTimer = setTimeout(chargerDevoirs, delay);
@@ -1280,8 +1303,9 @@ async function chargerDevoirs() {
             const userMessages = await Auth.getMessages(session.username);
             const msgContainer = document.getElementById('messages-container');
             if (msgContainer) {
-                if (userMessages.length > 0) {
-                    msgContainer.innerHTML = userMessages.map(function(m) {
+                const adminMessages = userMessages.filter(function(m) { return !parseHomeworkNotDoneMessage(m); });
+                if (adminMessages.length > 0) {
+                    msgContainer.innerHTML = adminMessages.map(function(m) {
                         return '<div class="mb-2 rounded-xl bg-blue-50 border border-blue-100 p-2">' +
                             '<div class="font-black text-blue-800 text-xs">رسالة من الإدارة</div>' +
                             '<p class="text-blue-900 mt-1">' + escapeHtml(m.text) + '</p>' +
@@ -1586,8 +1610,8 @@ async function chargerDevoirs() {
         </button>
     </div>
 </nav>
-<script src="app-settings.js"></script>
+<script src="app-settings.js?v=20260720-global-latest-1"></script>
 
-<script src="notifications.js?v=20260715-exercise-flow-1"></script>
+<script src="notifications.js?v=20260720-global-latest-1"></script>
 </body>
 </html>

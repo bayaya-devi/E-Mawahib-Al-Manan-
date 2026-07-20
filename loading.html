@@ -8,8 +8,8 @@
     <meta http-equiv="Expires" content="0">
     <title>جاري التحميل...</title>
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@700;900&display=swap" rel="stylesheet">
-        <link rel="stylesheet" href="platform-theme.css?v=20260714-total-crash-1">
-    <script src="platform-theme.js?v=20260715-exercise-flow-1"></script>
+        <link rel="stylesheet" href="platform-theme.css?v=20260720-global-latest-1">
+    <script src="platform-theme.js?v=20260720-global-latest-1"></script>
 <style>
         * { margin:0; padding:0; box-sizing:border-box; }
 
@@ -190,7 +190,7 @@
             } catch (error) {}
             sessionStorage.removeItem('loading_redirect');
             if (session && session.role === 'admin') return 'controle-mawahib-7x9k.html';
-            if (session && session.role === 'prof') return 'prof-recitation.html';
+            if (session && session.role === 'prof') return 'dashboard_prof.html';
             if (session && session.role === 'student') return 'dashboard.html';
             return 'login.html';
         }

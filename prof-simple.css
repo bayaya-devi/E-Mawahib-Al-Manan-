@@ -25,6 +25,13 @@ textarea.prof-control{min-height:104px;padding-top:12px;resize:vertical}
 .prof-action-danger{background:#fff0f1;color:#b4233b}
 .prof-action:disabled{opacity:.55;cursor:wait}
 .prof-list{display:grid;gap:10px;margin-top:18px}
+.prof-home-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0 4px}
+.prof-home-card{min-height:92px;border:1px solid #dce8e1;border-radius:16px;background:#fff;padding:14px;box-shadow:0 7px 20px rgba(18,76,53,.05)}
+.prof-home-card strong{display:block;margin-top:7px;font-size:28px;font-weight:900;color:#105c3b}
+.prof-home-label{font-size:12px;font-weight:900;color:#66756e}
+.prof-status-control{display:inline-grid;gap:4px;min-width:145px}
+.prof-status-control span{font-size:11px;font-weight:900;color:#53635b}
+.prof-status-select{min-height:40px;border:1px solid #cad9d0;border-radius:10px;background:#fff;padding:0 10px;font:900 12px system-ui;color:#15231d}
 .prof-section-title{font-size:16px;font-weight:900;color:#17241f;margin:8px 0 0}
 .prof-row{padding:14px 3px;border-bottom:1px solid #dfe7e2}
 .prof-row:last-child{border-bottom:0}
@@ -53,6 +60,7 @@ textarea.prof-control{min-height:104px;padding-top:12px;resize:vertical}
 .prof-hidden{display:none!important}
 @keyframes profTodayPulse{0%,100%{box-shadow:0 0 0 0 rgba(227,173,61,.1)}50%{box-shadow:0 0 0 5px rgba(227,173,61,.22)}}
 @media(max-width:620px){
+  .prof-home-grid{grid-template-columns:1fr 1fr}
   .prof-simple-shell{padding:8px 8px 96px}
   .prof-simple-head{border-radius:16px;padding:12px}
   .prof-simple-logo{width:44px;height:44px;border-radius:11px}
@@ -64,6 +72,7 @@ textarea.prof-control{min-height:104px;padding-top:12px;resize:vertical}
   .prof-history-table{min-width:560px}
 }
 @media(max-width:380px){
+  .prof-home-grid{grid-template-columns:1fr}
   .prof-simple-shell{padding-inline:6px}
   .prof-range,.prof-actions{grid-template-columns:1fr}
   .prof-control{font-size:16px}

@@ -9,11 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=20260715-exercise-flow-1"></script>
+    <script src="auth.js?v=20260720-global-latest-1"></script>
     <script src="registry.js"></script>
 
-        <link rel="stylesheet" href="platform-theme.css">
-    <script src="platform-theme.js?v=20260715-exercise-flow-1"></script>
+        <link rel="stylesheet" href="platform-theme.css?v=20260720-global-latest-1">
+    <script src="platform-theme.js?v=20260720-global-latest-1"></script>
 <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
         .header-bg-parent { background: linear-gradient(135deg, #1e293b 0%, #334155 40%, #0f172a 100%); }
@@ -198,9 +198,9 @@
                     <div class="bg-blue-50 border-r-4 border-blue-500 p-4 rounded-xl mb-3 shadow-sm flex justify-between items-center">
                         <div>
                             <h4 class="font-bold text-blue-800 text-sm">رسالة من الإدارة 📢 :</h4>
-                            <p class="text-blue-900 mt-1 text-lg font-semibold">${m.text}</p>
+                            <p class="text-blue-900 mt-1 text-lg font-semibold">${escapeHtml(m.text)}</p>
                         </div>
-                        <button onclick="Auth.clearMessages('${session.username}'); window.location.reload();" class="bg-white text-blue-500 px-3 py-1 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 transition">
+                        <button onclick="Auth.clearMessages('${escapeHtml(session.username)}'); window.location.reload();" class="bg-white text-blue-500 px-3 py-1 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-50 transition">
                             إخفاء ✓
                         </button>
                     </div>`).join('');
@@ -264,7 +264,7 @@
         </button>
     </div>
 </nav>
-<script src="app-settings.js"></script>
-<script src="notifications.js?v=20260715-exercise-flow-1"></script>
+<script src="app-settings.js?v=20260720-global-latest-1"></script>
+<script src="notifications.js?v=20260720-global-latest-1"></script>
 </body>
 </html>

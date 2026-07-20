@@ -7,10 +7,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="auth.js?v=20260715-exercise-flow-1"></script>
+  <script src="auth.js?v=20260720-global-latest-1"></script>
   <script src="registry.js"></script>
-  <link rel="stylesheet" href="platform-theme.css?v=20260714-total-crash-1">
-  <script src="platform-theme.js?v=20260715-exercise-flow-1"></script>
+  <link rel="stylesheet" href="platform-theme.css?v=20260720-global-latest-1">
+  <script src="platform-theme.js?v=20260720-global-latest-1"></script>
   <style>
     :root {
       --teacher-bg: #f5f5f7;
@@ -309,7 +309,7 @@
     }
 
   </style>
-  <link rel="stylesheet" href="prof-simple.css?v=20260718-prof-reading-1">
+  <link rel="stylesheet" href="prof-simple.css?v=20260720-global-latest-1">
 </head>
 <body data-prof-page="students">
   <div class="shell">
@@ -405,10 +405,12 @@
   </div>
 
   <nav class="prof-nav" id="prof-nav" aria-label="التنقل">
+    <a href="dashboard_prof.html" data-prof-tab="home"><span class="icon">🏠</span><span>الرئيسية</span></a>
     <a href="prof-recitation.html" data-prof-tab="recitation"><span class="icon">📖</span><span>القراءة</span></a>
     <a href="prof-students.html" data-prof-tab="students"><span class="icon">👤</span><span>الطلاب</span></a>
     <a href="prof-homework.html" data-prof-tab="homework"><span class="icon">📘</span><span>الواجبات</span></a>
     <a href="prof-report.html" data-prof-tab="report"><span class="icon">📩</span><span>الإدارة</span></a>
+    <button type="button" data-settings-toggle data-prof-tab="settings"><span class="icon">⚙</span><span>الإعدادات</span></button>
   </nav>
 
   <div id="modal-devoir" class="modal-overlay" onclick="handleModalClick(event)">
@@ -552,7 +554,8 @@
           progressCache[student.username] = await Auth.getProgress(student.username);
         }));
       }
-      if (!selectedHistoryStudent && myStudents[0]) selectedHistoryStudent = myStudents[0].username;
+      selectedHistoryStudent = normalizeSelectedProfStudent(selectedHistoryStudent);
+      if (selectedHistoryStudent) rememberSelectedProfStudent(selectedHistoryStudent);
       renderAll();
       if (show) showToast('تم التحديث');
     }
@@ -564,7 +567,74 @@
       renderRecitationList();
       renderListenQueue();
       renderHomeworkSummary();
+      syncSelectedProfStudentControls();
       renderStudentHistory();
+    }
+
+    function getProfStudentStorageKey() {
+      return 'mawahib_prof_student_' + ((session && session.username) || 'teacher');
+    }
+
+    function rememberSelectedProfStudent(username) {
+      if (!username) return;
+      sessionStorage.setItem('mawahib_prof_student', username);
+      localStorage.setItem('mawahib_prof_student', username);
+      localStorage.setItem(getProfStudentStorageKey(), username);
+    }
+
+    function getStudentNameByUsername(username) {
+      const student = myStudents.find(item => item.username === username);
+      return student ? (student.prenom + ' ' + student.nom) : '';
+    }
+
+    function normalizeSelectedProfStudent(username) {
+      const candidates = [
+        username,
+        selectedHistoryStudent,
+        sessionStorage.getItem('mawahib_prof_student'),
+        localStorage.getItem(getProfStudentStorageKey()),
+        localStorage.getItem('mawahib_prof_student')
+      ];
+      const candidate = candidates.find(value => value && myStudents.some(student => student.username === value));
+      if (candidate) return candidate;
+      return myStudents[0] ? myStudents[0].username : '';
+    }
+
+    function syncSelectedProfStudentControls() {
+      const username = normalizeSelectedProfStudent();
+      if (!username) return;
+      selectedHistoryStudent = username;
+
+      const homeworkSelect = document.getElementById('homework-student');
+      if (homeworkSelect && Array.from(homeworkSelect.options).some(option => option.value === username)) {
+        homeworkSelect.value = username;
+      }
+
+      const reportSelect = document.getElementById('report-student');
+      const studentName = getStudentNameByUsername(username);
+      if (reportSelect && studentName && Array.from(reportSelect.options).some(option => option.value === studentName)) {
+        reportSelect.value = studentName;
+      }
+    }
+
+    function setSelectedProfStudent(username, options = {}) {
+      const next = normalizeSelectedProfStudent(username);
+      if (!next) return '';
+      selectedHistoryStudent = next;
+      rememberSelectedProfStudent(next);
+      syncSelectedProfStudentControls();
+      if (options.renderHistory !== false) renderStudentHistory();
+      return next;
+    }
+
+    function handleHomeworkStudentChange(select) {
+      if (select && select.value) setSelectedProfStudent(select.value);
+    }
+
+    function handleReportStudentChange(select) {
+      if (!select || !select.value) return;
+      const student = myStudents.find(item => (item.prenom + ' ' + item.nom) === select.value);
+      if (student) setSelectedProfStudent(student.username);
     }
 
     function renderHomeworkOptions() {
@@ -574,6 +644,8 @@
         const name = student.prenom + ' ' + student.nom;
         return '<option value="' + escapeHtml(student.username) + '">' + escapeHtml(name) + '</option>';
       }).join('');
+      select.onchange = () => handleHomeworkStudentChange(select);
+      syncSelectedProfStudentControls();
       document.getElementById('homework-date').value = new Date().toISOString().slice(0, 10);
     }
 
@@ -608,6 +680,7 @@
     }
 
     function toggleStudentCard(username) {
+      setSelectedProfStudent(username, { renderHistory: false });
       const card = document.querySelector('[data-card="' + username + '"]');
       if (!card) return;
       const opening = !card.classList.contains('is-open');
@@ -626,6 +699,8 @@
         return;
       }
       if (!myStudents.some(student => student.username === selectedHistoryStudent)) selectedHistoryStudent = myStudents[0].username;
+      if (selectedHistoryStudent) rememberSelectedProfStudent(selectedHistoryStudent);
+      syncSelectedProfStudentControls();
       list.innerHTML = myStudents.map(student => {
         const name = student.prenom + ' ' + student.nom;
         const items = studentProgressItems(student);
@@ -660,12 +735,11 @@
     }
 
     function selectStudentHistory(username) {
-      selectedHistoryStudent = username;
-      renderStudentHistory();
+      setSelectedProfStudent(username);
     }
 
     function openStudentHistory(username) {
-      sessionStorage.setItem('mawahib_prof_student', username);
+      setSelectedProfStudent(username, { renderHistory: false });
       window.location.href = 'prof-students.html';
     }
 
@@ -687,6 +761,7 @@
     }
 
     function addRecitationEntry(username) {
+      setSelectedProfStudent(username, { renderHistory: false });
       const box = document.querySelector('.recitation-entries[data-student="' + username + '"]');
       if (!box) return;
       box.insertAdjacentHTML('beforeend', recitationEntryHtml(username, box.querySelectorAll('.recitation-entry').length));
@@ -720,12 +795,16 @@
     }
 
     function renderReportOptions() {
-      document.getElementById('report-student').innerHTML =
+      const select = document.getElementById('report-student');
+      if (!select) return;
+      select.innerHTML =
         '<option value="القسم كاملا">القسم كاملا</option>' +
         myStudents.map(student => {
           const name = student.prenom + ' ' + student.nom;
           return '<option value="' + escapeHtml(name) + '">' + escapeHtml(name) + '</option>';
         }).join('');
+      select.onchange = () => handleReportStudentChange(select);
+      syncSelectedProfStudentControls();
     }
 
     function updateProfPageTitle() {
@@ -842,6 +921,11 @@
     }
 
     function openHomeworkFromStudent(studentId, studentName) {
+      setSelectedProfStudent(studentId, { renderHistory: false });
+      const homeworkSelect = document.getElementById('homework-student');
+      if (homeworkSelect && Array.from(homeworkSelect.options).some(option => option.value === studentId)) {
+        homeworkSelect.value = studentId;
+      }
       const surahInput = document.querySelector('.recitation-entry[data-student="' + studentId + '"] .recited-surah');
       document.getElementById('devoir-student-id').value = studentId;
       document.getElementById('devoir-student-name').textContent = studentName;
@@ -882,6 +966,7 @@
 
     async function sendHomeworkFromTab() {
       const studentId = document.getElementById('homework-student').value;
+      setSelectedProfStudent(studentId, { renderHistory: false });
       const surate = document.getElementById('homework-surate').value.trim();
       const debut = document.getElementById('homework-debut').value;
       const fin = document.getElementById('homework-fin').value;
@@ -904,7 +989,9 @@
     }
 
     async function sendAdminReport() {
-      const student = document.getElementById('report-student').value;
+      const reportSelect = document.getElementById('report-student');
+      handleReportStudentChange(reportSelect);
+      const student = reportSelect.value;
       const text = document.getElementById('admin-report-text').value.trim();
       if (!text) {
         showToast('اكتب الملاحظة أولا');
@@ -937,7 +1024,8 @@
       initProfNavAutoHide();
     });
   </script>
-  <script src="notifications.js?v=20260715-exercise-flow-1"></script>
-  <script src="prof-simple.js?v=20260718-prof-reading-1"></script>
+  <script src="notifications.js?v=20260720-global-latest-1"></script>
+  <script src="prof-simple.js?v=20260720-global-latest-1"></script>
+  <script src="app-settings.js?v=20260720-global-latest-1"></script>
 </body>
 </html>

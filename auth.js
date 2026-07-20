@@ -1,4 +1,4 @@
-// auth.js - VERSION CORRIGÉE (trim anti-espaces)
+﻿// auth.js - VERSION CORRIGÃ‰E (trim anti-espaces)
 const Auth = (() => {
     const supabaseUrl = 'https://mdgofogpghlwesaduxrq.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kZ29mb2dwZ2hsd2VzYWR1eHJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE4NjIwNjksImV4cCI6MjA5NzQzODA2OX0.DpBoUIZbxzKjOOWw4r-7Vhtupva_fIg5cEhcKgb19ic';
@@ -12,7 +12,7 @@ const Auth = (() => {
     const OFFLINE_CACHE_PREFIX = 'mawahib_offline_cache_';
     const OFFLINE_QUEUE_KEY = 'mawahib_offline_queue';
     const OFFLINE_STATUS_KEY = 'mawahib_offline_status';
-    const SERVICE_WORKER_VERSION = '20260715-exercise-flow-1';
+    const SERVICE_WORKER_VERSION = '20260720-global-latest-1';
     const CLASS_SESSION_PREFIX = '[CLASS_SESSION] ';
     const TEACHER_NOTE_PREFIX = '[TEACHER_NOTE] ';
     const ADMIN_FINANCE_PREFIX = '[ADMIN_FINANCE] ';
@@ -119,7 +119,7 @@ const Auth = (() => {
         return true;
     }
 
-    // ✅ _genId : trim() sur les deux paramètres pour éviter les espaces parasites
+    // âœ… _genId : trim() sur les deux paramÃ¨tres pour Ã©viter les espaces parasites
     function _genId(str1, str2) {
         return _cleanName(str1) + '.' + _cleanName(str2);
     }
@@ -132,7 +132,7 @@ const Auth = (() => {
             .replace(/[\u0300-\u036f]/g, '')
             .replace(/[\u064B-\u065F\u0670]/g, '')
             .replace(/[\u200B-\u200D\uFEFF]/g, '')
-            .replace(/['’`´]/g, '')
+            .replace(/['â€™`Â´]/g, '')
             .replace(/[^a-z0-9\u0600-\u06FF]+/g, '_')
             .replace(/^_+|_+$/g, '');
     }
@@ -724,15 +724,15 @@ const Auth = (() => {
         catch { return null; }
     }
 
-    // --- 1. ÉLÈVES ---
+    // --- 1. Ã‰LÃˆVES ---
     async function register(prenom, nom, password, bypassSession = false) {
-        // ✅ trim() en entrée de fonction
+        // âœ… trim() en entrÃ©e de fonction
         prenom   = prenom.trim();
         nom      = nom.trim();
         password = password.trim();
 
-        if (!prenom || !nom || !password) return { ok: false, error: 'يرجى ملء جميع الحقول' };
-        if (password.length < 4) return { ok: false, error: 'كلمة المرور يجب أن تكون 4 أحرف على الأقل' };
+        if (!prenom || !nom || !password) return { ok: false, error: 'ÙŠØ±Ø¬Ù‰ Ù…Ù„Ø¡ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ„' };
+        if (password.length < 4) return { ok: false, error: 'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† 4 Ø£Ø­Ø±Ù Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„' };
 
         const username = _genId(prenom, nom);
         const { error } = await supabase.from('eleves').insert([{
@@ -741,7 +741,7 @@ const Auth = (() => {
 
         if (error) {
             logError('register', error);
-            return { ok: false, error: error.code === '23505' ? 'هذا الاسم مستخدم بالفعل' : 'خطأ في التسجيل: ' + error.message };
+            return { ok: false, error: error.code === '23505' ? 'Ù‡Ø°Ø§ Ø§Ù„Ø§Ø³Ù… Ù…Ø³ØªØ®Ø¯Ù… Ø¨Ø§Ù„ÙØ¹Ù„' : 'Ø®Ø·Ø£ ÙÙŠ Ø§Ù„ØªØ³Ø¬ÙŠÙ„: ' + error.message };
         }
 
         if (!bypassSession) _setSession(username, prenom, nom, 'student');
@@ -749,21 +749,21 @@ const Auth = (() => {
     }
 
     async function login(prenom, nom, password) {
-        // ✅ trim() en entrée de fonction
+        // âœ… trim() en entrÃ©e de fonction
         prenom   = prenom.trim();
         nom      = nom.trim();
         password = password.trim();
 
-        if (!prenom || !nom || !password) return { ok: false, error: 'يرجى ملء جميع الحقول' };
+        if (!prenom || !nom || !password) return { ok: false, error: 'ÙŠØ±Ø¬Ù‰ Ù…Ù„Ø¡ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ„' };
         const { data, error } = await _findLoginRow('eleves', 'nom', prenom, nom);
 
         if (error) {
             logError('login', error);
-            return { ok: false, error: 'خطأ: ' + (error.message || 'فشل الاتصال بالخادم') };
+            return { ok: false, error: 'Ø®Ø·Ø£: ' + (error.message || 'ÙØ´Ù„ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…') };
         }
-        if (!data) return { ok: false, error: 'لم يتم العثور على هذا الحساب' };
-        if (data.is_suspended) return { ok: false, error: '⚠️ هذا الحساب مغلق حالياً' };
-        if (!_passwordMatches(data.password, password)) return { ok: false, error: 'كلمة المرور غير صحيحة' };
+        if (!data) return { ok: false, error: 'Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ù‡Ø°Ø§ Ø§Ù„Ø­Ø³Ø§Ø¨' };
+        if (data.is_suspended) return { ok: false, error: 'âš ï¸ Ù‡Ø°Ø§ Ø§Ù„Ø­Ø³Ø§Ø¨ Ù…ØºÙ„Ù‚ Ø­Ø§Ù„ÙŠØ§Ù‹' };
+        if (!_passwordMatches(data.password, password)) return { ok: false, error: 'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± ØµØ­ÙŠØ­Ø©' };
 
         _setSession(data.username, data.prenom, data.nom, 'student');
         return { ok: true, username: data.username };
@@ -771,12 +771,12 @@ const Auth = (() => {
 
     // --- 2. PROFESSEURS ---
     async function registerProf(prenom, classe, password) {
-        // ✅ trim() en entrée de fonction
+        // âœ… trim() en entrÃ©e de fonction
         prenom   = prenom.trim();
         classe   = classe.trim();
         password = password.trim();
 
-        if (!prenom || !classe || !password) return { ok: false, error: 'يرجى ملء جميع الحقول' };
+        if (!prenom || !classe || !password) return { ok: false, error: 'ÙŠØ±Ø¬Ù‰ Ù…Ù„Ø¡ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ„' };
         const username = _genId(prenom, classe);
         const { error } = await supabase.from('profs').insert([{
             username, prenom, classe, password: _encodePassword(password), students: []
@@ -784,13 +784,13 @@ const Auth = (() => {
 
         if (error) {
             logError('registerProf', error);
-            return { ok: false, error: 'هذا الأستاذ مسجل بالفعل أو حدث خطأ' };
+            return { ok: false, error: 'Ù‡Ø°Ø§ Ø§Ù„Ø£Ø³ØªØ§Ø° Ù…Ø³Ø¬Ù„ Ø¨Ø§Ù„ÙØ¹Ù„ Ø£Ùˆ Ø­Ø¯Ø« Ø®Ø·Ø£' };
         }
         return { ok: true, username };
     }
 
     async function loginProf(prenom, classe, password) {
-        // ✅ trim() en entrée de fonction
+        // âœ… trim() en entrÃ©e de fonction
         prenom   = prenom.trim();
         classe   = classe.trim();
         password = password.trim();
@@ -799,7 +799,7 @@ const Auth = (() => {
             && _encodePassword(classe) === 'NDg3IQ=='
             && _encodePassword(password) === 'ITAxMTA7';
         if (isAdmin) {
-            _setSession('__admin__', 'الإدارة', 'مواهب المنان', 'admin');
+            _setSession('__admin__', 'Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©', 'Ù…ÙˆØ§Ù‡Ø¨ Ø§Ù„Ù…Ù†Ø§Ù†', 'admin');
             return { ok: true, username: '__admin__', role: 'admin' };
         }
 
@@ -807,10 +807,10 @@ const Auth = (() => {
 
         if (error) {
             logError('loginProf', error);
-            return { ok: false, error: 'خطأ في الاتصال: ' + error.message };
+            return { ok: false, error: 'Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„: ' + error.message };
         }
-        if (!data) return { ok: false, error: 'لم يتم العثور على حساب الأستاذ' };
-        if (!_passwordMatches(data.password, password)) return { ok: false, error: 'كلمة المرور غير صحيحة' };
+        if (!data) return { ok: false, error: 'Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ø­Ø³Ø§Ø¨ Ø§Ù„Ø£Ø³ØªØ§Ø°' };
+        if (!_passwordMatches(data.password, password)) return { ok: false, error: 'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± ØµØ­ÙŠØ­Ø©' };
 
         _setSession(data.username, data.prenom, data.classe, 'prof');
         return { ok: true, username: data.username };
@@ -907,35 +907,35 @@ const Auth = (() => {
     }
 
     async function updateStudentAccount(username, changes = {}) {
-        if (getSession()?.role !== 'admin') return { ok: false, error: 'غير مسموح' };
+        if (getSession()?.role !== 'admin') return { ok: false, error: 'ØºÙŠØ± Ù…Ø³Ù…ÙˆØ­' };
         const prenom = String(changes.prenom || '').trim();
         const nom = String(changes.nom || '').trim();
         const password = String(changes.password || '').trim();
-        if (!username || !prenom || !nom) return { ok: false, error: 'الاسم الشخصي والعائلي مطلوبان' };
-        if (password && password.length < 4) return { ok: false, error: 'كلمة المرور يجب أن تكون 4 أحرف على الأقل' };
+        if (!username || !prenom || !nom) return { ok: false, error: 'Ø§Ù„Ø§Ø³Ù… Ø§Ù„Ø´Ø®ØµÙŠ ÙˆØ§Ù„Ø¹Ø§Ø¦Ù„ÙŠ Ù…Ø·Ù„ÙˆØ¨Ø§Ù†' };
+        if (password && password.length < 4) return { ok: false, error: 'ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† 4 Ø£Ø­Ø±Ù Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„' };
         const duplicateQuery = await supabase.from('eleves').select('username').eq('prenom', prenom).eq('nom', nom).neq('username', username).limit(1);
         if (duplicateQuery.error) {
             logError('updateStudentAccount.duplicate', duplicateQuery.error);
-            return { ok: false, error: 'تعذر التحقق من الاسم' };
+            return { ok: false, error: 'ØªØ¹Ø°Ø± Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø§Ù„Ø§Ø³Ù…' };
         }
-        if ((duplicateQuery.data || []).length) return { ok: false, error: 'يوجد حساب آخر بنفس الاسم' };
+        if ((duplicateQuery.data || []).length) return { ok: false, error: 'ÙŠÙˆØ¬Ø¯ Ø­Ø³Ø§Ø¨ Ø¢Ø®Ø± Ø¨Ù†ÙØ³ Ø§Ù„Ø§Ø³Ù…' };
         const patch = { prenom, nom };
         if (password) patch.password = _encodePassword(password);
         const { error } = await supabase.from('eleves').update(patch).eq('username', username);
         if (error) {
             logError('updateStudentAccount', error);
-            return { ok: false, error: error.message || 'تعذر حفظ الحساب' };
+            return { ok: false, error: error.message || 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø§Ù„Ø­Ø³Ø§Ø¨' };
         }
         return { ok: true };
     }
 
     async function setStudentProfessors(studentId, professorIds = []) {
-        if (getSession()?.role !== 'admin') return { ok: false, error: 'غير مسموح' };
+        if (getSession()?.role !== 'admin') return { ok: false, error: 'ØºÙŠØ± Ù…Ø³Ù…ÙˆØ­' };
         const selected = new Set((Array.isArray(professorIds) ? professorIds : []).filter(Boolean));
         const { data: professors, error } = await supabase.from('profs').select('username, students');
         if (error) {
             logError('setStudentProfessors.read', error);
-            return { ok: false, error: 'تعذر تحميل الأساتذة' };
+            return { ok: false, error: 'ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø£Ø³Ø§ØªØ°Ø©' };
         }
         const updates = (professors || []).map(async professor => {
             const current = Array.from(new Set(Array.isArray(professor.students) ? professor.students.filter(Boolean) : []));
@@ -949,7 +949,7 @@ const Auth = (() => {
         const errors = (await Promise.all(updates)).filter(Boolean);
         if (errors.length) {
             errors.forEach(item => logError('setStudentProfessors.update', item));
-            return { ok: false, error: 'تعذر حفظ بعض الارتباطات' };
+            return { ok: false, error: 'ØªØ¹Ø°Ø± Ø­ÙØ¸ Ø¨Ø¹Ø¶ Ø§Ù„Ø§Ø±ØªØ¨Ø§Ø·Ø§Øª' };
         }
         return { ok: true };
     }
@@ -974,13 +974,13 @@ const Auth = (() => {
 
     // --- 5. HORAIRES ---
     async function getSchedule(username) {
-        if (!_isOnline()) return _readOfflineCache(username, 'schedule', "لم يتم تحميل أوقات الحصص بعد.");
+        if (!_isOnline()) return _readOfflineCache(username, 'schedule', "Ù„Ù… ÙŠØªÙ… ØªØ­Ù…ÙŠÙ„ Ø£ÙˆÙ‚Ø§Øª Ø§Ù„Ø­ØµØµ Ø¨Ø¹Ø¯.");
         const { data, error } = await supabase.from('horaires').select('schedule_text').eq('username', username).maybeSingle();
         if (error) {
             logError('getSchedule', error);
-            return _readOfflineCache(username, 'schedule', "لم يتم تحديد أوقات الحصص بعد.");
+            return _readOfflineCache(username, 'schedule', "Ù„Ù… ÙŠØªÙ… ØªØ­Ø¯ÙŠØ¯ Ø£ÙˆÙ‚Ø§Øª Ø§Ù„Ø­ØµØµ Ø¨Ø¹Ø¯.");
         }
-        const schedule = data ? data.schedule_text : "لم يتم تحديد أوقات الحصص بعد.";
+        const schedule = data ? data.schedule_text : "Ù„Ù… ÙŠØªÙ… ØªØ­Ø¯ÙŠØ¯ Ø£ÙˆÙ‚Ø§Øª Ø§Ù„Ø­ØµØµ Ø¨Ø¹Ø¯.";
         _writeOfflineCache(username, 'schedule', schedule);
         return schedule;
     }
@@ -1054,7 +1054,7 @@ const Auth = (() => {
         return { ok: true };
     }
 
-    async function sendAdminReport(profId, profName, classe, text, category = 'متابعة') {
+    async function sendAdminReport(profId, profName, classe, text, category = 'Ù…ØªØ§Ø¨Ø¹Ø©') {
         const date = new Date().toLocaleDateString('ar-MA', { day: 'numeric', month: 'long' });
         const body = '[SIGNAL_ADMIN] ' + JSON.stringify({ profId, profName, classe, category, text, sentAt: new Date().toISOString() });
         const { error } = await supabase.from('messages').insert([{ username: '__admin__', text: body, date }]);
@@ -1071,7 +1071,7 @@ const Auth = (() => {
                 try { return { id: row.id, date: row.date, ...JSON.parse(raw.replace('[SIGNAL_ADMIN] ', '')) }; }
                 catch (e) {}
             }
-            return { id: row.id, date: row.date, profName: 'أستاذ', classe: '', category: 'متابعة', text: raw, sentAt: row.created_at || '' };
+            return { id: row.id, date: row.date, profName: 'Ø£Ø³ØªØ§Ø°', classe: '', category: 'Ù…ØªØ§Ø¨Ø¹Ø©', text: raw, sentAt: row.created_at || '' };
         });
     }
 
@@ -1320,6 +1320,14 @@ const Auth = (() => {
         if (error) logError('annulerDevoir', error);
     }
 
+    async function updateDevoirStatut(id, statut) {
+        const allowed = ['en_attente', 'termine', 'non_realise'];
+        if (!allowed.includes(statut)) return { ok: false, error: 'Statut invalide' };
+        const { error } = await supabase.from('devoirs').update({ statut }).eq('id', id);
+        if (error) { logError('updateDevoirStatut', error); return { ok: false, error: error.message }; }
+        return { ok: true };
+    }
+
     async function marquerDevoirTermine(id) {
         const session = getSession();
         if (session) _updateCachedDevoir(session.username, id, { statut: 'termine' });
@@ -1346,7 +1354,7 @@ const Auth = (() => {
         saveFinanceEntry, getFinanceEntries, deleteFinanceEntry,
         saveClassSession, getClassSessions, saveTeacherNote, getTeacherNotes,
         getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, getLastCelebration, getLastInactivity, syncRewardsFromSurahs, getClassStarRanking, storeMissionAttempt, prepareOfflineLessons,
-        ajouterDevoir, getDevoirs, annulerDevoir, marquerDevoirTermine,
+        ajouterDevoir, getDevoirs, annulerDevoir, updateDevoirStatut, marquerDevoirTermine,
         getSupabaseClient, syncOfflineQueue, getOfflineStatus
     };
 })();

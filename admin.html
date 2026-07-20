@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم المشرف - دار القرآن والحديث</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js?v=20260720-global-latest-1"></script>
+    <script>
+      const adminSession = Auth.getSession();
+      location.replace(adminSession && adminSession.role === 'admin' ? 'controle-487-eleves.html' : 'login.html');
+    </script>
+    <script src="registry.js"></script>
+<style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f0fdf4; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #6ee7b7; border-radius: 10px; }
+
+        /* ── Tabs ── */
+        .tab-btn { transition: all .2s; border-bottom: 2px solid transparent; }
+        .tab-btn.active { border-bottom-color: #047857; color: #047857; font-weight: 700; }
+
+        /* ── Accordion ── */
+        .accordion-body { display: none; }
+        .accordion-body.open { display: block; }
+        .accordion-icon { transition: transform .25s; }
+        .accordion-header.open .accordion-icon { transform: rotate(180deg); }
+
+        /* ── Action pill buttons ── */
+        .pill { display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px;
+                border-radius: 20px; font-size: 12px; font-weight: 700;
+                cursor: pointer; transition: opacity .15s; }
+        .pill:hover { opacity: .8; }
+
+        /* ── Student row ── */
+        .student-row { border-radius: 12px; border: 1px solid #d1fae5;
+                       background: #fff; padding: 10px 14px; margin-bottom: 8px;
+                       display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+        /* ── Class card ── */
+        .class-card { background: #fff; border-radius: 16px;
+                      border: 1.5px solid #d1fae5; overflow: hidden; margin-bottom: 16px; }
+        .class-card-header { background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+                             padding: 14px 20px; display: flex; align-items: center;
+                             justify-content: space-between; cursor: pointer; }
+
+        /* ── Modal ── */
+        .modal-overlay { display: none; position: fixed; inset: 0;
+                         background: rgba(0,0,0,.45); z-index: 50;
+                         align-items: center; justify-content: center; }
+        .modal-overlay.open { display: flex; }
+
+        /* ── Stats ── */
+        .stat-card {
+            border-radius: 18px; padding: 18px 20px;
+            display: flex; flex-direction: column; gap: 6px;
+            position: relative; overflow: hidden;
+        }
+        .stat-card::after {
+            content: attr(data-icon);
+            position: absolute; left: -4px; bottom: -8px;
+            font-size: 56px; opacity: .12; line-height: 1;
+        }
+        .stat-card .stat-num { font-size: 2rem; font-weight: 900; line-height: 1; }
+        .stat-card .stat-label { font-size: .75rem; font-weight: 700; opacity: .8; }
+
+        .stat-purple { background: linear-gradient(135deg,#047857,#065f46); color:#fff; }
+        .stat-blue   { background: linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; }
+        .stat-green  { background: linear-gradient(135deg,#059669,#047857); color:#fff; }
+        .stat-orange { background: linear-gradient(135deg,#d97706,#b45309); color:#fff; }
+        .stat-rose   { background: linear-gradient(135deg,#e11d48,#be123c); color:#fff; }
+        .stat-teal   { background: linear-gradient(135deg,#0d9488,#0f766e); color:#fff; }
+
+        /* ── Progress bar ── */
+        .prog-track { background: rgba(0,0,0,.08); border-radius: 99px; height: 8px; overflow: hidden; }
+        .prog-fill  { height: 100%; border-radius: 99px; transition: width .6s ease; }
+
+        /* ── Donut ── */
+        .donut-wrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+        .donut-wrap svg { transform: rotate(-90deg); }
+        .donut-label { position:absolute; inset:0; display:flex; flex-direction:column;
+                       align-items:center; justify-content:center; }
+
+        /* ── Alert card ── */
+        .alert-card { border-radius: 14px; padding: 10px 14px; display: flex;
+                      align-items: flex-start; gap: 10px; border-width: 1.5px; }
+
+        /* ── Top student row ── */
+        .top-row { display: flex; align-items: center; gap: 10px;
+                   padding: 8px 12px; border-radius: 12px; background: #f0fdf4;
+                   border: 1px solid #d1fae5; margin-bottom: 6px; }
+
+        /* ── Section heading ── */
+        .section-heading {
+            font-size: .7rem; font-weight: 900; letter-spacing: .08em;
+            text-transform: uppercase; color: #9ca3af; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-heading::after {
+            content: ''; flex: 1; height: 1px; background: #e5e7eb;
+        }
+
+        /* ── Refresh badge ── */
+        #refresh-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: .7rem; font-weight: 700; color: #047857;
+            background: #d1fae5; padding: 3px 10px; border-radius: 99px;
+            cursor: pointer; transition: background .2s;
+        }
+        #refresh-badge:hover { background: #a7f3d0; }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Parents tab ── */
+        .parent-link-card {
+            background: linear-gradient(135deg, #047857 0%, #0f766e 100%);
+            border-radius: 20px; padding: 36px 28px;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 16px; text-align: center; color: #fff;
+            box-shadow: 0 8px 32px rgba(4,120,87,.22);
+        }
+
+        /* ── Activity feed ── */
+        .feed-item { display: flex; align-items: center; gap: 10px;
+                     padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
+        .feed-item:last-child { border-bottom: none; }
+        .control-shell { display: grid; grid-template-columns: 230px minmax(0,1fr); gap: 18px; align-items: start; }
+        .control-sidebar { position: sticky; top: 16px; border-radius: 24px; background: linear-gradient(180deg,#0c4a3b,#14532d); color: #fff; padding: 16px; box-shadow: 0 22px 50px rgba(12,74,59,.24); }
+        .control-sidebar { transition: transform .28s ease, opacity .28s ease; }
+        .control-sidebar.admin-nav-hidden { transform: translateY(-16px); opacity: .08; pointer-events: none; }
+        .recitation-chip { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 900; }
+        .recitation-admin-card { border-radius: 16px; border: 1px solid #d1fae5; background: #fff; padding: 12px; }
+        .recitation-admin-line { border-radius: 14px; background: #f8fafc; border: 1px solid #eef2f7; padding: 10px; }
+        .control-sidebar-title { font-size: 13px; font-weight: 900; color: #d1fae5; margin-bottom: 12px; }
+        .control-sidebar .tab-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 11px 12px; margin-bottom: 7px; border: 0; border-radius: 16px; color: #d1fae5; background: rgba(255,255,255,.06); font-weight: 900; }
+        .control-sidebar .tab-btn.active { color: #064e3b; background: #fff; box-shadow: 0 12px 24px rgba(0,0,0,.16); }
+        .control-main { min-width: 0; }
+        .cockpit-hero { border-radius: 28px; padding: 20px; color: #fff; background: radial-gradient(circle at 12% 15%, rgba(217,164,65,.35), transparent 30%), linear-gradient(135deg,#0c4a3b,#14532d 55%,#166534); box-shadow: 0 24px 70px rgba(12,74,59,.25); }
+        .cockpit-kpi-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 12px; }
+        .cockpit-kpi { border-radius: 20px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16); padding: 14px; backdrop-filter: blur(10px); }
+        .cockpit-kpi strong { display: block; font-size: 26px; line-height: 1; font-weight: 900; }
+        .cockpit-kpi span { display: block; margin-top: 7px; font-size: 11px; font-weight: 800; color: rgba(255,255,255,.78); }
+        .cockpit-panel { background: #fff; border: 1px solid #d1fae5; border-radius: 22px; padding: 16px; box-shadow: 0 14px 34px rgba(12,74,59,.08); }
+        .cockpit-action { min-height: 82px; border-radius: 18px; border: 1px solid #d1fae5; background: linear-gradient(135deg,#f0fdf4,#fff); padding: 12px; text-align: right; font-weight: 900; color: #064e3b; transition: transform .18s ease, box-shadow .18s ease; }
+        .cockpit-action:hover { transform: translateY(-2px); box-shadow: 0 14px 26px rgba(12,74,59,.13); }
+        .ops-alert { display: flex; gap: 10px; align-items: flex-start; border-radius: 16px; padding: 10px 12px; border: 1px solid; }
+        .ops-alert strong { display: block; font-size: 13px; color: #17211b; }
+        .ops-alert span { display: block; font-size: 11px; color: #64748b; font-weight: 800; margin-top: 2px; }
+        .ai-command-input { min-height: 44px; border-radius: 16px; border: 1px solid #d1fae5; background: #f8fafc; padding: 10px 12px; width: 100%; outline: none; }
+        .ai-chip { border-radius: 999px; padding: 7px 10px; background: #ecfdf5; color: #047857; font-size: 11px; font-weight: 900; }
+        .text-purple-900,.text-purple-800,.text-purple-700,.text-purple-600,.text-blue-600 { color: #064e3b !important; }
+        .bg-purple-100,.bg-purple-50 { background-color: #ecfdf5 !important; }
+        .border-purple-100 { border-color: #d1fae5 !important; }
+        .bg-purple-600,.bg-blue-600 { background-color: #047857 !important; }
+        .hover\:bg-purple-700:hover,.hover\:bg-blue-700:hover { background-color: #065f46 !important; }
+        .focus\:border-purple-400:focus { border-color: #059669 !important; }
+        .accent-purple-600 { accent-color: #047857 !important; }
+        #total-badge { background: #ecfdf5; color: #047857; }
+        @media (max-width: 900px) { .control-shell { grid-template-columns: 1fr; } .control-sidebar { position: sticky; top: 8px; z-index: 30; } .control-sidebar .tab-btn { display: inline-flex; width: auto; } .control-nav-scroll { display: flex; gap: 8px; overflow-x: auto; } .cockpit-kpi-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+        @media (max-width: 640px) {
+            body { padding: 10px !important; overflow-x: hidden; }
+            .max-w-7xl > .flex:first-child { align-items: stretch; margin-bottom: 12px; }
+            .max-w-7xl > .flex:first-child > div:last-child { width: 100%; justify-content: space-between; }
+            .control-shell { gap: 10px; }
+            .control-sidebar { margin-inline: -2px; padding: 8px; border-radius: 16px; }
+            .control-sidebar-title { display: none; }
+            .control-nav-scroll { padding-bottom: 3px; scrollbar-width: none; }
+            .control-nav-scroll::-webkit-scrollbar { display: none; }
+            .control-sidebar .tab-btn { min-height: 44px; margin: 0; padding: 9px 11px; white-space: nowrap; border-radius: 12px; }
+            .cockpit-hero { padding: 14px; border-radius: 18px; }
+            .cockpit-kpi-grid { gap: 7px; }
+            .cockpit-kpi { padding: 10px; border-radius: 14px; }
+            .cockpit-kpi strong { font-size: 21px; }
+            .cockpit-panel { padding: 12px; border-radius: 16px; }
+            .parent-link-card { padding: 20px 14px; border-radius: 16px; }
+            .pill { min-height: 40px; }
+        }
+
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+<!-- ══ HEADER ══════════════════════════════════════════════ -->
+<div class="max-w-7xl mx-auto">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+        <div class="flex items-center gap-4">
+            <img src="logo.webp" alt="مواهب المنان" class="h-16 object-contain drop-shadow-md">
+            <div>
+                <h1 class="text-xl font-black text-purple-900">لوحة تحكم الإدارة</h1>
+                <p class="text-xs text-gray-500 font-bold">جمعية مواهب المنان — دار القرآن والحديث</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <span id="total-badge" class="text-sm bg-purple-100 text-purple-800 px-3 py-1 rounded-full font-bold"></span>
+            <a href="login.html" onclick="Auth.logout()"
+               class="px-4 py-2 bg-rose-50 text-rose-600 font-bold rounded-xl hover:bg-rose-100 transition text-sm">
+                خروج ↩
+            </a>
+        </div>
+    </div>
+
+    <!-- ══ TABS ══════════════════════════════════════════════ -->
+    <div class="control-shell">
+        <aside class="control-sidebar">
+            <div class="control-sidebar-title">غرفة التحكم</div>
+            <div class="control-nav-scroll">
+                <button class="tab-btn active" onclick="switchTab('cockpit')"><span>القيادة</span><span>⌘</span></button>
+                <button class="tab-btn" onclick="switchTab('classes')"><span>الأقسام والطلاب</span><span>🏫</span></button>
+                <button class="tab-btn" onclick="switchTab('stats')"><span>الإحصاءات</span><span>📊</span></button>
+                <button class="tab-btn" onclick="switchTab('parents')"><span>الأولياء</span><span>👨‍👩‍👧</span></button>
+                <button class="tab-btn" onclick="switchTab('add-student')"><span>إضافة طالب</span><span>➕</span></button>
+                <button class="tab-btn" onclick="switchTab('add-prof')"><span>إضافة أستاذ</span><span>👤</span></button>
+            </div>
+        </aside>
+        <section class="control-main">
+
+    <div id="tab-cockpit">
+        <div class="cockpit-hero mb-4">
+            <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-5 mb-5">
+                <div>
+                    <p class="text-emerald-100 text-xs font-black mb-2">مركز القيادة الذكي</p>
+                    <h2 class="text-2xl md:text-4xl font-black leading-tight">نظرة واحدة على المدرسة كلها</h2>
+                    <p class="text-emerald-100 text-sm font-bold mt-2">الأولويات، التنبيهات، الأقسام، الطلاب، الرسائل، والقرارات السريعة في مكان واحد.</p>
+                </div>
+                <button onclick="refreshControlRoom()" class="bg-white text-emerald-900 px-5 py-3 rounded-2xl font-black shadow-lg">تحديث غرفة التحكم</button>
+            </div>
+            <div id="cockpit-kpis" class="cockpit-kpi-grid"></div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
+            <div class="cockpit-panel xl:col-span-2">
+                <div class="flex items-center justify-between gap-3 mb-4">
+                    <div>
+                        <p class="section-heading">الأولويات الذكية</p>
+                        <h3 class="text-lg font-black text-gray-900">ما يحتاج انتباهك الآن</h3>
+                    </div>
+                    <span id="cockpit-health" class="rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 text-xs font-black"></span>
+                </div>
+                <div id="ops-alerts" class="space-y-2"></div>
+                <div class="mt-4 border-t border-emerald-100 pt-4">
+                    <p class="section-heading">بلاغات الأساتذة</p>
+                    <div id="admin-reports-list" class="space-y-2"></div>
+                </div>
+            </div>
+            <div class="cockpit-panel">
+                <p class="section-heading">أوامر سريعة</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="cockpit-action" onclick="switchTab('add-student')">طالب جديد<br><span class="text-xs text-gray-400">فتح التسجيل</span></button>
+                    <button class="cockpit-action" onclick="switchTab('add-prof')">أستاذ جديد<br><span class="text-xs text-gray-400">قسم أو معلم</span></button>
+                    <button class="cockpit-action" onclick="switchTab('classes')">توزيع الطلاب<br><span class="text-xs text-gray-400">الأقسام</span></button>
+                    <button class="cockpit-action" onclick="switchTab('stats')">تحليل كامل<br><span class="text-xs text-gray-400">المؤشرات</span></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <div class="cockpit-panel xl:col-span-2">
+                <p class="section-heading">خريطة الأقسام</p>
+                <div id="cockpit-classes" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+            </div>
+            <div class="cockpit-panel">
+                <p class="section-heading">مساعد الإدارة</p>
+                <input id="ai-command" class="ai-command-input" placeholder="اسأل: من يحتاج متابعة؟" onkeydown="if(event.key==='Enter') answerAdminAssistant()">
+                <div class="flex flex-wrap gap-2 my-3">
+                    <button class="ai-chip" onclick="askAdminAssistant('late')">المتأخرون</button>
+                    <button class="ai-chip" onclick="askAdminAssistant('zero')">لم يبدأوا</button>
+                    <button class="ai-chip" onclick="askAdminAssistant('classes')">الأقسام</button>
+                </div>
+                <div id="ai-answer" class="rounded-2xl bg-emerald-50 border border-emerald-100 p-3 text-sm font-bold text-gray-700 leading-relaxed">اكتب سؤالا قصيرا أو اختر أحد الأزرار.</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-classes" class="hidden">
+        <div id="classes-container">
+            <p class="text-center text-gray-400 py-12">جاري التحميل...</p>
+        </div>
+    </div>
+
+    <!-- ══ TAB: STATS ════════════════════════════════════════ -->
+    <div id="tab-stats" class="hidden">
+        <div class="flex items-center justify-between mb-5">
+            <h2 class="text-base font-black text-purple-900">الإحصاءات العامة</h2>
+            <span id="refresh-badge" onclick="refreshStats()">
+                <span id="refresh-icon">🔄</span>
+                <span id="refresh-label">تحديث</span>
+            </span>
+        </div>
+
+        <!-- ── KPI cards row 1 ── -->
+        <div id="stats-kpi" class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+            <!-- injected by JS -->
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+
+            <!-- Donut: actifs vs suspendus -->
+            <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm">
+                <p class="section-heading">نشاط الطلاب</p>
+                <div class="flex items-center gap-6">
+                    <div class="donut-wrap">
+                        <svg viewBox="0 0 36 36" width="110" height="110">
+                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#d1fae5" stroke-width="3.2"/>
+                            <circle id="donut-active" cx="18" cy="18" r="15.9" fill="none"
+                                    stroke="#047857" stroke-width="3.2"
+                                    stroke-dasharray="0 100" stroke-linecap="round"/>
+                        </svg>
+                        <div class="donut-label">
+                            <span id="donut-pct" class="text-xl font-black text-purple-700">—</span>
+                            <span class="text-[10px] text-gray-400 font-bold">نشطون</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1">
+                                <span class="text-purple-700">✅ نشط</span>
+                                <span id="lbl-active" class="text-gray-600">—</span>
+                            </div>
+                            <div class="prog-track"><div id="bar-active" class="prog-fill bg-purple-500" style="width:0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1">
+                                <span class="text-rose-600">🚫 موقوف</span>
+                                <span id="lbl-suspended" class="text-gray-600">—</span>
+                            </div>
+                            <div class="prog-track"><div id="bar-suspended" class="prog-fill bg-rose-400" style="width:0%"></div></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-xs font-bold mb-1">
+                                <span class="text-slate-500">👥 بدون قسم</span>
+                                <span id="lbl-unassigned" class="text-gray-600">—</span>
+                            </div>
+                            <div class="prog-track"><div id="bar-unassigned" class="prog-fill bg-slate-300" style="width:0%"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Docs bar chart -->
+            <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm">
+                <p class="section-heading">الوثائق المقدمة</p>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-gray-700">🪪 بطاقة التعريف</span>
+                            <span id="lbl-cin" class="text-purple-700">—</span>
+                        </div>
+                        <div class="prog-track"><div id="bar-cin" class="prog-fill bg-blue-500" style="width:0%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-gray-700">📄 عقد الازدياد</span>
+                            <span id="lbl-birth" class="text-purple-700">—</span>
+                        </div>
+                        <div class="prog-track"><div id="bar-birth" class="prog-fill bg-teal-500" style="width:0%"></div></div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs font-bold mb-1">
+                            <span class="text-gray-700">✅ الملف مكتمل (الوثيقتان)</span>
+                            <span id="lbl-full-doc" class="text-purple-700">—</span>
+                        </div>
+                        <div class="prog-track"><div id="bar-full-doc" class="prog-fill bg-emerald-500" style="width:0%"></div></div>
+                    </div>
+                    <p id="lbl-missing-docs" class="text-xs text-rose-500 font-bold mt-1"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paiements -->
+        <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm mb-4">
+            <p class="section-heading">الأداءات الشهرية</p>
+            <!-- Montants en grand -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="rounded-2xl p-4 text-center" style="background: linear-gradient(135deg,#059669,#047857);">
+                    <p id="pay-amount-collected" class="text-3xl font-black text-white">—</p>
+                    <p class="text-xs text-emerald-100 font-bold mt-1">💰 إجمالي المحصَّل (د.م.)</p>
+                </div>
+                <div class="rounded-2xl p-4 text-center" style="background: linear-gradient(135deg,#d97706,#b45309);">
+                    <p id="pay-amount-pending" class="text-3xl font-black text-white">—</p>
+                    <p class="text-xs text-amber-100 font-bold mt-1">⏳ في انتظار التحصيل (د.م.)</p>
+                </div>
+            </div>
+            <!-- Compteurs secondaires -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div class="bg-emerald-50 rounded-xl p-3 text-center">
+                    <p id="pay-paid" class="text-2xl font-black text-emerald-600">—</p>
+                    <p class="text-xs text-emerald-700 font-bold">أشهر خالصة</p>
+                </div>
+                <div class="bg-amber-50 rounded-xl p-3 text-center">
+                    <p id="pay-pending" class="text-2xl font-black text-amber-600">—</p>
+                    <p class="text-xs text-amber-700 font-bold">أشهر في الانتظار</p>
+                </div>
+                <div class="bg-purple-50 rounded-xl p-3 text-center">
+                    <p id="pay-rate" class="text-2xl font-black text-purple-600">—</p>
+                    <p class="text-xs text-purple-700 font-bold">نسبة التسديد</p>
+                </div>
+                <div class="bg-rose-50 rounded-xl p-3 text-center">
+                    <p id="pay-debtors" class="text-2xl font-black text-rose-600">—</p>
+                    <p class="text-xs text-rose-700 font-bold">طلاب متأخرون</p>
+                </div>
+            </div>
+            <div id="debtors-list" class="space-y-1"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+            <!-- Top students -->
+            <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm">
+                <p class="section-heading">🏆 أفضل الطلاب</p>
+                <div id="top-students-list"></div>
+            </div>
+
+            <!-- Progression académique -->
+            <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm">
+                <p class="section-heading">📖 التقدم الأكاديمي</p>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-purple-50 rounded-xl p-3 text-center">
+                        <p id="prog-total-surahs" class="text-2xl font-black text-purple-700">—</p>
+                        <p class="text-xs text-purple-600 font-bold">سورة منجزة (المجموع)</p>
+                    </div>
+                    <div class="bg-blue-50 rounded-xl p-3 text-center">
+                        <p id="prog-avg" class="text-2xl font-black text-blue-600">—</p>
+                        <p class="text-xs text-blue-600 font-bold">معدل / طالب</p>
+                    </div>
+                    <div class="bg-emerald-50 rounded-xl p-3 text-center">
+                        <p id="prog-active-learners" class="text-2xl font-black text-emerald-600">—</p>
+                        <p class="text-xs text-emerald-600 font-bold">طلاب في تقدم</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-3 text-center">
+                        <p id="prog-zero" class="text-2xl font-black text-gray-500">—</p>
+                        <p class="text-xs text-gray-500 font-bold">لم يبدأوا بعد</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activité récente -->
+        <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm mb-4">
+            <p class="section-heading">⚡ آخر الإنجازات</p>
+            <div id="recent-feed"></div>
+        </div>
+
+        <!-- Tableau par classe -->
+        <div class="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm mb-4">
+            <p class="section-heading">🏫 مقارنة الأقسام</p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-right">
+                    <thead>
+                        <tr class="text-xs text-gray-400 font-bold border-b border-gray-100">
+                            <th class="pb-2 font-bold">القسم</th>
+                            <th class="pb-2 font-bold">الطلاب</th>
+                            <th class="pb-2 font-bold">السور المنجزة</th>
+                            <th class="pb-2 font-bold">الوثائق</th>
+                            <th class="pb-2 font-bold">التسديد</th>
+                            <th class="pb-2 font-bold">المستوى</th>
+                        </tr>
+                    </thead>
+                    <tbody id="class-compare-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Alertes -->
+        <div id="alerts-section">
+            <p class="section-heading">⚠️ تنبيهات تحتاج انتباهك</p>
+            <div id="alerts-container" class="space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- ══ TAB: PARENTS ══════════════════════════════════════ -->
+    <div id="tab-parents" class="hidden">
+        <div class="max-w-md mx-auto mt-8">
+            <div class="parent-link-card">
+                <div class="text-6xl mb-2">👨‍👩‍👧</div>
+                <h2 class="text-2xl font-black">بوابة الأولياء</h2>
+                <p class="text-purple-200 text-sm font-bold leading-relaxed">
+                    إدارة اختبارات الأولياء، متابعة نتائجهم، وإضافة محتوى جديد لهم من هنا.
+                </p>
+                <a href="admin-quizparent.html"
+                   class="mt-2 flex items-center gap-2 bg-white text-purple-700 font-black px-8 py-3 rounded-2xl hover:bg-purple-50 transition shadow-lg text-base">
+                    الانتقال إلى بوابة الأولياء
+                    <span class="text-xl">←</span>
+                </a>
+            </div>
+
+            <!-- Quick stats teaser -->
+            <div class="mt-6 bg-white rounded-2xl border border-purple-100 p-5 shadow-sm">
+                <p class="section-heading">ما ستجده هناك</p>
+                <ul class="space-y-3">
+                    <li class="flex items-center gap-3 text-sm text-gray-700 font-bold">
+                        <span class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center text-base">📝</span>
+                        إنشاء وإدارة اختبارات خاصة بالأولياء
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-gray-700 font-bold">
+                        <span class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center text-base">📊</span>
+                        متابعة نتائج وإجابات الأولياء
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-gray-700 font-bold">
+                        <span class="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center text-base">✉️</span>
+                        التواصل المباشر مع أولياء الأمور
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-gray-700 font-bold">
+                        <span class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center text-base">📚</span>
+                        إضافة محتوى تربوي لأولياء الأمور
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ TAB: ADD STUDENT ══════════════════════════════════ -->
+    <div id="tab-add-student" class="hidden">
+        <div class="max-w-md mx-auto bg-white rounded-2xl p-6 border border-purple-100 shadow-sm">
+            <h2 class="text-lg font-bold text-gray-800 mb-5 border-b pb-2">إنشاء حساب طالب جديد</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-600 mb-1">الاسم الشخصي</label>
+                    <input id="new-prenom" type="text" class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-600 mb-1">الاسم العائلي</label>
+                    <input id="new-nom" type="text" class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-600 mb-1">كلمة المرور</label>
+                    <input id="new-pass" type="password" class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none" placeholder="4 أحرف على الأقل">
+                </div>
+                <button onclick="createStudent()" id="btn-create"
+                        class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition">
+                    إضافة الطالب ✔️
+                </button>
+                <div id="admin-msg" class="text-center text-sm font-bold mt-2 hidden p-2 rounded"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ TAB: ADD PROF ══════════════════════════════════════ -->
+    <div id="tab-add-prof" class="hidden">
+        <div class="max-w-xl mx-auto bg-white rounded-2xl p-6 border border-purple-100 shadow-sm">
+            <h2 class="text-lg font-bold text-gray-800 mb-5 border-b pb-2">إضافة أستاذ جديد</h2>
+            <div class="flex flex-col gap-3">
+                <input type="text" id="new-prof-prenom" placeholder="اسم الأستاذ"
+                       class="px-3 py-2.5 rounded-xl border w-full focus:border-purple-400 outline-none">
+                <input type="text" id="new-prof-classe" placeholder="اسم القسم (مثال: المستوى 1)"
+                       class="px-3 py-2.5 rounded-xl border w-full focus:border-purple-400 outline-none">
+                <input type="text" id="new-prof-pass" placeholder="كلمة المرور"
+                       class="px-3 py-2.5 rounded-xl border w-full focus:border-purple-400 outline-none">
+                <button onclick="creerProf()"
+                        class="bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 w-full transition mt-1">
+                    إضافة الأستاذ ✔️
+                </button>
+            </div>
+        </div>
+    </div>
+        </section>
+    </div>
+</div>
+
+<!-- ══ MODAL: INDIVIDUAL STUDENT ══════════════════════════ -->
+<div id="student-modal" class="modal-overlay" onclick="closeStudentModal(event)">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl relative max-h-[92vh] overflow-y-auto m-4">
+        <div class="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center z-10">
+            <div>
+                <h2 id="modal-student-name" class="text-lg font-black text-purple-900"></h2>
+                <p id="modal-student-username" class="text-xs text-gray-400 font-mono"></p>
+            </div>
+            <button onclick="closeStudentModal()" class="text-gray-400 hover:text-gray-700 font-bold text-xl px-2">✕</button>
+        </div>
+        <input type="hidden" id="modal-username">
+        <div class="flex gap-1 px-6 pt-4 pb-2 border-b border-gray-100">
+            <button onclick="switchModalTab('profile')" id="mtab-profile"
+                    class="modal-tab-btn px-3 py-1.5 rounded-lg text-sm font-bold bg-purple-100 text-purple-700">
+                📂 الملف
+            </button>
+            <button onclick="switchModalTab('schedule')" id="mtab-schedule"
+                    class="modal-tab-btn px-3 py-1.5 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100">
+                📅 الجدول
+            </button>
+            <button onclick="switchModalTab('message')" id="mtab-message"
+                    class="modal-tab-btn px-3 py-1.5 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100">
+                ✉️ رسالة
+            </button>
+            <button onclick="switchModalTab('progress')" id="mtab-progress"
+                    class="modal-tab-btn px-3 py-1.5 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100">
+                📊 التقدم
+            </button>
+            <button onclick="switchModalTab('recitation')" id="mtab-recitation"
+                    class="modal-tab-btn px-3 py-1.5 rounded-lg text-sm font-bold text-gray-500 hover:bg-gray-100">
+                تسميع
+            </button>
+        </div>
+        <div class="p-6">
+            <div id="modal-content-profile">
+                <div class="space-y-4">
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <h3 class="font-bold text-gray-700 mb-3 text-sm">الوثائق المقدمة</h3>
+                        <label class="flex items-center gap-2 cursor-pointer mb-2">
+                            <input type="checkbox" id="modal-cin" class="w-4 h-4 accent-purple-600">
+                            <span class="text-sm text-gray-600">نسخة بطاقة التعريف للأب أو الأم</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="modal-birthcert" class="w-4 h-4 accent-purple-600">
+                            <span class="text-sm text-gray-600">عقد الازدياد</span>
+                        </label>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-bold text-gray-700 text-sm">الأداءات الشهرية</h3>
+                            <button onclick="addPaymentRow()"
+                                    class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded font-bold hover:bg-blue-200">+ شهر</button>
+                        </div>
+                        <table class="w-full text-sm text-right">
+                            <thead class="text-gray-400 text-xs border-b">
+                                <tr>
+                                    <th class="pb-1 w-5/12">الشهر</th>
+                                    <th class="pb-1 w-3/12">المبلغ (د.م.)</th>
+                                    <th class="pb-1 w-3/12">الحالة</th>
+                                    <th class="pb-1 text-center">—</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-payments-body"></tbody>
+                        </table>
+                    </div>
+                    <button onclick="saveAdminProfile()"
+                            class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition text-sm">
+                        حفظ الملف ✔️
+                    </button>
+                </div>
+            </div>
+            <div id="modal-content-schedule" class="hidden">
+                <div class="space-y-3">
+                    <p class="text-sm text-gray-500">أيام وأوقات حصص هذا الطالب:</p>
+                    <textarea id="modal-schedule-text" rows="4"
+                              placeholder="مثال: الإثنين 17:00 والخميس 18:00"
+                              class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none text-sm resize-none"></textarea>
+                    <button onclick="saveSchedule()"
+                            class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition text-sm">
+                        حفظ الجدول ✔️
+                    </button>
+                </div>
+            </div>
+            <div id="modal-content-message" class="hidden">
+                <div class="space-y-3">
+                    <p class="text-sm text-gray-500">إرسال رسالة لهذا الطالب:</p>
+                    <textarea id="modal-msg-text" rows="4"
+                              placeholder="اكتب رسالتك هنا..."
+                              class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none text-sm resize-none"></textarea>
+                    <button onclick="sendSingleMsg()"
+                            class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm">
+                        إرسال الرسالة ✉️
+                    </button>
+                </div>
+            </div>
+            <div id="modal-content-progress" class="hidden">
+                <div id="modal-progress-content" class="space-y-2">
+                    <p class="text-gray-400 text-sm text-center">جاري التحميل...</p>
+                </div>
+            </div>
+            <div id="modal-content-recitation" class="hidden">
+                <div id="modal-recitation-content" class="space-y-2">
+                    <p class="text-gray-400 text-sm text-center">جاري التحميل...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODAL: CLASS ACTIONS ════════════════════════════════ -->
+<div id="class-modal" class="modal-overlay" onclick="closeClassModal(event)">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl relative m-4">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <h2 id="class-modal-title" class="text-base font-black text-purple-900"></h2>
+            <button onclick="closeClassModal()" class="text-gray-400 hover:text-gray-700 font-bold text-xl px-2">✕</button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-bold text-gray-600 mb-1">✉️ رسالة لجميع طلاب القسم</label>
+                <textarea id="class-msg-text" rows="3" placeholder="اكتب الرسالة للكل..."
+                          class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none text-sm resize-none"></textarea>
+                <button onclick="sendClassMsg()"
+                        class="mt-2 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-sm">
+                    إرسال لجميع الطلاب ✉️
+                </button>
+            </div>
+            <hr class="border-gray-100">
+            <div>
+                <label class="block text-sm font-bold text-gray-600 mb-1">📅 جدول القسم (يُطبَّق على الجميع)</label>
+                <textarea id="class-schedule-text" rows="2" placeholder="مثال: الإثنين 17:00 والخميس 18:00"
+                          class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none text-sm resize-none"></textarea>
+                <button onclick="saveClassSchedule()"
+                        class="mt-2 w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition text-sm">
+                    حفظ الجدول للقسم كله ✔️
+                </button>
+            </div>
+            <hr class="border-gray-100">
+            <div>
+                <label class="block text-sm font-bold text-gray-600 mb-1">👤 إضافة طالب للقسم</label>
+                <select id="assign-student-select"
+                        class="w-full p-2.5 border rounded-xl text-sm bg-gray-50 focus:border-purple-400 outline-none"></select>
+                <button onclick="assignStudentToClass()"
+                        class="mt-2 w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition text-sm">
+                    ربط الطالب بالقسم ✔️
+                </button>
+            </div>
+            <hr class="border-gray-100">
+            <button onclick="deleteCurrentProf()"
+                    class="w-full py-2 bg-rose-50 text-rose-600 border border-rose-200 font-bold rounded-xl hover:bg-rose-100 transition text-sm">
+                🗑️ حذف القسم والأستاذ
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   AUTH GUARD
+══════════════════════════════════════════════════════════ */
+const ADMIN_PASSWORD = 'admin1234';
+if (localStorage.getItem('adminAuth') !== 'true') {
+    const pwd = prompt("الرجاء إدخال رمز الإدارة:");
+    if (pwd === ADMIN_PASSWORD) {
+        localStorage.setItem('adminAuth', 'true');
+    } else {
+        alert("رمز غير صحيح!");
+        document.body.innerHTML = "";
+        window.location.replace("login.html");
+    }
+}
+
+/* ══════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════ */
+let _allStudents = [];
+let _allProfs    = {};
+let _allUsers    = {};
+let _adminReports = [];
+let _currentClassProfId   = null;
+let _currentClassStudents = [];
+let _openAccordions = new Set();
+let _statsInterval  = null;
+const STATS_REFRESH_MS = 3 * 60 * 1000; // 3 minutes
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+function escapeJsArg(value) {
+    let text = String(value ?? '').split('\r').join(' ').split('\n').join(' ');
+    return escapeHtml(text.split('\\').join('\\\\').split("'").join("\\'"));
+}
+
+function getCompletedSurahCount(student) {
+    if (Array.isArray(student.completedSurahs)) return student.completedSurahs.length;
+    if (student.progress && typeof student.progress === 'object') {
+        return canonicalProgressEntries(student.progress).filter(([, p]) => p && (p.completedAt || p.completed_at)).length;
+    }
+    return Number(student.souratesTerminees || student.completedSurahsCount || 0) || 0;
+}
+
+function canonicalProgressEntries(progress) {
+    const canonical = new Map();
+    Object.entries(progress || {}).forEach(([id, value]) => {
+        const key = typeof Auth.normalizeSurahId === 'function' ? Auth.normalizeSurahId(id) : id;
+        const existing = canonical.get(key);
+        if (!existing || (!existing.completedAt && !existing.completed_at && (value?.completedAt || value?.completed_at))) {
+            canonical.set(key, value);
+        }
+    });
+    return Array.from(canonical.entries());
+}
+
+function getAssignedSet() {
+    const assigned = new Set();
+    Object.values(_allProfs || {}).forEach(prof => (prof.students || []).forEach(username => assigned.add(username)));
+    return assigned;
+}
+
+function getOpsSnapshot() {
+    const assigned = getAssignedSet();
+    const activeStudents = _allStudents.filter(s => !s.isSuspended);
+    const unassigned = activeStudents.filter(s => !assigned.has(s.username));
+    const zeroProgress = activeStudents.filter(s => getCompletedSurahCount(s) === 0);
+    const totalCompleted = activeStudents.reduce((sum, s) => sum + getCompletedSurahCount(s), 0);
+    const avgProgress = activeStudents.length ? Math.round(totalCompleted / activeStudents.length) : 0;
+    return { assigned, activeStudents, unassigned, zeroProgress, totalCompleted, avgProgress };
+}
+
+function renderControlRoom() {
+    const kpis = document.getElementById('cockpit-kpis');
+    if (!kpis) return;
+    const snap = getOpsSnapshot();
+    const totalProfs = Object.keys(_allProfs || {}).length;
+    kpis.innerHTML = [['الطلاب', _allStudents.length, 'إجمالي المسجلين'], ['النشطون', snap.activeStudents.length, 'حاضرون في النظام'], ['الأقسام', totalProfs, 'أقسام وأساتذة'], ['المعدل', snap.avgProgress, 'سورة لكل طالب']].map(item => '<div class="cockpit-kpi"><strong>' + item[1] + '</strong><span>' + escapeHtml(item[0]) + ' · ' + escapeHtml(item[2]) + '</span></div>').join('');
+    const health = document.getElementById('cockpit-health');
+    const alerts = [];
+    if (snap.unassigned.length) alerts.push({ tone: 'amber', title: snap.unassigned.length + ' طالب بلا قسم', text: 'اربطهم بقسم حتى لا يضيع مسار المتابعة.' });
+    if (snap.zeroProgress.length) alerts.push({ tone: 'rose', title: snap.zeroProgress.length + ' طالب لم يبدأ الحفظ', text: 'ابدأ معهم بسورة قصيرة وسهلة لخلق دفعة أولى.' });
+    if ((_adminReports || []).length) alerts.push({ tone: 'rose', title: _adminReports.length + ' signalement من الأساتذة', text: 'راجع غرفة التحكم قبل القرارات اليومية.' });
+    if (!alerts.length) alerts.push({ tone: 'emerald', title: 'الوضع مستقر', text: 'الأقسام منظمة ولا توجد أولوية عاجلة الآن.' });
+    if (health) health.textContent = alerts[0].tone === 'emerald' ? 'مستقر' : 'يحتاج متابعة';
+    const alertBox = document.getElementById('ops-alerts');
+    if (alertBox) {
+        alertBox.innerHTML = alerts.map(a => {
+            const color = a.tone === 'rose' ? 'bg-rose-50 border-rose-100' : a.tone === 'amber' ? 'bg-amber-50 border-amber-100' : 'bg-emerald-50 border-emerald-100';
+            return '<div class="ops-alert ' + color + '"><div class="text-xl">' + (a.tone === 'emerald' ? '✓' : '!') + '</div><div><strong>' + escapeHtml(a.title) + '</strong><span>' + escapeHtml(a.text) + '</span></div></div>';
+        }).join('');
+    }
+    const reportsBox = document.getElementById('admin-reports-list');
+    if (reportsBox) {
+        reportsBox.innerHTML = (_adminReports || []).length ? _adminReports.slice(0, 5).map(r => '<div class="rounded-2xl bg-rose-50 border border-rose-100 p-3"><div class="flex items-center justify-between gap-2"><strong class="text-rose-900 text-sm">' + escapeHtml(r.category || 'Signalement') + '</strong><span class="text-xs font-black text-rose-700">' + escapeHtml(r.profName || '') + '</span></div><p class="text-xs text-gray-600 font-bold mt-2 whitespace-pre-line">' + escapeHtml(r.text || '') + '</p></div>').join('') : '<div class="rounded-2xl bg-emerald-50 border border-emerald-100 p-3 text-sm font-black text-emerald-700 text-center">لا توجد signalements حاليا.</div>';
+    }
+
+    const classMap = document.getElementById('cockpit-classes');
+    if (classMap) {
+        const entries = Object.entries(_allProfs || {});
+        classMap.innerHTML = entries.length ? entries.map(([profId, prof]) => {
+            const students = _allStudents.filter(st => (prof.students || []).includes(st.username));
+            const avg = students.length ? Math.round(students.reduce((sum, st) => sum + getCompletedSurahCount(st), 0) / students.length) : 0;
+            return '<button class="text-right rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4 hover:bg-emerald-50 transition" onclick="openClassModal(\'' + escapeHtml(profId) + '\')"><div class="flex items-center justify-between gap-3"><strong class="text-emerald-900">' + escapeHtml(prof.classe || 'قسم') + '</strong><span class="text-xs font-black text-emerald-700 bg-white rounded-full px-2 py-1">' + students.length + ' طالب</span></div><p class="text-xs text-gray-500 font-bold mt-2">الأستاذ: ' + escapeHtml(prof.prenom || prof.username || '') + '</p><p class="text-xs text-emerald-700 font-black mt-2">متوسط الحفظ: ' + avg + ' سورة</p></button>';
+        }).join('') : '<div class="rounded-2xl bg-gray-50 border border-gray-100 p-4 text-sm font-bold text-gray-500">لا توجد أقسام بعد.</div>';
+    }
+}
+
+function refreshControlRoom() {
+    renderAll().then(() => { renderControlRoom(); showToast('تم تحديث غرفة التحكم', 'success'); });
+}
+
+function askAdminAssistant(intent) {
+    const input = document.getElementById('ai-command');
+    if (input) input.value = intent;
+    answerAdminAssistant();
+}
+
+function answerAdminAssistant() {
+    const answer = document.getElementById('ai-answer');
+    const input = (document.getElementById('ai-command')?.value || '').toLowerCase();
+    const snap = getOpsSnapshot();
+    let text = 'المؤشر العام جيد: ' + snap.activeStudents.length + ' طالب نشط، ومتوسط ' + snap.avgProgress + ' سورة لكل طالب.';
+    if (input.includes('late') || input.includes('متأخر') || input.includes('zero')) {
+        const names = snap.zeroProgress.slice(0, 5).map(s => ((s.prenom || '') + ' ' + (s.nom || '')).trim() || s.username);
+        text = names.length ? 'ابدأ المتابعة مع: ' + names.join('، ') + '. أعطهم هدفا صغيرا اليوم: سورة قصيرة واحدة.' : 'لا يوجد طالب متوقف تماما حاليا.';
+    } else if (input.includes('class') || input.includes('قسم')) {
+        text = snap.unassigned.length ? 'هناك ' + snap.unassigned.length + ' طالب يحتاجون ربطا بقسم قبل أي تحليل آخر.' : 'كل الطلاب النشطين مرتبطون بأقسام.';
+    }
+    if (answer) answer.textContent = text;
+}
+
+/* ══════════════════════════════════════════════════════════
+   TABS
+══════════════════════════════════════════════════════════ */
+const ALL_TABS = ['cockpit','classes','stats','parents','add-student','add-prof'];
+
+async function switchTab(name) {
+    ALL_TABS.forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
+    });
+    document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', ALL_TABS[i] === name);
+    });
+    if (name === 'stats') await renderStats();
+    if (name === 'cockpit') renderControlRoom();
+}
+
+/* ══════════════════════════════════════════════════════════
+   MAIN RENDER
+══════════════════════════════════════════════════════════ */
+async function renderAll() {
+    _allStudents = await Auth.getAllStudents();
+    _allProfs    = await Auth.getProfs();
+    _allUsers    = await Auth.getAllUsers();
+    _adminReports = typeof Auth.getAdminReports === 'function' ? await Auth.getAdminReports() : [];
+
+    document.getElementById('total-badge').innerText = _allStudents.length + ' طالب';
+    renderControlRoom();
+
+    const container = document.getElementById('classes-container');
+    container.innerHTML = '';
+
+    const studentToProfId = {};
+    Object.entries(_allProfs).forEach(([profId, prof]) => {
+        (prof.students || []).forEach(sid => { studentToProfId[sid] = profId; });
+    });
+
+    Object.entries(_allProfs).forEach(([profId, prof]) => {
+        const profStudents = _allStudents.filter(s =>
+            (prof.students || []).includes(s.username)
+        );
+        container.appendChild(buildClassCard(profId, prof, profStudents));
+    });
+
+    const unassigned = _allStudents.filter(s => !studentToProfId[s.username]);
+    if (unassigned.length > 0 || Object.keys(_allProfs).length === 0) {
+        container.appendChild(buildUnassignedCard(unassigned));
+    }
+}
+
+/* ══════════════════════════════════════════════════════════
+   STATS
+══════════════════════════════════════════════════════════ */
+async function renderStats() {
+    if (!_allStudents.length && !Object.keys(_allProfs).length) return;
+
+    /* ── Charger profils_admin directement ── */
+    const supabase = Auth.getSupabaseClient();
+    const { data: profils } = await supabase.from('profils_admin').select('*');
+    const profilMap = {};
+    (profils || []).forEach(p => profilMap[p.username] = p);
+
+    const total      = _allStudents.length;
+    const active     = _allStudents.filter(s => !s.isSuspended).length;
+    const suspended  = total - active;
+    const totalProfs = Object.keys(_allProfs).length;
+
+    /* Assigned/unassigned */
+    const assignedSet = new Set(
+        Object.values(_allProfs).flatMap(p => p.students || [])
+    );
+    const unassignedCount = _allStudents.filter(s => !assignedSet.has(s.username)).length;
+
+    /* Docs — lus depuis profilMap */
+    const hasCin      = _allStudents.filter(s => profilMap[s.username]?.cin_provided).length;
+    const hasBirth    = _allStudents.filter(s => profilMap[s.username]?.birth_cert_provided).length;
+    const hasAll      = _allStudents.filter(s => profilMap[s.username]?.cin_provided && profilMap[s.username]?.birth_cert_provided).length;
+    const missingDocs = _allStudents.filter(s => !profilMap[s.username]?.cin_provided && !profilMap[s.username]?.birth_cert_provided);
+
+    /* Payments — lus depuis profilMap */
+    let totalPaid = 0, totalPending = 0;
+    let amountCollected = 0, amountPending = 0;
+    const debtors = [];
+    _allStudents.forEach(s => {
+        const payments    = profilMap[s.username]?.payments || [];
+        const pendingRows = payments.filter(p => p.status !== 'payé');
+        const paidRows    = payments.filter(p => p.status === 'payé');
+        totalPaid       += paidRows.length;
+        totalPending    += pendingRows.length;
+        amountCollected += paidRows.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+        amountPending   += pendingRows.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+        if (pendingRows.length > 0) {
+            const pendingAmt = pendingRows.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+            debtors.push({ name: s.prenom + ' ' + s.nom, pending: pendingRows.length, amount: pendingAmt });
+        }
+    });
+    const payRate = (totalPaid + totalPending) > 0
+        ? Math.round(totalPaid / (totalPaid + totalPending) * 100) : 0;
+
+    /* Progress */
+    let totalSurahs = 0;
+    const recentActivity = [];
+    const activelearners = [];
+    const zeroProgress   = [];
+
+    _allStudents.forEach(s => {
+        const prog    = s.progress || {};
+        const entries = canonicalProgressEntries(prog);
+        const completed = entries.filter(([id, p]) =>
+            p && p.completedAt
+        );
+        totalSurahs += completed.length;
+        if (completed.length > 0) activelearners.push({ s, count: completed.length });
+        else zeroProgress.push(s);
+
+        completed.forEach(([id, p]) => {
+            recentActivity.push({
+                studentName: s.prenom + ' ' + s.nom,
+                surahId: id,
+                completedAt: p.completedAt,
+                score: p.globalScore
+            });
+        });
+    });
+
+    recentActivity.sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+    const top5recent = recentActivity.slice(0, 5);
+
+    activelearners.sort((a, b) => b.count - a.count);
+    const top5students = activelearners.slice(0, 5);
+    const avgSurahs = total > 0 ? (totalSurahs / total).toFixed(1) : 0;
+
+    /* ── KPI cards ── */
+    const kpiData = [
+        { label: 'إجمالي الطلاب',      value: total,        cls: 'stat-purple', icon: '👥' },
+        { label: 'طلاب نشطون',          value: active,       cls: 'stat-green',  icon: '✅' },
+        { label: 'طلاب موقوفون',        value: suspended,    cls: 'stat-rose',   icon: '🚫' },
+        { label: 'عدد الأساتذة',        value: totalProfs,   cls: 'stat-blue',   icon: '👨‍🏫' },
+        { label: 'معدل طلاب / أستاذ',   value: totalProfs > 0 ? (total / totalProfs).toFixed(1) : '—', cls: 'stat-teal', icon: '📐' },
+        { label: 'بدون قسم',            value: unassignedCount, cls: 'stat-orange', icon: '⚠️' },
+    ];
+    const kpiEl = document.getElementById('stats-kpi');
+    kpiEl.innerHTML = kpiData.map(k => `
+        <div class="stat-card ${k.cls}" data-icon="${k.icon}">
+            <span class="stat-num">${k.value}</span>
+            <span class="stat-label">${k.label}</span>
+        </div>
+    `).join('');
+
+    /* ── Donut ── */
+    const activePct = total > 0 ? Math.round(active / total * 100) : 0;
+    const dashVal   = (activePct / 100) * 100;
+    document.getElementById('donut-active').setAttribute('stroke-dasharray', dashVal + ' ' + (100 - dashVal));
+    document.getElementById('donut-pct').innerText = activePct + '%';
+    document.getElementById('lbl-active').innerText      = active + ' / ' + total;
+    document.getElementById('lbl-suspended').innerText   = suspended + ' / ' + total;
+    document.getElementById('lbl-unassigned').innerText  = unassignedCount + ' / ' + total;
+    document.getElementById('bar-active').style.width    = activePct + '%';
+    document.getElementById('bar-suspended').style.width = total > 0 ? (suspended / total * 100) + '%' : '0%';
+    document.getElementById('bar-unassigned').style.width= total > 0 ? (unassignedCount / total * 100) + '%' : '0%';
+
+    /* ── Docs ── */
+    const pCin   = total > 0 ? Math.round(hasCin   / total * 100) : 0;
+    const pBirth = total > 0 ? Math.round(hasBirth / total * 100) : 0;
+    const pFull  = total > 0 ? Math.round(hasAll   / total * 100) : 0;
+    document.getElementById('lbl-cin').innerText      = hasCin   + ' / ' + total + ' (' + pCin   + '%)';
+    document.getElementById('lbl-birth').innerText    = hasBirth + ' / ' + total + ' (' + pBirth + '%)';
+    document.getElementById('lbl-full-doc').innerText = hasAll   + ' / ' + total + ' (' + pFull  + '%)';
+    document.getElementById('bar-cin').style.width    = pCin   + '%';
+    document.getElementById('bar-birth').style.width  = pBirth + '%';
+    document.getElementById('bar-full-doc').style.width = pFull + '%';
+    document.getElementById('lbl-missing-docs').innerText = missingDocs.length > 0
+        ? '⚠️ ' + missingDocs.length + ' طالب بدون أي وثيقة: ' + missingDocs.map(s => s.prenom + ' ' + s.nom).join(' — ')
+        : '';
+
+    /* ── Payments ── */
+    document.getElementById('pay-amount-collected').innerText = amountCollected.toLocaleString('ar') + ' د.م.';
+    document.getElementById('pay-amount-pending').innerText   = amountPending.toLocaleString('ar')   + ' د.م.';
+    document.getElementById('pay-paid').innerText    = totalPaid;
+    document.getElementById('pay-pending').innerText = totalPending;
+    document.getElementById('pay-rate').innerText    = payRate + '%';
+    document.getElementById('pay-debtors').innerText = debtors.length;
+    const dl = document.getElementById('debtors-list');
+    dl.innerHTML = debtors.length === 0
+        ? '<p class="text-xs text-emerald-600 font-bold text-center py-2">✅ لا يوجد طلاب متأخرون في التسديد</p>'
+        : debtors.sort((a,b) => b.amount - a.amount || b.pending - a.pending).slice(0, 6).map(d => `
+            <div class="flex items-center justify-between bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-1">
+                <span class="text-sm font-bold text-gray-700">${d.name}</span>
+                <div class="flex items-center gap-2">
+                    ${d.amount > 0 ? `<span class="text-xs font-black text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">${d.amount} د.م.</span>` : ''}
+                    <span class="text-xs font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">${d.pending} شهر</span>
+                </div>
+            </div>`).join('');
+
+    /* ── Top students ── */
+    const medals = ['🥇','🥈','🥉'];
+    const topEl = document.getElementById('top-students-list');
+    topEl.innerHTML = top5students.length === 0
+        ? '<p class="text-gray-400 text-sm text-center py-4">لا توجد بيانات تقدم بعد</p>'
+        : top5students.map((item, i) => `
+            <div class="top-row">
+                <span class="text-xl w-6 text-center">${medals[i] || (i + 1)}</span>
+                <div class="flex-1">
+                    <p class="text-sm font-bold text-gray-800">${item.s.prenom} ${item.s.nom}</p>
+                    <div class="prog-track mt-1">
+                        <div class="prog-fill bg-purple-500"
+                             style="width:${Math.min(item.count * 10, 100)}%"></div>
+                    </div>
+                </div>
+                <span class="text-xs font-black text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                    ${item.count} سورة
+                </span>
+            </div>`).join('');
+
+    /* ── Academic progress ── */
+    document.getElementById('prog-total-surahs').innerText    = totalSurahs;
+    document.getElementById('prog-avg').innerText             = avgSurahs;
+    document.getElementById('prog-active-learners').innerText = activelearners.length;
+    document.getElementById('prog-zero').innerText            = zeroProgress.length;
+
+    /* ── Recent activity feed ── */
+    const feedEl = document.getElementById('recent-feed');
+    feedEl.innerHTML = top5recent.length === 0
+        ? '<p class="text-gray-400 text-sm text-center py-4">لا توجد إنجازات مسجلة بعد</p>'
+        : top5recent.map(a => {
+            const surahName = (typeof SURAH_REGISTRY !== 'undefined'
+                ? (SURAH_REGISTRY.find(s => s.id === a.surahId) || {}).nameAr
+                : null) || a.surahId;
+            const date = a.completedAt ? new Date(a.completedAt).toLocaleDateString('ar') : '';
+            const score = a.score != null ? a.score + '%' : '';
+            return `<div class="feed-item">
+                <span class="text-lg">🎉</span>
+                <div class="flex-1">
+                    <span class="text-sm font-bold text-gray-800">${a.studentName}</span>
+                    <span class="text-sm text-gray-500"> أنجز سورة </span>
+                    <span class="text-sm font-bold text-purple-700">${surahName}</span>
+                </div>
+                <div class="text-left flex flex-col items-end gap-0.5">
+                    ${score ? `<span class="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">${score}</span>` : ''}
+                    <span class="text-xs text-gray-400">${date}</span>
+                </div>
+            </div>`;
+        }).join('');
+
+    /* ── Class comparison table ── */
+    const tbody = document.getElementById('class-compare-body');
+    const classRows = Object.entries(_allProfs).map(([profId, prof]) => {
+        const students = _allStudents.filter(s => (prof.students || []).includes(s.username));
+        const surahs   = students.reduce((acc, s) => {
+            return acc + Object.entries(s.progress || {})
+                .filter(([id, p]) => p && p.completedAt).length;
+        }, 0);
+        const docsOk = students.filter(s => s.cinProvided && s.birthCertProvided).length;
+        const paidOk = students.filter(s => {
+            const pays = s.payments || [];
+            return pays.length > 0 && pays.every(p => p.status === 'payé');
+        }).length;
+        const avgS = students.length > 0 ? (surahs / students.length).toFixed(1) : 0;
+        const level = avgS >= 5 ? '🟢 ممتاز' : avgS >= 2 ? '🟡 جيد' : '🔴 يحتاج دعم';
+        return { prof, students, surahs, docsOk, paidOk, avgS, level };
+    });
+    classRows.sort((a, b) => b.avgS - a.avgS);
+    tbody.innerHTML = classRows.length === 0
+        ? '<tr><td colspan="6" class="text-center text-gray-400 py-6 text-sm">لا توجد أقسام بعد</td></tr>'
+        : classRows.map((r, i) => `
+            <tr class="border-b border-gray-50 hover:bg-purple-50 transition">
+                <td class="py-2.5 font-bold text-gray-800 text-sm">
+                    ${i === 0 ? '🏆 ' : ''}${r.prof.prenom}<br>
+                    <span class="text-xs font-normal text-gray-400">${r.prof.classe}</span>
+                </td>
+                <td class="py-2.5 text-center">
+                    <span class="bg-purple-100 text-purple-800 font-bold text-xs px-2 py-0.5 rounded-full">${r.students.length}</span>
+                </td>
+                <td class="py-2.5 text-center">
+                    <span class="text-sm font-black text-teal-700">${r.surahs}</span>
+                    <span class="text-xs text-gray-400"> (معدل ${r.avgS})</span>
+                </td>
+                <td class="py-2.5 text-center">
+                    <span class="${r.docsOk === r.students.length ? 'text-emerald-600' : 'text-amber-600'} font-bold text-xs">
+                        ${r.docsOk}/${r.students.length}
+                    </span>
+                </td>
+                <td class="py-2.5 text-center">
+                    <span class="font-bold text-xs text-blue-700">${r.paidOk}/${r.students.length}</span>
+                </td>
+                <td class="py-2.5 text-xs font-bold">${r.level}</td>
+            </tr>`).join('');
+
+    /* ── Alerts ── */
+    const alerts = [];
+    if (unassignedCount > 0)
+        alerts.push({ color: 'border-amber-300 bg-amber-50', icon: '⚠️', text: unassignedCount + ' طالب بدون قسم — الرجاء توزيعهم على الأقسام' });
+    if (missingDocs.length > 0)
+        alerts.push({ color: 'border-rose-300 bg-rose-50', icon: '📂', text: missingDocs.length + ' طالب لم يقدم أي وثيقة بعد' });
+    if (debtors.length > 0)
+        alerts.push({ color: 'border-orange-300 bg-orange-50', icon: '💰', text: debtors.length + ' طالب متأخر في تسديد الأداءات الشهرية' });
+    if (zeroProgress.length > 0)
+        alerts.push({ color: 'border-blue-200 bg-blue-50', icon: '📖', text: zeroProgress.length + ' طالب لم يبدأ أي سورة بعد' });
+    const classesNoStudents = Object.entries(_allProfs).filter(([id, p]) => !(p.students || []).length);
+    if (classesNoStudents.length > 0)
+        alerts.push({ color: 'border-slate-200 bg-slate-50', icon: '🏫', text: classesNoStudents.length + ' قسم فارغ بدون طلاب: ' + classesNoStudents.map(([,p]) => p.prenom).join('، ') });
+
+    const alertsEl = document.getElementById('alerts-container');
+    alertsEl.innerHTML = alerts.length === 0
+        ? `<div class="alert-card border-emerald-200 bg-emerald-50">
+               <span class="text-xl">✅</span>
+               <span class="text-sm font-bold text-emerald-700">كل شيء على ما يرام — لا توجد تنبيهات حالياً</span>
+           </div>`
+        : alerts.map(a => `
+            <div class="alert-card ${a.color}">
+                <span class="text-xl">${a.icon}</span>
+                <span class="text-sm font-bold text-gray-700">${a.text}</span>
+            </div>`).join('');
+
+    /* Update refresh label */
+    const now = new Date().toLocaleTimeString('ar');
+    document.getElementById('refresh-label').innerText = 'آخر تحديث ' + now;
+}
+
+async function refreshStats() {
+    const icon  = document.getElementById('refresh-icon');
+    const label = document.getElementById('refresh-label');
+    icon.classList.add('spin');
+    label.innerText = 'جاري التحديث...';
+    await renderAll();
+    await renderStats();
+    icon.classList.remove('spin');
+}
+
+function startStatsAutoRefresh() {
+    if (_statsInterval) clearInterval(_statsInterval);
+    _statsInterval = setInterval(async () => {
+        await renderAll();
+        const activeTab = document.querySelector('.tab-btn.active');
+        if (activeTab && activeTab.innerText.includes('الإحصاءات')) await renderStats();
+    }, STATS_REFRESH_MS);
+}
+
+/* ══════════════════════════════════════════════════════════
+   CLASS CARD / ACCORDION (unchanged)
+══════════════════════════════════════════════════════════ */
+function buildClassCard(profId, prof, students) {
+    const wrap = document.createElement('div');
+    wrap.className = 'class-card';
+    wrap.id = 'class-card-' + profId;
+    const isOpen = _openAccordions.has(profId);
+    const header = document.createElement('div');
+    header.className = 'class-card-header accordion-header' + (isOpen ? ' open' : '');
+    header.innerHTML = `
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white font-black text-lg">
+                ${prof.prenom ? prof.prenom[0] : '؟'}
+            </div>
+            <div>
+                <p class="text-white font-black text-base leading-tight">${prof.prenom}</p>
+                <p class="text-purple-200 text-xs font-bold">${prof.classe} &nbsp;·&nbsp; ${students.length} طالب</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="openClassModal('${profId}', event)"
+                    class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-lg transition">
+                إجراءات القسم ⚙️
+            </button>
+            <span class="accordion-icon text-white text-lg">▾</span>
+        </div>`;
+    header.onclick = function(e) {
+        if (e.target.closest('button')) return;
+        toggleAccordion(profId);
+    };
+    wrap.appendChild(header);
+    const body = document.createElement('div');
+    body.className = 'accordion-body p-4 space-y-1' + (isOpen ? ' open' : '');
+    body.id = 'accordion-body-' + profId;
+    if (students.length === 0) {
+        body.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لا يوجد طلاب في هذا القسم بعد</p>';
+    } else {
+        students.forEach(s => body.appendChild(buildStudentRow(s)));
+    }
+    wrap.appendChild(body);
+    return wrap;
+}
+
+function buildUnassignedCard(students) {
+    const wrap = document.createElement('div');
+    wrap.className = 'class-card';
+    wrap.id = 'class-card-unassigned';
+    const isOpen = _openAccordions.has('unassigned');
+    const header = document.createElement('div');
+    header.style.cssText = 'background: linear-gradient(135deg,#64748b,#475569); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;';
+    header.className = 'accordion-header' + (isOpen ? ' open' : '');
+    header.innerHTML = `
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl">👥</div>
+            <div>
+                <p class="text-white font-black text-base">طلاب بدون قسم</p>
+                <p class="text-slate-300 text-xs font-bold">${students.length} طالب غير مُرتَّب</p>
+            </div>
+        </div>
+        <span class="accordion-icon text-white text-lg">▾</span>`;
+    header.onclick = () => toggleAccordion('unassigned');
+    wrap.appendChild(header);
+    const body = document.createElement('div');
+    body.className = 'accordion-body p-4 space-y-1' + (isOpen ? ' open' : '');
+    body.id = 'accordion-body-unassigned';
+    if (students.length === 0) {
+        body.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">جميع الطلاب مُوزَّعون على أقسام ✅</p>';
+    } else {
+        students.forEach(s => body.appendChild(buildStudentRow(s)));
+    }
+    wrap.appendChild(body);
+    return wrap;
+}
+
+function buildStudentRow(student) {
+    const row = document.createElement('div');
+    row.className = 'student-row';
+    const completedSurahs = Object.entries(student.progress || {})
+        .filter(([id, p]) => p && p.completedAt).length;
+    const statusColor = student.isSuspended ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700';
+    const statusText  = student.isSuspended ? '🚫 موقوف' : '✅ نشط';
+    row.innerHTML = `
+        <div class="flex-1 min-w-[140px]">
+            <p class="font-bold text-gray-800 text-sm">${escapeHtml(student.prenom)} ${escapeHtml(student.nom)}</p>
+            <p class="text-xs text-gray-400 font-mono">${escapeHtml(student.username)}</p>
+        </div>
+        <span class="text-xs font-bold ${statusColor} px-2 py-0.5 rounded-full">${statusText}</span>
+        <span class="text-xs text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full font-bold">${completedSurahs} سورة</span>
+        <div class="flex gap-1.5 flex-wrap">
+            <button onclick="openStudentModal('${escapeJsArg(student.username)}', '${escapeJsArg(student.prenom)} ${escapeJsArg(student.nom)}')"
+                    class="pill bg-purple-100 text-purple-800">📂 الملف</button>
+            <button onclick="toggleUserSuspension('${escapeJsArg(student.username)}')"
+                    class="pill ${student.isSuspended ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                ${student.isSuspended ? '🔄 تفعيل' : '🚫 إيقاف'}
+            </button>
+            <button onclick="confirmRemoveStudent('${escapeJsArg(student.username)}', '${escapeJsArg(student.prenom)} ${escapeJsArg(student.nom)}')"
+                    class="pill bg-rose-100 text-rose-700">🗑️</button>
+        </div>`;
+    const msgs = student.messages || [];
+    if (msgs.length > 0) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'w-full mt-1 space-y-1';
+        msgs.forEach(m => {
+            const d = document.createElement('div');
+            d.className = 'flex items-center justify-between bg-blue-50 border border-blue-100 rounded-lg px-2 py-1';
+            d.innerHTML = `
+                <span class="text-xs text-blue-800 font-semibold">
+                    ${escapeHtml(m.text)}<span class="text-blue-400"> (${escapeHtml(m.date || '')})</span>
+                </span>
+                <button onclick="deleteMessage('${m.id}')" class="text-rose-500 hover:text-rose-700 font-bold text-sm mr-2">✕</button>`;
+            msgDiv.appendChild(d);
+        });
+        row.appendChild(msgDiv);
+    }
+    return row;
+}
+
+function toggleAccordion(id) {
+    const header = document.querySelector('#class-card-' + id + ' .accordion-header');
+    const body   = document.getElementById('accordion-body-' + id);
+    if (!body) return;
+    const isOpen = body.classList.contains('open');
+    if (isOpen) {
+        body.classList.remove('open');
+        if (header) header.classList.remove('open');
+        _openAccordions.delete(id);
+    } else {
+        body.classList.add('open');
+        if (header) header.classList.add('open');
+        _openAccordions.add(id);
+    }
+}
+
+/* ══════════════════════════════════════════════════════════
+   STUDENT MODAL
+══════════════════════════════════════════════════════════ */
+async function openStudentModal(username, fullName) {
+    document.getElementById('modal-username').value = username;
+    document.getElementById('modal-student-name').innerText = fullName;
+    document.getElementById('modal-student-username').innerText = '@' + username;
+    switchModalTab('profile');
+    const profile = await Auth.getProfile(username);
+    document.getElementById('modal-cin').checked = profile.cinProvided;
+    document.getElementById('modal-birthcert').checked = profile.birthCertProvided;
+    const tbody = document.getElementById('modal-payments-body');
+    tbody.innerHTML = '';
+    (profile.payments || []).forEach(p => addPaymentRow(p.month, p.amount, p.status));
+    document.getElementById('student-modal').classList.add('open');
+}
+
+function closeStudentModal(event) {
+    if (event && event.target !== document.getElementById('student-modal')) return;
+    document.getElementById('student-modal').classList.remove('open');
+}
+
+function switchModalTab(name) {
+    ['profile','schedule','message','progress','recitation'].forEach(t => {
+        document.getElementById('modal-content-' + t).classList.toggle('hidden', t !== name);
+        const btn = document.getElementById('mtab-' + t);
+        if (t === name) { btn.classList.add('bg-purple-100','text-purple-700'); btn.classList.remove('text-gray-500'); }
+        else            { btn.classList.remove('bg-purple-100','text-purple-700'); btn.classList.add('text-gray-500'); }
+    });
+    if (name === 'schedule') loadStudentSchedule();
+    if (name === 'progress') loadStudentProgress();
+    if (name === 'recitation') loadStudentRecitations();
+}
+
+async function loadStudentSchedule() {
+    const username = document.getElementById('modal-username').value;
+    const sched = await Auth.getSchedule(username);
+    document.getElementById('modal-schedule-text').value =
+        sched === 'لم يتم تحديد أوقات الحصص بعد.' ? '' : sched;
+}
+
+async function saveSchedule() {
+    const username = document.getElementById('modal-username').value;
+    const text = document.getElementById('modal-schedule-text').value.trim();
+    if (!text) { alert('الرجاء كتابة الجدول أولاً'); return; }
+    await Auth.setSchedule(username, text);
+    showToast('تم حفظ الجدول ✔️', 'success');
+}
+
+async function sendSingleMsg() {
+    const username = document.getElementById('modal-username').value;
+    const text = document.getElementById('modal-msg-text').value.trim();
+    if (!text) { alert('الرجاء كتابة الرسالة أولاً'); return; }
+    await Auth.sendMessage(username, text);
+    document.getElementById('modal-msg-text').value = '';
+    showToast('تم الإرسال ✔️', 'success');
+    await renderAll();
+}
+
+async function loadStudentProgress() {
+    const username  = document.getElementById('modal-username').value;
+    const student   = _allStudents.find(s => s.username === username);
+    const container = document.getElementById('modal-progress-content');
+    if (!student) { container.innerHTML = '<p class="text-gray-400 text-sm">لا توجد بيانات</p>'; return; }
+    const progress  = student.progress || {};
+    const entries   = canonicalProgressEntries(progress);
+    if (entries.length === 0) { container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لم يبدأ أي سورة بعد</p>'; return; }
+    const completed  = entries.filter(([id, p]) => p && p.completedAt);
+    const inProgress = entries.filter(([id, p]) => !p.completedAt || Object.keys(p.activities || {}).length === 0);
+    let html = '';
+    if (completed.length > 0) {
+        html += `<p class="text-xs font-bold text-gray-400 mb-1">السور المنجزة (${completed.length})</p>`;
+        html += completed.map(([id, p]) => {
+            const name  = (typeof SURAH_REGISTRY !== 'undefined' ? (SURAH_REGISTRY.find(s => s.id === id) || {}).nameAr : null) || id;
+            const score = p.globalScore != null ? p.globalScore : 100;
+            const date  = new Date(p.completedAt).toLocaleDateString('ar');
+            const color = score >= 80 ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800';
+            return `<div class="flex items-center justify-between ${color} rounded-xl px-3 py-2 text-sm font-bold mb-1">
+                <span>✅ ${name}</span><span>${score}% · ${date}</span></div>`;
+        }).join('');
+    }
+    if (inProgress.length > 0) {
+        html += `<p class="text-xs font-bold text-gray-400 mt-3 mb-1">قيد التعلم (${inProgress.length})</p>`;
+        html += inProgress.map(([id, p]) => {
+            const name     = (typeof SURAH_REGISTRY !== 'undefined' ? (SURAH_REGISTRY.find(s => s.id === id) || {}).nameAr : null) || id;
+            const actCount = Object.keys(p.activities || {}).length;
+            return `<div class="flex items-center justify-between bg-blue-50 text-blue-800 rounded-xl px-3 py-2 text-sm font-bold mb-1">
+                <span>📖 ${name}</span><span>${actCount} نشاط مكتمل</span></div>`;
+        }).join('');
+    }
+    container.innerHTML = html;
+}
+
+function recitationTone(result) {
+    const value = String(result || '');
+    if (value.includes('متقن')) return 'bg-emerald-50 text-emerald-700';
+    if (value.includes('جيد')) return 'bg-blue-50 text-blue-700';
+    if (value.includes('غائب')) return 'bg-slate-100 text-slate-600';
+    return 'bg-amber-50 text-amber-700';
+}
+
+function formatRecitationDate(item) {
+    const raw = item.savedAt || item.createdAt || item.date || '';
+    const parsed = raw ? new Date(raw) : null;
+    if (parsed && !Number.isNaN(parsed.getTime())) return parsed.toLocaleDateString('ar-MA');
+    return raw || '-';
+}
+
+function recitationRangeLabel(note) {
+    if (!note) return '';
+    if (note.scope === 'جزء') {
+        const start = note.ayahStart || '';
+        const end = note.ayahEnd || '';
+        if (start && end) return 'من الآية ' + start + ' إلى ' + end;
+        if (start) return 'من الآية ' + start;
+    }
+    return 'السورة كاملة';
+}
+
+async function loadStudentRecitations() {
+    const username = document.getElementById('modal-username').value;
+    const container = document.getElementById('modal-recitation-content');
+    if (!container) return;
+    container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">جاري التحميل...</p>';
+    const notes = typeof Auth.getTeacherNotes === 'function' ? await Auth.getTeacherNotes(username) : [];
+    const recitations = notes.filter(note => note && (note.source === 'recitation' || note.surah || note.validation)).slice(0, 12);
+    if (!recitations.length) {
+        container.innerHTML = '<p class="text-gray-400 text-sm text-center py-4">لا يوجد تسميع مسجل بعد.</p>';
+        return;
+    }
+    const mastered = recitations.filter(note => /ممتاز|جيد جدا|متقن/.test(String(note.validation || ''))).length;
+    const review = recitations.filter(note => /مراجعة|غير متقن|إعادة|ضعيف/.test(String(note.validation || ''))).length;
+    const absent = recitations.filter(note => String(note.validation || '').includes('غائب')).length;
+    const latest = recitations[0];
+    const summary = '<div class="recitation-admin-card bg-emerald-50/60">'
+        + '<p class="text-xs font-black text-emerald-700 mb-2">ملخص التسميع</p>'
+        + '<div class="grid grid-cols-3 gap-2">'
+        + '<div class="rounded-xl bg-white p-2 text-center"><strong class="block text-emerald-700">' + mastered + '</strong><span class="text-[11px] font-black text-emerald-700">متقن</span></div>'
+        + '<div class="rounded-xl bg-white p-2 text-center"><strong class="block text-amber-700">' + review + '</strong><span class="text-[11px] font-black text-amber-700">مراجعة</span></div>'
+        + '<div class="rounded-xl bg-white p-2 text-center"><strong class="block text-slate-600">' + absent + '</strong><span class="text-[11px] font-black text-slate-600">غياب</span></div>'
+        + '</div>'
+        + '<div class="mt-3 rounded-xl bg-white p-3"><span class="text-xs font-black text-gray-400">آخر تسميع</span><strong class="block text-gray-900 mt-1">' + escapeHtml(latest.surah || '-') + '</strong><p class="text-xs font-black text-gray-500 mt-1">' + escapeHtml(recitationRangeLabel(latest)) + '</p></div>'
+        + '</div>';
+    const rows = recitations.map(note => {
+        return '<div class="recitation-admin-line">'
+            + '<div class="flex items-center justify-between gap-2"><strong class="text-gray-900">' + escapeHtml(note.surah || 'تسميع عام') + '</strong><span class="recitation-chip ' + recitationTone(note.validation) + '">' + escapeHtml(note.validation || '-') + '</span></div>'
+            + '<p class="text-xs font-black text-gray-500 mt-1">' + escapeHtml(recitationRangeLabel(note)) + '</p>'
+            + '<div class="flex items-center justify-between gap-2 mt-2"><span class="text-xs font-bold text-gray-400">' + escapeHtml(formatRecitationDate(note)) + '</span><span class="text-xs font-bold text-emerald-700">' + escapeHtml(note.profName || '') + '</span></div>'
+            + (note.comment ? '<p class="text-sm text-gray-700 font-bold mt-2">' + escapeHtml(note.comment) + '</p>' : '')
+            + '</div>';
+    }).join('');
+    container.innerHTML = summary + rows;
+}
+
+/* ══════════════════════════════════════════════════════════
+   PROFILE / PAYMENTS
+══════════════════════════════════════════════════════════ */
+function addPaymentRow(month, amount, status) {
+    month  = month  || '';
+    amount = amount != null ? amount : '';
+    status = status || 'en attente';
+    const tbody = document.getElementById('modal-payments-body');
+    const tr = document.createElement('tr');
+    tr.className = 'payment-row border-b border-gray-100';
+    const colorClass = status === 'payé' ? 'text-emerald-600' : 'text-amber-600';
+    tr.innerHTML = `
+        <td class="py-2 pr-1">
+            <input type="text" class="month-input w-full p-1 border rounded text-sm bg-white" value="${month}" placeholder="رجب 2025">
+        </td>
+        <td class="py-2 px-1">
+            <input type="number" min="0" class="amount-input w-full p-1 border rounded text-sm bg-white text-center font-bold text-purple-700" value="${amount}" placeholder="0">
+        </td>
+        <td class="py-2 px-1">
+            <select class="status-input w-full p-1 border rounded text-sm bg-white font-bold ${colorClass}">
+                <option value="en attente"${status !== 'payé' ? ' selected':''}>⏳ انتظار</option>
+                <option value="payé"${status === 'payé' ? ' selected':''}>✅ خالص</option>
+            </select>
+        </td>
+        <td class="py-2 text-center">
+            <button onclick="this.closest('tr').remove()" class="text-rose-500 font-bold hover:text-rose-700">✕</button>
+        </td>`;
+    tr.querySelector('.status-input').addEventListener('change', function() {
+        this.className = 'status-input w-full p-1 border rounded text-sm bg-white font-bold ' +
+            (this.value === 'payé' ? 'text-emerald-600' : 'text-amber-600');
+    });
+    tbody.appendChild(tr);
+}
+
+async function saveAdminProfile() {
+    const username          = document.getElementById('modal-username').value;
+    const cinProvided       = document.getElementById('modal-cin').checked;
+    const birthCertProvided = document.getElementById('modal-birthcert').checked;
+    const payments = [];
+    document.querySelectorAll('.payment-row').forEach(row => {
+        const month  = row.querySelector('.month-input').value.trim();
+        const amount = parseFloat(row.querySelector('.amount-input').value) || 0;
+        const status = row.querySelector('.status-input').value;
+        if (month) payments.push({ month, amount, status });
+    });
+    await Auth.updateProfile(username, { cinProvided, birthCertProvided, payments });
+    showToast('تم حفظ الملف ✔️', 'success');
+    document.getElementById('student-modal').classList.remove('open');
+    await renderAll();
+}
+
+/* ══════════════════════════════════════════════════════════
+   CLASS MODAL
+══════════════════════════════════════════════════════════ */
+function openClassModal(profId, event) {
+    if (event) event.stopPropagation();
+    _currentClassProfId = profId;
+    const prof = _allProfs[profId];
+    _currentClassStudents = _allStudents.filter(s => (prof.students || []).includes(s.username));
+    document.getElementById('class-modal-title').innerText = 'قسم: ' + prof.classe + ' — ' + prof.prenom;
+    document.getElementById('class-msg-text').value = '';
+    document.getElementById('class-schedule-text').value = '';
+    const sel = document.getElementById('assign-student-select');
+    const assignedAll = Object.values(_allProfs).flatMap(p => p.students || []);
+    const unassigned  = _allStudents.filter(s => !assignedAll.includes(s.username));
+    sel.innerHTML = unassigned.length === 0
+        ? '<option>لا يوجد طلاب غير مُرتَّبين</option>'
+        : unassigned.map(s => `<option value="${s.username}">${s.prenom} ${s.nom}</option>`).join('');
+    document.getElementById('class-modal').classList.add('open');
+}
+
+function closeClassModal(event) {
+    if (event && event.target !== document.getElementById('class-modal')) return;
+    document.getElementById('class-modal').classList.remove('open');
+}
+
+async function sendClassMsg() {
+    const text = document.getElementById('class-msg-text').value.trim();
+    if (!text) { alert('الرجاء كتابة الرسالة'); return; }
+    if (_currentClassStudents.length === 0) { alert('لا يوجد طلاب في هذا القسم'); return; }
+    await Promise.all(_currentClassStudents.map(s => Auth.sendMessage(s.username, text)));
+    showToast('✔️ تم الإرسال لـ ' + _currentClassStudents.length + ' طلاب', 'success');
+    document.getElementById('class-msg-text').value = '';
+    closeClassModal();
+    await renderAll();
+}
+
+async function saveClassSchedule() {
+    const text = document.getElementById('class-schedule-text').value.trim();
+    if (!text) { alert('الرجاء كتابة الجدول'); return; }
+    if (_currentClassStudents.length === 0) { alert('لا يوجد طلاب في هذا القسم'); return; }
+    await Promise.all(_currentClassStudents.map(s => Auth.setSchedule(s.username, text)));
+    showToast('✔️ تم حفظ الجدول لـ ' + _currentClassStudents.length + ' طلاب', 'success');
+    document.getElementById('class-schedule-text').value = '';
+    closeClassModal();
+    await renderAll();
+}
+
+async function assignStudentToClass() {
+    const studentId = document.getElementById('assign-student-select').value;
+    if (!studentId || !_currentClassProfId) return;
+    await Auth.assignStudentToProf(_currentClassProfId, studentId);
+    showToast('✔️ تم الربط', 'success');
+    closeClassModal();
+    await renderAll();
+}
+
+async function deleteCurrentProf() {
+    const prof = _allProfs[_currentClassProfId];
+    if (!confirm('هل أنت متأكد من حذف القسم "' + prof.classe + '" والأستاذ "' + prof.prenom + '"؟')) return;
+    await Auth.deleteProf(_currentClassProfId);
+    closeClassModal();
+    await renderAll();
+}
+
+/* ══════════════════════════════════════════════════════════
+   STUDENT ACTIONS
+══════════════════════════════════════════════════════════ */
+async function confirmRemoveStudent(username, fullName) {
+    if (confirm('هل أنت متأكد من حذف ' + fullName + ' نهائياً؟')) {
+        await Auth.deleteStudent(username);
+        await renderAll();
+    }
+}
+
+async function toggleUserSuspension(username) {
+    await Auth.toggleSuspension(username);
+    await renderAll();
+}
+
+async function deleteMessage(msgId) {
+    await Auth.deleteMessageById(msgId);
+    await renderAll();
+}
+
+/* ══════════════════════════════════════════════════════════
+   ADD STUDENT
+══════════════════════════════════════════════════════════ */
+async function createStudent() {
+    const prenom = document.getElementById('new-prenom').value.trim();
+    const nom    = document.getElementById('new-nom').value.trim();
+    const pass   = document.getElementById('new-pass').value.trim();
+    const btn    = document.getElementById('btn-create');
+    if (!prenom || !nom || !pass) { showAdminMsg('يرجى ملء جميع الخانات', false); return; }
+    btn.disabled = true; btn.innerText = 'جاري الإضافة...';
+    const res = await Auth.register(prenom, nom, pass, true);
+    btn.disabled = false; btn.innerText = 'إضافة الطالب ✔️';
+    if (res.ok) {
+        showAdminMsg('✅ تم إنشاء حساب ' + prenom + ' ' + nom, true);
+        document.getElementById('new-prenom').value = '';
+        document.getElementById('new-nom').value = '';
+        document.getElementById('new-pass').value = '';
+        await renderAll();
+    } else {
+        showAdminMsg('❌ ' + res.error, false);
+    }
+}
+
+function showAdminMsg(text, ok) {
+    const box = document.getElementById('admin-msg');
+    box.classList.remove('hidden');
+    box.innerText = text;
+    box.className = 'text-center text-sm font-bold mt-2 p-2 rounded ' +
+        (ok ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50');
+    setTimeout(() => box.classList.add('hidden'), 4000);
+}
+
+/* ══════════════════════════════════════════════════════════
+   ADD PROF
+══════════════════════════════════════════════════════════ */
+async function creerProf() {
+    const p = document.getElementById('new-prof-prenom').value.trim();
+    const c = document.getElementById('new-prof-classe').value.trim();
+    const m = document.getElementById('new-prof-pass').value.trim();
+    if (!p || !c || !m) { alert('المرجو ملء جميع الخانات'); return; }
+    const res = await Auth.registerProf(p, c, m);
+    if (res.ok) {
+        document.getElementById('new-prof-prenom').value = '';
+        document.getElementById('new-prof-classe').value = '';
+        document.getElementById('new-prof-pass').value = '';
+        showToast('✅ تم إضافة الأستاذ', 'success');
+        await renderAll();
+        switchTab('classes');
+    } else {
+        alert('❌ ' + res.error);
+    }
+}
+
+/* ══════════════════════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════════════════════ */
+function showToast(text, type) {
+    const t  = document.createElement('div');
+    const bg = type === 'success' ? 'bg-emerald-600' : 'bg-rose-600';
+    t.className = `fixed bottom-6 left-1/2 -translate-x-1/2 ${bg} text-white px-5 py-2.5 rounded-xl font-bold text-sm shadow-lg z-[100] transition-all`;
+    t.innerText = text;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+}
+
+function initAdminNavAutoHide() {
+    const nav = document.querySelector('.control-sidebar');
+    if (!nav) return;
+    let revealTimer = null;
+    window.addEventListener('scroll', () => {
+        const nearTop = (window.scrollY || 0) < 80;
+        nav.classList.toggle('admin-nav-hidden', !nearTop);
+        clearTimeout(revealTimer);
+        revealTimer = setTimeout(() => {
+            nav.classList.remove('admin-nav-hidden');
+        }, 620);
+    }, { passive: true });
+}
+
+/* ══════════════════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', async () => {
+    await renderAll();
+    startStatsAutoRefresh();
+    initAdminNavAutoHide();
+});
+</script>
+</body>
+</html>
