@@ -929,6 +929,30 @@ const Auth = (() => {
         return { ok: true };
     }
 
+    async function updateProfAccount(username, changes = {}) {
+        if (getSession()?.role !== 'admin') return { ok: false, error: 'غير مسموح' };
+        username = String(username || '').trim();
+        const prenom = String(changes.prenom || '').trim();
+        const classe = String(changes.classe || '').trim();
+        const password = String(changes.password || '').trim();
+        if (!username || !prenom || !classe) return { ok: false, error: 'اسم الأستاذ والقسم مطلوبان' };
+        if (password && password.length < 4) return { ok: false, error: 'كلمة المرور يجب أن تكون 4 أحرف على الأقل' };
+        const duplicateQuery = await supabase.from('profs').select('username').eq('prenom', prenom).eq('classe', classe).neq('username', username).limit(1);
+        if (duplicateQuery.error) {
+            logError('updateProfAccount.duplicate', duplicateQuery.error);
+            return { ok: false, error: 'تعذر التحقق من حساب الأستاذ' };
+        }
+        if ((duplicateQuery.data || []).length) return { ok: false, error: 'يوجد حساب أستاذ آخر بنفس الاسم والقسم' };
+        const patch = { prenom, classe };
+        if (password) patch.password = _encodePassword(password);
+        const { error } = await supabase.from('profs').update(patch).eq('username', username);
+        if (error) {
+            logError('updateProfAccount', error);
+            return { ok: false, error: error.message || 'تعذر حفظ حساب الأستاذ' };
+        }
+        return { ok: true };
+    }
+
     async function setStudentProfessors(studentId, professorIds = []) {
         if (getSession()?.role !== 'admin') return { ok: false, error: 'ØºÙŠØ± Ù…Ø³Ù…ÙˆØ­' };
         const selected = new Set((Array.isArray(professorIds) ? professorIds : []).filter(Boolean));
@@ -1349,7 +1373,7 @@ const Auth = (() => {
     return {
         register, login, registerProf, loginProf, logout, getSession, getSavedAccounts, switchAccount, requireAuth,
         getAllStudents, getAllUsers, getProfs, deleteStudent, deleteProf, toggleSuspension,
-        assignStudentToProf, removeStudentFromProf, setStudentProfessors, updateStudentAccount,
+        assignStudentToProf, removeStudentFromProf, setStudentProfessors, updateStudentAccount, updateProfAccount,
         getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports, getProfReports,
         saveFinanceEntry, getFinanceEntries, deleteFinanceEntry,
         saveClassSession, getClassSessions, saveTeacherNote, getTeacherNotes,

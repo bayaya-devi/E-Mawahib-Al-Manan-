@@ -1,3 +1,3 @@
-mawahib-site-version=20260723-platform-modern-sensory-1
+mawahib-site-version=20260723-staff-sensory-off-1
 sites-package=embedded-worker
-updated=2026-07-23T00:35:00+01:00
+updated=2026-07-23T01:35:00+01:00

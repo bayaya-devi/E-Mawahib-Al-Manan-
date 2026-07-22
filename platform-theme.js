@@ -640,8 +640,21 @@
     mutationObserver.observe(document.body, { childList: true, subtree: true });
   }
 
+  function isStaffSensoryContext() {
+    const path = String(location.pathname || '').toLowerCase();
+    if (/(admin|controle-|dashboard_prof|prof-)/.test(path) || /(^|-)admin/.test(path)) return true;
+    const session = typeof Auth !== 'undefined' && Auth.getSession ? Auth.getSession() : null;
+    return session && (session.role === 'prof' || session.role === 'admin');
+  }
+
   function initPlatformSensory() {
     if (window.__mawahibPlatformSensory || !document.body) return;
+    if (isStaffSensoryContext()) {
+      window.__mawahibPlatformSensory = 'staff-disabled';
+      document.documentElement.classList.add('mawahib-staff-sensory-off');
+      document.body.classList.remove('mawahib-platform-strobe');
+      return;
+    }
     window.__mawahibPlatformSensory = true;
 
     const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };

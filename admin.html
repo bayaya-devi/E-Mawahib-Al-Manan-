@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=20260720-global-latest-1"></script>
+    <script src="auth.js?v=20260723-prof-admin-notifications-1"></script>
     <script>
       const adminSession = Auth.getSession();
       location.replace(adminSession && adminSession.role === 'admin' ? 'controle-487-eleves.html' : 'login.html');
@@ -180,7 +180,7 @@
         }
 
     </style>
-    <script src="platform-theme.js?v=20260723-platform-modern-sensory-1"></script>
+    <script src="platform-theme.js?v=20260723-staff-sensory-off-1"></script>
 </head>
 <body class="p-4 md:p-6">
 
@@ -715,6 +715,38 @@
     </div>
 </div>
 
+
+<!-- MODAL: EDIT PROFESSOR -->
+<div id="prof-edit-modal" class="modal-overlay" onclick="closeProfEditModal(event)">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl relative m-4" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <div>
+                <h2 class="text-base font-black text-purple-900">تعديل حساب الأستاذ</h2>
+                <p id="edit-prof-username" class="text-xs text-gray-400 font-mono mt-1"></p>
+            </div>
+            <button onclick="closeProfEditModal()" class="text-gray-400 hover:text-gray-700 font-bold text-xl px-2">×</button>
+        </div>
+        <div class="p-6 space-y-3">
+            <input type="hidden" id="edit-prof-id">
+            <div>
+                <label class="block text-sm font-bold text-gray-600 mb-1">اسم الأستاذ</label>
+                <input id="edit-prof-prenom" type="text" class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-600 mb-1">اسم القسم</label>
+                <input id="edit-prof-classe" type="text" class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-600 mb-1">الكود / كلمة المرور الجديدة</label>
+                <input id="edit-prof-pass" type="text" class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none" placeholder="اتركه فارغا إذا لم ترغب في تغييره">
+                <p class="text-[11px] text-gray-400 font-bold mt-1">إذا كتبت كودا جديدا فسيصبح هو كود دخول الأستاذ.</p>
+            </div>
+            <button onclick="saveProfEdit()" id="btn-save-prof-edit" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition text-sm">
+                حفظ التعديلات ✔
+            </button>
+        </div>
+    </div>
+</div>
 <script>
 /* ══════════════════════════════════════════════════════════
    AUTH GUARD
@@ -740,6 +772,7 @@ let _allUsers    = {};
 let _adminReports = [];
 let _currentClassProfId   = null;
 let _currentClassStudents = [];
+let _currentEditProfId    = null;
 let _openAccordions = new Set();
 let _statsInterval  = null;
 const STATS_REFRESH_MS = 3 * 60 * 1000; // 3 minutes
@@ -1207,7 +1240,11 @@ function buildClassCard(profId, prof, students) {
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <button onclick="openClassModal('${profId}', event)"
+            <button onclick="openProfEditModal('${escapeJsArg(profId)}', event)"
+                    class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-lg transition">
+                تعديل الأستاذ
+            </button>
+            <button onclick="openClassModal('${escapeJsArg(profId)}', event)"
                     class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-lg transition">
                 إجراءات القسم ⚙️
             </button>
@@ -1548,6 +1585,44 @@ function openClassModal(profId, event) {
 function closeClassModal(event) {
     if (event && event.target !== document.getElementById('class-modal')) return;
     document.getElementById('class-modal').classList.remove('open');
+}
+
+
+function openProfEditModal(profId, event) {
+    if (event) event.stopPropagation();
+    const prof = _allProfs[profId];
+    if (!prof) { alert('تعذر العثور على حساب الأستاذ'); return; }
+    _currentEditProfId = profId;
+    document.getElementById('edit-prof-id').value = profId;
+    document.getElementById('edit-prof-username').innerText = '@' + profId;
+    document.getElementById('edit-prof-prenom').value = prof.prenom || '';
+    document.getElementById('edit-prof-classe').value = prof.classe || '';
+    document.getElementById('edit-prof-pass').value = '';
+    document.getElementById('prof-edit-modal').classList.add('open');
+}
+
+function closeProfEditModal(event) {
+    if (event && event.target !== document.getElementById('prof-edit-modal')) return;
+    document.getElementById('prof-edit-modal').classList.remove('open');
+}
+
+async function saveProfEdit() {
+    const profId = document.getElementById('edit-prof-id').value || _currentEditProfId;
+    const prenom = document.getElementById('edit-prof-prenom').value.trim();
+    const classe = document.getElementById('edit-prof-classe').value.trim();
+    const password = document.getElementById('edit-prof-pass').value.trim();
+    if (!profId || !prenom || !classe) { alert('المرجو ملء اسم الأستاذ واسم القسم'); return; }
+    const btn = document.getElementById('btn-save-prof-edit');
+    btn.disabled = true;
+    btn.innerText = 'جاري الحفظ...';
+    const res = await Auth.updateProfAccount(profId, { prenom, classe, password });
+    btn.disabled = false;
+    btn.innerText = 'حفظ التعديلات ✔';
+    if (!res.ok) { alert('❌ ' + (res.error || 'تعذر حفظ التعديلات')); return; }
+    closeProfEditModal();
+    closeClassModal();
+    showToast('✅ تم تعديل حساب الأستاذ', 'success');
+    await renderAll();
 }
 
 async function sendClassMsg() {
