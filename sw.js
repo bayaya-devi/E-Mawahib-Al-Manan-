@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v21-global-latest-20260720';
+const CACHE_VERSION = 'mawahib-offline-v22-takathur-easy-sensory-20260722';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 

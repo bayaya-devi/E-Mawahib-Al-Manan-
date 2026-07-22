@@ -16,24 +16,36 @@
     cursor: grab;
     transition: all 0.2s ease;
     border: 3px solid transparent;
+    touch-action: manipulation;
   }
   .verse-card:active { cursor: grabbing; transform: scale(1.03) rotate(1deg); }
   .verse-card.dragging { opacity: 0.5; border-color: #10b981; background: #d1fae5; }
+  .verse-card.selected {
+    border-color: #059669 !important;
+    background: #ecfdf5 !important;
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18);
+    transform: scale(1.01);
+  }
   .drop-zone {
-    min-height: 68px;
+    min-height: 84px;
     border: 2.5px dashed #10b981;
     border-radius: 14px;
     transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
+    touch-action: manipulation;
   }
+  .drop-zone.drop-ready { background: #ecfdf5; border-color: #059669; box-shadow: inset 0 0 0 2px rgba(16, 185, 129, 0.16); }
   .drop-zone.drag-over { background: #d1fae5; border-color: #059669; transform: scale(1.02); }
   .drop-zone.filled { border: 2.5px solid #10b981; background: #f0fdf4; }
   .drop-zone.correct { border-color: #059669; background: #dcfce7; animation: pulse-green 0.5s ease; }
   .drop-zone.wrong { border-color: #ef4444; background: #fef2f2; animation: shake 0.4s ease; }
   @keyframes pulse-green { 0%,100%{transform:scale(1)} 50%{transform:scale(1.03)} }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .sensory-flash { animation: sensoryGlow 0.55s ease; }
+  @keyframes sensoryGlow { 0%{box-shadow:0 0 0 rgba(16,185,129,0)} 45%{box-shadow:0 0 0 8px rgba(16,185,129,.15)} 100%{box-shadow:0 0 0 rgba(16,185,129,0)} }
+  @media (prefers-reduced-motion: reduce) { .sensory-flash, .drop-zone.correct, .drop-zone.wrong { animation: none !important; } }
   .verse-num { 
     display: inline-flex; align-items: center; justify-content: center;
     width: 30px; height: 30px; border-radius: 50%;
@@ -123,7 +135,8 @@
   <!-- PHASE 1: DRAG & DROP ORDER -->
   <div id="phase-1" class="hidden">
     <p class="text-center text-gray-500 font-bold text-sm mb-2">🃏 رتّب الآيات بالسحب والإفلات بالترتيب الصحيح</p>
-    <p class="text-center text-xs text-emerald-600 font-bold mb-5">اسحب كل آية من المنطقة السفلية وضعها في مكانها الصحيح</p>
+    <p class="text-center text-xs text-emerald-600 font-bold mb-2">اسحب كل آية من المنطقة السفلية وضعها في مكانها الصحيح</p>
+    <p class="text-center text-xs md:text-sm text-emerald-800 font-black bg-emerald-50 border border-emerald-100 rounded-xl px-3 py-2 mb-5">اضغط على الآية لاختيارها، ثم اضغط على المكان المناسب في الأعلى. يمكنك أيضًا السحب والإفلات.</p>
 
     <!-- Drop zones -->
     <div class="grid grid-cols-1 gap-2 mb-6" id="drop-zones"></div>
@@ -177,6 +190,8 @@ const fillBlanks = [
 let audioPlayer = null;
 let draggedEl = null;
 let draggedVerse = null;
+let selectedEl = null;
+let selectedVerse = null;
 let dropAnswers = new Array(verses.length).fill(null);
 let fillAnswers = new Array(fillBlanks.length).fill(null);
 
@@ -224,8 +239,43 @@ function stopAudio() {
   if (audioPlayer) { audioPlayer.pause(); audioPlayer.currentTime = 0; }
 }
 
+// ======= SENSORY FEEDBACK =======
+let sensoryAudioContext = null;
+function sensoryFeedback(kind, targetEl) {
+  const patterns = {
+    select: { vibrate: 12, tone: 520, duration: 0.035, volume: 0.018 },
+    place: { vibrate: 18, tone: 660, duration: 0.045, volume: 0.022 },
+    success: { vibrate: [28, 35, 45], tone: 780, duration: 0.08, volume: 0.028 },
+    error: { vibrate: [20, 25, 20], tone: 180, duration: 0.06, volume: 0.02 }
+  };
+  const config = patterns[kind] || patterns.select;
+  if (navigator.vibrate) navigator.vibrate(config.vibrate);
+  if (targetEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    targetEl.classList.remove('sensory-flash');
+    void targetEl.offsetWidth;
+    targetEl.classList.add('sensory-flash');
+    setTimeout(() => targetEl.classList.remove('sensory-flash'), 650);
+  }
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    sensoryAudioContext = sensoryAudioContext || new AudioCtx();
+    if (sensoryAudioContext.state === 'suspended') sensoryAudioContext.resume().catch(() => {});
+    const oscillator = sensoryAudioContext.createOscillator();
+    const gain = sensoryAudioContext.createGain();
+    oscillator.type = kind === 'error' ? 'triangle' : 'sine';
+    oscillator.frequency.setValueAtTime(config.tone, sensoryAudioContext.currentTime);
+    gain.gain.setValueAtTime(config.volume, sensoryAudioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, sensoryAudioContext.currentTime + config.duration);
+    oscillator.connect(gain).connect(sensoryAudioContext.destination);
+    oscillator.start();
+    oscillator.stop(sensoryAudioContext.currentTime + config.duration);
+  } catch (error) {}
+}
+
 // ======= GAME 1: DRAG & DROP =======
 function buildGame1() {
+  clearSelectedVerse();
   dropAnswers = new Array(verses.length).fill(null);
   
   // Build drop zones
@@ -238,7 +288,7 @@ function buildGame1() {
       <span class="verse-num shrink-0">${v.num}</span>
       <div class="drop-zone flex-grow px-3 text-right quran-text text-lg text-emerald-900 font-bold"
            id="dz-${i}" data-index="${i}"
-           ondragover="onDragOver(event,this)" ondragleave="onDragLeave(this)" ondrop="onDrop(event,this)">
+           ondragover="onDragOver(event,this)" ondragleave="onDragLeave(this)" ondrop="onDrop(event,this)" onclick="onDropZoneClick(this)">
         <span class="text-gray-300 text-sm quran-text">← اسحب الآية هنا</span>
       </div>
     `;
@@ -258,13 +308,39 @@ function buildGame1() {
     card.textContent = v.text;
     card.ondragstart = (e) => onDragStart(e, v, card);
     card.ondragend = () => onDragEnd(card);
+    card.onclick = () => selectVerseForDrop(v, card);
     cards.appendChild(card);
   });
 
   document.getElementById('game1-feedback').classList.add('hidden');
 }
 
+function clearSelectedVerse() {
+  if (selectedEl) selectedEl.classList.remove('selected');
+  document.querySelectorAll('.drop-zone').forEach(zone => zone.classList.remove('drop-ready'));
+  selectedEl = null;
+  selectedVerse = null;
+}
+
+function selectVerseForDrop(verse, el) {
+  if (!el || el.style.pointerEvents === 'none') return;
+  if (selectedEl === el) { clearSelectedVerse(); return; }
+  clearSelectedVerse();
+  selectedEl = el;
+  selectedVerse = verse;
+  el.classList.add('selected');
+  document.querySelectorAll('.drop-zone').forEach(zone => zone.classList.add('drop-ready'));
+  sensoryFeedback('select', el);
+}
+
+function onDropZoneClick(dz) {
+  if (!selectedVerse) return;
+  placeVerseInZone(selectedVerse, selectedEl, dz);
+  clearSelectedVerse();
+}
+
 function onDragStart(e, verse, el) {
+  clearSelectedVerse();
   draggedEl = el;
   draggedVerse = verse;
   el.classList.add('dragging');
@@ -277,6 +353,13 @@ function onDragLeave(dz) { dz.classList.remove('drag-over'); }
 function onDrop(e, dz) {
   e.preventDefault();
   dz.classList.remove('drag-over');
+  placeVerseInZone(draggedVerse, draggedEl, dz);
+  draggedEl = null;
+  draggedVerse = null;
+}
+
+function placeVerseInZone(verse, sourceEl, dz) {
+  if (!verse || !dz) return;
   const index = parseInt(dz.dataset.index);
   
   // If zone already filled, swap back old card
@@ -286,17 +369,18 @@ function onDrop(e, dz) {
     if (oldCard) { oldCard.style.opacity = '1'; oldCard.style.pointerEvents = 'auto'; }
   }
   
-  dropAnswers[index] = draggedVerse;
-  dz.innerHTML = `<span class="quran-text text-lg text-emerald-900 font-bold">${draggedVerse.text}</span>`;
+  dropAnswers[index] = verse;
+  dz.innerHTML = `<span class="quran-text text-lg text-emerald-900 font-bold">${verse.text}</span>`;
+  dz.classList.remove('correct', 'wrong', 'drop-ready');
   dz.classList.add('filled');
+  sensoryFeedback('place', dz);
   
-  if (draggedEl) { draggedEl.style.opacity = '0.3'; draggedEl.style.pointerEvents = 'none'; }
-  draggedEl = null; draggedVerse = null;
+  if (sourceEl) { sourceEl.style.opacity = '0.3'; sourceEl.style.pointerEvents = 'none'; }
 }
 
 function checkGame1() {
   let allFilled = dropAnswers.every(a => a !== null);
-  if (!allFilled) { showFb('game1-feedback', 'يرجى وضع جميع الآيات في أماكنها أولاً', 'error'); return; }
+  if (!allFilled) { sensoryFeedback('error', document.getElementById('drop-zones')); showFb('game1-feedback', 'يرجى وضع جميع الآيات في أماكنها أولاً', 'error'); return; }
   
   let correct = true;
   verses.forEach((v, i) => {
@@ -310,9 +394,11 @@ function checkGame1() {
   });
 
   if (correct) {
+    sensoryFeedback('success', document.getElementById('phase-1'));
     showFb('game1-feedback', '🌟 رائع! لقد رتّبت الآيات بشكل صحيح تماماً!', 'success');
     setTimeout(() => goToPhase(2), 1500);
   } else {
+    sensoryFeedback('error', document.getElementById('phase-1'));
     showFb('game1-feedback', '❌ بعض الآيات في غير مكانها، حاول مجدداً!', 'error');
   }
 }
@@ -354,6 +440,7 @@ function selectFill(qi, opt, btn) {
     if (b) b.className = "px-4 py-2.5 bg-white border-2 border-blue-200 text-blue-900 font-bold rounded-xl quran-text text-lg hover:bg-blue-100 transition";
   });
   fillAnswers[qi] = opt;
+  sensoryFeedback('select', btn);
   btn.className = "px-4 py-2.5 bg-blue-600 border-2 border-blue-600 text-white font-bold rounded-xl quran-text text-lg transition";
   
   const blank = document.getElementById(`blank-${qi}`);
@@ -365,7 +452,7 @@ function selectFill(qi, opt, btn) {
 
 function checkGame2() {
   let allAnswered = fillAnswers.every(a => a !== null);
-  if (!allAnswered) { showFb('fill-feedback', 'يرجى الإجابة على جميع الأسئلة أولاً', 'error'); return; }
+  if (!allAnswered) { sensoryFeedback('error', document.getElementById('phase-2')); showFb('fill-feedback', 'يرجى الإجابة على جميع الأسئلة أولاً', 'error'); return; }
 
   let score = 0;
   fillBlanks.forEach((q, qi) => {
@@ -379,9 +466,11 @@ function checkGame2() {
   });
 
   if (score === fillBlanks.length) {
+    sensoryFeedback('success', document.getElementById('phase-2'));
     showFb('fill-feedback', `🏆 ممتاز! لقد أجبت على جميع الأسئلة بشكل صحيح!`, 'success');
     triggerCelebration();
   } else {
+    sensoryFeedback('error', document.getElementById('phase-2'));
     showFb('fill-feedback', `أجبت على ${score} من ${fillBlanks.length} بشكل صحيح. حاول مجدداً!`, 'error');
   }
 }
