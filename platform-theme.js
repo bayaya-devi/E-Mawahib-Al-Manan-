@@ -2,6 +2,7 @@
   if (typeof window.confetti !== 'function') window.confetti = function () {};
 
   const storageKey = 'mawahib_theme';
+  const soundKey = 'mawahib_sound_enabled';
   const fallback = 'traditional';
   const themes = ['traditional', 'emerald', 'indigo', 'rose', 'amber'];
   const lessonAudioEvent = 'mawahib:lesson-audio-ended';
@@ -356,6 +357,7 @@
       };
     }
 
+
     document.addEventListener('click', event => {
       const phase = event.target.closest('[id^="phase-"]');
       if (phase && !phase.classList.contains('hidden')) interacted.add(stepKey(currentPhaseIndex()));
@@ -523,10 +525,26 @@
     });
   }
 
+  function currentAccountKey() {
+    try {
+      const session = typeof Auth !== 'undefined' && Auth.getSession ? Auth.getSession() : null;
+      return session?.username ? String(session.username) : 'guest';
+    } catch (error) {
+      return 'guest';
+    }
+  }
+
+  function scopedStorageKey(base) {
+    const user = currentAccountKey();
+    return user === 'guest' ? base : base + '_' + user;
+  }
+
   function readTheme() {
     try {
-      const stored = localStorage.getItem(storageKey);
-      return themes.includes(stored) ? stored : fallback;
+      const scoped = localStorage.getItem(scopedStorageKey(storageKey));
+      if (themes.includes(scoped)) return scoped;
+      const legacy = localStorage.getItem(storageKey);
+      return themes.includes(legacy) ? legacy : fallback;
     } catch (error) {
       return fallback;
     }
@@ -536,11 +554,34 @@
     const nextTheme = themes.includes(theme) ? theme : fallback;
     document.documentElement.dataset.theme = nextTheme;
     try {
+      localStorage.setItem(scopedStorageKey(storageKey), nextTheme);
       localStorage.setItem(storageKey, nextTheme);
     } catch (error) {}
     syncSurahTheme();
     window.dispatchEvent(new CustomEvent('mawahib:theme-change', { detail: { theme: nextTheme } }));
     return nextTheme;
+  }
+
+  function isSoundEnabled() {
+    try {
+      const value = localStorage.getItem(scopedStorageKey(soundKey));
+      if (value === 'false') return false;
+      if (value === 'true') return true;
+      const legacy = localStorage.getItem(soundKey);
+      return legacy !== 'false';
+    } catch (error) {
+      return true;
+    }
+  }
+
+  function setSoundEnabled(enabled) {
+    const next = enabled !== false;
+    try {
+      localStorage.setItem(scopedStorageKey(soundKey), next ? 'true' : 'false');
+      localStorage.setItem(soundKey, next ? 'true' : 'false');
+    } catch (error) {}
+    window.dispatchEvent(new CustomEvent('mawahib:sound-change', { detail: { enabled: next } }));
+    return next;
   }
 
   function normalizeDigits(text) {
@@ -647,6 +688,19 @@
     return session && (session.role === 'prof' || session.role === 'admin');
   }
 
+  function initStaffQuietMode() {
+    if (!isStaffSensoryContext() || document.getElementById('mawahib-staff-quiet-style')) return;
+    document.documentElement.classList.add('mawahib-staff-quiet-mode');
+    const style = document.createElement('style');
+    style.id = 'mawahib-staff-quiet-style';
+    style.textContent = [
+      'html.mawahib-staff-quiet-mode *,html.mawahib-staff-quiet-mode *::before,html.mawahib-staff-quiet-mode *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}',
+      'html.mawahib-staff-quiet-mode .mawahib-reveal{opacity:1!important;transform:none!important}',
+      'html.mawahib-staff-quiet-mode body.mawahib-platform-strobe::after{display:none!important}'
+    ].join('\n');
+    document.head.appendChild(style);
+  }
+
   function initPlatformSensory() {
     if (window.__mawahibPlatformSensory || !document.body) return;
     if (isStaffSensoryContext()) {
@@ -671,7 +725,9 @@
       '@keyframes mawahibSensoryHit{0%,100%{filter:brightness(1) saturate(1);box-shadow:inherit}20%{filter:brightness(1.35) saturate(1.45);box-shadow:0 0 0 7px rgba(34,197,94,.17),0 0 22px rgba(250,204,21,.24)}45%{filter:brightness(1.08) saturate(1.15)}68%{filter:brightness(1.42) saturate(1.6);box-shadow:0 0 0 10px rgba(59,130,246,.14),0 0 28px rgba(34,197,94,.22)}}',
       '@keyframes mawahibSensorySpark{0%{opacity:1;transform:translate(0,0) scale(.45)}72%{opacity:.95}100%{opacity:0;transform:translate(var(--spark-x),var(--spark-y)) scale(1.65)}}',
       '@keyframes mawahibPlatformStrobe{0%,100%{opacity:0}14%{opacity:.85}28%{opacity:.18}42%{opacity:.78}56%{opacity:.22}74%{opacity:.62}88%{opacity:.25}}',
-      '@media (prefers-reduced-motion: reduce){.mawahib-sensory-hit,body.mawahib-platform-strobe::after,.mawahib-sensory-spark{animation:none!important}.mawahib-sensory-spark{display:none!important}}'
+      '.mawahib-surah-burst{position:fixed;inset:0;z-index:238;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.9),transparent 12%),conic-gradient(from 0deg,rgba(34,197,94,.2),rgba(250,204,21,.24),rgba(59,130,246,.2),rgba(236,72,153,.18),rgba(34,197,94,.2));mix-blend-mode:screen;animation:mawahibSurahBurst 1.35s cubic-bezier(.16,1,.3,1) forwards}',
+      '@keyframes mawahibSurahBurst{0%{opacity:0;transform:scale(.8) rotate(0deg)}18%{opacity:.95}55%{opacity:.72;transform:scale(1.06) rotate(18deg)}100%{opacity:0;transform:scale(1.18) rotate(34deg)}}',
+      '@media (prefers-reduced-motion: reduce){.mawahib-sensory-hit,body.mawahib-platform-strobe::after,.mawahib-sensory-spark,.mawahib-surah-burst{animation:none!important}.mawahib-sensory-spark,.mawahib-surah-burst{display:none!important}}'
     ].join('\\n');
     document.head.appendChild(style);
 
@@ -739,6 +795,7 @@
 
     function modernSound(kind) {
       try {
+        if (!isSoundEnabled()) return;
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return;
         audioContext = audioContext || new AudioCtx();
@@ -749,6 +806,8 @@
           tap: { tones: [540, 810], volume: lowPowerDevice ? 0.024 : 0.038, duration: 0.052, noise: 0.018 },
           nav: { tones: [420, 630, 840], volume: lowPowerDevice ? 0.02 : 0.034, duration: 0.055, noise: 0.014 },
           success: { tones: [620, 780, 980, 1240], volume: lowPowerDevice ? 0.028 : 0.052, duration: 0.074, noise: 0.02 },
+          exercise: { tones: [520, 740, 980, 1320], volume: lowPowerDevice ? 0.034 : 0.058, duration: 0.086, noise: 0.018 },
+          surah: { tones: [392, 588, 784, 988, 1318, 1760], volume: lowPowerDevice ? 0.038 : 0.068, duration: 0.105, noise: 0.024 },
           error: { tones: [260, 190, 240], volume: lowPowerDevice ? 0.026 : 0.044, duration: 0.065, noise: 0.028 }
         };
         const profile = profiles[kind] || profiles.tap;
@@ -763,11 +822,11 @@
           const osc = ctx.createOscillator();
           const shimmer = ctx.createOscillator();
           const gain = ctx.createGain();
-          osc.type = kind === 'error' ? 'triangle' : 'sine';
+          osc.type = kind === 'error' ? 'triangle' : (kind === 'surah' ? 'sine' : 'triangle');
           shimmer.type = 'triangle';
           osc.frequency.setValueAtTime(tone, start);
           shimmer.frequency.setValueAtTime(tone * (kind === 'error' ? 0.52 : 1.51), start);
-          if (kind !== 'error') osc.frequency.exponentialRampToValueAtTime(tone * 1.18, start + profile.duration);
+          if (kind !== 'error') osc.frequency.exponentialRampToValueAtTime(tone * (kind === 'surah' ? 1.32 : 1.18), start + profile.duration);
           gain.gain.setValueAtTime(0.0001, start);
           gain.gain.exponentialRampToValueAtTime(profile.volume, start + 0.009);
           gain.gain.exponentialRampToValueAtTime(0.0001, start + profile.duration);
@@ -797,6 +856,41 @@
         noise.stop(now + 0.075);
       } catch (error) {}
     }
+
+    function surahBurst() {
+      if (motionQuery.matches) return;
+      const burst = document.createElement('div');
+      burst.className = 'mawahib-surah-burst';
+      document.body.appendChild(burst);
+      setTimeout(() => burst.remove(), 1450);
+      lights(document.body, 'success');
+      if (!lowPowerDevice && typeof window.confetti === 'function') {
+        window.confetti({ particleCount: 95, spread: 92, origin: { y: 0.62 }, scalar: 1.05 });
+        setTimeout(() => window.confetti({ particleCount: 55, angle: 60, spread: 72, origin: { x: 0, y: 0.72 }, scalar: 0.9 }), 170);
+        setTimeout(() => window.confetti({ particleCount: 55, angle: 120, spread: 72, origin: { x: 1, y: 0.72 }, scalar: 0.9 }), 170);
+      }
+    }
+
+    let lastExerciseSound = '';
+    let lastExerciseSoundAt = 0;
+    window.addEventListener('mawahib:activity-recorded', event => {
+      const detail = event.detail || {};
+      if (Number(detail.score || 0) < 70) return;
+      const key = [detail.surahId, detail.activityKey, detail.score].join(':');
+      const now = Date.now();
+      if (key === lastExerciseSound && now - lastExerciseSoundAt < 1800) return;
+      lastExerciseSound = key;
+      lastExerciseSoundAt = now;
+      vibrate('success');
+      lights(document.querySelector('main') || document.body, 'success');
+      modernSound('exercise');
+    });
+
+    window.addEventListener('mawahib:surah-completed', () => {
+      vibrate('success');
+      surahBurst();
+      modernSound('surah');
+    });
 
     document.addEventListener('click', event => {
       const target = findSensoryTarget(event.target);
@@ -873,8 +967,10 @@
 
   function initEnhancements() {
     if (!document.body) return;
+    applyTheme(readTheme());
     syncSurahTheme();
     initDigitNormalizer();
+    initStaffQuietMode();
     initNavAutoHide();
     initPlatformSensory();
     initLessonGuard();
@@ -882,7 +978,7 @@
     window.addEventListener('mawahib:surah-completed', () => {
       if (window.__mawahibLessonXp) window.__mawahibLessonXp.finish();
     });
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) initScrollAnimations();
+    if (!isStaffSensoryContext() && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) initScrollAnimations();
   }
 
   window.PlatformTheme = {
@@ -890,7 +986,9 @@
     get: readTheme,
     set: applyTheme,
     apply: applyTheme,
-    normalizeDigits
+    normalizeDigits,
+    isSoundEnabled,
+    setSoundEnabled
   };
 
   instrumentLessonAudio();

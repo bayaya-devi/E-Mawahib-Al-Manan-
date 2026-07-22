@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v27-staff-sensory-off-20260723';
+const CACHE_VERSION = 'mawahib-offline-v28-student-premium-sounds-20260723';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 

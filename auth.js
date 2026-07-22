@@ -1205,6 +1205,9 @@ const Auth = (() => {
     async function recordActivity(surahId, activityKey, score) {
         const session = getSession(); if (!session) return;
         const normalizedId = normalizeSurahId(surahId);
+        const notifyActivityRecorded = detail => {
+            try { window.dispatchEvent(new CustomEvent('mawahib:activity-recorded', { detail })); } catch (error) {}
+        };
         const cachedProgress = _readOfflineCache(session.username, 'progress', {});
         let activities = { ...(cachedProgress[normalizedId]?.activities || {}) };
         const shouldSaveLocally = !activities[activityKey] || score > activities[activityKey].score;
@@ -1214,6 +1217,7 @@ const Auth = (() => {
         }
         if (!_isOnline()) {
             _queueOfflineMutation('recordActivity', { username: session.username, surahId: normalizedId, activities });
+            notifyActivityRecorded({ surahId: normalizedId, activityKey, score, offline: true });
             return { ok: true, offline: true };
         }
         const { data, error } = await supabase.from('progressions').select('activities')
@@ -1221,6 +1225,7 @@ const Auth = (() => {
         if (error && error.code !== 'PGRST116') {
             logError('recordActivity', error);
             _queueOfflineMutation('recordActivity', { username: session.username, surahId: normalizedId, activities });
+            notifyActivityRecorded({ surahId: normalizedId, activityKey, score, offline: true });
             return { ok: true, offline: true };
         }
         const serverActivities = data?.activities || {};
@@ -1230,6 +1235,7 @@ const Auth = (() => {
             const { error: upsertError } = await supabase.from('progressions').upsert([{ username: session.username, surah_id: normalizedId, activities }]);
             if (upsertError) _queueOfflineMutation('recordActivity', { username: session.username, surahId: normalizedId, activities });
         }
+        notifyActivityRecorded({ surahId: normalizedId, activityKey, score });
         return { ok: true };
     }
 
