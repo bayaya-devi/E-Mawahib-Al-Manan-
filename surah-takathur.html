@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link rel="stylesheet" href="platform-theme.css?v=20260720-global-latest-1">
-    <script src="platform-theme.js?v=20260720-global-latest-1"></script>
+    <script src="platform-theme.js?v=20260723-platform-modern-sensory-1"></script>
 <style>
   body { font-family: 'Cairo', sans-serif; background: linear-gradient(135deg, #f0f7f4 0%, #e8f5e9 100%); min-height: 100vh; user-select: none; }
   .quran-text { font-family: 'Amiri', serif; line-height: 2.4; }
@@ -43,9 +43,46 @@
   .drop-zone.wrong { border-color: #ef4444; background: #fef2f2; animation: shake 0.4s ease; }
   @keyframes pulse-green { 0%,100%{transform:scale(1)} 50%{transform:scale(1.03)} }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
-  .sensory-flash { animation: sensoryGlow 0.55s ease; }
-  @keyframes sensoryGlow { 0%{box-shadow:0 0 0 rgba(16,185,129,0)} 45%{box-shadow:0 0 0 8px rgba(16,185,129,.15)} 100%{box-shadow:0 0 0 rgba(16,185,129,0)} }
-  @media (prefers-reduced-motion: reduce) { .sensory-flash, .drop-zone.correct, .drop-zone.wrong { animation: none !important; } }
+  .sensory-flash { animation: sensoryGlow 0.85s ease, sensoryFlicker 0.85s steps(6, end); }
+  .sensory-spark {
+    position: fixed;
+    z-index: 120;
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    pointer-events: none;
+    background: radial-gradient(circle, #ffffff 0 22%, var(--spark-color, #10b981) 35% 100%);
+    box-shadow: 0 0 18px var(--spark-color, #10b981), 0 0 34px rgba(255,255,255,.65);
+    animation: sensorySpark 0.9s ease-out forwards;
+  }
+  body.sensory-celebrate::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 110;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 20% 25%, rgba(250,204,21,.35), transparent 22%),
+      radial-gradient(circle at 78% 28%, rgba(16,185,129,.32), transparent 24%),
+      radial-gradient(circle at 50% 78%, rgba(59,130,246,.24), transparent 28%);
+    animation: sensoryScreenGlow 1.15s ease-out forwards;
+  }
+  @keyframes sensoryGlow { 0%{box-shadow:0 0 0 rgba(16,185,129,0);transform:scale(1)} 38%{box-shadow:0 0 0 13px rgba(16,185,129,.22),0 0 28px rgba(250,204,21,.28);transform:scale(1.025)} 100%{box-shadow:0 0 0 rgba(16,185,129,0);transform:scale(1)} }
+  @keyframes sensoryFlicker { 0%,100%{filter:brightness(1) saturate(1)} 18%{filter:brightness(1.35) saturate(1.45)} 35%{filter:brightness(1.05) saturate(1.1)} 52%{filter:brightness(1.45) saturate(1.55)} 72%{filter:brightness(1.12) saturate(1.25)} }
+  body.sensory-celebrate::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 111;
+    pointer-events: none;
+    background: repeating-linear-gradient(90deg, rgba(34,197,94,.16) 0 7px, transparent 7px 18px), repeating-linear-gradient(0deg, rgba(250,204,21,.12) 0 6px, transparent 6px 20px);
+    mix-blend-mode: screen;
+    animation: sensoryStrobe 1.05s steps(8, end) forwards;
+  }
+  @keyframes sensorySpark { 0%{opacity:1;transform:translate(0,0) scale(.45)} 70%{opacity:.95} 100%{opacity:0;transform:translate(var(--spark-x),var(--spark-y)) scale(1.7)} }
+  @keyframes sensoryScreenGlow { 0%{opacity:0} 18%{opacity:1} 100%{opacity:0} }
+  @keyframes sensoryStrobe { 0%,100%{opacity:0} 12%{opacity:.95} 24%{opacity:.18} 36%{opacity:.82} 48%{opacity:.25} 60%{opacity:.9} 76%{opacity:.22} 88%{opacity:.62} }
+  @media (prefers-reduced-motion: reduce) { .sensory-flash, .sensory-spark, body.sensory-celebrate::before, body.sensory-celebrate::after, .drop-zone.correct, .drop-zone.wrong { animation: none !important; } .sensory-spark { display:none; } }
   .verse-num { 
     display: inline-flex; align-items: center; justify-content: center;
     width: 30px; height: 30px; border-radius: 50%;
@@ -243,33 +280,108 @@ function stopAudio() {
 let sensoryAudioContext = null;
 function sensoryFeedback(kind, targetEl) {
   const patterns = {
-    select: { vibrate: 12, tone: 520, duration: 0.035, volume: 0.018 },
-    place: { vibrate: 18, tone: 660, duration: 0.045, volume: 0.022 },
-    success: { vibrate: [28, 35, 45], tone: 780, duration: 0.08, volume: 0.028 },
-    error: { vibrate: [20, 25, 20], tone: 180, duration: 0.06, volume: 0.02 }
+    select: { vibrate: [20, 18, 26], tones: [520, 680], duration: 0.055, volume: 0.034, sparks: 8, color: '#10b981' },
+    place: { vibrate: [30, 24, 42], tones: [620, 760, 920], duration: 0.065, volume: 0.04, sparks: 13, color: '#f59e0b' },
+    success: { vibrate: [55, 35, 75, 45, 110], tones: [660, 825, 990, 1180], duration: 0.08, volume: 0.05, sparks: 30, color: '#22c55e', celebrate: true },
+    error: { vibrate: [45, 35, 45, 35, 65], tones: [220, 170, 210], duration: 0.07, volume: 0.043, sparks: 12, color: '#ef4444' }
   };
   const config = patterns[kind] || patterns.select;
   if (navigator.vibrate) navigator.vibrate(config.vibrate);
-  if (targetEl && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  sensoryLightBurst(targetEl, config);
+  sensorySoundBurst(config, kind);
+}
+
+function sensoryLightBurst(targetEl, config) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const anchor = targetEl && targetEl.getBoundingClientRect ? targetEl : document.body;
+  const rect = anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  if (targetEl && targetEl.classList) {
     targetEl.classList.remove('sensory-flash');
     void targetEl.offsetWidth;
     targetEl.classList.add('sensory-flash');
-    setTimeout(() => targetEl.classList.remove('sensory-flash'), 650);
+    setTimeout(() => targetEl.classList.remove('sensory-flash'), 900);
   }
+  if (config.celebrate) {
+    document.body.classList.remove('sensory-celebrate');
+    void document.body.offsetWidth;
+    document.body.classList.add('sensory-celebrate');
+    setTimeout(() => document.body.classList.remove('sensory-celebrate'), 1250);
+  }
+  const count = Math.min(config.sparks || 8, 34);
+  for (let i = 0; i < count; i++) {
+    const spark = document.createElement('span');
+    const angle = (Math.PI * 2 * i) / count;
+    const distance = 42 + Math.random() * (config.celebrate ? 98 : 56);
+    spark.className = 'sensory-spark';
+    spark.style.left = centerX + (Math.random() * 22 - 11) + 'px';
+    spark.style.top = centerY + (Math.random() * 22 - 11) + 'px';
+    spark.style.setProperty('--spark-x', Math.cos(angle) * distance + 'px');
+    spark.style.setProperty('--spark-y', Math.sin(angle) * distance + 'px');
+    spark.style.setProperty('--spark-color', config.color || '#10b981');
+    document.body.appendChild(spark);
+    setTimeout(() => spark.remove(), 950);
+  }
+}
+
+function sensorySoundBurst(config, kind) {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     sensoryAudioContext = sensoryAudioContext || new AudioCtx();
     if (sensoryAudioContext.state === 'suspended') sensoryAudioContext.resume().catch(() => {});
-    const oscillator = sensoryAudioContext.createOscillator();
-    const gain = sensoryAudioContext.createGain();
-    oscillator.type = kind === 'error' ? 'triangle' : 'sine';
-    oscillator.frequency.setValueAtTime(config.tone, sensoryAudioContext.currentTime);
-    gain.gain.setValueAtTime(config.volume, sensoryAudioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, sensoryAudioContext.currentTime + config.duration);
-    oscillator.connect(gain).connect(sensoryAudioContext.destination);
-    oscillator.start();
-    oscillator.stop(sensoryAudioContext.currentTime + config.duration);
+    const ctx = sensoryAudioContext;
+    const now = ctx.currentTime;
+    const master = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = kind === 'error' ? 'lowpass' : 'highpass';
+    filter.frequency.value = kind === 'error' ? 850 : 520;
+    master.gain.value = 0.72;
+    filter.connect(master).connect(ctx.destination);
+
+    config.tones.forEach((tone, index) => {
+      const start = now + index * 0.055;
+      const oscA = ctx.createOscillator();
+      const oscB = ctx.createOscillator();
+      const gain = ctx.createGain();
+      oscA.type = kind === 'error' ? 'triangle' : 'sine';
+      oscB.type = kind === 'error' ? 'sawtooth' : 'triangle';
+      oscA.frequency.setValueAtTime(tone, start);
+      oscB.frequency.setValueAtTime(tone * (kind === 'error' ? 0.5 : 1.505), start);
+      oscB.detune.setValueAtTime(kind === 'error' ? -12 : 9, start);
+      if (kind !== 'error') {
+        oscA.frequency.exponentialRampToValueAtTime(tone * 1.22, start + config.duration);
+        oscB.frequency.exponentialRampToValueAtTime(tone * 1.68, start + config.duration);
+      }
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(config.volume, start + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + config.duration);
+      oscA.connect(gain);
+      oscB.connect(gain);
+      gain.connect(filter);
+      oscA.start(start);
+      oscB.start(start);
+      oscA.stop(start + config.duration + 0.03);
+      oscB.stop(start + config.duration + 0.03);
+    });
+
+    const noiseLength = Math.max(1, Math.floor(ctx.sampleRate * 0.09));
+    const noiseBuffer = ctx.createBuffer(1, noiseLength, ctx.sampleRate);
+    const data = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseLength; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / noiseLength, 2.4);
+    const noise = ctx.createBufferSource();
+    const noiseGain = ctx.createGain();
+    const noiseFilter = ctx.createBiquadFilter();
+    noise.buffer = noiseBuffer;
+    noiseFilter.type = kind === 'error' ? 'bandpass' : 'highpass';
+    noiseFilter.frequency.value = kind === 'error' ? 260 : 2400;
+    noiseFilter.Q.value = kind === 'error' ? 4 : 0.8;
+    noiseGain.gain.setValueAtTime(kind === 'error' ? 0.035 : 0.026, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.085);
+    noise.connect(noiseFilter).connect(noiseGain).connect(master);
+    noise.start(now);
+    noise.stop(now + 0.09);
   } catch (error) {}
 }
 

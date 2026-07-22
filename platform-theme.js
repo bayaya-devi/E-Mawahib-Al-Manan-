@@ -640,6 +640,161 @@
     mutationObserver.observe(document.body, { childList: true, subtree: true });
   }
 
+  function initPlatformSensory() {
+    if (window.__mawahibPlatformSensory || !document.body) return;
+    window.__mawahibPlatformSensory = true;
+
+    const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
+    const lowPowerDevice = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) || (navigator.deviceMemory && navigator.deviceMemory <= 2);
+    const maxSparks = lowPowerDevice ? 5 : 14;
+    let audioContext = null;
+
+    const style = document.createElement('style');
+    style.id = 'mawahib-platform-sensory-style';
+    style.textContent = [
+      '.mawahib-sensory-hit{animation:mawahibSensoryHit .72s steps(5,end)}',
+      '.mawahib-sensory-spark{position:fixed;z-index:240;width:10px;height:10px;border-radius:999px;pointer-events:none;background:radial-gradient(circle,#fff 0 24%,var(--spark-color,#22c55e) 36% 100%);box-shadow:0 0 14px var(--spark-color,#22c55e),0 0 28px rgba(255,255,255,.55);animation:mawahibSensorySpark .78s ease-out forwards}',
+      'body.mawahib-platform-strobe::after{content:"";position:fixed;inset:0;z-index:235;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(34,197,94,.13) 0 8px,transparent 8px 20px),radial-gradient(circle at 30% 25%,rgba(250,204,21,.22),transparent 24%),radial-gradient(circle at 78% 70%,rgba(59,130,246,.18),transparent 26%);mix-blend-mode:screen;animation:mawahibPlatformStrobe .9s steps(7,end) forwards}',
+      '@keyframes mawahibSensoryHit{0%,100%{filter:brightness(1) saturate(1);box-shadow:inherit}20%{filter:brightness(1.35) saturate(1.45);box-shadow:0 0 0 7px rgba(34,197,94,.17),0 0 22px rgba(250,204,21,.24)}45%{filter:brightness(1.08) saturate(1.15)}68%{filter:brightness(1.42) saturate(1.6);box-shadow:0 0 0 10px rgba(59,130,246,.14),0 0 28px rgba(34,197,94,.22)}}',
+      '@keyframes mawahibSensorySpark{0%{opacity:1;transform:translate(0,0) scale(.45)}72%{opacity:.95}100%{opacity:0;transform:translate(var(--spark-x),var(--spark-y)) scale(1.65)}}',
+      '@keyframes mawahibPlatformStrobe{0%,100%{opacity:0}14%{opacity:.85}28%{opacity:.18}42%{opacity:.78}56%{opacity:.22}74%{opacity:.62}88%{opacity:.25}}',
+      '@media (prefers-reduced-motion: reduce){.mawahib-sensory-hit,body.mawahib-platform-strobe::after,.mawahib-sensory-spark{animation:none!important}.mawahib-sensory-spark{display:none!important}}'
+    ].join('\\n');
+    document.head.appendChild(style);
+
+    function isTextInput(element) {
+      if (!element) return false;
+      const tag = element.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || element.isContentEditable;
+    }
+
+    function findSensoryTarget(start) {
+      if (!start || isTextInput(start)) return null;
+      return start.closest('button,a,[role="button"],.surah-card,.lesson-card,.choice,.part-btn,.verse-card,.station-card,.theme-choice,.reward-rank-button,.juz-game-button,.settings-action');
+    }
+
+    function kindFor(target) {
+      const text = ((target.textContent || '') + ' ' + (target.className || '')).toLowerCase();
+      if (/wrong|error|rose|red|خطأ|حاول/.test(text)) return 'error';
+      if (/correct|success|complete|done|emerald|green|تحقق|إنهاء|متابعة|ممتاز|رائع/.test(text)) return 'success';
+      if (target.matches && target.matches('a,.nav-bottom a,.prof-nav a,.admin-nav a')) return 'nav';
+      return 'tap';
+    }
+
+    function vibrate(kind) {
+      if (!navigator.vibrate) return;
+      const patterns = {
+        tap: lowPowerDevice ? 12 : [18, 16, 18],
+        nav: lowPowerDevice ? 10 : [14, 14, 20],
+        success: lowPowerDevice ? [28, 22, 40] : [45, 30, 65, 38, 90],
+        error: lowPowerDevice ? [28, 24, 28] : [42, 30, 42, 30, 58]
+      };
+      navigator.vibrate(patterns[kind] || patterns.tap);
+    }
+
+    function lights(target, kind) {
+      if (motionQuery.matches || !target) return;
+      target.classList.remove('mawahib-sensory-hit');
+      void target.offsetWidth;
+      target.classList.add('mawahib-sensory-hit');
+      setTimeout(() => target.classList.remove('mawahib-sensory-hit'), 780);
+      if (kind === 'success' && !lowPowerDevice) {
+        document.body.classList.remove('mawahib-platform-strobe');
+        void document.body.offsetWidth;
+        document.body.classList.add('mawahib-platform-strobe');
+        setTimeout(() => document.body.classList.remove('mawahib-platform-strobe'), 950);
+      }
+      const rect = target.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const color = kind === 'error' ? '#ef4444' : kind === 'nav' ? '#3b82f6' : kind === 'success' ? '#22c55e' : '#f59e0b';
+      const count = kind === 'success' ? maxSparks : Math.max(3, Math.floor(maxSparks * 0.65));
+      for (let i = 0; i < count; i++) {
+        const spark = document.createElement('span');
+        const angle = Math.PI * 2 * (i / count) + Math.random() * 0.35;
+        const distance = 28 + Math.random() * (kind === 'success' ? 66 : 38);
+        spark.className = 'mawahib-sensory-spark';
+        spark.style.left = centerX + (Math.random() * 18 - 9) + 'px';
+        spark.style.top = centerY + (Math.random() * 18 - 9) + 'px';
+        spark.style.setProperty('--spark-color', color);
+        spark.style.setProperty('--spark-x', Math.cos(angle) * distance + 'px');
+        spark.style.setProperty('--spark-y', Math.sin(angle) * distance + 'px');
+        document.body.appendChild(spark);
+        setTimeout(() => spark.remove(), 850);
+      }
+    }
+
+    function modernSound(kind) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        audioContext = audioContext || new AudioCtx();
+        if (audioContext.state === 'suspended') audioContext.resume().catch(() => {});
+        const ctx = audioContext;
+        const now = ctx.currentTime;
+        const profiles = {
+          tap: { tones: [540, 810], volume: lowPowerDevice ? 0.024 : 0.038, duration: 0.052, noise: 0.018 },
+          nav: { tones: [420, 630, 840], volume: lowPowerDevice ? 0.02 : 0.034, duration: 0.055, noise: 0.014 },
+          success: { tones: [620, 780, 980, 1240], volume: lowPowerDevice ? 0.028 : 0.052, duration: 0.074, noise: 0.02 },
+          error: { tones: [260, 190, 240], volume: lowPowerDevice ? 0.026 : 0.044, duration: 0.065, noise: 0.028 }
+        };
+        const profile = profiles[kind] || profiles.tap;
+        const master = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        filter.type = kind === 'error' ? 'lowpass' : 'highpass';
+        filter.frequency.value = kind === 'error' ? 900 : 480;
+        master.gain.value = 0.68;
+        filter.connect(master).connect(ctx.destination);
+        profile.tones.forEach((tone, index) => {
+          const start = now + index * 0.048;
+          const osc = ctx.createOscillator();
+          const shimmer = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = kind === 'error' ? 'triangle' : 'sine';
+          shimmer.type = 'triangle';
+          osc.frequency.setValueAtTime(tone, start);
+          shimmer.frequency.setValueAtTime(tone * (kind === 'error' ? 0.52 : 1.51), start);
+          if (kind !== 'error') osc.frequency.exponentialRampToValueAtTime(tone * 1.18, start + profile.duration);
+          gain.gain.setValueAtTime(0.0001, start);
+          gain.gain.exponentialRampToValueAtTime(profile.volume, start + 0.009);
+          gain.gain.exponentialRampToValueAtTime(0.0001, start + profile.duration);
+          osc.connect(gain);
+          shimmer.connect(gain);
+          gain.connect(filter);
+          osc.start(start);
+          shimmer.start(start);
+          osc.stop(start + profile.duration + 0.02);
+          shimmer.stop(start + profile.duration + 0.02);
+        });
+        const length = Math.max(1, Math.floor(ctx.sampleRate * 0.075));
+        const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2.2);
+        const noise = ctx.createBufferSource();
+        const noiseFilter = ctx.createBiquadFilter();
+        const noiseGain = ctx.createGain();
+        noise.buffer = buffer;
+        noiseFilter.type = kind === 'error' ? 'bandpass' : 'highpass';
+        noiseFilter.frequency.value = kind === 'error' ? 320 : 2600;
+        noiseFilter.Q.value = kind === 'error' ? 4 : 0.9;
+        noiseGain.gain.setValueAtTime(profile.noise, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.072);
+        noise.connect(noiseFilter).connect(noiseGain).connect(master);
+        noise.start(now);
+        noise.stop(now + 0.075);
+      } catch (error) {}
+    }
+
+    document.addEventListener('click', event => {
+      const target = findSensoryTarget(event.target);
+      if (!target || target.closest('[data-no-sensory]')) return;
+      const kind = kindFor(target);
+      vibrate(kind);
+      lights(target, kind);
+      modernSound(kind);
+    }, true);
+  }
+
   function initNavAutoHide() {
     let lastY = window.scrollY || 0;
     let revealTimer = null;
@@ -708,6 +863,7 @@
     syncSurahTheme();
     initDigitNormalizer();
     initNavAutoHide();
+    initPlatformSensory();
     initLessonGuard();
     initScreenLessonGuard();
     window.addEventListener('mawahib:surah-completed', () => {
@@ -732,3 +888,4 @@
     initEnhancements();
   }
 })();
+
