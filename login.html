@@ -167,6 +167,9 @@
                        onkeydown="if(event.key==='Enter') doLogin()">
             </div>
             <button class="btn-primary mt-3" onclick="doLogin()">دخول</button>
+            <p id="student-login-help" class="mt-2 text-center text-xs font-medium text-gray-400 leading-relaxed">
+                إذا لم تكن لديك معلومات الدخول، تواصل مع الإدارة.
+            </p>
         </div>
 
         <div id="form-register" class="space-y-3 hidden">
@@ -240,9 +243,11 @@
             if (role === 'prof') {
                 containerNom.classList.add('hidden');
                 containerClasse.classList.remove('hidden');
+                document.getElementById('student-login-help').classList.add('hidden');
             } else {
                 containerNom.classList.remove('hidden');
                 containerClasse.classList.add('hidden');
+                document.getElementById('student-login-help').classList.remove('hidden');
             }
         }
 
