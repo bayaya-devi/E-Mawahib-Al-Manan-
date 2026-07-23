@@ -2,7 +2,7 @@
   'use strict';
   const page=document.body.dataset.adminPage||'students';
   const links=[['students','controle-487-eleves.html','👥','الطلاب'],['teachers','controle-487-profs.html','🧑‍🏫','الأساتذة'],['classes','controle-487-classes.html','🏫','الأقسام'],['finance','controle-487-finance.html','💳','المالية'],['stats','controle-487-stats.html','📊','الإحصاءات'],['messages','controle-487-messages.html','✉️','الرسائل']];
-  const state={students:[],profs:{},reports:[],finance:[],selectedStudent:'',teacherNotes:{},error:''};
+  const state={students:[],profs:{},reports:[],finance:[],selectedStudent:'',teacherNotes:{},editingProf:'',error:''};
   const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const arg=value=>esc(String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
   const studentName=item=>`${item?.prenom||''} ${item?.nom||''}`.trim()||item?.username||'';
@@ -23,7 +23,34 @@
 
   function renderStudents(filter=''){const main=document.getElementById('admin-main');const query=String(filter).trim().toLowerCase();const rows=state.students.filter(item=>(studentName(item)+' '+item.username).toLowerCase().includes(query));main.innerHTML=heading('إدارة الطلاب','الحسابات والتقدم والواجبات من البيانات المسجلة.')+`<div class="admin-toolbar admin-toolbar-compact"><label class="admin-field"><span>بحث</span><input class="admin-control" placeholder="الاسم" value="${esc(filter)}" oninput="renderAdminStudents(this.value)"></label></div><div class="admin-people-grid">${rows.length?rows.map(student=>`<article class="admin-person"><div><div class="admin-row-title">${esc(studentName(student))}</div><div class="admin-row-meta">${esc(student.username)}</div></div><div class="admin-person-stats"><span>${completedCount(student)} سورة</span><span>${pendingDuties(student)} واجب</span><span class="${student.isSuspended?'is-paused':'is-active'}">${student.isSuspended?'موقوف':'نشط'}</span></div><div class="admin-row-actions"><button class="admin-small" onclick="toggleAdminStudent('${arg(student.username)}')">${student.isSuspended?'تفعيل':'إيقاف'}</button><button class="admin-small danger" onclick="deleteAdminStudent('${arg(student.username)}')">حذف</button></div></article>`).join(''):empty('لا يوجد طالب مطابق.')}</div>`}
 
-  function renderTeachers(){const main=document.getElementById('admin-main');const profs=profList();main.innerHTML=heading('إدارة الأساتذة','إضافة أستاذ أو حذف حساب وربطه بقسم.')+`<form class="admin-toolbar" onsubmit="addAdminTeacher(event)"><label class="admin-field"><span>اسم الأستاذ</span><input id="new-prof-name" class="admin-control" required></label><label class="admin-field"><span>القسم</span><input id="new-prof-class" class="admin-control" required></label><label class="admin-field"><span>كلمة المرور</span><input id="new-prof-pass" type="password" dir="ltr" class="admin-control" required></label><button class="admin-action" type="submit">إضافة</button></form><div class="admin-people-grid">${profs.length?profs.map(prof=>`<article class="admin-person"><div><div class="admin-row-title">${esc(profName(prof))}</div><div class="admin-row-meta">${esc(prof.classe||'بدون قسم')}</div></div><div class="admin-person-stats"><span>${(prof.students||[]).length} طالب</span></div><div class="admin-row-actions"><button class="admin-small danger" onclick="deleteAdminTeacher('${arg(prof.username)}')">حذف</button></div></article>`).join(''):empty('لا يوجد أستاذ مسجل.')}</div>`}
+  function renderTeachers(){
+    const main=document.getElementById('admin-main');
+    const profs=profList();
+    const editing=state.editingProf?state.profs[state.editingProf]:null;
+    const editForm=editing?`<form id="edit-prof-form" class="admin-toolbar" onsubmit="saveAdminTeacherEdit(event)">
+      <div class="admin-row-title">تعديل حساب الأستاذ</div>
+      <label class="admin-field"><span>اسم الأستاذ</span><input id="edit-prof-name" class="admin-control" value="${esc(editing.prenom||'')}" required></label>
+      <label class="admin-field"><span>القسم</span><input id="edit-prof-class" class="admin-control" value="${esc(editing.classe||'')}" required></label>
+      <label class="admin-field"><span>كلمة مرور جديدة</span><input id="edit-prof-pass" type="password" dir="ltr" class="admin-control" minlength="4" placeholder="اتركها فارغة دون تغيير"></label>
+      <button class="admin-action" type="submit">حفظ التعديلات</button>
+      <button class="admin-small" type="button" onclick="cancelAdminTeacherEdit()">إلغاء</button>
+    </form>`:'';
+    main.innerHTML=heading('إدارة الأساتذة','إضافة الأستاذ أو تعديل اسمه وقسمه وكلمة مروره.')+
+      `<form class="admin-toolbar" onsubmit="addAdminTeacher(event)">
+        <label class="admin-field"><span>اسم الأستاذ</span><input id="new-prof-name" class="admin-control" required></label>
+        <label class="admin-field"><span>القسم</span><input id="new-prof-class" class="admin-control" required></label>
+        <label class="admin-field"><span>كلمة المرور</span><input id="new-prof-pass" type="password" dir="ltr" class="admin-control" minlength="4" required></label>
+        <button class="admin-action" type="submit">إضافة</button>
+      </form>`+editForm+
+      `<div class="admin-people-grid">${profs.length?profs.map(prof=>`<article class="admin-person">
+        <div><div class="admin-row-title">${esc(profName(prof))}</div><div class="admin-row-meta">${esc(prof.classe||'بدون قسم')}</div></div>
+        <div class="admin-person-stats"><span>${(prof.students||[]).length} طالب</span></div>
+        <div class="admin-row-actions">
+          <button class="admin-small" onclick="openAdminTeacherEdit('${arg(prof.username)}')">تعديل</button>
+          <button class="admin-small danger" onclick="deleteAdminTeacher('${arg(prof.username)}')">حذف</button>
+        </div>
+      </article>`).join(''):empty('لا يوجد أستاذ مسجل.')}</div>`;
+  }
 
   function renderClasses(){const main=document.getElementById('admin-main');const profs=profList();main.innerHTML=heading('إدارة الأقسام','ربط الطلاب بالأساتذة وفق الحسابات الموجودة.')+`<form class="admin-toolbar" onsubmit="assignAdminStudent(event)"><label class="admin-field"><span>الأستاذ والقسم</span><select id="assign-prof" class="admin-control" required><option value="">اختر</option>${options(profs,'username',p=>`${profName(p)} · ${p.classe||''}`)}</select></label><label class="admin-field"><span>الطالب</span><select id="assign-student" class="admin-control" required><option value="">اختر</option>${options(state.students,'username',studentName)}</select></label><button class="admin-action" type="submit">ربط</button></form><div class="admin-list">${profs.length?profs.map(prof=>{const assigned=(prof.students||[]).map(id=>state.students.find(s=>s.username===id)).filter(Boolean);return `<div class="admin-row"><div><div class="admin-row-title">${esc(prof.classe||'بدون قسم')} · ${esc(profName(prof))}</div><div class="admin-row-meta">${assigned.length} طالب</div><div class="admin-row-actions">${assigned.map(student=>`<button class="admin-small" onclick="removeAdminAssignment('${arg(prof.username)}','${arg(student.username)}')">${esc(studentName(student))} ×</button>`).join('')}</div></div></div>`}).join(''):empty('لا يوجد قسم.')}</div>`}
 
@@ -43,6 +70,20 @@
   window.toggleAdminStudent=async username=>{await Auth.toggleSuspension(username);await reload('تم تحديث الحساب')};
   window.deleteAdminStudent=async username=>{if(!confirm('حذف الطالب وكل بياناته؟'))return;await Auth.deleteStudent(username);await reload('تم حذف الطالب')};
   window.addAdminTeacher=async event=>{event.preventDefault();const result=await Auth.registerProf(document.getElementById('new-prof-name').value,document.getElementById('new-prof-class').value,document.getElementById('new-prof-pass').value);if(result.ok)await reload('تمت إضافة الأستاذ');else toast(result.error||'تعذر الإضافة')};
+  window.openAdminTeacherEdit=username=>{if(!state.profs[username])return;state.editingProf=username;renderTeachers();document.getElementById('edit-prof-form')?.scrollIntoView({behavior:'smooth',block:'start'})};
+  window.cancelAdminTeacherEdit=()=>{state.editingProf='';renderTeachers()};
+  window.saveAdminTeacherEdit=async event=>{
+    event.preventDefault();
+    const username=state.editingProf;
+    const result=await Auth.updateProfAccount(username,{
+      prenom:document.getElementById('edit-prof-name').value,
+      classe:document.getElementById('edit-prof-class').value,
+      password:document.getElementById('edit-prof-pass').value
+    });
+    if(!result.ok){toast(result.error||'تعذر حفظ التعديلات');return}
+    state.editingProf='';
+    await reload('تم تعديل حساب الأستاذ');
+  };
   window.deleteAdminTeacher=async username=>{if(!confirm('حذف حساب الأستاذ؟'))return;await Auth.deleteProf(username);await reload('تم حذف الأستاذ')};
   window.assignAdminStudent=async event=>{event.preventDefault();await Auth.assignStudentToProf(document.getElementById('assign-prof').value,document.getElementById('assign-student').value);await reload('تم ربط الطالب')};
   window.removeAdminAssignment=async(prof,student)=>{await Auth.removeStudentFromProf(prof,student);await reload('تم فك الارتباط')};

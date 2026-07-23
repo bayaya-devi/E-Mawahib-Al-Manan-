@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v29-juz-verse-puzzle-20260723';
+const CACHE_VERSION = 'mawahib-offline-v30-audit-errors-emoji-20260723';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 

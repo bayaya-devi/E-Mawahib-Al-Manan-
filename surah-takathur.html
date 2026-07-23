@@ -492,7 +492,7 @@ function placeVerseInZone(verse, sourceEl, dz) {
 
 function checkGame1() {
   let allFilled = dropAnswers.every(a => a !== null);
-  if (!allFilled) { sensoryFeedback('error', document.getElementById('drop-zones')); showFb('game1-feedback', 'يرجى وضع جميع الآيات في أماكنها أولاً', 'error'); return; }
+  if (!allFilled) { sensoryFeedback('error', document.getElementById('drop-zones')); showFb('game1-feedback', '🧩 يرجى وضع جميع الآيات في أماكنها أولاً', 'error'); return; }
   
   let correct = true;
   verses.forEach((v, i) => {
@@ -564,7 +564,7 @@ function selectFill(qi, opt, btn) {
 
 function checkGame2() {
   let allAnswered = fillAnswers.every(a => a !== null);
-  if (!allAnswered) { sensoryFeedback('error', document.getElementById('phase-2')); showFb('fill-feedback', 'يرجى الإجابة على جميع الأسئلة أولاً', 'error'); return; }
+  if (!allAnswered) { sensoryFeedback('error', document.getElementById('phase-2')); showFb('fill-feedback', '✍️ يرجى الإجابة على جميع الأسئلة أولاً', 'error'); return; }
 
   let score = 0;
   fillBlanks.forEach((q, qi) => {
@@ -583,7 +583,7 @@ function checkGame2() {
     triggerCelebration();
   } else {
     sensoryFeedback('error', document.getElementById('phase-2'));
-    showFb('fill-feedback', `أجبت على ${score} من ${fillBlanks.length} بشكل صحيح. حاول مجدداً!`, 'error');
+    showFb('fill-feedback', `💪 أجبت على ${score} من ${fillBlanks.length} بشكل صحيح. حاول مجدداً!`, 'error');
   }
 }
 

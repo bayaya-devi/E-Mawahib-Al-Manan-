@@ -190,7 +190,7 @@
         toast.style.cssText = 'position:fixed;left:50%;bottom:94px;z-index:220;transform:translate(-50%,18px);max-width:calc(100vw - 28px);padding:12px 18px;border-radius:14px;background:#7f1d1d;color:#fff;font-family:var(--platform-font-ui,Cairo),sans-serif;font-weight:900;text-align:center;box-shadow:0 14px 35px rgba(15,23,42,.25);opacity:0;transition:.2s ease;pointer-events:none';
         document.body.appendChild(toast);
       }
-      toast.textContent = 'أكمل التمرين الحالي أولاً';
+      toast.textContent = '🧩 أكمل التمرين الحالي أولاً';
       toast.style.opacity = '1';
       toast.style.transform = 'translate(-50%,0)';
       clearTimeout(toast._hideTimer);
@@ -714,17 +714,23 @@
     const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : { matches: false };
     const lowPowerDevice = (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2) || (navigator.deviceMemory && navigator.deviceMemory <= 2);
     const maxSparks = lowPowerDevice ? 5 : 14;
+    if (lowPowerDevice) document.documentElement.classList.add('mawahib-low-power');
     let audioContext = null;
 
     const style = document.createElement('style');
     style.id = 'mawahib-platform-sensory-style';
     style.textContent = [
-      '.mawahib-sensory-hit{animation:mawahibSensoryHit .72s steps(5,end)}',
+      '.mawahib-sensory-hit{animation:mawahibSensoryHit .46s cubic-bezier(.2,.8,.2,1)}',
       '.mawahib-sensory-spark{position:fixed;z-index:240;width:10px;height:10px;border-radius:999px;pointer-events:none;background:radial-gradient(circle,#fff 0 24%,var(--spark-color,#22c55e) 36% 100%);box-shadow:0 0 14px var(--spark-color,#22c55e),0 0 28px rgba(255,255,255,.55);animation:mawahibSensorySpark .78s ease-out forwards}',
-      'body.mawahib-platform-strobe::after{content:"";position:fixed;inset:0;z-index:235;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(34,197,94,.13) 0 8px,transparent 8px 20px),radial-gradient(circle at 30% 25%,rgba(250,204,21,.22),transparent 24%),radial-gradient(circle at 78% 70%,rgba(59,130,246,.18),transparent 26%);mix-blend-mode:screen;animation:mawahibPlatformStrobe .9s steps(7,end) forwards}',
-      '@keyframes mawahibSensoryHit{0%,100%{filter:brightness(1) saturate(1);box-shadow:inherit}20%{filter:brightness(1.35) saturate(1.45);box-shadow:0 0 0 7px rgba(34,197,94,.17),0 0 22px rgba(250,204,21,.24)}45%{filter:brightness(1.08) saturate(1.15)}68%{filter:brightness(1.42) saturate(1.6);box-shadow:0 0 0 10px rgba(59,130,246,.14),0 0 28px rgba(34,197,94,.22)}}',
+      '.mawahib-click-ring{position:fixed;z-index:241;width:18px;height:18px;margin:-9px 0 0 -9px;border:2px solid color-mix(in srgb,var(--platform-accent,#f59e0b) 76%,#fff);border-radius:50%;pointer-events:none;box-shadow:0 0 18px color-mix(in srgb,var(--platform-primary,#16a34a) 58%,transparent);animation:mawahibClickRing .5s cubic-bezier(.16,1,.3,1) forwards}',
+      '.mawahib-ambient-focus{animation:mawahibAmbientFocus 6s ease-in-out infinite}',
+      'html.mawahib-low-power .mawahib-ambient-focus{animation:none}',
+      'body.mawahib-platform-strobe::after{content:"";position:fixed;inset:0;z-index:235;pointer-events:none;background:radial-gradient(circle at 30% 25%,rgba(250,204,21,.2),transparent 28%),radial-gradient(circle at 78% 70%,rgba(59,130,246,.16),transparent 30%);mix-blend-mode:screen;animation:mawahibPlatformStrobe 1.15s ease-out forwards}',
+      '@keyframes mawahibSensoryHit{0%,100%{filter:brightness(1) saturate(1);transform:scale(1)}42%{filter:brightness(1.16) saturate(1.22);transform:scale(.975);box-shadow:0 0 0 6px rgba(34,197,94,.12),0 0 20px rgba(250,204,21,.18)}}',
+      '@keyframes mawahibClickRing{0%{opacity:.9;transform:scale(.35)}100%{opacity:0;transform:scale(4.4)}}',
+      '@keyframes mawahibAmbientFocus{0%,78%,100%{filter:brightness(1);box-shadow:var(--platform-shadow-soft)}86%{filter:brightness(1.08);box-shadow:0 0 0 5px color-mix(in srgb,var(--platform-accent,#f59e0b) 14%,transparent),0 12px 30px color-mix(in srgb,var(--platform-primary,#16a34a) 18%,transparent)}92%{filter:brightness(1.02)}}',
       '@keyframes mawahibSensorySpark{0%{opacity:1;transform:translate(0,0) scale(.45)}72%{opacity:.95}100%{opacity:0;transform:translate(var(--spark-x),var(--spark-y)) scale(1.65)}}',
-      '@keyframes mawahibPlatformStrobe{0%,100%{opacity:0}14%{opacity:.85}28%{opacity:.18}42%{opacity:.78}56%{opacity:.22}74%{opacity:.62}88%{opacity:.25}}',
+      '@keyframes mawahibPlatformStrobe{0%,100%{opacity:0}24%{opacity:.48}48%{opacity:.12}68%{opacity:.34}84%{opacity:.08}}',
       '.mawahib-surah-burst{position:fixed;inset:0;z-index:238;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.9),transparent 12%),conic-gradient(from 0deg,rgba(34,197,94,.2),rgba(250,204,21,.24),rgba(59,130,246,.2),rgba(236,72,153,.18),rgba(34,197,94,.2));mix-blend-mode:screen;animation:mawahibSurahBurst 1.35s cubic-bezier(.16,1,.3,1) forwards}',
       '.mawahib-juz-burst{position:fixed;inset:0;z-index:242;pointer-events:none;display:grid;place-items:center;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.96),transparent 9%),conic-gradient(from 0deg,#ff174488,#ffea0088,#00e67688,#00b0ff88,#d500f988,#ff174488);mix-blend-mode:screen;animation:mawahibJuzBurst 2.7s ease-out forwards}',
       '.mawahib-juz-reward{position:relative;padding:22px 30px;border:3px solid #fff;border-radius:18px;background:rgba(15,23,42,.9);color:#fff;text-align:center;font:1000 24px var(--platform-font-ui,Cairo),sans-serif;line-height:1.5;box-shadow:0 0 34px #fff,0 0 70px #facc15;mix-blend-mode:normal;animation:mawahibJuzReward 2.7s cubic-bezier(.16,1,.3,1) forwards}',
@@ -732,9 +738,14 @@
       '@keyframes mawahibJuzBurst{0%{opacity:0;filter:hue-rotate(0deg) brightness(1.2)}12%{opacity:1}25%{filter:hue-rotate(80deg) brightness(1.8)}40%{filter:hue-rotate(160deg) brightness(1.25)}55%{filter:hue-rotate(240deg) brightness(1.8)}72%{filter:hue-rotate(320deg) brightness(1.35)}100%{opacity:0;filter:hue-rotate(420deg) brightness(1.6)}}',
       '@keyframes mawahibJuzReward{0%{opacity:0;transform:scale(.35) rotate(-5deg)}18%{opacity:1;transform:scale(1.12) rotate(2deg)}38%{transform:scale(.98) rotate(-1deg)}75%{opacity:1;transform:scale(1.04)}100%{opacity:0;transform:scale(1.25)}}',
       '@keyframes mawahibSurahBurst{0%{opacity:0;transform:scale(.8) rotate(0deg)}18%{opacity:.95}55%{opacity:.72;transform:scale(1.06) rotate(18deg)}100%{opacity:0;transform:scale(1.18) rotate(34deg)}}',
-      '@media (prefers-reduced-motion: reduce){.mawahib-sensory-hit,body.mawahib-platform-strobe::after,.mawahib-sensory-spark,.mawahib-surah-burst,.mawahib-juz-burst,.mawahib-juz-reward{animation:none!important}.mawahib-sensory-spark,.mawahib-surah-burst,.mawahib-juz-burst{display:none!important}}'
+      '@media (prefers-reduced-motion: reduce){.mawahib-sensory-hit,.mawahib-click-ring,.mawahib-ambient-focus,body.mawahib-platform-strobe::after,.mawahib-sensory-spark,.mawahib-surah-burst,.mawahib-juz-burst,.mawahib-juz-reward{animation:none!important}.mawahib-click-ring,.mawahib-sensory-spark,.mawahib-surah-burst,.mawahib-juz-burst{display:none!important}}'
     ].join('\\n');
     document.head.appendChild(style);
+    if (!motionQuery.matches && !lowPowerDevice) {
+      [...document.querySelectorAll('.btn-primary,.juz-game-button,.reward-rank-button,[data-primary-action]')]
+        .slice(0, 6)
+        .forEach(element => element.classList.add('mawahib-ambient-focus'));
+    }
 
     function isTextInput(element) {
       if (!element) return false;
@@ -796,6 +807,16 @@
         document.body.appendChild(spark);
         setTimeout(() => spark.remove(), 850);
       }
+    }
+
+    function clickRing(event) {
+      if (motionQuery.matches || lowPowerDevice) return;
+      const ring = document.createElement('span');
+      ring.className = 'mawahib-click-ring';
+      ring.style.left = event.clientX + 'px';
+      ring.style.top = event.clientY + 'px';
+      document.body.appendChild(ring);
+      setTimeout(() => ring.remove(), 550);
     }
 
     function modernSound(kind) {
@@ -928,6 +949,7 @@
       const target = findSensoryTarget(event.target);
       if (!target || target.closest('[data-no-sensory]')) return;
       const kind = kindFor(target);
+      clickRing(event);
       vibrate(kind);
       lights(target, kind);
       modernSound(kind);

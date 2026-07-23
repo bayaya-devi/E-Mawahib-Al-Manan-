@@ -779,7 +779,7 @@ body { padding-bottom: 80px; }
             if (card) {
                 card.classList.remove('is-dragging');
                 const feedback = document.getElementById('juz-swipe-feedback');
-                if (feedback) feedback.textContent = correct ? 'صح' : 'خطأ';
+                if (feedback) feedback.textContent = correct ? '✅ صح' : '❌ خطأ';
                 card.classList.add(correct ? 'is-correct' : 'is-wrong');
                 if (direction === 'right') card.classList.add('swiping-right');
                 else if (direction === 'left') card.classList.add('swiping-left');
@@ -867,7 +867,7 @@ body { padding-bottom: 80px; }
             activeJuzSwipeGame.phase = 'finished';
             const durationMs = Date.now() - activeJuzSwipeGame.startedAt;
             const finalScore = Math.max(0, Math.round(activeJuzSwipeGame.score + (won ? activeJuzSwipeGame.hearts * 80 : 0)));
-            document.getElementById('juz-swipe-body').innerHTML = '<div class="py-4 text-center"><div class="text-4xl mb-3">' + (won ? '🏁' : '❤️') + '</div><h4 class="text-xl font-black text-gray-900">' + (won ? 'أحسنت!' : 'انتهت القلوب') + '</h4><p class="mt-2 text-sm font-bold text-gray-500">score: ' + finalScore + ' · الوقت: ' + (durationMs / 1000).toFixed(1) + ' ثانية</p><button type="button" class="juz-swipe-start mt-4" onclick="openJuzSwipeGame(' + activeJuzSwipeGame.juz.num + ')">إعادة التحدي</button><div id="juz-swipe-record-box"><p class="mt-4 text-sm font-bold text-gray-400">جاري تحميل آخر ترتيب...</p></div></div>';
+            document.getElementById('juz-swipe-body').innerHTML = '<div class="py-4 text-center"><div class="text-4xl mb-3">' + (won ? '🏁' : '❤️') + '</div><h4 class="text-xl font-black text-gray-900">' + (won ? '🏆 أحسنت!' : '💪 انتهت القلوب') + '</h4><p class="mt-2 text-sm font-bold text-gray-500">score: ' + finalScore + ' · الوقت: ' + (durationMs / 1000).toFixed(1) + ' ثانية</p><button type="button" class="juz-swipe-start mt-4" onclick="openJuzSwipeGame(' + activeJuzSwipeGame.juz.num + ')">🔁 إعادة التحدي</button><div id="juz-swipe-record-box"><p class="mt-4 text-sm font-bold text-gray-400">جاري تحميل آخر ترتيب...</p></div></div>';
             renderJuzSwipeRecords(await saveAndLoadJuzSwipeRecords(won, durationMs, finalScore));
         }
         function optionTexts(correct, pool, mapper, count = 4) {
@@ -1023,7 +1023,7 @@ body { padding-bottom: 80px; }
             const passed = score >= 70;
             localStorage.setItem(getMiniExamKey(activeMiniExam.groupNumber), JSON.stringify({ score, passed, date: new Date().toISOString() }));
             const body = document.getElementById('mini-exam-body');
-            body.innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black ' + (passed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') + '">' + score + '%</div><h4 class="text-xl font-black text-gray-900 mb-2">' + (passed ? 'ممتاز، الاختبار مكتمل' : 'محاولة جيدة، أعد الاختبار') + '</h4><p class="text-sm font-bold text-gray-500 mb-4">نتيجتك: ' + activeMiniExam.correct + ' / ' + activeMiniExam.questions.length + '</p><button type="button" onclick="closeMiniExam(); renderSurahLibrary();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
+            body.innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black ' + (passed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') + '">' + score + '%</div><h4 class="text-xl font-black text-gray-900 mb-2">' + (passed ? '🌟 ممتاز، الاختبار مكتمل' : '🔁 محاولة جيدة، أعد الاختبار') + '</h4><p class="text-sm font-bold text-gray-500 mb-4">نتيجتك: ' + activeMiniExam.correct + ' / ' + activeMiniExam.questions.length + '</p><button type="button" onclick="closeMiniExam(); renderSurahLibrary();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
         }
 
         function getJuzExamState(juz) {
@@ -1137,7 +1137,7 @@ body { padding-bottom: 80px; }
             const rewardText = reward && !reward.alreadyAwarded
                 ? '<div class="my-4 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4"><div class="text-3xl font-black text-amber-600">+20 ★</div><p class="mt-1 text-sm font-black text-amber-800">ربحت 20 نجمة دفعة واحدة!</p></div>'
                 : '<p class="my-4 text-sm font-bold text-emerald-700">مكافأة هذا الجزء محفوظة مسبقًا.</p>';
-            document.getElementById('mini-exam-body').innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black bg-emerald-100 text-emerald-700">100%</div><h4 class="text-xl font-black text-gray-900 mb-2">تم إتقان الجزء</h4><p class="text-sm font-bold text-gray-500">تم فتح الجزء التالي.</p>' + rewardText + '<button type="button" onclick="closeMiniExam(); renderSurahLibrary(); updateRewardPanel();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
+            document.getElementById('mini-exam-body').innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black bg-emerald-100 text-emerald-700">100%</div><h4 class="text-xl font-black text-gray-900 mb-2">🎉 تم إتقان الجزء</h4><p class="text-sm font-bold text-gray-500">🔓 تم فتح الجزء التالي.</p>' + rewardText + '<button type="button" onclick="closeMiniExam(); renderSurahLibrary(); updateRewardPanel();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
             updateRewardPanel();
         }
 
