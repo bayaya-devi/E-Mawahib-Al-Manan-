@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v28-student-premium-sounds-20260723';
+const CACHE_VERSION = 'mawahib-offline-v29-juz-verse-puzzle-20260723';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -17,6 +17,8 @@ const STATIC_ASSETS = [
   './app-settings.js',
   './platform-theme.js',
   './platform-theme.css',
+  './juz-puzzle.js',
+  './juz-puzzle.css',
   './notifications.js',
   './surah-autoplay.js',
   './prof-simple.js',

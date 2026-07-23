@@ -12,11 +12,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=20260723-student-premium-sounds-1"></script>
+    <script src="auth.js?v=20260723-juz-verse-puzzle-1"></script>
     <script src="registry.js"></script>
 
         <link rel="stylesheet" href="platform-theme.css?v=20260720-global-latest-1">
-    <script src="platform-theme.js?v=20260723-student-premium-sounds-1"></script>
+    <script src="platform-theme.js?v=20260723-juz-verse-puzzle-1"></script>
+    <link rel="stylesheet" href="juz-puzzle.css?v=20260723-juz-verse-puzzle-1">
 <style>
         body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
         .quran-font { font-family: 'Amiri', serif; }
@@ -1123,12 +1124,21 @@ body { padding-bottom: 80px; }
         }
 
         function finishJuzExam() {
-            localStorage.setItem(getJuzExamKey(activeJuzExam.juz.num), JSON.stringify({
+            const juz = activeJuzExam.juz;
+            const wasAlreadyPassed = isJuzExamPassed(juz);
+            localStorage.setItem(getJuzExamKey(juz.num), JSON.stringify({
                 passed: true, score: 100, date: new Date().toISOString(),
                 exerciseCount: activeJuzExam.exercises.length,
-                surahCount: getJuzSurahs(activeJuzExam.juz).length
+                surahCount: getJuzSurahs(juz).length
             }));
-            document.getElementById('mini-exam-body').innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black bg-emerald-100 text-emerald-700">100%</div><h4 class="text-xl font-black text-gray-900 mb-2">تم إتقان الجزء</h4><p class="text-sm font-bold text-gray-500 mb-4">تم فتح الجزء التالي.</p><button type="button" onclick="closeMiniExam(); renderSurahLibrary();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
+            const reward = !wasAlreadyPassed && typeof Auth !== 'undefined' && typeof Auth.awardJuzStars === 'function'
+                ? Auth.awardJuzStars(juz.num, juz.name)
+                : null;
+            const rewardText = reward && !reward.alreadyAwarded
+                ? '<div class="my-4 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4"><div class="text-3xl font-black text-amber-600">+20 ★</div><p class="mt-1 text-sm font-black text-amber-800">ربحت 20 نجمة دفعة واحدة!</p></div>'
+                : '<p class="my-4 text-sm font-bold text-emerald-700">مكافأة هذا الجزء محفوظة مسبقًا.</p>';
+            document.getElementById('mini-exam-body').innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black bg-emerald-100 text-emerald-700">100%</div><h4 class="text-xl font-black text-gray-900 mb-2">تم إتقان الجزء</h4><p class="text-sm font-bold text-gray-500">تم فتح الجزء التالي.</p>' + rewardText + '<button type="button" onclick="closeMiniExam(); renderSurahLibrary(); updateRewardPanel();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
+            updateRewardPanel();
         }
 
         function getCurrentSurah() {
@@ -1214,6 +1224,7 @@ body { padding-bottom: 80px; }
                             </div>
                             <div class="juz-header-actions">
                                 <button type="button" class="juz-game-button" onclick="openJuzSwipeGame(${juz.num})" aria-label="تحدي سرعة ترتيب آيات ${juz.name}">⚡ تحدي السرعة</button>
+                                <button type="button" class="juz-puzzle-button" onclick="openJuzPuzzle(${juz.num})" aria-label="فتح بزل آيات ${juz.name}">🧩 بزل الآيات</button>
                                 <span class="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs font-black text-emerald-700">${toArabicNum(completedInJuz)} / ${toArabicNum(allJuzSurahs.length)}</span>
                             </div>
                         </div>
@@ -1610,7 +1621,8 @@ async function chargerDevoirs() {
         </button>
     </div>
 </nav>
-<script src="app-settings.js?v=20260723-student-premium-sounds-1"></script>
+<script src="juz-puzzle.js?v=20260723-juz-verse-puzzle-1"></script>
+<script src="app-settings.js?v=20260723-juz-verse-puzzle-1"></script>
 
 <script src="notifications.js?v=20260723-prof-admin-notifications-1"></script>
 </body>

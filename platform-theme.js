@@ -726,8 +726,13 @@
       '@keyframes mawahibSensorySpark{0%{opacity:1;transform:translate(0,0) scale(.45)}72%{opacity:.95}100%{opacity:0;transform:translate(var(--spark-x),var(--spark-y)) scale(1.65)}}',
       '@keyframes mawahibPlatformStrobe{0%,100%{opacity:0}14%{opacity:.85}28%{opacity:.18}42%{opacity:.78}56%{opacity:.22}74%{opacity:.62}88%{opacity:.25}}',
       '.mawahib-surah-burst{position:fixed;inset:0;z-index:238;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.9),transparent 12%),conic-gradient(from 0deg,rgba(34,197,94,.2),rgba(250,204,21,.24),rgba(59,130,246,.2),rgba(236,72,153,.18),rgba(34,197,94,.2));mix-blend-mode:screen;animation:mawahibSurahBurst 1.35s cubic-bezier(.16,1,.3,1) forwards}',
+      '.mawahib-juz-burst{position:fixed;inset:0;z-index:242;pointer-events:none;display:grid;place-items:center;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.96),transparent 9%),conic-gradient(from 0deg,#ff174488,#ffea0088,#00e67688,#00b0ff88,#d500f988,#ff174488);mix-blend-mode:screen;animation:mawahibJuzBurst 2.7s ease-out forwards}',
+      '.mawahib-juz-reward{position:relative;padding:22px 30px;border:3px solid #fff;border-radius:18px;background:rgba(15,23,42,.9);color:#fff;text-align:center;font:1000 24px var(--platform-font-ui,Cairo),sans-serif;line-height:1.5;box-shadow:0 0 34px #fff,0 0 70px #facc15;mix-blend-mode:normal;animation:mawahibJuzReward 2.7s cubic-bezier(.16,1,.3,1) forwards}',
+      '.mawahib-juz-reward strong{display:block;color:#fde047;font-size:44px}',
+      '@keyframes mawahibJuzBurst{0%{opacity:0;filter:hue-rotate(0deg) brightness(1.2)}12%{opacity:1}25%{filter:hue-rotate(80deg) brightness(1.8)}40%{filter:hue-rotate(160deg) brightness(1.25)}55%{filter:hue-rotate(240deg) brightness(1.8)}72%{filter:hue-rotate(320deg) brightness(1.35)}100%{opacity:0;filter:hue-rotate(420deg) brightness(1.6)}}',
+      '@keyframes mawahibJuzReward{0%{opacity:0;transform:scale(.35) rotate(-5deg)}18%{opacity:1;transform:scale(1.12) rotate(2deg)}38%{transform:scale(.98) rotate(-1deg)}75%{opacity:1;transform:scale(1.04)}100%{opacity:0;transform:scale(1.25)}}',
       '@keyframes mawahibSurahBurst{0%{opacity:0;transform:scale(.8) rotate(0deg)}18%{opacity:.95}55%{opacity:.72;transform:scale(1.06) rotate(18deg)}100%{opacity:0;transform:scale(1.18) rotate(34deg)}}',
-      '@media (prefers-reduced-motion: reduce){.mawahib-sensory-hit,body.mawahib-platform-strobe::after,.mawahib-sensory-spark,.mawahib-surah-burst{animation:none!important}.mawahib-sensory-spark,.mawahib-surah-burst{display:none!important}}'
+      '@media (prefers-reduced-motion: reduce){.mawahib-sensory-hit,body.mawahib-platform-strobe::after,.mawahib-sensory-spark,.mawahib-surah-burst,.mawahib-juz-burst,.mawahib-juz-reward{animation:none!important}.mawahib-sensory-spark,.mawahib-surah-burst,.mawahib-juz-burst{display:none!important}}'
     ].join('\\n');
     document.head.appendChild(style);
 
@@ -808,6 +813,7 @@
           success: { tones: [620, 780, 980, 1240], volume: lowPowerDevice ? 0.028 : 0.052, duration: 0.074, noise: 0.02 },
           exercise: { tones: [520, 740, 980, 1320], volume: lowPowerDevice ? 0.034 : 0.058, duration: 0.086, noise: 0.018 },
           surah: { tones: [392, 588, 784, 988, 1318, 1760], volume: lowPowerDevice ? 0.038 : 0.068, duration: 0.105, noise: 0.024 },
+          juz: { tones: [196, 294, 392, 523, 659, 784, 1046, 1318, 1568, 2093], volume: lowPowerDevice ? 0.042 : 0.078, duration: 0.13, noise: 0.032 },
           error: { tones: [260, 190, 240], volume: lowPowerDevice ? 0.026 : 0.044, duration: 0.065, noise: 0.028 }
         };
         const profile = profiles[kind] || profiles.tap;
@@ -822,11 +828,11 @@
           const osc = ctx.createOscillator();
           const shimmer = ctx.createOscillator();
           const gain = ctx.createGain();
-          osc.type = kind === 'error' ? 'triangle' : (kind === 'surah' ? 'sine' : 'triangle');
+          osc.type = kind === 'error' ? 'triangle' : (/surah|juz/.test(kind) ? 'sine' : 'triangle');
           shimmer.type = 'triangle';
           osc.frequency.setValueAtTime(tone, start);
           shimmer.frequency.setValueAtTime(tone * (kind === 'error' ? 0.52 : 1.51), start);
-          if (kind !== 'error') osc.frequency.exponentialRampToValueAtTime(tone * (kind === 'surah' ? 1.32 : 1.18), start + profile.duration);
+          if (kind !== 'error') osc.frequency.exponentialRampToValueAtTime(tone * (/surah|juz/.test(kind) ? 1.32 : 1.18), start + profile.duration);
           gain.gain.setValueAtTime(0.0001, start);
           gain.gain.exponentialRampToValueAtTime(profile.volume, start + 0.009);
           gain.gain.exponentialRampToValueAtTime(0.0001, start + profile.duration);
@@ -871,6 +877,26 @@
       }
     }
 
+    function juzBurst(detail) {
+      const points = Number(detail?.points || 20);
+      if (!motionQuery.matches) {
+        const burst = document.createElement('div');
+        burst.className = 'mawahib-juz-burst';
+        burst.innerHTML = '<div class="mawahib-juz-reward"><strong>+' + points + ' ★</strong>مبروك! تم فتح الجزء التالي</div>';
+        document.body.appendChild(burst);
+        setTimeout(() => burst.remove(), lowPowerDevice ? 1900 : 2850);
+      }
+      if (!motionQuery.matches && typeof window.confetti === 'function') {
+        const particleCount = lowPowerDevice ? 55 : 150;
+        window.confetti({ particleCount, spread: lowPowerDevice ? 78 : 125, startVelocity: lowPowerDevice ? 32 : 52, origin: { y: .58 }, scalar: lowPowerDevice ? .85 : 1.1 });
+        if (!lowPowerDevice && !motionQuery.matches) {
+          setTimeout(() => window.confetti({ particleCount: 90, angle: 58, spread: 95, origin: { x: 0, y: .72 }, scalar: 1.05 }), 320);
+          setTimeout(() => window.confetti({ particleCount: 90, angle: 122, spread: 95, origin: { x: 1, y: .72 }, scalar: 1.05 }), 320);
+          setTimeout(() => window.confetti({ particleCount: 120, spread: 150, origin: { y: .35 }, scalar: .95 }), 760);
+        }
+      }
+    }
+
     let lastExerciseSound = '';
     let lastExerciseSoundAt = 0;
     window.addEventListener('mawahib:activity-recorded', event => {
@@ -890,6 +916,12 @@
       vibrate('success');
       surahBurst();
       modernSound('surah');
+    });
+
+    window.addEventListener('mawahib:juz-completed', event => {
+      if (navigator.vibrate) navigator.vibrate(lowPowerDevice ? [90,55,120,60,160] : [180,55,220,55,280,70,340,80,460]);
+      juzBurst(event.detail || {});
+      modernSound('juz');
     });
 
     document.addEventListener('click', event => {

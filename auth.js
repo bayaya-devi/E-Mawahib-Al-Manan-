@@ -12,7 +12,7 @@ const Auth = (() => {
     const OFFLINE_CACHE_PREFIX = 'mawahib_offline_cache_';
     const OFFLINE_QUEUE_KEY = 'mawahib_offline_queue';
     const OFFLINE_STATUS_KEY = 'mawahib_offline_status';
-    const SERVICE_WORKER_VERSION = '20260720-global-latest-1';
+    const SERVICE_WORKER_VERSION = '20260723-juz-verse-puzzle-1';
     const CLASS_SESSION_PREFIX = '[CLASS_SESSION] ';
     const TEACHER_NOTE_PREFIX = '[TEACHER_NOTE] ';
     const ADMIN_FINANCE_PREFIX = '[ADMIN_FINANCE] ';
@@ -606,6 +606,35 @@ const Auth = (() => {
             _writeRewardState(key, state);
         }
         return { ...state, lostNow: decay.lost || 0 };
+    }
+
+    function awardJuzStars(juzNumber, juzName) {
+        const session = getSession();
+        if (!session) return null;
+        const normalizedNumber = Number(juzNumber);
+        if (!Number.isInteger(normalizedNumber) || normalizedNumber < 1 || normalizedNumber > 30) return null;
+        const state = _readRewardState(session.username);
+        state.juzBonuses = state.juzBonuses || {};
+        const bonusKey = String(normalizedNumber);
+        if (state.juzBonuses[bonusKey]) {
+            return { ...state.juzBonuses[bonusKey], alreadyAwarded: true, stars: state.stars || 0 };
+        }
+        const points = 20;
+        state.stars = (state.stars || 0) + points;
+        state.totalEarned = (state.totalEarned || 0) + points;
+        state.lastActivity = _todayKey();
+        state.decayPeriodsApplied = 0;
+        const payload = {
+            juzNumber: normalizedNumber,
+            juzName: String(juzName || ('Juz ' + normalizedNumber)),
+            points,
+            stars: state.stars,
+            earnedAt: new Date().toISOString()
+        };
+        state.juzBonuses[bonusKey] = payload;
+        _writeRewardState(session.username, state);
+        window.dispatchEvent(new CustomEvent('mawahib:juz-completed', { detail: payload }));
+        return payload;
     }
 
     function syncRewardsFromSurahs(surahs) {
@@ -1383,7 +1412,7 @@ const Auth = (() => {
         getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports, getProfReports,
         saveFinanceEntry, getFinanceEntries, deleteFinanceEntry,
         saveClassSession, getClassSessions, saveTeacherNote, getTeacherNotes,
-        getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, getLastCelebration, getLastInactivity, syncRewardsFromSurahs, getClassStarRanking, storeMissionAttempt, prepareOfflineLessons,
+        getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, awardJuzStars, getLastCelebration, getLastInactivity, syncRewardsFromSurahs, getClassStarRanking, storeMissionAttempt, prepareOfflineLessons,
         ajouterDevoir, getDevoirs, annulerDevoir, updateDevoirStatut, marquerDevoirTermine,
         getSupabaseClient, syncOfflineQueue, getOfflineStatus
     };
