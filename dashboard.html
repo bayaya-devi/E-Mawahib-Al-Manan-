@@ -391,8 +391,14 @@ body { padding-bottom: 80px; }
         }
 
         function getJuzExamResult(juzNumber) {
-            try { return JSON.parse(localStorage.getItem(getJuzExamKey(juzNumber)) || 'null'); }
-            catch (error) { return null; }
+            let local = null;
+            try { local = JSON.parse(localStorage.getItem(getJuzExamKey(juzNumber)) || 'null'); } catch (error) {}
+            const juz = juzJourney.find(item => item.num === Number(juzNumber));
+            const marker = juz && getJuzSurahs(juz).find(surah => {
+                const activity = surah.activities && surah.activities['juz_exam_' + juzNumber];
+                return Number(activity && activity.score) === 100;
+            });
+            return marker ? { passed: true, score: 100, synced: true } : local;
         }
 
         function isJuzExamPassed(juz) {
@@ -456,8 +462,15 @@ body { padding-bottom: 80px; }
         }
 
         function getMiniExamResult(groupNumber) {
-            try { return JSON.parse(localStorage.getItem(getMiniExamKey(groupNumber)) || 'null'); }
-            catch (error) { return null; }
+            let local = null;
+            try { local = JSON.parse(localStorage.getItem(getMiniExamKey(groupNumber)) || 'null'); } catch (error) {}
+            const marker = getMiniExamGroup(groupNumber).find(surah => {
+                const activity = surah.activities && surah.activities['mini_exam_' + groupNumber];
+                return Number(activity && activity.score) >= 70;
+            });
+            return marker
+                ? { passed: true, score: Number(marker.activities['mini_exam_' + groupNumber].score), synced: true }
+                : local;
         }
 
         function getMiniExamGroup(groupNumber) {
@@ -1022,6 +1035,15 @@ body { padding-bottom: 80px; }
             const score = Math.round((activeMiniExam.correct / activeMiniExam.questions.length) * 100);
             const passed = score >= 70;
             localStorage.setItem(getMiniExamKey(activeMiniExam.groupNumber), JSON.stringify({ score, passed, date: new Date().toISOString() }));
+            if (passed) {
+                const marker = getMiniExamGroup(activeMiniExam.groupNumber)[0];
+                if (marker) {
+                    marker.activities = { ...(marker.activities || {}), ['mini_exam_' + activeMiniExam.groupNumber]: { score, date: new Date().toISOString() } };
+                    if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') {
+                        Auth.recordActivity(marker.id, 'mini_exam_' + activeMiniExam.groupNumber, score).catch(() => {});
+                    }
+                }
+            }
             const body = document.getElementById('mini-exam-body');
             body.innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black ' + (passed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700') + '">' + score + '%</div><h4 class="text-xl font-black text-gray-900 mb-2">' + (passed ? '🌟 ممتاز، الاختبار مكتمل' : '🔁 محاولة جيدة، أعد الاختبار') + '</h4><p class="text-sm font-bold text-gray-500 mb-4">نتيجتك: ' + activeMiniExam.correct + ' / ' + activeMiniExam.questions.length + '</p><button type="button" onclick="closeMiniExam(); renderSurahLibrary();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
         }
@@ -1131,6 +1153,13 @@ body { padding-bottom: 80px; }
                 exerciseCount: activeJuzExam.exercises.length,
                 surahCount: getJuzSurahs(juz).length
             }));
+            const marker = getJuzSurahs(juz)[0];
+            if (marker) {
+                marker.activities = { ...(marker.activities || {}), ['juz_exam_' + juz.num]: { score: 100, date: new Date().toISOString() } };
+                if (typeof Auth !== 'undefined' && typeof Auth.recordActivity === 'function') {
+                    Auth.recordActivity(marker.id, 'juz_exam_' + juz.num, 100).catch(() => {});
+                }
+            }
             const reward = !wasAlreadyPassed && typeof Auth !== 'undefined' && typeof Auth.awardJuzStars === 'function'
                 ? Auth.awardJuzStars(juz.num, juz.name)
                 : null;
@@ -1187,6 +1216,30 @@ body { padding-bottom: 80px; }
             renderSurahLibrary();
         }
 
+        function syncLocalExamMarkers() {
+            if (typeof Auth === 'undefined' || typeof Auth.recordActivity !== 'function') return;
+            juzJourney.forEach(juz => {
+                let local = null;
+                try { local = JSON.parse(localStorage.getItem(getJuzExamKey(juz.num)) || 'null'); } catch (error) {}
+                const marker = getJuzSurahs(juz)[0];
+                const key = 'juz_exam_' + juz.num;
+                if (local && local.passed === true && Number(local.score) === 100 && marker && !marker.activities?.[key]) {
+                    marker.activities = { ...(marker.activities || {}), [key]: { score: 100, date: local.date || new Date().toISOString() } };
+                    Auth.recordActivity(marker.id, key, 100).catch(() => {});
+                }
+            });
+            for (let groupNumber = 1; groupNumber <= Math.ceil(getJourneyOrder().length / 4); groupNumber++) {
+                let local = null;
+                try { local = JSON.parse(localStorage.getItem(getMiniExamKey(groupNumber)) || 'null'); } catch (error) {}
+                const marker = getMiniExamGroup(groupNumber)[0];
+                const key = 'mini_exam_' + groupNumber;
+                if (local && local.passed === true && Number(local.score) >= 70 && marker && !marker.activities?.[key]) {
+                    marker.activities = { ...(marker.activities || {}), [key]: { score: Number(local.score), date: local.date || new Date().toISOString() } };
+                    Auth.recordActivity(marker.id, key, Number(local.score)).catch(() => {});
+                }
+            }
+        }
+
         function renderSurahLibrary() {
             const container = document.getElementById('available-grid');
             const filtered = getJourneyOrder();
@@ -1195,14 +1248,12 @@ body { padding-bottom: 80px; }
                 return;
             }
             const activeJuzIndex = getActiveJuzIndex();
-            const completedPicker = activeJuzIndex > 0
-                ? '<div class="completed-juz-picker">' + juzJourney.slice(0, activeJuzIndex).map((juz, index) => '<button type="button" class="completed-juz-button" onclick="toggleCompletedJuz(' + index + ')">' + juz.name + '</button>').join('') + '</div>'
-                : '';
-            container.innerHTML = completedPicker + juzJourney.map((juz, index) => {
+            container.innerHTML = juzJourney.map((juz, index) => {
                 const isActiveSection = index === activeJuzIndex;
                 const isNextSection = index === activeJuzIndex + 1;
                 const isOpenedCompleted = index === dashboardState.openedJuzIndex && index < activeJuzIndex;
-                if (!isActiveSection && !isNextSection && !isOpenedCompleted) return '';
+                const isCompletedSection = index < activeJuzIndex;
+                if (!isActiveSection && !isNextSection && !isCompletedSection) return '';
                 const items = filtered.filter(s => s.num >= juz.start && s.num <= juz.end);
                 if (items.length === 0) return '';
                 const allJuzSurahs = dashboardState.surahs.filter(s => s.num >= juz.start && s.num <= juz.end).sort((a, b) => b.num - a.num);
@@ -1210,21 +1261,22 @@ body { padding-bottom: 80px; }
                 const toSurah = allJuzSurahs[allJuzSurahs.length - 1];
                 const completedInJuz = allJuzSurahs.filter(s => s.isCompleted).length;
                 const rangeLabel = fromSurah && toSurah ? `من ${fromSurah.nameAr} إلى ${toSurah.nameAr}` : '';
-                const sectionState = isActiveSection ? 'is-active' : (isOpenedCompleted ? 'is-complete' : 'is-muted');
-                const visibleItems = (isActiveSection || isOpenedCompleted) ? items : items.slice(0, 2);
+                const sectionState = isActiveSection ? 'is-active' : (isCompletedSection ? 'is-complete' : 'is-muted');
+                const visibleItems = isActiveSection || isOpenedCompleted ? items : (isNextSection ? items.slice(0, 2) : []);
                 const mutedMessage = isNextSection
                     ? '<div class="mx-4 mb-4 rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-center text-xs font-black text-gray-500">أكمل هذا الجزء أولاً، ثم يظهر هذا الجزء كاملاً.</div>'
                     : '';
                 return `
                     <section class="juz-section ${sectionState} bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-                        <div class="juz-road-header px-4 py-4 flex items-center justify-between gap-3">
+                        <div class="juz-road-header px-4 py-4 flex items-center justify-between gap-3" ${isCompletedSection ? 'role="button" tabindex="0" onclick="toggleCompletedJuz(' + index + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleCompletedJuz(' + index + ')}"' : ''}>
                             <div>
                                 <h3 class="font-black text-gray-900 text-lg">${juz.name}</h3>
                                 <p class="text-xs text-gray-500 font-bold quran-font">${rangeLabel}</p>
                             </div>
                             <div class="juz-header-actions">
-                                <button type="button" class="juz-game-button" onclick="openJuzSwipeGame(${juz.num})" aria-label="تحدي سرعة ترتيب آيات ${juz.name}">⚡ تحدي السرعة</button>
-                                <button type="button" class="juz-puzzle-button" onclick="openJuzPuzzle(${juz.num})" aria-label="فتح بزل آيات ${juz.name}">🧩 بزل الآيات</button>
+                                ${isCompletedSection ? '<span class="text-lg font-black text-emerald-700" aria-hidden="true">' + (isOpenedCompleted ? '⌃' : '⌄') + '</span>' : ''}
+                                <button type="button" class="juz-game-button" onclick="event.stopPropagation(); openJuzSwipeGame(${juz.num})" aria-label="تحدي سرعة ترتيب آيات ${juz.name}">⚡ تحدي السرعة</button>
+                                <button type="button" class="juz-puzzle-button" onclick="event.stopPropagation(); openJuzPuzzle(${juz.num})" aria-label="فتح بزل آيات ${juz.name}">🧩 بزل الآيات</button>
                                 <span class="bg-white border border-gray-200 rounded-full px-3 py-1 text-xs font-black text-emerald-700">${toArabicNum(completedInJuz)} / ${toArabicNum(allJuzSurahs.length)}</span>
                             </div>
                         </div>
@@ -1235,7 +1287,7 @@ body { padding-bottom: 80px; }
                                 const miniExam = sectionState !== 'is-muted' && ((globalIndex + 1) % 4 === 0) ? renderMiniExamCard(groupNumber) : '';
                                 return renderSurahCard(surah) + miniExam;
                             }).join('')}
-                            ${sectionState !== 'is-muted' ? renderJuzExamCard(juz) : ''}
+                            ${(isActiveSection || isOpenedCompleted) ? renderJuzExamCard(juz) : ''}
                         </div>
                         ${mutedMessage}
                     </section>
@@ -1345,6 +1397,7 @@ async function chargerDevoirs() {
                         ...surah,
                         isCompleted,
                         score,
+                        activities: pData.activities || {},
                         lengthType: getLengthType(surah.ayat)
                     };
                 });
@@ -1358,6 +1411,7 @@ async function chargerDevoirs() {
                 progressFill.style.width = `${progressPercent}%`;
             }
             if (typeof Auth.syncRewardsFromSurahs === 'function') Auth.syncRewardsFromSurahs(dashboardState.surahs);
+            syncLocalExamMarkers();
             updateRewardPanel();
             renderSurahLibrary();
             if (typeof Auth.prepareOfflineLessons === 'function') Auth.prepareOfflineLessons(dashboardState.surahs);
