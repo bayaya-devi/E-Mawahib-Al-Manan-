@@ -180,56 +180,6 @@
             .pill { min-height: 40px; }
         }
 
-        /* Administration moderne, fidèle au tableau historique */
-        body { background: #f4f7f5; padding-bottom: 92px !important; }
-        .control-shell { display: block; }
-        .control-main { width: 100%; }
-        .control-sidebar {
-            position: fixed; z-index: 45; top: auto; right: auto;
-            left: 50%; bottom: max(8px, env(safe-area-inset-bottom));
-            width: min(calc(100% - 20px), 820px); padding: 5px;
-            border: 1px solid #d7e2dc; border-radius: 14px;
-            background: rgba(255,255,255,.96); color: #405149;
-            box-shadow: 0 12px 34px rgba(15,50,34,.18);
-            transform: translateX(-50%); backdrop-filter: blur(14px);
-        }
-        .control-sidebar.admin-nav-hidden { transform: translate(-50%, calc(100% + 24px)); opacity: 0; }
-        .control-sidebar-title { display: none; }
-        .control-nav-scroll { display: grid; grid-template-columns: repeat(8,minmax(0,1fr)); gap: 3px; }
-        .control-sidebar .tab-btn {
-            min-width: 0; min-height: 50px; margin: 0; padding: 6px 4px;
-            border-radius: 10px; color: #64716b; background: transparent;
-            flex-direction: column-reverse; justify-content: center; font-size: 10px;
-        }
-        .control-sidebar .tab-btn span:first-child { overflow: hidden; max-width: 100%; text-overflow: ellipsis; white-space: nowrap; }
-        .control-sidebar .tab-btn span:last-child { font-size: 17px; line-height: 1; }
-        .control-sidebar .tab-btn.active { color: #fff; background: #0f5137; box-shadow: none; }
-        .cockpit-hero { border-radius: 16px; background: #0f5137; box-shadow: 0 14px 36px rgba(12,74,59,.18); }
-        .cockpit-kpi { border-radius: 10px; backdrop-filter: none; }
-        .cockpit-panel, .class-card, .recitation-admin-card { border-radius: 12px; box-shadow: 0 5px 18px rgba(12,74,59,.06); }
-        .cockpit-action { min-height: 68px; border-radius: 10px; background: #f7faf8; }
-        .class-card-header { background: #12603f; }
-        .accordion-body.open { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
-        .student-row { min-width: 0; margin: 0; padding: 11px; align-content: start; border-radius: 10px; }
-        .student-row > .w-full { grid-column: 1/-1; }
-        .modal-overlay { padding: 8px; backdrop-filter: blur(4px); }
-        .modal-overlay > div { border-radius: 14px !important; }
-        @media (max-width: 900px) {
-            .control-sidebar { top: auto; }
-            .control-sidebar .tab-btn { width: auto; display: flex; }
-            .accordion-body.open { grid-template-columns: repeat(2,minmax(0,1fr)); }
-        }
-        @media (max-width: 520px) {
-            body { padding: 8px !important; padding-bottom: 82px !important; }
-            .control-sidebar { width: calc(100% - 10px); bottom: max(5px,env(safe-area-inset-bottom)); padding: 4px; }
-            .control-nav-scroll { overflow: visible; padding: 0; }
-            .control-sidebar .tab-btn { min-height: 48px; padding: 5px 2px; font-size: 8px; }
-            .control-sidebar .tab-btn span:last-child { font-size: 16px; }
-            .accordion-body.open { grid-template-columns: 1fr; padding: 8px !important; }
-            .cockpit-hero { padding: 13px; }
-        }
-
-            @media (max-width: 520px) { .control-sidebar .tab-btn span:first-child { display:none; } .control-sidebar .tab-btn span:last-child { font-size:19px; } }
     </style>
     <script src="platform-theme.js?v=20260723-juz-verse-puzzle-1"></script>
 </head>
@@ -264,7 +214,6 @@
                 <a class="tab-btn" href="controle-487-activity.html"><span>النشاط المباشر</span><span>⚡</span></a>
                 <button class="tab-btn" onclick="switchTab('stats')"><span>الإحصاءات</span><span>📊</span></button>
                 <button class="tab-btn" onclick="switchTab('parents')"><span>الأولياء</span><span>👨‍👩‍👧</span></button>
-                <a class="tab-btn" href="admin-quizparent.html"><span>إجابات الأولياء</span><span>▤</span></a>
                 <button class="tab-btn" onclick="switchTab('add-student')"><span>إضافة طالب</span><span>➕</span></button>
                 <button class="tab-btn" onclick="switchTab('add-prof')"><span>إضافة أستاذ</span><span>👤</span></button>
             </div>
@@ -535,7 +484,7 @@
                 </p>
                 <a href="admin-quizparent.html"
                    class="mt-2 flex items-center gap-2 bg-white text-purple-700 font-black px-8 py-3 rounded-2xl hover:bg-purple-50 transition shadow-lg text-base">
-                    الانتقال إلى بوابة الأولياء
+                    عرض إجابات الأولياء
                     <span class="text-xl">←</span>
                 </a>
             </div>
@@ -773,7 +722,11 @@
                 </button>
             </div>
             <hr class="border-gray-100">
-            <button onclick="deleteCurrentProf()"
+            <button onclick="closeClassModal(); openProfEditModal(_currentClassProfId)"
+                    class="w-full py-2 bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold rounded-xl hover:bg-emerald-100 transition text-sm">
+                تعديل اسم الأستاذ أو القسم أو كلمة المرور
+            </button>
+            <hr class="border-gray-100">            <button onclick="deleteCurrentProf()"
                     class="w-full py-2 bg-rose-50 text-rose-600 border border-rose-200 font-bold rounded-xl hover:bg-rose-100 transition text-sm">
                 🗑️ حذف القسم والأستاذ
             </button>
@@ -781,6 +734,37 @@
     </div>
 </div>
 
+<!-- MODAL: EDIT PROFESSOR -->
+<div id="prof-edit-modal" class="modal-overlay" onclick="closeProfEditModal(event)">
+    <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl relative m-4" onclick="event.stopPropagation()">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+            <div>
+                <h2 class="text-base font-black text-purple-900">تعديل حساب الأستاذ</h2>
+                <p id="edit-prof-username" class="text-xs text-gray-400 font-mono mt-1"></p>
+            </div>
+            <button onclick="closeProfEditModal()" class="text-gray-400 hover:text-gray-700 font-bold text-xl px-2">×</button>
+        </div>
+        <div class="p-6 space-y-3">
+            <input type="hidden" id="edit-prof-id">
+            <div>
+                <label class="block text-sm font-bold text-gray-600 mb-1">اسم الأستاذ</label>
+                <input id="edit-prof-prenom" type="text" class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-600 mb-1">اسم القسم</label>
+                <input id="edit-prof-classe" type="text" class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-gray-600 mb-1">الكود / كلمة المرور الجديدة</label>
+                <input id="edit-prof-pass" type="password" dir="ltr" class="w-full p-3 border rounded-xl bg-gray-50 focus:border-purple-400 outline-none" placeholder="اتركه فارغا إذا لم ترغب في تغييره">
+                <p class="text-[11px] text-gray-400 font-bold mt-1">إذا كتبت كودا جديدا فسيصبح هو كود دخول الأستاذ.</p>
+            </div>
+            <button onclick="saveProfEdit()" id="btn-save-prof-edit" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition text-sm">
+                حفظ التعديلات ✔
+            </button>
+        </div>
+    </div>
+</div>
 <script>
 /* ══════════════════════════════════════════════════════════
    AUTH GUARD
@@ -794,6 +778,7 @@ let _allUsers    = {};
 let _adminReports = [];
 let _currentClassProfId   = null;
 let _currentClassStudents = [];
+let _currentEditProfId = null;
 let _openAccordions = new Set();
 let _statsInterval  = null;
 const STATS_REFRESH_MS = 3 * 60 * 1000; // 3 minutes
@@ -1261,7 +1246,10 @@ function buildClassCard(profId, prof, students) {
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <button onclick="openClassModal('${profId}', event)"
+            <button onclick="openProfEditModal('${profId}', event)" aria-label="تعديل الأستاذ"
+                    class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-lg transition">
+                تعديل الأستاذ
+            </button>            <button onclick="openClassModal('${profId}', event)"
                     class="px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded-lg transition">
                 إجراءات القسم ⚙️
             </button>
@@ -1623,6 +1611,43 @@ function openClassModal(profId, event) {
 function closeClassModal(event) {
     if (event && event.target !== document.getElementById('class-modal')) return;
     document.getElementById('class-modal').classList.remove('open');
+}
+
+function openProfEditModal(profId, event) {
+    if (event) event.stopPropagation();
+    const prof = _allProfs[profId];
+    if (!prof) { alert('تعذر العثور على حساب الأستاذ'); return; }
+    _currentEditProfId = profId;
+    document.getElementById('edit-prof-id').value = profId;
+    document.getElementById('edit-prof-username').innerText = '@' + profId;
+    document.getElementById('edit-prof-prenom').value = prof.prenom || '';
+    document.getElementById('edit-prof-classe').value = prof.classe || '';
+    document.getElementById('edit-prof-pass').value = '';
+    document.getElementById('prof-edit-modal').classList.add('open');
+}
+
+function closeProfEditModal(event) {
+    if (event && event.target !== document.getElementById('prof-edit-modal')) return;
+    document.getElementById('prof-edit-modal').classList.remove('open');
+}
+
+async function saveProfEdit() {
+    const profId = document.getElementById('edit-prof-id').value || _currentEditProfId;
+    const prenom = document.getElementById('edit-prof-prenom').value.trim();
+    const classe = document.getElementById('edit-prof-classe').value.trim();
+    const password = document.getElementById('edit-prof-pass').value.trim();
+    if (!profId || !prenom || !classe) { alert('المرجو ملء اسم الأستاذ واسم القسم'); return; }
+    const btn = document.getElementById('btn-save-prof-edit');
+    btn.disabled = true;
+    btn.innerText = 'جاري الحفظ...';
+    const res = await Auth.updateProfAccount(profId, { prenom, classe, password });
+    btn.disabled = false;
+    btn.innerText = 'حفظ التعديلات ✔';
+    if (!res.ok) { alert('❌ ' + (res.error || 'تعذر حفظ التعديلات')); return; }
+    closeProfEditModal();
+    closeClassModal();
+    showToast('✅ تم تعديل حساب الأستاذ', 'success');
+    await renderAll();
 }
 
 async function sendClassMsg() {
