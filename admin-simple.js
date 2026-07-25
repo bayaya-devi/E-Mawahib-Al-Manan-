@@ -3,6 +3,9 @@
   const page=document.body.dataset.adminPage||'students';
   const links=[['students','controle-487-eleves.html','👥','الطلاب'],['teachers','controle-487-profs.html','🧑‍🏫','الأساتذة'],['classes','controle-487-classes.html','🏫','الأقسام'],['activity','controle-487-activity.html','⚡','النشاط المباشر'],['finance','controle-487-finance.html','💳','المالية'],['stats','controle-487-stats.html','📊','الإحصاءات'],['messages','controle-487-messages.html','✉️','الرسائل']];
   const state={students:[],profs:{},reports:[],finance:[],selectedStudent:'',teacherNotes:{},editingProf:'',error:'',activityEvents:[],activityFilter:'all',activityStatus:'loading',activityUpdatedAt:null};
+  const juzJourney=[
+    {num:30,name:'جزء عمّ',start:78,end:114},{num:29,name:'جزء تبارك',start:67,end:77},{num:28,name:'جزء قد سمع',start:58,end:66},{num:27,name:'جزء الذاريات',start:51,end:57},{num:26,name:'جزء الأحقاف',start:46,end:50},{num:25,name:'جزء إليه يرد',start:42,end:45},{num:24,name:'جزء فمن أظلم',start:40,end:41},{num:23,name:'جزء وما لي',start:37,end:39},{num:22,name:'جزء ومن يقنت',start:34,end:36},{num:21,name:'جزء اتل ما أوحي',start:30,end:33},{num:20,name:'جزء أمن خلق',start:28,end:29},{num:19,name:'جزء وقال الذين',start:26,end:27},{num:18,name:'جزء قد أفلح',start:23,end:25},{num:17,name:'جزء اقترب للناس',start:21,end:22},{num:16,name:'جزء قال ألم',start:19,end:20},{num:15,name:'جزء سبحان الذي',start:17,end:18},{num:14,name:'جزء ربما',start:15,end:16},{num:13,name:'جزء وما أبرئ',start:13,end:14},{num:12,name:'جزء وما من دابة',start:12,end:12},{num:11,name:'جزء يعتذرون',start:11,end:11},{num:10,name:'جزء واعلموا',start:10,end:10},{num:9,name:'جزء قال الملأ',start:9,end:9},{num:8,name:'جزء ولو أننا',start:8,end:8},{num:7,name:'جزء وإذا سمعوا',start:7,end:7},{num:6,name:'جزء لا يحب الله',start:6,end:6},{num:5,name:'جزء والمحصنات',start:5,end:5},{num:4,name:'جزء لن تنالوا البر',start:4,end:4},{num:3,name:'جزء تلك الرسل',start:3,end:3},{num:2,name:'جزء سيقول',start:2,end:2},{num:1,name:'جزء الفاتحة',start:1,end:1}
+  ];
   const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const arg=value=>esc(String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
   const studentName=item=>`${item?.prenom||''} ${item?.nom||''}`.trim()||item?.username||'';
@@ -64,8 +67,21 @@
   function activityDate(value){const date=new Date(value||0);return Number.isNaN(date.getTime())?null:date}
   function activityTime(value){const date=activityDate(value);return date?date.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}
   function parseActivityPayload(text,prefix){if(!String(text||'').startsWith(prefix))return null;try{return JSON.parse(String(text).slice(prefix.length))}catch(error){return null}}
-  function surahLabel(id){const normalized=Auth.normalizeSurahId?Auth.normalizeSurahId(id):String(id||'').replace(/_/g,'-');const list=typeof SURAH_REGISTRY!=='undefined'?SURAH_REGISTRY:[];const found=list.find(item=>(Auth.normalizeSurahId?Auth.normalizeSurahId(item.id):item.id)===normalized);return found?.nameAr||normalized||'سورة'}
-  function activityLabel(key){const value=String(key||'');if(value.startsWith('juz_exam_'))return 'امتحان جزء';if(value.startsWith('mini_exam_'))return 'اختبار مرحلي';if(/listen|audio/i.test(value))return 'استماع';if(/order|sort/i.test(value))return 'ترتيب الآيات';if(/fill|word/i.test(value))return 'إكمال الآيات';if(/speed/i.test(value))return 'تمرين سريع';return 'تمرين'}
+  function normalizedSurahId(id){return Auth.normalizeSurahId?Auth.normalizeSurahId(id):String(id||'').replace(/_/g,'-')}
+  function surahMeta(id){const normalized=normalizedSurahId(id);const list=typeof SURAH_REGISTRY!=='undefined'?SURAH_REGISTRY:[];return list.find(item=>normalizedSurahId(item.id)===normalized)||null}
+  function firstDate(values){return values.filter(value=>activityDate(value)).sort((a,b)=>activityDate(a)-activityDate(b))[0]||null}
+  async function fetchAllRows(client,table,columns='*'){
+    const rows=[];const pageSize=1000;
+    for(let from=0;;from+=pageSize){const response=await client.from(table).select(columns).range(from,from+pageSize-1);if(response.error)throw response.error;const batch=response.data||[];rows.push(...batch);if(batch.length<pageSize)break}
+    return rows;
+  }
+  function buildStudentCompletionEvents(progressRows,studentMap){
+    const byStudent=new Map();
+    progressRows.forEach(row=>{if(!row?.username)return;const meta=surahMeta(row.surah_id);if(!meta)return;if(!byStudent.has(row.username))byStudent.set(row.username,new Map());const rows=byStudent.get(row.username);const current=rows.get(meta.id)||{};rows.set(meta.id,{meta,completedAt:firstDate([current.completedAt,row.completed_at,row.completedAt]),activities:{...(current.activities||{}),...(row.activities||{})}})});
+    const events=[];
+    byStudent.forEach((rows,username)=>{const person=studentDisplay(studentMap,username);rows.forEach(row=>{if(row.completedAt)events.push({role:'student',type:'surah',date:row.completedAt,person,title:'أتم '+row.meta.nameAr,detail:'',score:0})});juzJourney.forEach(juz=>{const required=(typeof SURAH_REGISTRY!=='undefined'?SURAH_REGISTRY:[]).filter(item=>item.num>=juz.start&&item.num<=juz.end);if(!required.length||!required.every(item=>rows.get(item.id)?.completedAt))return;const examKey='juz_exam_'+juz.num;const exam=Array.from(rows.values()).map(item=>item.activities?.[examKey]).find(item=>Number(item?.score)===100);if(!exam)return;events.push({role:'student',type:'juz',date:exam.date||firstDate(required.map(item=>rows.get(item.id)?.completedAt)),person,title:'أتم '+juz.name,detail:'',score:0})})});
+    return events;
+  }
   function homeworkTimestamp(row){const direct=row.created_at||row.createdAt;const match=String(row.id||'').match(/\d{13}/);return direct||(match?new Date(Number(match[0])).toISOString():'')}
   function studentDisplay(map,id){const item=map.get(id);return item?studentName(item):(id||'طالب(ة)')}
   function profDisplay(map,id,fallback){const item=map.get(id);return item?.prenom||fallback||id||'أستاذ(ة)'}
@@ -76,28 +92,13 @@
     state.activityStatus=state.activityEvents.length?'refreshing':'loading';
     renderActivity();
     try{
-      const [progressRes,studentsRes,profsRes,messagesRes,dutiesRes]=await Promise.all([
-        client.from('progressions').select('*').limit(1500),
-        client.from('eleves').select('username,prenom,nom'),
-        client.from('profs').select('username,prenom,classe'),
-        client.from('messages').select('*').order('id',{ascending:false}).limit(700),
-        client.from('devoirs').select('*').limit(700)
+      const [progressRows,studentRows,profRows,messageRows,dutyRows]=await Promise.all([
+        fetchAllRows(client,'progressions'),fetchAllRows(client,'eleves','username,prenom,nom'),fetchAllRows(client,'profs','username,prenom,classe'),fetchAllRows(client,'messages'),fetchAllRows(client,'devoirs')
       ]);
-      const errors=[progressRes.error,studentsRes.error,profsRes.error,messagesRes.error,dutiesRes.error].filter(Boolean);
-      if(errors.length)throw errors[0];
-      const studentMap=new Map((studentsRes.data||[]).map(item=>[item.username,item]));
-      const profMap=new Map((profsRes.data||[]).map(item=>[item.username,item]));
-      const events=[];
-      (progressRes.data||[]).forEach(row=>{
-        const person=studentDisplay(studentMap,row.username);
-        const surah=surahLabel(row.surah_id);
-        if(row.completed_at)events.push({role:'student',type:'completion',date:row.completed_at,person,title:'سورة مكتملة',detail:surah,score:Number(row.global_score||0)});
-        Object.entries(row.activities||{}).forEach(([key,value])=>{
-          if(!value?.date)return;
-          events.push({role:'student',type:'exercise',date:value.date,person,title:activityLabel(key),detail:surah,score:Number(value.score||0)});
-        });
-      });
-      (messagesRes.data||[]).forEach(row=>{
+      const studentMap=new Map(studentRows.map(item=>[item.username,item]));
+      const profMap=new Map(profRows.map(item=>[item.username,item]));
+      const events=buildStudentCompletionEvents(progressRows,studentMap);
+      messageRows.forEach(row=>{
         const note=parseActivityPayload(row.text,'[TEACHER_NOTE] ');
         if(note){events.push({role:'prof',type:'reading',date:note.savedAt||row.created_at,person:profDisplay(profMap,note.profId,note.profName),title:'قراءة مسجلة',detail:studentDisplay(studentMap,note.studentId)+' · '+(note.surah||note.surate||'سورة')+(note.scope?(' · '+note.scope):''),score:0});return}
         const report=parseActivityPayload(row.text,'[SIGNAL_ADMIN] ');
@@ -105,8 +106,10 @@
         const lesson=parseActivityPayload(row.text,'[CLASS_SESSION] ');
         if(lesson)events.push({role:'prof',type:'session',date:lesson.savedAt||row.created_at,person:profDisplay(profMap,lesson.profId,lesson.profName),title:'حصة مسجلة',detail:lesson.classe||'',score:0});
       });
-      (dutiesRes.data||[]).forEach(row=>events.push({role:'prof',type:'homework',date:homeworkTimestamp(row),person:profDisplay(profMap,row.prof_id,row.prof_name),title:'واجب مرسل',detail:studentDisplay(studentMap,row.student_id)+' · '+(row.surate||'سورة'),score:0}));
-      state.activityEvents=events.filter(item=>activityDate(item.date)).sort((a,b)=>activityDate(b.date)-activityDate(a.date)).slice(0,500);
+      dutyRows.forEach(row=>events.push({role:'prof',type:'homework',date:homeworkTimestamp(row),person:profDisplay(profMap,row.prof_id,row.prof_name),title:'واجب مرسل',detail:studentDisplay(studentMap,row.student_id)+' · '+(row.surate||'سورة'),score:0}));
+      const unique=new Map();
+      events.filter(item=>activityDate(item.date)).forEach(item=>unique.set([item.role,item.type,item.person,item.title,item.date].join('|'),item));
+      state.activityEvents=Array.from(unique.values()).sort((a,b)=>activityDate(b.date)-activityDate(a.date)).slice(0,500);
       state.activityUpdatedAt=new Date();state.activityStatus='live';state.error='';
     }catch(error){state.activityStatus='error';state.error='تعذر تحديث النشاط الآن. ستتم إعادة المحاولة تلقائيا.'}
     renderActivity();
@@ -120,11 +123,11 @@
     const activeStudents=new Set(studentEvents.map(item=>item.person)).size;
     const activeProfs=new Set(profEvents.map(item=>item.person)).size;
     const statusText=state.activityStatus==='live'?'تحديث مباشر':state.activityStatus==='error'?'إعادة المحاولة':'جاري التحديث';
-    main.innerHTML=heading('النشاط المباشر','آخر إنجازات الطلاب(ات) وآخر أعمال الأساتذة(ات) من البيانات المسجلة فعليا.')+
+    main.innerHTML=heading('النشاط المباشر','السور والأجزاء المكتملة، وآخر أعمال الأساتذة(ات).')+
       `<div class="admin-live-head"><div class="admin-live-state ${state.activityStatus}"><span></span>${statusText}</div><div class="admin-row-meta">آخر تحديث: ${state.activityUpdatedAt?activityTime(state.activityUpdatedAt):'—'}</div></div>`+
-      `<div class="admin-kpis">${kpi(studentEvents.length,'أنشطة الطلاب(ات)')}${kpi(profEvents.length,'أنشطة الأساتذة(ات)')}${kpi(activeStudents,'طلاب(ات) نشطون')}${kpi(activeProfs,'أساتذة(ات) نشطون')}</div>`+
+      `<div class="admin-kpis">${kpi(studentEvents.filter(item=>item.type==='surah').length,'سور مكتملة')}${kpi(studentEvents.filter(item=>item.type==='juz').length,'أجزاء مكتملة')}${kpi(activeStudents,'طلاب(ات) أتموا')}${kpi(activeProfs,'أساتذة(ات) نشطون')}</div>`+
       `<div class="admin-live-filters"><button class="${state.activityFilter==='all'?'active':''}" onclick="setAdminActivityFilter('all')">الكل</button><button class="${state.activityFilter==='student'?'active':''}" onclick="setAdminActivityFilter('student')">الطلاب(ات)</button><button class="${state.activityFilter==='prof'?'active':''}" onclick="setAdminActivityFilter('prof')">الأساتذة(ات)</button><button onclick="refreshAdminActivity()">تحديث</button></div>`+
-      `<div class="admin-live-list">${filtered.length?filtered.slice(0,100).map(item=>`<article class="admin-live-row ${item.role}"><div class="admin-live-icon">${item.role==='student'?'📖':'🧑‍🏫'}</div><div class="admin-live-copy"><div class="admin-row-title">${esc(item.person)} · ${esc(item.title)}</div><div class="admin-row-meta">${esc(item.detail)}${item.score?(' · '+Math.round(item.score)+'%'):''}</div></div><time>${activityTime(item.date)}</time></article>`).join(''):empty(state.activityStatus==='loading'?'جاري تحميل النشاط...':'لا يوجد نشاط مسجل بعد.')}</div>`;
+      `<div class="admin-live-list">${filtered.length?filtered.slice(0,100).map(item=>`<article class="admin-live-row ${item.role}"><div class="admin-live-icon">${item.type==='juz'?'✓':item.role==='student'?'📖':'🧑‍🏫'}</div><div class="admin-live-copy"><div class="admin-row-title">${esc(item.person)} · ${esc(item.title)}</div>${item.detail?`<div class="admin-row-meta">${esc(item.detail)}</div>`:''}</div><time>${activityTime(item.date)}</time></article>`).join(''):empty(state.activityStatus==='loading'?'جاري تحميل النشاط...':'لا يوجد نشاط مسجل بعد.')}</div>`;
   }
 
   let activityChannel=null,activityPoll=null,activityDebounce=null;
@@ -139,8 +142,10 @@
         .on('postgres_changes',{event:'*',schema:'public',table:'devoirs'},scheduleActivityReload)
         .subscribe(status=>{if(status==='SUBSCRIBED'){state.activityStatus='live';renderActivity()}});
     }
-    activityPoll=setInterval(loadActivity,15000);
+    activityPoll=setInterval(()=>{if(!document.hidden)loadActivity()},10000);
     document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadActivity()});
+    addEventListener('online',loadActivity);
+    addEventListener('pageshow',event=>{if(event.persisted)loadActivity()});
     addEventListener('beforeunload',()=>{clearInterval(activityPoll);if(activityChannel&&client?.removeChannel)client.removeChannel(activityChannel)},{once:true});
   }
   async function reload(message){await load();if(message)toast(message)}
