@@ -260,6 +260,24 @@ const Auth = (() => {
         return typeof navigator === 'undefined' ? true : navigator.onLine !== false;
     }
 
+    async function _getProgressionRows(columns = '*', usernames = null) {
+        const rows = [];
+        const pageSize = 1000;
+        for (let from = 0; ; from += pageSize) {
+            let query = supabase
+                .from('progressions')
+                .select(columns)
+                .order('username', { ascending: true })
+                .order('surah_id', { ascending: true })
+                .range(from, from + pageSize - 1);
+            if (Array.isArray(usernames) && usernames.length > 0) query = query.in('username', usernames);
+            const { data, error } = await query;
+            if (error) return { data: rows, error };
+            const batch = data || [];
+            rows.push(...batch);
+            if (batch.length < pageSize) return { data: rows, error: null };
+        }
+    }
     function _safeJsonRead(key, fallback) {
         try {
             const raw = localStorage.getItem(key);
@@ -687,10 +705,8 @@ const Auth = (() => {
 
             const classStudents = Array.from(new Set(klass.students.filter(Boolean)));
             const [progressResult, studentsResult] = await Promise.all([
-                supabase
-                    .from('progressions')
-                    .select('username, surah_id, completed_at')
-                    .in('username', classStudents),
+                _getProgressionRows('username, surah_id, completed_at', classStudents),
+
                 supabase
                     .from('eleves')
                     .select('username, prenom, nom')
@@ -859,7 +875,7 @@ const Auth = (() => {
         if (!_isOnline()) return _readOfflineCache('__admin__', 'all_students', []);
         const [elevesRes, progsRes, msgsRes, profilsRes, devoirsRes, horairesRes] = await Promise.all([
             supabase.from('eleves').select('*'),
-            supabase.from('progressions').select('*'),
+            _getProgressionRows('*'),
             supabase.from('messages').select('*'),
             supabase.from('profils_admin').select('*'),
             supabase.from('devoirs').select('*'),
