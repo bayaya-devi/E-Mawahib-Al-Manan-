@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'mawahib-offline-v31-login-help-20260723';
+const CACHE_VERSION = 'mawahib-offline-v33-inclusive-live-20260725';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -29,6 +29,7 @@ const STATIC_ASSETS = [
   './prof-recitation.html',
   './prof-students.html',
   './prof-homework.html',
+  './controle-487-activity.html',
   './prof-report.html',
   './controle-mawahib-7x9k.html',
   './controle-487-stats.html',
