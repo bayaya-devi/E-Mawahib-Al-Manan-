@@ -162,6 +162,38 @@
         .reward-rank-button { width: 100%; color: inherit; font: inherit; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
         .reward-rank-button:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(15,118,110,.14); }
         .reward-rank-button:focus-visible { outline: 3px solid var(--platform-accent); outline-offset: 3px; }
+        .reward-strip { grid-template-columns: repeat(3, minmax(150px, 250px)); }
+        .reward-stars-card { order: 2; }
+        .reward-rank-button { order: 1; }
+        .reward-medal-button { order: 3; width: 100%; color: inherit; font: inherit; cursor: pointer; background: linear-gradient(135deg, #fff8dc, #ffffff); }
+        .reward-medal-value { color: #a66a00; text-shadow: 0 2px 12px rgba(217,164,65,.3); }
+        .medal-modal { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; padding: 16px; background: rgba(15,23,42,.62); backdrop-filter: blur(5px); }
+        .medal-modal[hidden] { display: none; }
+        .medal-panel { width: min(680px, 100%); max-height: min(760px, calc(100dvh - 32px)); overflow: hidden; display: flex; flex-direction: column; background: #fff; border-radius: 18px; box-shadow: 0 28px 70px rgba(15,23,42,.28); }
+        .medal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 15px 17px 12px; border-bottom: 1px solid #e5e7eb; }
+        .medal-title { color: var(--platform-primary-dark); font-size: 19px; font-weight: 900; }
+        .medal-subtitle { margin-top: 2px; color: #64748b; font-size: 11px; font-weight: 800; }
+        .medal-close { flex: 0 0 38px; width: 38px; height: 38px; border-radius: 50%; background: #f1f5f9; color: #334155; font-size: 22px; font-weight: 900; }
+        .medal-grid { overflow-y: auto; overscroll-behavior: contain; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; padding: 12px; }
+        .medal-item { min-height: 112px; display: grid; place-items: center; align-content: center; gap: 5px; padding: 10px 7px; border: 1px solid #e5e7eb; border-radius: 14px; text-align: center; background: #f8fafc; }
+        .medal-symbol { width: 43px; height: 43px; display: grid; place-items: center; border-radius: 50%; font-size: 23px; background: #e2e8f0; filter: grayscale(1); opacity: .58; }
+        .medal-name { color: #64748b; font-size: 11px; font-weight: 900; line-height: 1.35; }
+        .medal-status { color: #94a3b8; font-size: 9px; font-weight: 800; }
+        .medal-item.is-earned { border-color: rgba(217,164,65,.45); background: #fffdf4; box-shadow: 0 8px 20px rgba(166,106,0,.09); }
+        .medal-item.is-earned .medal-symbol { color: #fff; filter: none; opacity: 1; box-shadow: inset 0 -5px 10px rgba(0,0,0,.12), 0 5px 14px rgba(166,106,0,.2); }
+        .medal-item.is-earned .medal-name { color: #55400b; }
+        .medal-item.is-current { border: 2px solid var(--platform-accent); background: var(--platform-primary-soft); }
+        .medal-tier-0 .medal-symbol { background: linear-gradient(145deg, #f6d365, #b77900); }
+        .medal-tier-1 .medal-symbol { background: linear-gradient(145deg, #dce6ef, #7b8b9a); }
+        .medal-tier-2 .medal-symbol { background: linear-gradient(145deg, #4ade80, #047857); }
+        .medal-tier-3 .medal-symbol { background: linear-gradient(145deg, #fb7185, #be123c); }
+        .medal-tier-4 .medal-symbol { background: linear-gradient(145deg, #60a5fa, #1d4ed8); }
+        .medal-tier-5 .medal-symbol { background: linear-gradient(145deg, #f8fafc, #64748b); }
+        .medal-intro-panel { width: min(420px, 100%); padding: 24px 20px 20px; text-align: center; background: #fff; border-radius: 18px; box-shadow: 0 28px 70px rgba(15,23,42,.28); }
+        .medal-intro-symbol { width: 76px; height: 76px; margin: 0 auto 12px; display: grid; place-items: center; border-radius: 50%; color: #fff; font-size: 40px; background: linear-gradient(145deg, #f6d365, #a66a00); box-shadow: 0 12px 28px rgba(166,106,0,.24); }
+        .medal-intro-title { color: var(--platform-primary-dark); font-size: 22px; font-weight: 900; }
+        .medal-intro-text { margin-top: 8px; color: #475569; font-size: 14px; font-weight: 800; line-height: 1.8; }
+        .medal-intro-action { margin-top: 16px; min-width: 150px; min-height: 44px; border-radius: 12px; background: var(--platform-primary); color: #fff; font-size: 14px; font-weight: 900; }
         .ranking-modal { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 18px; background: rgba(15,23,42,.58); backdrop-filter: blur(5px); }
         .ranking-modal[hidden] { display: none; }
         .ranking-panel { width: min(520px, 100%); max-height: min(720px, calc(100dvh - 36px)); overflow: hidden; display: flex; flex-direction: column; background: #fff; border-radius: 18px; box-shadow: 0 28px 70px rgba(15,23,42,.26); border: 1px solid rgba(255,255,255,.55); }
@@ -201,7 +233,11 @@
             .daily-grid { grid-template-columns: 1fr; }
             .daily-tile:last-child { grid-column: auto; }
             .daily-progress { grid-template-columns: 1fr; gap: 6px; }
-            .reward-strip { grid-template-columns: 1fr; }
+            .reward-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .reward-stars-card { grid-column: 1 / -1; grid-row: 1; }
+            .reward-rank-button, .reward-medal-button { min-height: 82px; padding-inline: 8px; }
+            .medal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 9px; }
+            .medal-item { min-height: 104px; }
             .surah-journey { padding-inline: 0; }
             .surah-journey::before { left: 28px; transform: none; width: 6px; }
             .journey-step, .journey-step:nth-child(odd), .journey-step:nth-child(even) { justify-content: stretch; padding-left: 72px; padding-right: 0; }
@@ -274,8 +310,8 @@ body { padding-bottom: 80px; }
                 </div>
                 <span id="student-progress-label">0 / 0</span>
             </div>
-            <div class="reward-strip" aria-label="نظام النجوم">
-                <div class="reward-pill">
+            <div class="reward-strip" aria-label="نظام النجوم والأوسمة">
+                <div class="reward-pill reward-stars-card">
                     <div class="reward-kicker">نجومك</div>
                     <div class="reward-value reward-stars-value"><span id="reward-stars">0</span> ★</div>
                     <div class="reward-note" id="reward-decay-note">كل سورة تضيف رصيدا جديدا.</div>
@@ -285,6 +321,7 @@ body { padding-bottom: 80px; }
                     <div class="reward-value reward-rank-value" id="class-rank-value">...</div>
                     <div class="reward-note" id="class-rank-note">اضغط هنا لاكتشاف الترتيب الكامل</div>
                 </button>
+                <button type="button" class="reward-pill reward-medal-button" id="open-medal-cabinet" aria-haspopup="dialog" aria-controls="medal-cabinet-modal" aria-label="عرض خزانة الأوسمة"><div class="reward-kicker">أوسمتك</div><div class="reward-value reward-medal-value"><span id="reward-medals">0</span> / 30</div><div class="reward-note">اضغط هنا لعرض الأوسمة</div></button>
             </div>
         </div>
     </section>
@@ -303,6 +340,8 @@ body { padding-bottom: 80px; }
         </section>
     </div>
 
+    <div class="medal-modal" id="medal-cabinet-modal" role="dialog" aria-modal="true" aria-labelledby="medal-cabinet-title" hidden><section class="medal-panel"><div class="medal-head"><div><h2 class="medal-title" id="medal-cabinet-title">خزانة الأوسمة</h2><div class="medal-subtitle" id="medal-cabinet-count">0 / 30</div></div><button type="button" class="medal-close" id="close-medal-cabinet" aria-label="إغلاق">×</button></div><div class="medal-grid" id="medal-cabinet-grid"></div></section></div>
+    <div class="medal-modal" id="medal-intro-modal" role="dialog" aria-modal="true" aria-labelledby="medal-intro-title" hidden><section class="medal-intro-panel"><div class="medal-intro-symbol">🏅</div><h2 class="medal-intro-title" id="medal-intro-title">نظام الأوسمة الجديد</h2><p class="medal-intro-text">أتمّ سور الجزء واجتز اختباره لتحصل على وسام دائم. اجمع الأوسمة الثلاثين مع تقدّمك.</p><button type="button" class="medal-intro-action" id="acknowledge-medal-intro">فهمت</button></section></div>
     <main class="max-w-5xl mx-auto px-4 py-6">
         <h2 id="section-available" class="hidden text-lg font-black text-gray-700 mb-4 items-center gap-2">
     <span class="w-2 h-6 bg-emerald-500 rounded-full inline-block"></span>
@@ -410,6 +449,21 @@ body { padding-bottom: 80px; }
             return getJourneyOrder().filter(surah => surah.num >= juz.start && surah.num <= juz.end);
         }
 
+        const MEDAL_INTRO_VERSION = '20260726-1';
+        const MEDAL_STORAGE_PREFIX = 'mawahib_juz_medals_';
+        function getMedalStudentKey() { const session = typeof Auth !== 'undefined' && Auth.getSession ? Auth.getSession() : null; return session?.username || dashboardState.studentKey || 'guest'; }
+        function getMedalStorageKey() { return MEDAL_STORAGE_PREFIX + getMedalStudentKey(); }
+        function readJuzMedals() { try { const value = JSON.parse(localStorage.getItem(getMedalStorageKey()) || '{}'); return value && typeof value === 'object' ? value : {}; } catch (error) { return {}; } }
+        function writeJuzMedals(medals) { try { localStorage.setItem(getMedalStorageKey(), JSON.stringify(medals || {})); } catch (error) {} }
+        function ensureJuzMedal(juz) { if (!juz || !isJuzSurahWorkComplete(juz) || !isJuzExamPassed(juz)) return null; const medals = readJuzMedals(); const key = String(juz.num); if (medals[key]) return { ...medals[key], alreadyAwarded: true }; const exam = getJuzExamResult(juz.num) || {}; const medal = { juzNumber: juz.num, juzName: juz.name, earnedAt: exam.date || new Date().toISOString() }; medals[key] = medal; writeJuzMedals(medals); window.dispatchEvent(new CustomEvent('mawahib:medal-earned', { detail: medal })); return medal; }
+        function syncJuzMedals() { juzJourney.forEach(juz => ensureJuzMedal(juz)); return readJuzMedals(); }
+        function getActiveMedalJuz(medals) { return juzJourney.find(juz => !medals[String(juz.num)]) || null; }
+        function renderMedalSummary() { const medals = readJuzMedals(); const count = Object.keys(medals).filter(key => medals[key]).length; const counter = document.getElementById('reward-medals'); const cabinetCount = document.getElementById('medal-cabinet-count'); if (counter) counter.textContent = count; if (cabinetCount) cabinetCount.textContent = count + ' / 30'; return medals; }
+        function renderMedalCabinet() { const medals = renderMedalSummary(); const activeJuz = getActiveMedalJuz(medals); const grid = document.getElementById('medal-cabinet-grid'); if (!grid) return; grid.innerHTML = juzJourney.map((juz, index) => { const medal = medals[String(juz.num)]; const isCurrent = !medal && activeJuz && activeJuz.num === juz.num; const surahs = getJuzSurahs(juz); const done = surahs.filter(surah => surah.isCompleted).length; const tier = Math.min(5, Math.floor(index / 5)); const status = medal ? new Date(medal.earnedAt).toLocaleDateString('fr-FR') : (isCurrent ? done + ' / ' + surahs.length : 'مغلق'); return '<article class="medal-item medal-tier-' + tier + (medal ? ' is-earned' : '') + (isCurrent ? ' is-current' : '') + '"><div class="medal-symbol">' + (medal ? '🏅' : (isCurrent ? '◇' : '🔒')) + '</div><div class="medal-name">وسام ' + escapeMiniExamText(juz.name) + '</div><div class="medal-status">' + status + '</div></article>'; }).join(''); }
+        function openMedalCabinet() { renderMedalCabinet(); const modal = document.getElementById('medal-cabinet-modal'); if (!modal) return; modal.hidden = false; document.body.style.overflow = 'hidden'; document.getElementById('close-medal-cabinet')?.focus(); }
+        function closeMedalCabinet() { const modal = document.getElementById('medal-cabinet-modal'); if (modal) modal.hidden = true; document.body.style.overflow = ''; }
+        function showMedalIntroOnce() { const key = 'mawahib_medal_intro_' + MEDAL_INTRO_VERSION + '_' + getMedalStudentKey(); if (localStorage.getItem(key) === '1') return; const modal = document.getElementById('medal-intro-modal'); if (!modal) return; modal.dataset.storageKey = key; modal.hidden = false; document.body.style.overflow = 'hidden'; }
+        function acknowledgeMedalIntro() { const modal = document.getElementById('medal-intro-modal'); if (!modal) return; if (modal.dataset.storageKey) localStorage.setItem(modal.dataset.storageKey, '1'); modal.hidden = true; document.body.style.overflow = ''; }
         function isJuzSurahWorkComplete(juz) {
             const surahs = getJuzSurahs(juz);
             return surahs.length > 0 && surahs.every(surah => surah.isCompleted);
@@ -1160,12 +1214,13 @@ body { padding-bottom: 80px; }
                     Auth.recordActivity(marker.id, 'juz_exam_' + juz.num, 100).catch(() => {});
                 }
             }
+            ensureJuzMedal(juz);
             const reward = !wasAlreadyPassed && typeof Auth !== 'undefined' && typeof Auth.awardJuzStars === 'function'
                 ? Auth.awardJuzStars(juz.num, juz.name)
                 : null;
             const rewardText = reward && !reward.alreadyAwarded
-                ? '<div class="my-4 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4"><div class="text-3xl font-black text-amber-600">+20 ★</div><p class="mt-1 text-sm font-black text-amber-800">ربحت 20 نجمة دفعة واحدة!</p></div>'
-                : '<p class="my-4 text-sm font-bold text-emerald-700">مكافأة هذا الجزء محفوظة مسبقًا.</p>';
+                ? '<div class="my-4 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4"><div class="text-3xl font-black text-amber-600">+20 ★</div><p class="mt-1 text-sm font-black text-amber-800">ربحت 20 نجمة ووسام ' + escapeMiniExamText(juz.name) + '!</p></div>'
+                : '<p class="my-4 text-sm font-bold text-emerald-700">نجوم ووسام هذا الجزء محفوظة مسبقًا.</p>';
             document.getElementById('mini-exam-body').innerHTML = '<div class="text-center py-5"><div class="mx-auto mb-4 w-20 h-20 rounded-full grid place-items-center text-2xl font-black bg-emerald-100 text-emerald-700">100%</div><h4 class="text-xl font-black text-gray-900 mb-2">🎉 تم إتقان الجزء</h4><p class="text-sm font-bold text-gray-500">🔓 تم فتح الجزء التالي.</p>' + rewardText + '<button type="button" onclick="closeMiniExam(); renderSurahLibrary(); updateRewardPanel();" class="px-5 py-2 rounded-full bg-emerald-600 text-white font-black">العودة للمسار</button></div>';
             updateRewardPanel();
         }
@@ -1412,6 +1467,9 @@ async function chargerDevoirs() {
             }
             if (typeof Auth.syncRewardsFromSurahs === 'function') Auth.syncRewardsFromSurahs(dashboardState.surahs);
             syncLocalExamMarkers();
+            syncJuzMedals();
+            renderMedalSummary();
+            showMedalIntroOnce();
             updateRewardPanel();
             renderSurahLibrary();
             if (typeof Auth.prepareOfflineLessons === 'function') Auth.prepareOfflineLessons(dashboardState.surahs);
@@ -1560,6 +1618,7 @@ async function chargerDevoirs() {
                 const noteEl = document.getElementById('reward-decay-note');
                 if (starsEl) starsEl.textContent = rewards.stars || 0;
                 if (noteEl && rewards.lostNow > 0) noteEl.textContent = 'نقصت ' + rewards.lostNow + ' نجوم فقط بسبب فترة توقف.';
+                renderMedalSummary();
             }
             const rankValueEl = document.getElementById('class-rank-value');
             const rankNoteEl = document.getElementById('class-rank-note');
@@ -1611,6 +1670,10 @@ async function chargerDevoirs() {
             return rankingRequestInFlight;
         }
 
+        document.getElementById('open-medal-cabinet')?.addEventListener('click', openMedalCabinet);
+        document.getElementById('close-medal-cabinet')?.addEventListener('click', closeMedalCabinet);
+        document.getElementById('medal-cabinet-modal')?.addEventListener('click', event => { if (event.target.id === 'medal-cabinet-modal') closeMedalCabinet(); });
+        document.getElementById('acknowledge-medal-intro')?.addEventListener('click', acknowledgeMedalIntro);
         document.getElementById('open-class-ranking')?.addEventListener('click', openClassRanking);
         document.getElementById('close-class-ranking')?.addEventListener('click', closeClassRanking);
         document.getElementById('class-ranking-modal')?.addEventListener('click', event => {
@@ -1618,6 +1681,7 @@ async function chargerDevoirs() {
         });
         document.addEventListener('keydown', event => {
             if (event.key === 'Escape' && !document.getElementById('class-ranking-modal')?.hidden) closeClassRanking();
+            if (event.key === 'Escape' && !document.getElementById('medal-cabinet-modal')?.hidden) closeMedalCabinet();
         });
         setInterval(() => {
             if (!document.hidden) updateRewardPanel();
