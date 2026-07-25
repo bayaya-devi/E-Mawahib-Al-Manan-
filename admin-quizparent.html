@@ -12,10 +12,15 @@
         <link rel="stylesheet" href="platform-theme.css?v=20260720-global-latest-1">
     <script src="platform-theme.js?v=20260723-juz-verse-puzzle-1"></script>
 <style>
-        body { font-family: 'Cairo', sans-serif; background-color: #f8f5f0; }
-        .table-header { background-color: #1e293b; color: white; }
+body { font-family:'Cairo',sans-serif; background:#eef4f0; padding-bottom:92px !important; }
+        .table-header { background:#124c35; color:white; }
+        .admin-parent-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border-radius:16px;background:#124c35;color:#fff;box-shadow:0 14px 34px rgba(12,74,59,.2)}
+        .admin-parent-back{min-height:42px;display:inline-flex;align-items:center;padding:0 14px;border:1px solid rgba(255,255,255,.25);border-radius:10px;background:rgba(255,255,255,.12);color:#fff;font-weight:900;text-decoration:none}
+        .parent-admin-nav{position:fixed;z-index:100;left:50%;bottom:max(8px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(calc(100% - 16px),420px);display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:5px;background:#fff;border:1px solid #d8e4dc;border-radius:14px;box-shadow:0 12px 34px rgba(15,40,28,.18)}
+        .parent-admin-nav a{min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:10px;color:#52635b;text-decoration:none;font-size:11px;font-weight:900}
+        .parent-admin-nav a.active{background:#124c35;color:#fff}
         @media (max-width: 640px) {
-            body { padding: 10px !important; }
+            body { padding:10px 10px 92px !important; }
             .max-w-7xl > .flex { align-items: stretch; flex-direction: column; gap: 10px; margin-bottom: 14px; }
             h1 { font-size: 1.35rem !important; line-height: 1.35; }
             .max-w-7xl > .flex a { min-height: 44px; display: flex; align-items: center; justify-content: center; }
@@ -27,9 +32,9 @@
 <body class="p-6">
 
     <div class="max-w-7xl mx-auto">
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-black text-gray-800">نتائج استبيان أولياء الأمور</h1>
-            <a href="controle-mawahib-7x9k.html" class="px-4 py-2 bg-gray-200 text-gray-700 font-bold rounded-lg hover:bg-gray-300">عودة للإدارة</a>
+        <div class="admin-parent-head mb-6">
+            <div class="flex items-center gap-3"><img src="logo.webp" alt="" class="w-12 h-12 object-contain bg-white rounded-lg"><h1 class="text-2xl font-black">إجابات أولياء الأمور</h1></div>
+            <a href="controle-mawahib-7x9k.html" class="admin-parent-back">الرئيسية</a>
         </div>
 
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -53,11 +58,14 @@
                 </table>
             </div>
         </div>
-    </div>
-
+    </div>    <nav class="parent-admin-nav" aria-label="التنقل">
+        <a href="controle-mawahib-7x9k.html"><span>⌂</span><span>الرئيسية</span></a>
+        <a class="active" href="admin-quizparent.html"><span>▤</span><span>إجابات الأولياء</span></a>
+    </nav>
     <script>
-        if (localStorage.getItem('adminAuth') !== 'true') {
-            window.location.replace('controle-mawahib-7x9k.html');
+        const adminSession = Auth.getSession();
+        if (!adminSession || adminSession.role !== 'admin') {
+            window.location.replace('login.html');
         }
 
         function escapeHtml(value) {

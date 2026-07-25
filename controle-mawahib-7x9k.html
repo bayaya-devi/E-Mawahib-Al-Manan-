@@ -195,7 +195,7 @@
         }
         .control-sidebar.admin-nav-hidden { transform: translate(-50%, calc(100% + 24px)); opacity: 0; }
         .control-sidebar-title { display: none; }
-        .control-nav-scroll { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 3px; }
+        .control-nav-scroll { display: grid; grid-template-columns: repeat(8,minmax(0,1fr)); gap: 3px; }
         .control-sidebar .tab-btn {
             min-width: 0; min-height: 50px; margin: 0; padding: 6px 4px;
             border-radius: 10px; color: #64716b; background: transparent;
@@ -229,6 +229,7 @@
             .cockpit-hero { padding: 13px; }
         }
 
+            @media (max-width: 520px) { .control-sidebar .tab-btn span:first-child { display:none; } .control-sidebar .tab-btn span:last-child { font-size:19px; } }
     </style>
     <script src="platform-theme.js?v=20260723-juz-verse-puzzle-1"></script>
 </head>
@@ -263,6 +264,7 @@
                 <a class="tab-btn" href="controle-487-activity.html"><span>النشاط المباشر</span><span>⚡</span></a>
                 <button class="tab-btn" onclick="switchTab('stats')"><span>الإحصاءات</span><span>📊</span></button>
                 <button class="tab-btn" onclick="switchTab('parents')"><span>الأولياء</span><span>👨‍👩‍👧</span></button>
+                <a class="tab-btn" href="admin-quizparent.html"><span>إجابات الأولياء</span><span>▤</span></a>
                 <button class="tab-btn" onclick="switchTab('add-student')"><span>إضافة طالب</span><span>➕</span></button>
                 <button class="tab-btn" onclick="switchTab('add-prof')"><span>إضافة أستاذ</span><span>👤</span></button>
             </div>
