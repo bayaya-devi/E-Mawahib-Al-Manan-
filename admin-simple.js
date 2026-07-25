@@ -1,8 +1,8 @@
 (function(){
   'use strict';
   const page=document.body.dataset.adminPage||'students';
-  const links=[['students','controle-487-eleves.html','👥','الطلاب'],['teachers','controle-487-profs.html','🧑‍🏫','الأساتذة'],['classes','controle-487-classes.html','🏫','الأقسام'],['finance','controle-487-finance.html','💳','المالية'],['stats','controle-487-stats.html','📊','الإحصاءات'],['messages','controle-487-messages.html','✉️','الرسائل']];
-  const state={students:[],profs:{},reports:[],finance:[],selectedStudent:'',teacherNotes:{},editingProf:'',error:''};
+  const links=[['students','controle-487-eleves.html','👥','الطلاب'],['teachers','controle-487-profs.html','🧑‍🏫','الأساتذة'],['classes','controle-487-classes.html','🏫','الأقسام'],['activity','controle-487-activity.html','⚡','النشاط المباشر'],['finance','controle-487-finance.html','💳','المالية'],['stats','controle-487-stats.html','📊','الإحصاءات'],['messages','controle-487-messages.html','✉️','الرسائل']];
+  const state={students:[],profs:{},reports:[],finance:[],selectedStudent:'',teacherNotes:{},editingProf:'',error:'',activityEvents:[],activityFilter:'all',activityStatus:'loading',activityUpdatedAt:null};
   const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const arg=value=>esc(String(value??'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"));
   const studentName=item=>`${item?.prenom||''} ${item?.nom||''}`.trim()||item?.username||'';
@@ -19,7 +19,7 @@
   function kpi(value,label){return `<div class="admin-kpi"><div class="admin-kpi-value">${esc(value)}</div><div class="admin-kpi-label">${label}</div></div>`}
   function empty(text){return `<div class="admin-empty">${text}</div>`}
   async function load(){try{const [students,profs,reports,finance]=await Promise.all([Auth.getAllStudents(),Auth.getProfs(),Auth.getAdminReports(),Auth.getFinanceEntries()]);state.students=Array.isArray(students)?students:[];state.profs=profs||{};state.reports=Array.isArray(reports)?reports:[];state.finance=Array.isArray(finance)?finance:[]}catch(error){state.error='تعذر تحميل بعض البيانات. أعد المحاولة.'}render()}
-  function render(){if(page==='students')renderStudents();else if(page==='teachers')renderTeachers();else if(page==='classes')renderClasses();else if(page==='finance')renderFinance();else if(page==='stats')renderStats();else renderMessages()}
+  function render(){if(page==='students')renderStudents();else if(page==='teachers')renderTeachers();else if(page==='classes')renderClasses();else if(page==='activity')renderActivity();else if(page==='finance')renderFinance();else if(page==='stats')renderStats();else renderMessages()}
 
   function renderStudents(filter=''){const main=document.getElementById('admin-main');const query=String(filter).trim().toLowerCase();const rows=state.students.filter(item=>(studentName(item)+' '+item.username).toLowerCase().includes(query));main.innerHTML=heading('إدارة الطلاب','الحسابات والتقدم والواجبات من البيانات المسجلة.')+`<div class="admin-toolbar admin-toolbar-compact"><label class="admin-field"><span>بحث</span><input class="admin-control" placeholder="الاسم" value="${esc(filter)}" oninput="renderAdminStudents(this.value)"></label></div><div class="admin-people-grid">${rows.length?rows.map(student=>`<article class="admin-person"><div><div class="admin-row-title">${esc(studentName(student))}</div><div class="admin-row-meta">${esc(student.username)}</div></div><div class="admin-person-stats"><span>${completedCount(student)} سورة</span><span>${pendingDuties(student)} واجب</span><span class="${student.isSuspended?'is-paused':'is-active'}">${student.isSuspended?'موقوف':'نشط'}</span></div><div class="admin-row-actions"><button class="admin-small" onclick="toggleAdminStudent('${arg(student.username)}')">${student.isSuspended?'تفعيل':'إيقاف'}</button><button class="admin-small danger" onclick="deleteAdminStudent('${arg(student.username)}')">حذف</button></div></article>`).join(''):empty('لا يوجد طالب مطابق.')}</div>`}
 
@@ -61,6 +61,88 @@
 
   function renderMessages(){const main=document.getElementById('admin-main');main.innerHTML=heading('الرسائل','الرسائل الواردة من الأساتذة وإرسال رسالة لطالب.')+`<form class="admin-toolbar" onsubmit="sendAdminStudentMessage(event)"><label class="admin-field"><span>الطالب</span><select id="message-student" class="admin-control" required><option value="">اختر</option>${options(state.students,'username',studentName)}</select></label><label class="admin-field"><span>الرسالة</span><textarea id="message-text" class="admin-control" required></textarea></label><button class="admin-action" type="submit">إرسال</button></form><div class="admin-list"><div class="admin-row-title">الرسائل الواردة</div>${state.reports.length?state.reports.slice(0,30).map(report=>`<div class="admin-row"><div><div class="admin-row-title">${esc(report.profName||'أستاذ')} · ${esc(report.classe||'')}</div><div class="admin-row-meta">${esc(report.category||'متابعة')} · ${esc(report.date||'')}</div><div class="admin-row-meta">${esc(report.text||'')}</div></div></div>`).join(''):empty('لا توجد رسائل واردة.')}</div>`}
 
+  function activityDate(value){const date=new Date(value||0);return Number.isNaN(date.getTime())?null:date}
+  function activityTime(value){const date=activityDate(value);return date?date.toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—'}
+  function parseActivityPayload(text,prefix){if(!String(text||'').startsWith(prefix))return null;try{return JSON.parse(String(text).slice(prefix.length))}catch(error){return null}}
+  function surahLabel(id){const normalized=Auth.normalizeSurahId?Auth.normalizeSurahId(id):String(id||'').replace(/_/g,'-');const list=typeof SURAH_REGISTRY!=='undefined'?SURAH_REGISTRY:[];const found=list.find(item=>(Auth.normalizeSurahId?Auth.normalizeSurahId(item.id):item.id)===normalized);return found?.nameAr||normalized||'سورة'}
+  function activityLabel(key){const value=String(key||'');if(value.startsWith('juz_exam_'))return 'امتحان جزء';if(value.startsWith('mini_exam_'))return 'اختبار مرحلي';if(/listen|audio/i.test(value))return 'استماع';if(/order|sort/i.test(value))return 'ترتيب الآيات';if(/fill|word/i.test(value))return 'إكمال الآيات';if(/speed/i.test(value))return 'تمرين سريع';return 'تمرين'}
+  function homeworkTimestamp(row){const direct=row.created_at||row.createdAt;const match=String(row.id||'').match(/\d{13}/);return direct||(match?new Date(Number(match[0])).toISOString():'')}
+  function studentDisplay(map,id){const item=map.get(id);return item?studentName(item):(id||'طالب(ة)')}
+  function profDisplay(map,id,fallback){const item=map.get(id);return item?.prenom||fallback||id||'أستاذ(ة)'}
+
+  async function loadActivity(){
+    const client=Auth.getSupabaseClient&&Auth.getSupabaseClient();
+    if(!client){state.error='تعذر الاتصال ببيانات النشاط.';state.activityStatus='error';renderActivity();return}
+    state.activityStatus=state.activityEvents.length?'refreshing':'loading';
+    renderActivity();
+    try{
+      const [progressRes,studentsRes,profsRes,messagesRes,dutiesRes]=await Promise.all([
+        client.from('progressions').select('*').limit(1500),
+        client.from('eleves').select('username,prenom,nom'),
+        client.from('profs').select('username,prenom,classe'),
+        client.from('messages').select('*').order('id',{ascending:false}).limit(700),
+        client.from('devoirs').select('*').limit(700)
+      ]);
+      const errors=[progressRes.error,studentsRes.error,profsRes.error,messagesRes.error,dutiesRes.error].filter(Boolean);
+      if(errors.length)throw errors[0];
+      const studentMap=new Map((studentsRes.data||[]).map(item=>[item.username,item]));
+      const profMap=new Map((profsRes.data||[]).map(item=>[item.username,item]));
+      const events=[];
+      (progressRes.data||[]).forEach(row=>{
+        const person=studentDisplay(studentMap,row.username);
+        const surah=surahLabel(row.surah_id);
+        if(row.completed_at)events.push({role:'student',type:'completion',date:row.completed_at,person,title:'سورة مكتملة',detail:surah,score:Number(row.global_score||0)});
+        Object.entries(row.activities||{}).forEach(([key,value])=>{
+          if(!value?.date)return;
+          events.push({role:'student',type:'exercise',date:value.date,person,title:activityLabel(key),detail:surah,score:Number(value.score||0)});
+        });
+      });
+      (messagesRes.data||[]).forEach(row=>{
+        const note=parseActivityPayload(row.text,'[TEACHER_NOTE] ');
+        if(note){events.push({role:'prof',type:'reading',date:note.savedAt||row.created_at,person:profDisplay(profMap,note.profId,note.profName),title:'قراءة مسجلة',detail:studentDisplay(studentMap,note.studentId)+' · '+(note.surah||note.surate||'سورة')+(note.scope?(' · '+note.scope):''),score:0});return}
+        const report=parseActivityPayload(row.text,'[SIGNAL_ADMIN] ');
+        if(report){events.push({role:'prof',type:'report',date:report.sentAt||row.created_at,person:profDisplay(profMap,report.profId,report.profName),title:'رسالة إلى الإدارة',detail:report.category||'متابعة',score:0});return}
+        const lesson=parseActivityPayload(row.text,'[CLASS_SESSION] ');
+        if(lesson)events.push({role:'prof',type:'session',date:lesson.savedAt||row.created_at,person:profDisplay(profMap,lesson.profId,lesson.profName),title:'حصة مسجلة',detail:lesson.classe||'',score:0});
+      });
+      (dutiesRes.data||[]).forEach(row=>events.push({role:'prof',type:'homework',date:homeworkTimestamp(row),person:profDisplay(profMap,row.prof_id,row.prof_name),title:'واجب مرسل',detail:studentDisplay(studentMap,row.student_id)+' · '+(row.surate||'سورة'),score:0}));
+      state.activityEvents=events.filter(item=>activityDate(item.date)).sort((a,b)=>activityDate(b.date)-activityDate(a.date)).slice(0,500);
+      state.activityUpdatedAt=new Date();state.activityStatus='live';state.error='';
+    }catch(error){state.activityStatus='error';state.error='تعذر تحديث النشاط الآن. ستتم إعادة المحاولة تلقائيا.'}
+    renderActivity();
+  }
+
+  function renderActivity(){
+    const main=document.getElementById('admin-main');if(!main)return;
+    const filtered=state.activityFilter==='all'?state.activityEvents:state.activityEvents.filter(item=>item.role===state.activityFilter);
+    const studentEvents=state.activityEvents.filter(item=>item.role==='student');
+    const profEvents=state.activityEvents.filter(item=>item.role==='prof');
+    const activeStudents=new Set(studentEvents.map(item=>item.person)).size;
+    const activeProfs=new Set(profEvents.map(item=>item.person)).size;
+    const statusText=state.activityStatus==='live'?'تحديث مباشر':state.activityStatus==='error'?'إعادة المحاولة':'جاري التحديث';
+    main.innerHTML=heading('النشاط المباشر','آخر إنجازات الطلاب(ات) وآخر أعمال الأساتذة(ات) من البيانات المسجلة فعليا.')+
+      `<div class="admin-live-head"><div class="admin-live-state ${state.activityStatus}"><span></span>${statusText}</div><div class="admin-row-meta">آخر تحديث: ${state.activityUpdatedAt?activityTime(state.activityUpdatedAt):'—'}</div></div>`+
+      `<div class="admin-kpis">${kpi(studentEvents.length,'أنشطة الطلاب(ات)')}${kpi(profEvents.length,'أنشطة الأساتذة(ات)')}${kpi(activeStudents,'طلاب(ات) نشطون')}${kpi(activeProfs,'أساتذة(ات) نشطون')}</div>`+
+      `<div class="admin-live-filters"><button class="${state.activityFilter==='all'?'active':''}" onclick="setAdminActivityFilter('all')">الكل</button><button class="${state.activityFilter==='student'?'active':''}" onclick="setAdminActivityFilter('student')">الطلاب(ات)</button><button class="${state.activityFilter==='prof'?'active':''}" onclick="setAdminActivityFilter('prof')">الأساتذة(ات)</button><button onclick="refreshAdminActivity()">تحديث</button></div>`+
+      `<div class="admin-live-list">${filtered.length?filtered.slice(0,100).map(item=>`<article class="admin-live-row ${item.role}"><div class="admin-live-icon">${item.role==='student'?'📖':'🧑‍🏫'}</div><div class="admin-live-copy"><div class="admin-row-title">${esc(item.person)} · ${esc(item.title)}</div><div class="admin-row-meta">${esc(item.detail)}${item.score?(' · '+Math.round(item.score)+'%'):''}</div></div><time>${activityTime(item.date)}</time></article>`).join(''):empty(state.activityStatus==='loading'?'جاري تحميل النشاط...':'لا يوجد نشاط مسجل بعد.')}</div>`;
+  }
+
+  let activityChannel=null,activityPoll=null,activityDebounce=null;
+  function scheduleActivityReload(){clearTimeout(activityDebounce);activityDebounce=setTimeout(loadActivity,450)}
+  function initActivity(){
+    loadActivity();
+    const client=Auth.getSupabaseClient&&Auth.getSupabaseClient();
+    if(client?.channel){
+      activityChannel=client.channel('admin-live-activity-'+Date.now())
+        .on('postgres_changes',{event:'*',schema:'public',table:'progressions'},scheduleActivityReload)
+        .on('postgres_changes',{event:'*',schema:'public',table:'messages'},scheduleActivityReload)
+        .on('postgres_changes',{event:'*',schema:'public',table:'devoirs'},scheduleActivityReload)
+        .subscribe(status=>{if(status==='SUBSCRIBED'){state.activityStatus='live';renderActivity()}});
+    }
+    activityPoll=setInterval(loadActivity,15000);
+    document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadActivity()});
+    addEventListener('beforeunload',()=>{clearInterval(activityPoll);if(activityChannel&&client?.removeChannel)client.removeChannel(activityChannel)},{once:true});
+  }
   async function reload(message){await load();if(message)toast(message)}
   function toast(text){const node=document.createElement('div');node.className='admin-status';node.style.cssText='position:fixed;z-index:200;top:14px;left:50%;transform:translateX(-50%);background:#124c35;color:#fff';node.textContent=text;document.body.appendChild(node);setTimeout(()=>node.remove(),2200)}
   function initNav(){const nav=document.getElementById('admin-nav');let last=scrollY;addEventListener('scroll',()=>{const y=scrollY;if(Math.abs(y-last)<5)return;nav.classList.toggle('nav-scroll-hidden',y>last&&y>80);last=y},{passive:true})}
@@ -88,5 +170,7 @@
   window.assignAdminStudent=async event=>{event.preventDefault();await Auth.assignStudentToProf(document.getElementById('assign-prof').value,document.getElementById('assign-student').value);await reload('تم ربط الطالب')};
   window.removeAdminAssignment=async(prof,student)=>{await Auth.removeStudentFromProf(prof,student);await reload('تم فك الارتباط')};
   window.sendAdminStudentMessage=async event=>{event.preventDefault();await Auth.sendMessage(document.getElementById('message-student').value,document.getElementById('message-text').value.trim());document.getElementById('message-text').value='';toast('تم إرسال الرسالة')};
-  layout();initNav();load();
+  window.setAdminActivityFilter=filter=>{state.activityFilter=filter;renderActivity()};
+  window.refreshAdminActivity=loadActivity;
+  layout();initNav();if(page==='activity')initActivity();else load();
 })();

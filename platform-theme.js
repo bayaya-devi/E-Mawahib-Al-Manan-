@@ -1019,9 +1019,70 @@
     }
   }
 
+  function initInclusiveArabic() {
+    const session = typeof Auth !== 'undefined' && Auth.getSession ? Auth.getSession() : null;
+    if (!session || !['student', 'prof'].includes(session.role) || window.__mawahibInclusiveArabic) return;
+    window.__mawahibInclusiveArabic = true;
+    const replacements = [
+      ['الطلاب', 'الطلاب(ات)'], ['الأساتذة', 'الأساتذة(ات)'], ['المعلمون', 'المعلمون(ات)'], ['المعلمين', 'المعلمين(ات)'],
+      ['الطالب', 'الطالب(ة)'], ['الأستاذ', 'الأستاذ(ة)'], ['المعلم', 'المعلم(ة)'],
+      ['اختر', 'اختر(ي)'], ['اضغط', 'اضغط(ي)'], ['أكمل', 'أكمل(ي)'], ['ابدأ', 'ابدأ(ي)'],
+      ['استمع', 'استمع(ي)'], ['راجع', 'راجع(ي)'], ['حاول', 'حاول(ي)'], ['اكتب', 'اكتب(ي)'],
+      ['أرسل', 'أرسل(ي)'], ['سجل', 'سجل(ي)'], ['حدد', 'حدد(ي)'], ['اسحب', 'اسحب(ي)'],
+      ['رتب', 'رتب(ي)'], ['ضع', 'ضع(ي)'], ['انتقل', 'انتقل(ي)'], ['أعد', 'أعد(ي)'],
+      ['صحح', 'صحح(ي)'], ['كرر', 'كرر(ي)'], ['واصل', 'واصل(ي)'], ['احفظ', 'احفظ(ي)'],
+      ['تعلم', 'تعلم(ي)'], ['تأكد', 'تأكد(ي)'], ['اقرأ', 'اقرأ(ي)']
+    ];
+    const quranSelector = '.quran-font,.quran-text,.ayah,.verse,[data-ayah],[data-verse],[class*="ayah"],[class*="verse"],[id*="ayah"],[id*="verse"],audio';
+    const uiSelector = 'button,label,a,h1,h2,h3,h4,h5,h6,p,span,option,[role="alert"],[role="status"],.instruction,.feedback,.small-muted';
+    function adapt(value) {
+      let output = String(value || '');
+      replacements.forEach(([masculine, inclusive]) => {
+        output = output.replace(new RegExp(masculine + '(?![\\u0600-\\u06FF]|\\(ي\\)|\\(ة\\)|\\(ات\\))', 'g'), inclusive);
+      });
+      return output;
+    }
+    function isInterfaceNode(node) {
+      const parent = node.parentElement;
+      if (!parent || parent.closest(quranSelector) || !parent.closest(uiSelector)) return false;
+      const text = (node.nodeValue || '').trim();
+      return text.length > 0 && text.length <= 220;
+    }
+    function process(root) {
+      if (!root) return;
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) if (isInterfaceNode(walker.currentNode)) nodes.push(walker.currentNode);
+      nodes.forEach(node => { const next = adapt(node.nodeValue); if (next !== node.nodeValue) node.nodeValue = next; });
+      const elements = root.nodeType === 1 ? [root, ...root.querySelectorAll('input,textarea,button,a,[title],[aria-label]')] : [];
+      elements.forEach(element => {
+        if (element.closest(quranSelector)) return;
+        ['placeholder', 'title', 'aria-label'].forEach(attribute => {
+          if (!element.hasAttribute(attribute)) return;
+          const value = element.getAttribute(attribute);
+          const next = adapt(value);
+          if (next !== value) element.setAttribute(attribute, next);
+        });
+      });
+    }
+    document.title = adapt(document.title);
+    process(document.body);
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => mutation.addedNodes.forEach(node => {
+        if (node.nodeType === 1) process(node);
+        else if (node.nodeType === 3 && isInterfaceNode(node)) {
+          const next = adapt(node.nodeValue);
+          if (next !== node.nodeValue) node.nodeValue = next;
+        }
+      }));
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
   function initEnhancements() {
     if (!document.body) return;
     applyTheme(readTheme());
+    initInclusiveArabic();
     syncSurahTheme();
     initDigitNormalizer();
     initStaffQuietMode();
