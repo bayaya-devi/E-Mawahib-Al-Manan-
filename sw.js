@@ -28,6 +28,7 @@ const STATIC_ASSETS = [
   './dashboard_prof.html',
   './prof-recitation.html',
   './prof-students.html',
+  './prof-analytics.html',
   './prof-homework.html',
   './controle-487-activity.html',
   './prof-report.html',
