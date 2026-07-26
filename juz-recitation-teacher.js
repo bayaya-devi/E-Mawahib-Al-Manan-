@@ -262,11 +262,33 @@
   }
 
   function finishRecitation() {
+    if (!state || state.finishing) return;
+    state.finishing = true;
+    state.listening = false;
+    state.manualStop = true;
+    clearInterval(state.timer);
+    clearTimeout(state.restartTimer);
+    document.getElementById('virtual-teacher-body').innerHTML = '<div class="virtual-teacher-analyzing"><span></span><strong>جاري إنهاء الاستماع...</strong></div>';
+    const recognition = state.recognition;
+    state.recognition = null;
+    let completed = false;
+    const complete = () => {
+      if (completed || !state) return;
+      completed = true;
+      setTimeout(analyzeFinishedRecitation, 160);
+    };
+    if (!recognition) { complete(); return; }
+    recognition.onend = complete;
+    try { recognition.stop(); } catch (error) { complete(); }
+    setTimeout(complete, 1200);
+  }
+
+  function analyzeFinishedRecitation() {
     if (!state) return;
+    state.finishing = false;
     const transcript = (state.transcriptParts.join(' ') + ' ' + state.interim).trim();
-    stopRecognition(false);
     if (words(transcript).length < 4) {
-      renderUnverified('لم ألتقط كلمات كافية.', 'اقترب من الميكروفون وأعد التسميع في مكان هادئ.');
+      renderUnverified('لم ألتقط كلمات كافية.', 'تحقق من إذن الميكروفون، ثم أعد التسميع بصوت واضح.');
       return;
     }
     document.getElementById('virtual-teacher-body').innerHTML = '<div class="virtual-teacher-analyzing"><span></span><strong>جاري التحقق من الكلمات وترتيب الآيات...</strong></div>';
