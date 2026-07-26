@@ -14,31 +14,32 @@
       language: "اللغة",
       heroKicker: "جمعية مواهب المنان · عين العودة",
       heroTitle: "دار الحديث والقرآن",
-      heroCopy: "فضاء لتعليم القرآن الكريم بقواعد التجويد، وتعليم السنة النبوية والقيم الإسلامية للنساء والأطفال ابتداء من خمس سنوات.",
+      heroCopy: "فضاء لتعليم القرآن الكريم بقواعد التجويد، وتعليم السنة النبوية والقيم الإسلامية للرجال والنساء والأطفال ابتداء من خمس سنوات.",
+      trustLine: "تعليم متدرج · تجويد · سنة وقيم",
       heroRegistration: "معلومات التسجيل",
       heroProgram: "اكتشف البرنامج",
       quickAgeValue: "5+",
       quickAge: "التسجيل للأطفال ابتداء من خمس سنوات",
       quickFeeValue: "100",
       quickFee: "درهم واجب شهري",
-      quickAudienceValue: "للأسرة",
-      quickAudience: "تعليم للنساء والأطفال",
+      quickAudienceValue: "للجميع",
+      quickAudience: "تعليم للرجال والنساء والأطفال",
       aboutLabel: "التعريف بالجمعية",
-      aboutTitle: "تعليم القرآن في بيئة تربوية قريبة من الأسرة",
-      aboutP1: "تستقبل جمعية مواهب المنان بعين العودة النساء والأطفال في دار الحديث والقرآن، لتعلم كتاب الله تعالى والقراءة الصحيحة بقواعد التجويد.",
+      aboutTitle: "تعليم القرآن في بيئة تربوية هادئة ومنظمة",
+      aboutP1: "تستقبل جمعية مواهب المنان بعين العودة الرجال والنساء والأطفال في دار الحديث والقرآن، لتعلم كتاب الله تعالى والقراءة الصحيحة بقواعد التجويد.",
       aboutP2: "يسير البرنامج خطوة بخطوة، ويجمع بين تعلم القرآن الكريم والسنة النبوية والقيم الإسلامية.",
       aboutCaption: "فضاء مهيأ للتعلم والحفظ والمراجعة",
       programLabel: "البرنامج التربوي",
       programTitle: "ماذا يتعلم المستفيدون؟",
       program1Title: "القرآن الكريم",
-      program1Copy: "تعليم القرآن الكريم للنساء والأطفال ابتداء من خمس سنوات.",
+      program1Copy: "تعليم القرآن الكريم للرجال والنساء والأطفال، مع استقبال الأطفال ابتداء من خمس سنوات.",
       program2Title: "قواعد التجويد",
       program2Copy: "تعلم القواعد التي تساعد على قراءة كتاب الله قراءة صحيحة.",
       program3Title: "السنة النبوية",
       program3Copy: "تعليم السنة النبوية والقيم الإسلامية بأسلوب واضح ومناسب.",
       registrationLabel: "التسجيل",
       registrationTitle: "ملف بسيط للالتحاق بالدار",
-      registrationCopy: "التسجيل مفتوح للأطفال ابتداء من خمس سنوات. يرجى إعداد الوثائق التالية والتواصل مع الإدارة لإتمام التسجيل.",
+      registrationCopy: "التسجيل مفتوح للرجال والنساء والأطفال. ولتسجيل طفل ابتداء من خمس سنوات، يرجى إعداد الوثائق التالية والتواصل مع الإدارة.",
       monthlyFee: "الواجب الشهري",
       documentsTitle: "الوثائق المطلوبة",
       document1: "عقد ازدياد التلميذ",
@@ -75,31 +76,32 @@
       language: "Langue",
       heroKicker: "Association Mawahib Al Manan · Ain El Aouda",
       heroTitle: "Dar Al Hadith et du Coran",
-      heroCopy: "Un espace d’apprentissage du Coran avec les règles du tajwid, de la Sunna et des valeurs islamiques, destiné aux femmes et aux enfants dès cinq ans.",
+      heroCopy: "Un espace d’apprentissage du Coran, du tajwid, de la Sunna et des valeurs islamiques pour les hommes, les femmes et les enfants dès cinq ans.",
+      trustLine: "Progression · Tajwid · Sunna et valeurs",
       heroRegistration: "Informations d’inscription",
       heroProgram: "Découvrir le programme",
       quickAgeValue: "5+",
       quickAge: "Inscription des enfants dès cinq ans",
       quickFeeValue: "100",
       quickFee: "dirhams par mois",
-      quickAudienceValue: "Famille",
-      quickAudience: "Enseignement pour femmes et enfants",
+      quickAudienceValue: "Tous",
+      quickAudience: "Enseignement pour hommes, femmes et enfants",
       aboutLabel: "L’association",
-      aboutTitle: "Apprendre le Coran dans un environnement proche des familles",
-      aboutP1: "À Ain El Aouda, l’Association Mawahib Al Manan accueille les femmes et les enfants à Dar Al Hadith et du Coran pour apprendre le Livre d’Allah et améliorer leur lecture grâce aux règles du tajwid.",
+      aboutTitle: "Apprendre le Coran dans un cadre sérieux et bienveillant",
+      aboutP1: "À Ain El Aouda, l’Association Mawahib Al Manan accueille les hommes, les femmes et les enfants à Dar Al Hadith et du Coran pour apprendre le Livre d’Allah et améliorer leur lecture grâce aux règles du tajwid.",
       aboutP2: "Le programme propose une progression claire qui associe Coran, Sunna et valeurs islamiques.",
       aboutCaption: "Un espace préparé pour apprendre, mémoriser et réviser",
       programLabel: "Programme éducatif",
       programTitle: "Que propose l’association ?",
       program1Title: "Le Saint Coran",
-      program1Copy: "Enseignement du Coran aux femmes et aux enfants dès cinq ans.",
+      program1Copy: "Enseignement du Coran aux hommes, aux femmes et aux enfants dès cinq ans.",
       program2Title: "Règles du tajwid",
       program2Copy: "Apprentissage des règles nécessaires à une lecture correcte du Livre d’Allah.",
       program3Title: "La Sunna",
       program3Copy: "Enseignement de la Sunna et des valeurs islamiques dans un langage clair et adapté.",
       registrationLabel: "Inscription",
       registrationTitle: "Un dossier simple pour rejoindre l’association",
-      registrationCopy: "Les inscriptions sont ouvertes aux enfants dès cinq ans. Préparez les documents suivants et contactez l’administration pour finaliser l’inscription.",
+      registrationCopy: "Les inscriptions sont ouvertes à tous. Pour inscrire un enfant dès cinq ans, préparez les documents suivants et contactez l’administration.",
       monthlyFee: "Cotisation mensuelle",
       documentsTitle: "Documents demandés",
       document1: "Acte de naissance de l’élève",
@@ -136,31 +138,32 @@
       language: "Language",
       heroKicker: "Mawahib Al Manan Association · Ain El Aouda",
       heroTitle: "Dar Al Hadith and Quran",
-      heroCopy: "A place to learn the Quran with tajwid rules, the Prophetic Sunnah and Islamic values, for women and children from the age of five.",
+      heroCopy: "A place to learn the Quran, tajwid, the Prophetic Sunnah and Islamic values for men, women and children from the age of five.",
+      trustLine: "Gradual learning · Tajwid · Sunnah and values",
       heroRegistration: "Registration information",
       heroProgram: "Explore the programme",
       quickAgeValue: "5+",
       quickAge: "Registration for children from age five",
       quickFeeValue: "100",
       quickFee: "dirhams per month",
-      quickAudienceValue: "Family",
-      quickAudience: "Learning for women and children",
+      quickAudienceValue: "Everyone",
+      quickAudience: "Learning for men, women and children",
       aboutLabel: "About us",
-      aboutTitle: "Learning the Quran in a family-friendly environment",
-      aboutP1: "In Ain El Aouda, the Mawahib Al Manan Association welcomes women and children to Dar Al Hadith and Quran to learn the Book of Allah and improve their recitation through tajwid.",
+      aboutTitle: "Learning the Quran in a serious and supportive setting",
+      aboutP1: "In Ain El Aouda, the Mawahib Al Manan Association welcomes men, women and children to Dar Al Hadith and Quran to learn the Book of Allah and improve their recitation through tajwid.",
       aboutP2: "The programme offers clear, gradual learning that brings together the Quran, the Prophetic Sunnah and Islamic values.",
       aboutCaption: "A space prepared for learning, memorisation and revision",
       programLabel: "Educational programme",
       programTitle: "What can learners study?",
       program1Title: "The Holy Quran",
-      program1Copy: "Quran teaching for women and children from five years old.",
+      program1Copy: "Quran teaching for men, women and children from five years old.",
       program2Title: "Tajwid rules",
       program2Copy: "Learning the rules needed to recite the Book of Allah correctly.",
       program3Title: "The Prophetic Sunnah",
       program3Copy: "Teaching the Sunnah and Islamic values in a clear, accessible way.",
       registrationLabel: "Registration",
       registrationTitle: "A simple application file",
-      registrationCopy: "Registration is open to children from age five. Prepare the following documents and contact the administration to complete registration.",
+      registrationCopy: "Registration is open to everyone. To enrol a child from age five, prepare the following documents and contact the administration.",
       monthlyFee: "Monthly fee",
       documentsTitle: "Required documents",
       document1: "Student’s birth certificate",
@@ -239,10 +242,29 @@
       }, { threshold: 0.14 })
     : null;
 
-  document.querySelectorAll(".reveal").forEach((element) => {
+  document.querySelectorAll(".reveal").forEach((element, index) => {
+    element.style.setProperty("--reveal-delay", `${(index % 4) * 75}ms`);
+    if (index % 3 === 1) element.classList.add("reveal-left");
+    if (index % 3 === 2) element.classList.add("reveal-right");
     if (revealObserver) revealObserver.observe(element);
     else element.classList.add("is-visible");
   });
+
+  const progressBar = document.querySelector(".scroll-progress span");
+  const heroImage = document.querySelector(".hero-image");
+  let scrollFrame = 0;
+  function updateScrollMotion() {
+    const maxScroll = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+    const progress = Math.min(1, Math.max(0, scrollY / maxScroll));
+    if (progressBar) progressBar.style.transform = `scaleX(${progress})`;
+    if (heroImage) heroImage.style.setProperty("--hero-shift", `${Math.min(30, scrollY * 0.055)}px`);
+    scrollFrame = 0;
+  }
+  addEventListener("scroll", () => {
+    if (!scrollFrame) scrollFrame = requestAnimationFrame(updateScrollMotion);
+  }, { passive: true });
+  addEventListener("resize", updateScrollMotion, { passive: true });
+  updateScrollMotion();
 
   const sectionLinks = Array.from(document.querySelectorAll(".main-nav a[href^='#']"));
   const sections = sectionLinks

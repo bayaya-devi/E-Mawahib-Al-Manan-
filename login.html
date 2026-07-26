@@ -85,24 +85,28 @@
         .btn-primary:active { transform: scale(0.98); }
 
         .discover-link {
+            width: fit-content;
+            max-width: 100%;
             min-height: 42px;
-            margin: -4px 0 16px;
-            padding: 9px 12px;
+            margin: -4px auto 16px;
+            padding: 9px 16px;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 7px;
-            color: #14532d;
-            background: #f0fdf4;
-            border: 1px solid #bbf7d0;
-            border-radius: 10px;
-            font-size: 12px;
-            font-weight: 700;
-            transition: transform .2s ease, border-color .2s ease, background .2s ease;
+            gap: 8px;
+            color: #fff;
+            background: #14532d;
+            border: 2px solid #d6a33d;
+            border-radius: 11px;
+            box-shadow: 0 8px 18px rgba(20, 83, 45, .2);
+            font-size: 13px;
+            font-weight: 800;
+            text-decoration: none;
+            transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
         }
-        .discover-link strong { color: #b45309; }
-        .discover-link:hover { transform: translateY(-1px); border-color: #d6a33d; background: #fffbeb; }
-        .discover-link:active { transform: scale(.98); }
+        .discover-link:hover { transform: translateY(-2px); background: #166534; box-shadow: 0 11px 22px rgba(20, 83, 45, .28); }
+        .discover-link:active { transform: scale(.97); }
+        .discover-link .discover-icon { color: #f8d477; font-size: 16px; line-height: 1; }
 
         .error-box {
             background: #fef2f2;
@@ -152,9 +156,9 @@
             <h1 class="text-xl font-black text-gray-800">منصة دار القرآن</h1>
             <p class="text-xs text-emerald-700 font-semibold mt-1">جمعية مواهب المنان • عين العودة</p>
         </div>
-        <a class="discover-link" href="dar-al-hadith.html">
-            <strong>اعرف المزيد</strong>
-            <span>عن جمعية مواهب المنان</span>
+        <a class="discover-link" href="dar-al-hadith.html" aria-label="اعرف المزيد عن الجمعية">
+            <span class="discover-icon" aria-hidden="true">ⓘ</span>
+            <span>اعرف المزيد</span>
             <span aria-hidden="true">←</span>
         </a>
         <div class="flex bg-gray-100 rounded-xl p-1 mb-5 gap-1"></div>
