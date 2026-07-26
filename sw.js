@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v34-android-offline-20260726';
+const CACHE_VERSION = 'mawahib-offline-v35-virtual-teacher-20260726';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -28,6 +28,8 @@ const STATIC_ASSETS = [
   './platform-theme.css',
   './juz-puzzle.js',
   './juz-puzzle.css',
+  './juz-recitation-teacher.js',
+  './juz-recitation-teacher.css',
   './notifications.js',
   './surah-autoplay.js',
   './prof-simple.js',

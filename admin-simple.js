@@ -100,6 +100,12 @@
       const profMap=new Map(profRows.map(item=>[item.username,item]));
       const events=buildStudentCompletionEvents(progressRows,studentMap);
       messageRows.forEach(row=>{
+        const virtualRecitation=parseActivityPayload(row.text,'[VIRTUAL_TEACHER_RECITATION] ');
+        if(virtualRecitation){
+          const score=Math.max(0,Math.min(100,Number(virtualRecitation.score)||0));
+          const review=Array.isArray(virtualRecitation.reviewVerses)&&virtualRecitation.reviewVerses.length?' · راجع الآيات '+virtualRecitation.reviewVerses.join('، '):'';
+          events.push({role:'student',type:'virtual-recitation',date:virtualRecitation.createdAt||row.created_at,person:studentDisplay(studentMap,virtualRecitation.studentId),title:'تسميع مع الأستاذ الذكي · '+(virtualRecitation.surahName||'سورة'),detail:(virtualRecitation.juzName||'')+' · '+(virtualRecitation.appreciation||'')+' · '+score+'%'+review,score});return;
+        }
         const note=parseActivityPayload(row.text,'[TEACHER_NOTE] ');
         if(note){events.push({role:'prof',type:'reading',date:note.savedAt||row.created_at,person:profDisplay(profMap,note.profId,note.profName),title:'قراءة مسجلة',detail:studentDisplay(studentMap,note.studentId)+' · '+(note.surah||note.surate||'سورة')+(note.scope?(' · '+note.scope):''),score:0});return}
         const report=parseActivityPayload(row.text,'[SIGNAL_ADMIN] ');
@@ -124,11 +130,11 @@
     const activeStudents=new Set(studentEvents.map(item=>item.person)).size;
     const activeProfs=new Set(profEvents.map(item=>item.person)).size;
     const statusText=state.activityStatus==='live'?'تحديث مباشر':state.activityStatus==='error'?'إعادة المحاولة':'جاري التحديث';
-    main.innerHTML=heading('النشاط المباشر','السور والأجزاء المكتملة، وآخر أعمال الأساتذة(ات).')+
+    main.innerHTML=heading('النشاط المباشر','السور والأجزاء المكتملة، والتسميع الذكي، وآخر أعمال الأساتذة(ات).')+
       `<div class="admin-live-head"><div class="admin-live-state ${state.activityStatus}"><span></span>${statusText}</div><div class="admin-row-meta">آخر تحديث: ${state.activityUpdatedAt?activityTime(state.activityUpdatedAt):'—'}</div></div>`+
-      `<div class="admin-kpis">${kpi(studentEvents.filter(item=>item.type==='surah').length,'سور مكتملة')}${kpi(studentEvents.filter(item=>item.type==='juz').length,'أجزاء مكتملة')}${kpi(activeStudents,'طلاب(ات) أتموا')}${kpi(activeProfs,'أساتذة(ات) نشطون')}</div>`+
+      `<div class="admin-kpis">${kpi(studentEvents.filter(item=>item.type==='surah').length,'سور مكتملة')}${kpi(studentEvents.filter(item=>item.type==='juz').length,'أجزاء مكتملة')}${kpi(studentEvents.filter(item=>item.type==='virtual-recitation').length,'تسميع ذكي')}${kpi(activeStudents,'طلاب(ات) نشطون')}${kpi(activeProfs,'أساتذة(ات) نشطون')}</div>`+
       `<div class="admin-live-filters"><button class="${state.activityFilter==='all'?'active':''}" onclick="setAdminActivityFilter('all')">الكل</button><button class="${state.activityFilter==='student'?'active':''}" onclick="setAdminActivityFilter('student')">الطلاب(ات)</button><button class="${state.activityFilter==='prof'?'active':''}" onclick="setAdminActivityFilter('prof')">الأساتذة(ات)</button><button onclick="refreshAdminActivity()">تحديث</button></div>`+
-      `<div class="admin-live-list">${filtered.length?filtered.slice(0,100).map(item=>`<article class="admin-live-row ${item.role}"><div class="admin-live-icon">${item.type==='juz'?'✓':item.role==='student'?'📖':'🧑‍🏫'}</div><div class="admin-live-copy"><div class="admin-row-title">${esc(item.person)} · ${esc(item.title)}</div>${item.detail?`<div class="admin-row-meta">${esc(item.detail)}</div>`:''}</div><time>${activityTime(item.date)}</time></article>`).join(''):empty(state.activityStatus==='loading'?'جاري تحميل النشاط...':'لا يوجد نشاط مسجل بعد.')}</div>`;
+      `<div class="admin-live-list">${filtered.length?filtered.slice(0,100).map(item=>`<article class="admin-live-row ${item.role}"><div class="admin-live-icon">${item.type==='juz'?'✓':item.type==='virtual-recitation'?'🎙️':item.role==='student'?'📖':'🧑‍🏫'}</div><div class="admin-live-copy"><div class="admin-row-title">${esc(item.person)} · ${esc(item.title)}</div>${item.detail?`<div class="admin-row-meta">${esc(item.detail)}</div>`:''}</div><time>${activityTime(item.date)}</time></article>`).join(''):empty(state.activityStatus==='loading'?'جاري تحميل النشاط...':'لا يوجد نشاط مسجل بعد.')}</div>`;
   }
 
   let activityChannel=null,activityPoll=null,activityDebounce=null;

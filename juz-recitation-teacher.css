@@ -1,0 +1,96 @@
+.juz-recitation-button {
+  min-height: 36px;
+  border: 1px solid color-mix(in srgb, var(--platform-primary) 55%, #ffffff);
+  border-radius: 999px;
+  padding: 0 13px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--platform-primary), var(--platform-primary-dark));
+  box-shadow: 0 9px 20px color-mix(in srgb, var(--platform-primary) 24%, transparent);
+  font-size: 11px;
+  font-weight: 1000;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.juz-recitation-button:hover { transform: translateY(-1px); filter: brightness(1.08); }
+.juz-recitation-button:active { transform: scale(.97); }
+.juz-recitation-button:focus-visible { outline: 3px solid color-mix(in srgb, var(--platform-primary) 35%, #fff); outline-offset: 2px; }
+
+.virtual-teacher-modal {
+  position: fixed;
+  z-index: 100050;
+  inset: 0;
+  display: none;
+  place-items: center;
+  padding: 12px;
+  background: rgba(15, 23, 42, .7);
+  backdrop-filter: blur(7px);
+}
+.virtual-teacher-modal.open { display: grid; }
+.virtual-teacher-panel {
+  width: min(100%, 540px);
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid color-mix(in srgb, var(--platform-primary) 18%, #fff);
+  border-radius: 18px;
+  padding: 16px;
+  color: #17251f;
+  background: #fff;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, .34);
+}
+.virtual-teacher-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
+.virtual-teacher-title { margin: 0; color: var(--platform-primary-dark); font-size: 20px; font-weight: 1000; }
+.virtual-teacher-subtitle { margin-top: 2px; color: #64748b; font-size: 11px; font-weight: 800; }
+.virtual-teacher-close { width: 38px; height: 38px; flex: 0 0 38px; border: 0; border-radius: 50%; color: #334155; background: #f1f5f9; font-size: 22px; font-weight: 900; cursor: pointer; }
+.virtual-teacher-label { display: block; margin-bottom: 7px; color: #334155; font-size: 13px; font-weight: 900; }
+.virtual-teacher-select { width: 100%; min-height: 50px; padding: 0 12px; border: 2px solid #dbe6e0; border-radius: 12px; color: #17251f; background: #fff; font-family: inherit; font-size: 15px; font-weight: 900; outline: none; }
+.virtual-teacher-select:focus { border-color: var(--platform-primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--platform-primary) 12%, transparent); }
+.virtual-teacher-note { margin: 12px 0 0; color: #64748b; font-size: 12px; font-weight: 700; line-height: 1.8; }
+.virtual-teacher-action { width: 100%; min-height: 50px; margin-top: 15px; border: 0; border-radius: 12px; color: #fff; background: var(--platform-primary); font-family: inherit; font-size: 15px; font-weight: 1000; cursor: pointer; box-shadow: 0 11px 24px color-mix(in srgb, var(--platform-primary) 24%, transparent); }
+.virtual-teacher-action.secondary { color: var(--platform-primary-dark); background: var(--platform-primary-soft); box-shadow: none; }
+.virtual-teacher-action.danger { color: #fff; background: #dc2626; box-shadow: 0 11px 24px rgba(220, 38, 38, .2); }
+.virtual-teacher-action:disabled { opacity: .5; cursor: wait; }
+.virtual-teacher-listening { min-height: 340px; display: grid; align-content: center; justify-items: center; text-align: center; }
+.virtual-teacher-mic { width: 104px; height: 104px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--platform-primary); font-size: 42px; box-shadow: 0 0 0 0 color-mix(in srgb, var(--platform-primary) 35%, transparent); animation: virtualTeacherPulse 1.35s ease-out infinite; }
+.virtual-teacher-status { margin-top: 22px; color: var(--platform-primary-dark); font-size: 18px; font-weight: 1000; }
+.virtual-teacher-timer { margin-top: 6px; direction: ltr; color: #64748b; font-size: 14px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.virtual-teacher-live { width: 100%; min-height: 66px; margin-top: 16px; padding: 11px 12px; border: 1px solid #e2e8f0; border-radius: 11px; color: #475569; background: #f8fafc; font-size: 13px; font-weight: 700; line-height: 1.8; }
+.virtual-teacher-error { padding: 13px; border: 1px solid #fecaca; border-radius: 11px; color: #991b1b; background: #fff1f2; font-size: 13px; font-weight: 800; line-height: 1.8; }
+.virtual-teacher-result { text-align: center; }
+.virtual-teacher-score { width: 112px; height: 112px; margin: 3px auto 13px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--platform-primary); box-shadow: 0 0 0 9px var(--platform-primary-soft); font-size: 25px; font-weight: 1000; animation: virtualTeacherResultIn .55s cubic-bezier(.2, 1.6, .4, 1) both; }
+.virtual-teacher-appreciation { margin: 0; color: var(--platform-primary-dark); font-size: 23px; font-weight: 1000; }
+.virtual-teacher-encouragement { margin: 8px auto 16px; max-width: 420px; color: #475569; font-size: 14px; font-weight: 800; line-height: 1.8; }
+.virtual-teacher-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; margin: 15px 0; text-align: center; }
+.virtual-teacher-metric { padding: 11px 8px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+.virtual-teacher-metric strong { display: block; color: var(--platform-primary-dark); font-size: 19px; font-weight: 1000; }
+.virtual-teacher-metric span { color: #64748b; font-size: 11px; font-weight: 800; }
+.virtual-teacher-review { margin-top: 13px; padding: 13px; border-inline-start: 4px solid #f59e0b; color: #713f12; background: #fffbeb; text-align: right; font-size: 13px; font-weight: 800; line-height: 1.9; }
+.virtual-teacher-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+
+.virtual-teacher-intro { position: fixed; z-index: 2147482000; inset: 0; pointer-events: auto; }
+.virtual-teacher-intro[hidden] { display: none; }
+.virtual-teacher-spotlight { position: fixed; z-index: 2147482001; border: 3px solid #facc15; border-radius: 999px; box-shadow: 0 0 0 9999px rgba(15, 23, 42, .7), 0 0 0 8px rgba(250, 204, 21, .24); pointer-events: none; animation: virtualTeacherSpotlight .85s ease-in-out infinite; }
+.virtual-teacher-coach { position: fixed; z-index: 2147482002; width: min(330px, calc(100vw - 24px)); padding: 15px; border: 2px solid #facc15; border-radius: 14px; color: #17251f; background: #fff; box-shadow: 0 22px 55px rgba(15, 23, 42, .32); text-align: right; }
+.virtual-teacher-coach-arrow { position: absolute; left: 50%; color: #facc15; font-size: 30px; line-height: 1; transform: translateX(-50%); animation: virtualTeacherArrow .75s ease-in-out infinite; }
+.virtual-teacher-coach.is-below .virtual-teacher-coach-arrow { top: -30px; transform: translateX(-50%) rotate(180deg); }
+.virtual-teacher-coach.is-above .virtual-teacher-coach-arrow { bottom: -30px; }
+.virtual-teacher-coach h3 { margin: 0; color: var(--platform-primary-dark); font-size: 18px; font-weight: 1000; }
+.virtual-teacher-coach p { margin: 7px 0 12px; color: #475569; font-size: 12px; font-weight: 800; line-height: 1.8; }
+.virtual-teacher-coach button { width: 100%; min-height: 44px; border: 0; border-radius: 10px; color: #fff; background: var(--platform-primary); font-family: inherit; font-weight: 1000; cursor: pointer; }
+
+@keyframes virtualTeacherPulse { 70% { box-shadow: 0 0 0 24px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+@keyframes virtualTeacherResultIn { from { opacity: 0; transform: scale(.65) rotate(-8deg); } to { opacity: 1; transform: none; } }
+@keyframes virtualTeacherSpotlight { 50% { border-color: #fff2a8; box-shadow: 0 0 0 9999px rgba(15,23,42,.7), 0 0 0 13px rgba(250,204,21,.12); } }
+@keyframes virtualTeacherArrow { 50% { margin-top: 6px; } }
+
+@media (max-width: 480px) {
+  .juz-recitation-button { min-height: 32px; padding-inline: 9px; }
+  .virtual-teacher-panel { padding: 13px; border-radius: 15px; }
+  .virtual-teacher-listening { min-height: 300px; }
+  .virtual-teacher-actions { grid-template-columns: 1fr; }
+  .virtual-teacher-coach { padding: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .virtual-teacher-mic, .virtual-teacher-score, .virtual-teacher-spotlight, .virtual-teacher-coach-arrow { animation: none; }
+}
