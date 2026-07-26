@@ -13,6 +13,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js?v=20260723-juz-verse-puzzle-1"></script>
+    <script src="first-use-guide.js?v=20260726-first-use-1"></script>
     <script src="registry.js"></script>
 
         <link rel="stylesheet" href="platform-theme.css?v=20260720-global-latest-1">
@@ -462,7 +463,7 @@ body { padding-bottom: 80px; }
         function renderMedalCabinet() { const medals = renderMedalSummary(); const activeJuz = getActiveMedalJuz(medals); const grid = document.getElementById('medal-cabinet-grid'); if (!grid) return; grid.innerHTML = juzJourney.map((juz, index) => { const medal = medals[String(juz.num)]; const isCurrent = !medal && activeJuz && activeJuz.num === juz.num; const surahs = getJuzSurahs(juz); const done = surahs.filter(surah => surah.isCompleted).length; const tier = Math.min(5, Math.floor(index / 5)); const status = medal ? new Date(medal.earnedAt).toLocaleDateString('fr-FR') : (isCurrent ? done + ' / ' + surahs.length : 'مغلق'); return '<article class="medal-item medal-tier-' + tier + (medal ? ' is-earned' : '') + (isCurrent ? ' is-current' : '') + '"><div class="medal-symbol">' + (medal ? '🏅' : (isCurrent ? '◇' : '🔒')) + '</div><div class="medal-name">وسام ' + escapeMiniExamText(juz.name) + '</div><div class="medal-status">' + status + '</div></article>'; }).join(''); }
         function openMedalCabinet() { renderMedalCabinet(); const modal = document.getElementById('medal-cabinet-modal'); if (!modal) return; modal.hidden = false; document.body.style.overflow = 'hidden'; document.getElementById('close-medal-cabinet')?.focus(); }
         function closeMedalCabinet() { const modal = document.getElementById('medal-cabinet-modal'); if (modal) modal.hidden = true; document.body.style.overflow = ''; }
-        function showMedalIntroOnce() { const key = 'mawahib_medal_intro_' + MEDAL_INTRO_VERSION + '_' + getMedalStudentKey(); if (localStorage.getItem(key) === '1') return; const modal = document.getElementById('medal-intro-modal'); if (!modal) return; modal.dataset.storageKey = key; modal.hidden = false; document.body.style.overflow = 'hidden'; }
+        function showMedalIntroOnce() { const guide = window.MawahibFirstUseGuide; if (guide && guide.isActiveOrPending()) { window.addEventListener('mawahib:first-use-complete', showMedalIntroOnce, { once: true }); return; } const key = 'mawahib_medal_intro_' + MEDAL_INTRO_VERSION + '_' + getMedalStudentKey(); if (localStorage.getItem(key) === '1') return; const modal = document.getElementById('medal-intro-modal'); if (!modal) return; modal.dataset.storageKey = key; modal.hidden = false; document.body.style.overflow = 'hidden'; }
         function acknowledgeMedalIntro() { const modal = document.getElementById('medal-intro-modal'); if (!modal) return; if (modal.dataset.storageKey) localStorage.setItem(modal.dataset.storageKey, '1'); modal.hidden = true; document.body.style.overflow = ''; }
         function isJuzSurahWorkComplete(juz) {
             const surahs = getJuzSurahs(juz);

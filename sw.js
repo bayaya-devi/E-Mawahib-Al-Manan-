@@ -15,6 +15,7 @@ const STATIC_ASSETS = [
   './inactivity.html',
   './auth.js',
   './app-settings.js',
+  './first-use-guide.js',
   './platform-theme.js',
   './platform-theme.css',
   './juz-puzzle.js',
