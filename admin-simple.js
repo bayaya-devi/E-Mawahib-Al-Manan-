@@ -157,7 +157,7 @@
   }
   async function reload(message){await load();if(message)toast(message)}
   function toast(text){const node=document.createElement('div');node.className='admin-status';node.style.cssText='position:fixed;z-index:200;top:14px;left:50%;transform:translateX(-50%);background:#124c35;color:#fff';node.textContent=text;document.body.appendChild(node);setTimeout(()=>node.remove(),2200)}
-  function initNav(){const nav=document.getElementById('admin-nav');let last=scrollY;addEventListener('scroll',()=>{const y=scrollY;if(Math.abs(y-last)<5)return;nav.classList.toggle('nav-scroll-hidden',y>last&&y>80);last=y},{passive:true})}
+  function initNav(){const nav=document.getElementById('admin-nav');requestAnimationFrame(()=>nav.querySelector('.active')?.scrollIntoView({block:'nearest',inline:'center'}));let last=scrollY;addEventListener('scroll',()=>{const y=scrollY;if(Math.abs(y-last)<5)return;nav.classList.toggle('nav-scroll-hidden',y>last&&y>80);last=y},{passive:true})}
 
   window.renderAdminStudents=renderStudents;
   window.adminLogout=()=>{Auth.logout();location.replace('login.html')};
