@@ -1,7 +1,7 @@
 (function () {
   'use strict';
 
-  const INTRO_VERSION = '20260726-1';
+  const INTRO_VERSION = '20260726-2';
   const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition;
   let state = null;
   let introResizeHandler = null;
@@ -37,7 +37,7 @@
     modal.innerHTML = [
       '<section class="virtual-teacher-panel" dir="rtl">',
         '<header class="virtual-teacher-head">',
-          '<div><h2 class="virtual-teacher-title" id="virtual-teacher-title">الأستاذ الذكي</h2><p class="virtual-teacher-subtitle" id="virtual-teacher-subtitle"></p></div>',
+          '<div><h2 class="virtual-teacher-title" id="virtual-teacher-title">الأستاذ الرقمي</h2><p class="virtual-teacher-subtitle" id="virtual-teacher-subtitle"></p></div>',
           '<button type="button" class="virtual-teacher-close" aria-label="إغلاق">×</button>',
         '</header>',
         '<div id="virtual-teacher-body"></div>',
@@ -67,8 +67,8 @@
     body.innerHTML = [
       '<label class="virtual-teacher-label" for="virtual-teacher-surah">اختر السورة التي تريد تسميعها</label>',
       '<select class="virtual-teacher-select" id="virtual-teacher-surah">', options, '</select>',
-      '<p class="virtual-teacher-note">استعد في مكان هادئ، ثم اقرأ السورة كاملة. سيقدم الأستاذ الذكي ملاحظات مكتوبة في النهاية. هذا التدريب اختياري ولا يغيّر تقدمك أو نجومك.</p>',
-      '<button type="button" class="virtual-teacher-action" id="virtual-teacher-start">🎙️ ابدأ التسميع</button>'
+      '<p class="virtual-teacher-note">استعد في مكان هادئ، ثم اقرأ السورة كاملة. سيحلل النظام الكلمات والترتيب، ولن يصدر تقييما إذا كانت دقة الصوت غير كافية. هذا التدريب اختياري ولا يغيّر تقدمك أو نجومك.</p>',
+      '<button type="button" class="virtual-teacher-action" id="virtual-teacher-start">🎙️ ابدأ التسميع الواضح</button>'
     ].join('');
     document.getElementById('virtual-teacher-surah').value = String(state.selectedSurahNumber || state.surahs[0]?.num || '');
     document.getElementById('virtual-teacher-surah').addEventListener('change', event => { state.selectedSurahNumber = Number(event.target.value); });
@@ -94,12 +94,14 @@
       restartFailures: 0,
       startedAt: 0,
       timer: 0,
-      restartTimer: 0
+      restartTimer: 0,
+      confidenceSamples: [],
+      capturedSegments: 0
     };
     const modal = ensureModal();
     modal.classList.add('open');
     document.body.style.overflow = 'hidden';
-    document.getElementById('virtual-teacher-subtitle').textContent = juz.name + ' · تدريب اختياري';
+    document.getElementById('virtual-teacher-subtitle').textContent = juz.name + ' · تحليل محافظ للكلمات';
     renderSelection();
   }
 
@@ -156,6 +158,8 @@
     state.manualStop = false;
     state.startedAt = Date.now();
     state.restartFailures = 0;
+    state.confidenceSamples = [];
+    state.capturedSegments = 0;
     renderListening();
     createAndStartRecognition();
     clearInterval(state.timer);
@@ -166,13 +170,18 @@
     const body = document.getElementById('virtual-teacher-body');
     body.innerHTML = [
       '<div class="virtual-teacher-listening">',
+        '<div class="virtual-teacher-listening-surah">' + escapeHtml(state.selectedSurah?.nameAr || '') + '</div>',
         '<div class="virtual-teacher-mic" aria-hidden="true">🎙️</div>',
-        '<div class="virtual-teacher-status" id="virtual-teacher-status">أستمع إليك... ابدأ الآن</div>',
+        '<div class="virtual-teacher-status" id="virtual-teacher-status">أستمع الآن</div>',
         '<div class="virtual-teacher-timer" id="virtual-teacher-timer">00:00</div>',
-        '<div class="virtual-teacher-live" id="virtual-teacher-live">ستظهر الكلمات التي يسمعها النظام هنا.</div>',
-        '<button type="button" class="virtual-teacher-action danger" id="virtual-teacher-stop">إنهاء التسميع</button>',
+        '<div class="virtual-teacher-capture" id="virtual-teacher-live">ابدأ القراءة ولا تراقب الشاشة أثناء التسميع.</div>',
+        '<div class="virtual-teacher-actions listening-actions">',
+          '<button type="button" class="virtual-teacher-action secondary" id="virtual-teacher-cancel">إلغاء</button>',
+          '<button type="button" class="virtual-teacher-action" id="virtual-teacher-stop">إنهاء وتحليل</button>',
+        '</div>',
       '</div>'
     ].join('');
+    document.getElementById('virtual-teacher-cancel').addEventListener('click', () => { stopRecognition(true); renderSelection(); });
     document.getElementById('virtual-teacher-stop').addEventListener('click', finishRecitation);
   }
 
@@ -186,25 +195,31 @@
   function createAndStartRecognition() {
     if (!state || !state.listening) return;
     const recognition = new SpeechRecognitionApi();
-    recognition.lang = 'ar-MA';
+    recognition.lang = 'ar-SA';
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.maxAlternatives = 3;
+    recognition.maxAlternatives = 5;
     state.recognition = recognition;
     recognition.onresult = event => {
       if (!state) return;
       let interim = '';
       for (let index = event.resultIndex; index < event.results.length; index++) {
-        const text = event.results[index][0]?.transcript || '';
-        if (event.results[index].isFinal) state.transcriptParts.push(text.trim());
-        else interim += ' ' + text;
+        const choice = chooseRecognitionAlternative(event.results[index]);
+        if (!choice.text) continue;
+        if (event.results[index].isFinal) {
+          appendTranscriptPart(choice.text);
+          if (choice.confidence > 0) state.confidenceSamples.push(choice.confidence);
+          state.capturedSegments += 1;
+        } else interim += ' ' + choice.text;
       }
       state.interim = interim.trim();
       state.restartFailures = 0;
       const live = document.getElementById('virtual-teacher-live');
-      if (live) live.textContent = (state.transcriptParts.join(' ') + ' ' + state.interim).trim() || 'أستمع إليك...';
+      if (live) live.textContent = state.capturedSegments ? 'تم التقاط القراءة. واصل حتى آخر آية.' : 'أستمع إليك...';
     };
-    recognition.onerror = event => {
+
+
+  recognition.onerror = event => {
       if (!state) return;
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture') {
         state.listening = false;
@@ -250,28 +265,24 @@
     if (!state) return;
     const transcript = (state.transcriptParts.join(' ') + ' ' + state.interim).trim();
     stopRecognition(false);
-    if (normalizeArabic(transcript).split(' ').filter(Boolean).length < 3) {
-      showError('لم أسمع كلمات كافية للتحليل. اقترب من الميكروفون وأعد المحاولة في مكان هادئ.', true);
+    if (words(transcript).length < 4) {
+      renderUnverified('لم ألتقط كلمات كافية.', 'اقترب من الميكروفون وأعد التسميع في مكان هادئ.');
       return;
     }
-    const body = document.getElementById('virtual-teacher-body');
-    body.innerHTML = '<div class="py-12 text-center font-black text-gray-500">يحلل الأستاذ الذكي تسميعك...</div>';
-    setTimeout(() => renderResult(analyzeRecitation(state.verses, transcript)), 120);
+    document.getElementById('virtual-teacher-body').innerHTML = '<div class="virtual-teacher-analyzing"><span></span><strong>جاري التحقق من الكلمات وترتيب الآيات...</strong></div>';
+    const confidences = state.confidenceSamples.slice();
+    setTimeout(() => renderResult(analyzeRecitation(state.verses, transcript, { confidences })), 100);
   }
 
   function normalizeArabic(value) {
-    return String(value || '')
-      .normalize('NFKD')
+    return String(value || '').normalize('NFKD')
       .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, '')
-      .replace(/[ٱأإآ]/g, 'ا')
-      .replace(/ى/g, 'ي')
-      .replace(/ؤ/g, 'و')
-      .replace(/ئ/g, 'ي')
-      .replace(/ـ/g, '')
-      .replace(/[^ء-غف-ي\s]/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+      .replace(/[ٱأإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي')
+      .replace(/ة/g, 'ه').replace(/ـ/g, '').replace(/[^ء-غف-ي\s]/g, ' ')
+      .replace(/\s+/g, ' ').trim();
   }
+
+  function words(value) { return normalizeArabic(value).split(' ').filter(Boolean); }
 
   function editDistance(left, right) {
     const previous = Array.from({ length: right.length + 1 }, (_, index) => index);
@@ -284,56 +295,120 @@
     return previous[right.length];
   }
 
-  function similarity(left, right) {
-    const longest = Math.max(left.length, right.length, 1);
-    return Math.max(0, 1 - editDistance(left, right) / longest);
+  function wordSimilarity(left, right) {
+    if (left === right) return 1;
+    return Math.max(0, 1 - editDistance(left, right) / Math.max(left.length, right.length, 1));
+  }
+
+  function sequenceSimilarity(target, sample) {
+    if (!target.length || !sample.length) return 0;
+    const previous = Array.from({ length: sample.length + 1 }, (_, index) => index);
+    const current = new Array(sample.length + 1);
+    for (let i = 1; i <= target.length; i++) {
+      current[0] = i;
+      for (let j = 1; j <= sample.length; j++) current[j] = Math.min(current[j - 1] + 1, previous[j] + 1, previous[j - 1] + 1 - wordSimilarity(target[i - 1], sample[j - 1]));
+      for (let j = 0; j <= sample.length; j++) previous[j] = current[j];
+    }
+    return Math.max(0, 1 - previous[sample.length] / Math.max(target.length, sample.length, 1));
+  }
+
+  function removeOptionalBasmala(list) {
+    const basmala = ['بسم', 'الله', 'الرحمن', 'الرحيم'].map(normalizeArabic);
+    if (list.length < 4) return list;
+    const score = basmala.reduce((sum, item, index) => sum + wordSimilarity(item, list[index]), 0) / 4;
+    return score >= .67 ? list.slice(4) : list;
+  }
+
+  function referenceVerseWords(verse, index) {
+    const list = words(verse.text);
+    return index === 0 ? removeOptionalBasmala(list) : list;
   }
 
   function bestSequentialMatch(target, heard, cursor) {
     if (!target.length || !heard.length || cursor >= heard.length) return { score: 0, next: cursor };
+    const direct = heard.slice(cursor, cursor + target.length);
+    const directScore = sequenceSimilarity(target, direct);
+    if (directScore >= .82) return { score: directScore, next: cursor + direct.length };
     const startMin = Math.max(0, cursor - 2);
-    const startMax = Math.min(heard.length - 1, cursor + Math.max(7, Math.min(22, target.length)));
-    const lengths = [...new Set([
-      Math.max(1, Math.floor(target.length * .72)),
-      Math.max(1, target.length - 2),
-      target.length,
-      target.length + 2,
-      Math.ceil(target.length * 1.28)
-    ])];
+    const startMax = Math.min(heard.length - 1, cursor + Math.max(4, Math.min(12, Math.ceil(target.length * .45))));
+    const lengths = [...new Set([Math.max(1, Math.floor(target.length * .68)), Math.max(1, target.length - 2), target.length, target.length + 2, Math.ceil(target.length * 1.32)])];
     let best = { score: 0, next: cursor };
-    for (let start = startMin; start <= startMax; start++) {
-      for (const length of lengths) {
-        const sample = heard.slice(start, Math.min(heard.length, start + length));
-        if (!sample.length) continue;
-        const score = similarity(target, sample);
-        if (score > best.score) best = { score, next: start + sample.length };
-      }
+    for (let start = startMin; start <= startMax; start++) for (const length of lengths) {
+      const sample = heard.slice(start, Math.min(heard.length, start + length));
+      const score = sequenceSimilarity(target, sample);
+      if (score > best.score) best = { score, next: start + sample.length };
     }
     return best;
   }
 
-  function analyzeRecitation(verses, transcript) {
-    const heard = normalizeArabic(transcript).split(' ').filter(Boolean);
-    let cursor = 0;
-    let weightedScore = 0;
-    let wordCount = 0;
-    const verseScores = verses.map(verse => {
-      const target = normalizeArabic(verse.text).split(' ').filter(Boolean);
+  function analyzeRecitation(verses, transcript, meta = {}) {
+    let heard = removeOptionalBasmala(words(transcript));
+    const targets = verses.map(referenceVerseWords);
+    const expectedWords = targets.reduce((sum, list) => sum + list.length, 0);
+    let cursor = 0, weightedScore = 0;
+    const verseScores = targets.map((target, index) => {
       const match = bestSequentialMatch(target, heard, cursor);
-      if (match.score >= .22) cursor = match.next;
+      if (match.score >= .28) cursor = match.next;
       weightedScore += match.score * target.length;
-      wordCount += target.length;
-      return { num: verse.num, score: match.score, words: target.length };
+      return { num: verses[index].num, score: match.score, words: target.length };
     });
-    const coverage = Math.round((weightedScore / Math.max(1, wordCount)) * 100);
-    const mastered = verseScores.filter(item => item.score >= .72).length;
-    const review = verseScores.filter(item => item.score < .58).sort((a, b) => a.score - b.score).slice(0, 5);
-    let appreciation = 'يحتاج إلى مراجعة';
-    let encouragement = 'محاولة طيبة. راجع المواضع المحددة، ثم أعد التسميع بهدوء.';
-    if (coverage >= 90) { appreciation = 'ممتاز'; encouragement = 'أحسنت كثيرا! تسميع متقن وواضح، حافظ على هذا المستوى.'; }
-    else if (coverage >= 78) { appreciation = 'جيد جدا'; encouragement = 'تقدم جميل! بقيت مواضع قليلة، ومراجعتها ستجعل تسميعك أقوى.'; }
-    else if (coverage >= 64) { appreciation = 'جيد'; encouragement = 'عمل جيد. ركز على الآيات المحددة ثم حاول مرة أخرى.'; }
-    return { coverage, mastered, total: verseScores.length, review, appreciation, encouragement };
+    const coverage = Math.round(weightedScore / Math.max(1, expectedWords) * 100);
+    const heardRatio = heard.length / Math.max(1, expectedWords);
+    const observed = verseScores.filter(item => item.score >= .38).length;
+    const mastered = verseScores.filter(item => item.score >= .78).length;
+    const review = verseScores.filter(item => item.score < .68).sort((a, b) => a.num - b.num).slice(0, 5);
+    const confidenceValues = (meta.confidences || []).map(Number).filter(value => value > 0 && value <= 1);
+    const confidence = confidenceValues.length ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length : null;
+    const incomplete = heardRatio < .58 || observed < Math.ceil(verseScores.length * .55);
+    const isConclusive = !incomplete && coverage >= 60;
+    let status = isConclusive ? 'evaluated' : (incomplete ? 'incomplete' : 'unverified');
+    let appreciation = '', encouragement = '';
+    if (status === 'incomplete') { appreciation = 'التسميع غير مكتمل'; encouragement = 'أعد قراءة السورة كاملة، ثم أنهِ التسميع بعد آخر آية.'; }
+    else if (status === 'unverified') { appreciation = 'لم أتمكن من التحقق'; encouragement = 'قد تكون جودة الصوت أو دقة التعرف غير كافية. لم أصدر أي نقطة.'; }
+    else if (coverage >= 92) { appreciation = 'ممتاز'; encouragement = 'تم التعرف على السورة كاملة وبترتيب صحيح.'; }
+    else if (coverage >= 84) { appreciation = 'جيد جدا'; encouragement = 'التسميع قريب جدا من النص، مع مواضع قليلة للمراجعة.'; }
+    else if (coverage >= 74) { appreciation = 'جيد'; encouragement = 'راجع الآيات المحددة ثم أعد التسميع.'; }
+    else { appreciation = 'يحتاج إلى مراجعة'; encouragement = 'تم التعرف على جزء معتبر، لكن توجد مواضع تحتاج إلى إعادة.'; }
+    return { status, isConclusive, coverage, mastered, total: verseScores.length, review, appreciation, encouragement, heardWords: heard.length, expectedWords, heardRatio, confidence };
+  }
+
+  function alternativeAffinity(text) {
+    if (!state?.verses?.length) return 0;
+    const candidate = words(text), reference = state.verses.flatMap(referenceVerseWords);
+    if (!candidate.length) return 0;
+    return candidate.reduce((sum, word) => {
+      let best = 0;
+      for (const target of reference) { best = Math.max(best, wordSimilarity(word, target)); if (best === 1) break; }
+      return sum + best;
+    }, 0) / candidate.length;
+  }
+
+  function chooseRecognitionAlternative(result) {
+    const alternatives = Array.from({ length: Math.min(result.length || 0, 5) }, (_, index) => result[index]).filter(Boolean);
+    let best = { text: '', confidence: 0, rank: -1 };
+    alternatives.forEach((alternative, index) => {
+      const text = String(alternative.transcript || '').trim(), confidence = Number(alternative.confidence || 0);
+      const rank = alternativeAffinity(text) + Math.min(.12, confidence * .12) - index * .01;
+      if (text && rank > best.rank) best = { text, confidence, rank };
+    });
+    return best;
+  }
+
+  function appendTranscriptPart(text) {
+    if (!state) return;
+    const clean = String(text || '').trim(), normalized = normalizeArabic(clean);
+    const last = state.transcriptParts[state.transcriptParts.length - 1] || '', lastNormalized = normalizeArabic(last);
+    if (!clean || normalized === lastNormalized || (lastNormalized.length > 12 && lastNormalized.endsWith(normalized))) return;
+    state.transcriptParts.push(clean);
+  }
+
+  function renderUnverified(title, message) {
+    if (!state) return;
+    stopRecognition(true);
+    const body = document.getElementById('virtual-teacher-body');
+    body.innerHTML = '<div class="virtual-teacher-unverified"><span aria-hidden="true">↻</span><h3>' + escapeHtml(title) + '</h3><p>' + escapeHtml(message) + '</p><strong>لم تُسجل أي نقطة أو ملاحظة.</strong></div><div class="virtual-teacher-actions"><button type="button" class="virtual-teacher-action secondary" id="virtual-teacher-back">اختيار سورة أخرى</button><button type="button" class="virtual-teacher-action" id="virtual-teacher-again">إعادة المحاولة</button></div>';
+    document.getElementById('virtual-teacher-back').addEventListener('click', renderSelection);
+    document.getElementById('virtual-teacher-again').addEventListener('click', beginListening);
   }
 
   function teacherQueueKey() {
@@ -377,6 +452,7 @@
 
   function publishTeacherResult(result) {
     if (!state || state.resultSent || !state.selectedSurah) return;
+    if (!result.isConclusive) return;
     state.resultSent = true;
     let session = null;
     try { session = typeof Auth !== 'undefined' && Auth.getSession ? Auth.getSession() : null; } catch (error) {}
@@ -391,6 +467,7 @@
       surahId: state.selectedSurah.id,
       surahName: state.selectedSurah.nameAr,
       score: result.coverage,
+      engineVersion: 2,
       appreciation: result.appreciation,
       masteredVerses: result.mastered,
       totalVerses: result.total,
@@ -404,25 +481,17 @@
   }
   function renderResult(result) {
     if (!state) return;
+    if (!result.isConclusive) { renderUnverified(result.appreciation, result.encouragement); return; }
     publishTeacherResult(result);
+    const reviewText = result.review.length ? 'راجع الآيات: ' + result.review.map(item => item.num).join('، ') : 'لم يظهر موضع واضح يحتاج إلى إعادة.';
     const body = document.getElementById('virtual-teacher-body');
-    const reviewText = result.review.length
-      ? 'راجع الآيات: ' + result.review.map(item => item.num).join('، ') + '. ثم أعدها ببطء ووضوح.'
-      : 'لم أجد موضعا رئيسيا يحتاج إلى إعادة. واصل المراجعة المنتظمة.';
     body.innerHTML = [
       '<div class="virtual-teacher-result">',
-        '<div class="virtual-teacher-score">' + result.coverage + '%</div>',
-        '<h3 class="virtual-teacher-appreciation">' + escapeHtml(result.appreciation) + '</h3>',
+        '<div class="virtual-teacher-result-head"><span>نتيجة التحليل</span><strong>' + escapeHtml(result.appreciation) + '</strong></div>',
+        '<div class="virtual-teacher-match"><div><span style="width:' + result.coverage + '%"></span></div><strong>' + result.coverage + '%</strong><small>تطابق الكلمات والترتيب</small></div>',
         '<p class="virtual-teacher-encouragement">' + escapeHtml(result.encouragement) + '</p>',
-        '<div class="virtual-teacher-metrics">',
-          '<div class="virtual-teacher-metric"><strong>' + result.mastered + ' / ' + result.total + '</strong><span>آيات واضحة</span></div>',
-          '<div class="virtual-teacher-metric"><strong>' + result.coverage + '%</strong><span>التطابق التقريبي</span></div>',
-        '</div>',
-        '<div class="virtual-teacher-review">' + escapeHtml(reviewText) + '<br><small>قد يحتاج التجويد الدقيق ومخارج الحروف إلى مراجعة الأستاذ.</small></div>',
-        '<div class="virtual-teacher-actions">',
-          '<button type="button" class="virtual-teacher-action secondary" id="virtual-teacher-back">اختيار سورة أخرى</button>',
-          '<button type="button" class="virtual-teacher-action" id="virtual-teacher-again">إعادة التسميع</button>',
-        '</div>',
+        '<div class="virtual-teacher-review">' + escapeHtml(reviewText) + '<br><small>هذا التحليل للكلمات والترتيب فقط. التجويد ومخارج الحروف يراجعها الأستاذ.</small></div>',
+        '<div class="virtual-teacher-actions"><button type="button" class="virtual-teacher-action secondary" id="virtual-teacher-back">اختيار سورة أخرى</button><button type="button" class="virtual-teacher-action" id="virtual-teacher-again">إعادة التسميع</button></div>',
       '</div>'
     ].join('');
     document.getElementById('virtual-teacher-back').addEventListener('click', renderSelection);
@@ -436,7 +505,7 @@
     intro.id = 'virtual-teacher-intro';
     intro.className = 'virtual-teacher-intro';
     intro.hidden = true;
-    intro.innerHTML = '<div class="virtual-teacher-spotlight"></div><section class="virtual-teacher-coach"><span class="virtual-teacher-coach-arrow" aria-hidden="true">⬇</span><h3>الأستاذ الذكي وصل!</h3><p>اختر سورة من هذا الجزء، ثم سمّعها لتحصل على ملاحظات مكتوبة وتشجيع. التدريب اختياري ولا يغيّر تقدمك أو نجومك.</p><button type="button">فهمت</button></section>';
+    intro.innerHTML = '<div class="virtual-teacher-spotlight"></div><section class="virtual-teacher-coach"><span class="virtual-teacher-coach-arrow" aria-hidden="true">⬇</span><h3>الأستاذ الرقمي</h3><p>اختر سورة وسمّعها. إذا لم يكن الصوت واضحا فلن يعطيك النظام نقطة خاطئة، بل سيطلب إعادة المحاولة.</p><button type="button">فهمت</button></section>';
     document.body.appendChild(intro);
     intro.querySelector('button').addEventListener('click', acknowledgeIntro);
     return intro;
@@ -508,7 +577,7 @@
 
   window.openJuzRecitationTeacher = openVirtualTeacher;
   window.closeJuzRecitationTeacher = closeVirtualTeacher;
-  window.MawahibVirtualTeacher = { analyzeRecitation, normalizeArabic, flushPending: flushTeacherQueue, showIntro: () => showIntroWhenReady(0) };
+  window.MawahibVirtualTeacher = { analyzeRecitation, normalizeArabic, chooseRecognitionAlternative, flushPending: flushTeacherQueue, showIntro: () => showIntroWhenReady(0) };
 
   addEventListener('online', flushTeacherQueue);
   setTimeout(flushTeacherQueue, 1400);

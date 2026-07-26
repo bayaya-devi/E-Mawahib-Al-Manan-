@@ -94,3 +94,26 @@
 @media (prefers-reduced-motion: reduce) {
   .virtual-teacher-mic, .virtual-teacher-score, .virtual-teacher-spotlight, .virtual-teacher-coach-arrow { animation: none; }
 }
+
+/* Professeur numerique v2: interface calme et verdict conservateur. */
+.virtual-teacher-listening-surah{margin-bottom:18px;padding:7px 12px;border-radius:9px;background:var(--platform-primary-soft);color:var(--platform-primary-dark);font-size:13px;font-weight:1000}
+.virtual-teacher-capture{width:100%;min-height:52px;margin-top:16px;padding:12px;border:1px solid #dbe6e0;border-radius:10px;background:#f8fafc;color:#52615b;font-size:13px;font-weight:800;line-height:1.7}
+.virtual-teacher-actions.listening-actions{width:100%;margin-top:4px}
+.virtual-teacher-analyzing{min-height:280px;display:grid;place-content:center;justify-items:center;gap:16px;color:var(--platform-primary-dark);text-align:center}
+.virtual-teacher-analyzing span{width:48px;height:48px;border:5px solid var(--platform-primary-soft);border-top-color:var(--platform-primary);border-radius:50%;animation:virtualTeacherSpin .8s linear infinite}
+.virtual-teacher-unverified{padding:18px 12px;text-align:center}
+.virtual-teacher-unverified>span{width:56px;height:56px;margin:0 auto 12px;display:grid;place-items:center;border-radius:50%;background:#fef3c7;color:#92400e;font-size:28px;font-weight:900}
+.virtual-teacher-unverified h3{margin:0;color:#713f12;font-size:21px;font-weight:1000}
+.virtual-teacher-unverified p{margin:8px auto;color:#64748b;font-size:14px;font-weight:800;line-height:1.8}
+.virtual-teacher-unverified strong{display:block;margin-top:12px;color:#9f1239;font-size:12px}
+.virtual-teacher-result-head{padding:14px;border-bottom:1px solid #e2e8f0;text-align:right}
+.virtual-teacher-result-head span{display:block;color:#64748b;font-size:11px;font-weight:900}
+.virtual-teacher-result-head strong{display:block;margin-top:3px;color:var(--platform-primary-dark);font-size:24px;font-weight:1000}
+.virtual-teacher-match{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center;margin:18px 0 10px;text-align:right}
+.virtual-teacher-match>div{height:10px;border-radius:99px;background:#e2e8f0;overflow:hidden}
+.virtual-teacher-match>div span{display:block;height:100%;border-radius:inherit;background:var(--platform-primary)}
+.virtual-teacher-match>strong{direction:ltr;color:var(--platform-primary-dark);font-size:18px;font-weight:1000}
+.virtual-teacher-match>small{grid-column:1/-1;color:#64748b;font-size:11px;font-weight:800}
+@keyframes virtualTeacherSpin{to{transform:rotate(360deg)}}
+@media(max-width:480px){.virtual-teacher-listening{min-height:350px}.virtual-teacher-status{font-size:17px}.virtual-teacher-result-head strong{font-size:21px}}
+@media(prefers-reduced-motion:reduce){.virtual-teacher-analyzing span{animation:none}}
