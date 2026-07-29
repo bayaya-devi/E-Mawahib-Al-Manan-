@@ -27,69 +27,34 @@
 
   function renderStudents(filter=''){const main=document.getElementById('admin-main');const query=String(filter).trim().toLowerCase();const rows=state.students.filter(item=>(studentName(item)+' '+item.username).toLowerCase().includes(query));main.innerHTML=heading('إدارة الطلاب','الحسابات والتقدم والواجبات من البيانات المسجلة.')+`<div class="admin-toolbar admin-toolbar-compact"><label class="admin-field"><span>بحث</span><input class="admin-control" placeholder="الاسم" value="${esc(filter)}" oninput="renderAdminStudents(this.value)"></label></div><div class="admin-people-grid">${rows.length?rows.map(student=>`<article class="admin-person"><div><div class="admin-row-title">${esc(studentName(student))}</div><div class="admin-row-meta">${esc(student.username)}</div></div><div class="admin-person-stats"><span>${completedCount(student)} سورة</span><span>${pendingDuties(student)} واجب</span><span class="${student.isSuspended?'is-paused':'is-active'}">${student.isSuspended?'موقوف':'نشط'}</span></div><div class="admin-row-actions"><button class="admin-small" onclick="toggleAdminStudent('${arg(student.username)}')">${student.isSuspended?'تفعيل':'إيقاف'}</button><button class="admin-small danger" onclick="deleteAdminStudent('${arg(student.username)}')">حذف</button></div></article>`).join(''):empty('لا يوجد طالب مطابق.')}</div>`}
 
-
-  function currentMonthKey(){return new Date().toISOString().slice(0,7)}
-  function financeEntryDate(entry){return String(entry&& (entry.operationDate||entry.createdAt||entry.date)||'').slice(0,7)}
-  function salaryEntriesForProf(prof){
-    const parts=[prof&&prof.username,prof&&prof.prenom,prof&&prof.classe].filter(Boolean).map(value=>String(value).toLowerCase());
-    return state.finance.filter(entry=>{
-      const text=[entry&&entry.type,entry&&entry.label,entry&&entry.note,entry&&entry.amount,entry&&entry.operationDate].join(' ').toLowerCase();
-      const isSalary=/salaire|salary|prof/.test(text)||['\u0623\u0633\u062a\u0627\u0630','\u0627\u0633\u062a\u0627\u0630','\u0631\u0627\u062a\u0628','\u0623\u062c\u0631\u0629','\u0627\u062c\u0631\u0629','\u062a\u0639\u0648\u064a\u0636'].some(word=>text.includes(word));
-      const matchesProf=parts.some(part=>part&&text.includes(part));
-      return isSalary&&matchesProf;
-    });
-  }
-  function currentMonthSalaryForProf(prof){return salaryEntriesForProf(prof).filter(entry=>financeEntryDate(entry)===currentMonthKey())}
-  function teacherStudents(prof){return (prof&&prof.students||[]).map(id=>state.students.find(student=>student.username===id)).filter(Boolean)}
-  function teacherReportRows(prof){return state.reports.filter(report=>report.profId===prof.username||report.profName===prof.prenom||report.classe===prof.classe)}
-  function teacherSalaryBadge(prof){return currentMonthSalaryForProf(prof).length?'<span class="admin-teacher-paid">?????? ????</span>':'<span class="admin-teacher-unpaid">?????: ?????? ??? ????</span>'}
-
   function renderTeachers(){
     const main=document.getElementById('admin-main');
     const profs=profList();
     const editing=state.editingProf?state.profs[state.editingProf]:null;
-    const unpaidCount=profs.filter(prof=>!currentMonthSalaryForProf(prof).length).length;
-    const editForm=editing?'<form id="edit-prof-form" class="admin-toolbar" onsubmit="saveAdminTeacherEdit(event)">'+
-      '<div class="admin-row-title">????? ???? ???????</div>'+
-      '<label class="admin-field"><span>??? ???????</span><input id="edit-prof-name" class="admin-control" value="'+esc(editing.prenom||'')+'" required></label>'+
-      '<label class="admin-field"><span>?????</span><input id="edit-prof-class" class="admin-control" value="'+esc(editing.classe||'')+'" required></label>'+
-      '<label class="admin-field"><span>???? ???? ?????</span><input id="edit-prof-pass" type="password" dir="ltr" class="admin-control" minlength="4" placeholder="?????? ????? ??? ?????"></label>'+
-      '<button class="admin-action" type="submit">??? ?????????</button><button class="admin-small" type="button" onclick="cancelAdminTeacherEdit()">?????</button></form>':'';
-    main.innerHTML=heading('????? ????????','???? ???? ??? ?????: ?????? ??????? ???????? ????????? ???????.')+
-      '<div class="admin-kpis">'+kpi(profs.length,'??? ????????')+kpi(unpaidCount,'????? ??? ?????')+kpi(profs.reduce((sum,prof)=>sum+teacherStudents(prof).length,0),'??? ??????')+kpi(state.reports.length,'????? ?????')+'</div>'+
-      (unpaidCount?'<div class="admin-salary-alert">?????: ???? '+unpaidCount+' ????? ?? ???? ?? ???? ???? ???? ?????.</div>':'')+
-      '<form class="admin-toolbar" onsubmit="addAdminTeacher(event)">'+
-        '<label class="admin-field"><span>??? ???????</span><input id="new-prof-name" class="admin-control" required></label>'+
-        '<label class="admin-field"><span>?????</span><input id="new-prof-class" class="admin-control" required></label>'+
-        '<label class="admin-field"><span>???? ??????</span><input id="new-prof-pass" type="password" dir="ltr" class="admin-control" minlength="4" required></label>'+
-        '<button class="admin-action" type="submit">?????</button></form>'+editForm+
-      '<div class="admin-people-grid admin-teacher-grid">'+(profs.length?profs.map(prof=>{
-        const students=teacherStudents(prof);const reports=teacherReportRows(prof);const salaries=salaryEntriesForProf(prof);
-        return '<article class="admin-person admin-teacher-card '+(currentMonthSalaryForProf(prof).length?'':'salary-missing')+'">'+
-          '<button type="button" class="admin-teacher-open" onclick="openAdminTeacherProfile(\''+arg(prof.username)+'\')">'+
-            '<div><div class="admin-row-title">'+esc(profName(prof))+'</div><div class="admin-row-meta">'+esc(prof.classe||'???? ???')+'</div></div>'+teacherSalaryBadge(prof)+'</button>'+
-          '<div class="admin-person-stats"><span>'+students.length+' ????</span><span>'+reports.length+' ?????</span><span>'+salaries.length+' ????? ?????</span></div>'+
-          '<div class="admin-row-actions"><button class="admin-small" onclick="openAdminTeacherProfile(\''+arg(prof.username)+'\')">?????</button><button class="admin-small" onclick="openAdminTeacherEdit(\''+arg(prof.username)+'\')">?????</button><button class="admin-small danger" onclick="deleteAdminTeacher(\''+arg(prof.username)+'\')">???</button></div></article>';
-      }).join(''):empty('?? ???? ????? ????.'))+'</div>';
+    const editForm=editing?`<form id="edit-prof-form" class="admin-toolbar" onsubmit="saveAdminTeacherEdit(event)">
+      <div class="admin-row-title">تعديل حساب الأستاذ</div>
+      <label class="admin-field"><span>اسم الأستاذ</span><input id="edit-prof-name" class="admin-control" value="${esc(editing.prenom||'')}" required></label>
+      <label class="admin-field"><span>القسم</span><input id="edit-prof-class" class="admin-control" value="${esc(editing.classe||'')}" required></label>
+      <label class="admin-field"><span>كلمة مرور جديدة</span><input id="edit-prof-pass" type="password" dir="ltr" class="admin-control" minlength="4" placeholder="اتركها فارغة دون تغيير"></label>
+      <button class="admin-action" type="submit">حفظ التعديلات</button>
+      <button class="admin-small" type="button" onclick="cancelAdminTeacherEdit()">إلغاء</button>
+    </form>`:'';
+    main.innerHTML=heading('إدارة الأساتذة','إضافة الأستاذ أو تعديل اسمه وقسمه وكلمة مروره.')+
+      `<form class="admin-toolbar" onsubmit="addAdminTeacher(event)">
+        <label class="admin-field"><span>اسم الأستاذ</span><input id="new-prof-name" class="admin-control" required></label>
+        <label class="admin-field"><span>القسم</span><input id="new-prof-class" class="admin-control" required></label>
+        <label class="admin-field"><span>كلمة المرور</span><input id="new-prof-pass" type="password" dir="ltr" class="admin-control" minlength="4" required></label>
+        <button class="admin-action" type="submit">إضافة</button>
+      </form>`+editForm+
+      `<div class="admin-people-grid">${profs.length?profs.map(prof=>`<article class="admin-person">
+        <div><div class="admin-row-title">${esc(profName(prof))}</div><div class="admin-row-meta">${esc(prof.classe||'بدون قسم')}</div></div>
+        <div class="admin-person-stats"><span>${(prof.students||[]).length} طالب</span></div>
+        <div class="admin-row-actions">
+          <button class="admin-small" onclick="openAdminTeacherEdit('${arg(prof.username)}')">تعديل</button>
+          <button class="admin-small danger" onclick="deleteAdminTeacher('${arg(prof.username)}')">حذف</button>
+        </div>
+      </article>`).join(''):empty('لا يوجد أستاذ مسجل.')}</div>`;
   }
-
-  async function openAdminTeacherProfile(username){
-    const prof=state.profs[username];if(!prof)return;
-    const modal=document.createElement('div');modal.className='admin-modal';modal.id='admin-teacher-modal';
-    modal.innerHTML='<section class="admin-modal-panel"><div class="admin-modal-head"><div><div class="admin-row-title">'+esc(profName(prof))+'</div><div class="admin-row-meta">'+esc(prof.classe||'???? ???')+'</div></div><button class="admin-modal-close" onclick="closeAdminTeacherProfile()">?</button></div><div class="admin-empty">???? ????? ??? ???????...</div></section>';
-    document.body.appendChild(modal);
-    let sessions=[];try{sessions=typeof Auth.getClassSessions==='function'?await Auth.getClassSessions(username):[]}catch(error){sessions=[]}
-    const students=teacherStudents(prof);const reports=teacherReportRows(prof);const salaries=salaryEntriesForProf(prof).sort((a,b)=>String(b.operationDate||'').localeCompare(String(a.operationDate||'')));const currentSalary=currentMonthSalaryForProf(prof);const paidAmount=currentSalary.reduce((sum,item)=>sum+(Number(item.amount)||0),0);
-    const sessionRows=sessions.slice(0,8).map(item=>'<div class="admin-detail-row"><strong>'+esc(item.date||item.savedAt||'???')+'</strong><span>'+esc((item.validations||[]).length)+' ????? ? '+esc(item.durationMinutes||'')+' ?????</span></div>').join('')||'<div class="admin-empty">?? ???? ??? ?????.</div>';
-    const studentRows=students.map(student=>'<span class="admin-detail-chip">'+esc(studentName(student))+'</span>').join('')||'<div class="admin-empty">?? ???? ???? ???????.</div>';
-    const reportRows=reports.slice(0,6).map(report=>'<div class="admin-detail-row"><strong>'+esc(report.category||'?????')+'</strong><span>'+esc(report.text||'')+'</span></div>').join('')||'<div class="admin-empty">?? ???? ?????.</div>';
-    const salaryRows=salaries.slice(0,6).map(entry=>'<div class="admin-detail-row"><strong>'+esc(entry.operationDate||'')+'</strong><span>'+money(entry.amount)+' ? '+esc(entry.label||entry.type||'?????')+'</span></div>').join('')||'<div class="admin-empty">?? ???? ?????? ???? ?????.</div>';
-    modal.innerHTML='<section class="admin-modal-panel"><div class="admin-modal-head"><div><div class="admin-row-title">'+esc(profName(prof))+'</div><div class="admin-row-meta">'+esc(prof.classe||'???? ???')+' ? '+esc(prof.username)+'</div></div><button class="admin-modal-close" onclick="closeAdminTeacherProfile()">?</button></div>'+
-      '<div class="admin-detail-kpis">'+kpi(students.length,'????')+kpi(sessions.length,'???')+kpi(reports.length,'?????')+kpi(currentSalary.length?money(paidAmount):'??? ????','???? ?????')+'</div>'+
-      (currentSalary.length?'':'<div class="admin-salary-alert">?????: ?? ??? ????? ???? ??? ??????? ???? ?????.</div>')+
-      '<div class="admin-detail-grid"><section><h3>????? ???????</h3><div class="admin-detail-chips">'+studentRows+'</div></section><section><h3>??? ?????</h3>'+sessionRows+'</section><section><h3>?????? ????????</h3>'+salaryRows+'</section><section><h3>????? ????????</h3>'+reportRows+'</section></div></section>';
-  }
-  function closeAdminTeacherProfile(){document.getElementById('admin-teacher-modal')?.remove()}
 
   function renderClasses(){const main=document.getElementById('admin-main');const profs=profList();main.innerHTML=heading('إدارة الأقسام','ربط الطلاب بالأساتذة وفق الحسابات الموجودة.')+`<form class="admin-toolbar" onsubmit="assignAdminStudent(event)"><label class="admin-field"><span>الأستاذ والقسم</span><select id="assign-prof" class="admin-control" required><option value="">اختر</option>${options(profs,'username',p=>`${profName(p)} · ${p.classe||''}`)}</select></label><label class="admin-field"><span>الطالب</span><select id="assign-student" class="admin-control" required><option value="">اختر</option>${options(state.students,'username',studentName)}</select></label><button class="admin-action" type="submit">ربط</button></form><div class="admin-list">${profs.length?profs.map(prof=>{const assigned=(prof.students||[]).map(id=>state.students.find(s=>s.username===id)).filter(Boolean);return `<div class="admin-row"><div><div class="admin-row-title">${esc(prof.classe||'بدون قسم')} · ${esc(profName(prof))}</div><div class="admin-row-meta">${assigned.length} طالب</div><div class="admin-row-actions">${assigned.map(student=>`<button class="admin-small" onclick="removeAdminAssignment('${arg(prof.username)}','${arg(student.username)}')">${esc(studentName(student))} ×</button>`).join('')}</div></div></div>`}).join(''):empty('لا يوجد قسم.')}</div>`}
 
@@ -194,8 +159,6 @@
   function toast(text){const node=document.createElement('div');node.className='admin-status';node.style.cssText='position:fixed;z-index:200;top:14px;left:50%;transform:translateX(-50%);background:#124c35;color:#fff';node.textContent=text;document.body.appendChild(node);setTimeout(()=>node.remove(),2200)}
   function initNav(){const nav=document.getElementById('admin-nav');requestAnimationFrame(()=>nav.querySelector('.active')?.scrollIntoView({block:'nearest',inline:'center'}));let last=scrollY;addEventListener('scroll',()=>{const y=scrollY;if(Math.abs(y-last)<5)return;nav.classList.toggle('nav-scroll-hidden',y>last&&y>80);last=y},{passive:true})}
 
-  window.openAdminTeacherProfile=openAdminTeacherProfile;
-  window.closeAdminTeacherProfile=closeAdminTeacherProfile;
   window.renderAdminStudents=renderStudents;
   window.adminLogout=()=>{Auth.logout();location.replace('login.html')};
   window.toggleAdminStudent=async username=>{await Auth.toggleSuspension(username);await reload('تم تحديث الحساب')};
