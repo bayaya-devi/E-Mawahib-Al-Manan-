@@ -917,31 +917,116 @@ html[dir="rtl"] .scroll-progress span { transform-origin: right center; }
   gap: 8px;
 }
 
-.language-switch {
-  height: 34px;
-  padding: 3px;
-  display: inline-grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2px;
-  color: var(--green-dark);
-  background: #edf5f0;
-  border: 1px solid var(--line);
+.language-menu {
+  position: relative;
+  z-index: 20;
+  font-family: var(--font-ui);
 }
 
-.language-switch button {
-  min-width: 30px;
-  padding: 0 6px;
-  border: 0;
-  color: inherit;
-  background: transparent;
-  font: 800 10px/1 var(--font-ui);
+.language-current {
+  min-height: 38px;
+  min-width: 126px;
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(20, 83, 45, .16);
+  color: var(--green-dark);
+  background: #f0f8f3;
+  box-shadow: 0 8px 18px rgba(8, 47, 36, .08);
+  font: 900 12px/1.1 var(--font-ui);
   cursor: pointer;
 }
 
-.language-switch button.is-active {
+.language-current-code {
+  min-width: 28px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
   color: #fff;
   background: var(--green);
-  box-shadow: 0 3px 9px rgba(20, 83, 45, .18);
+  font-size: 11px;
+}
+
+.language-current-name {
+  white-space: nowrap;
+}
+
+.language-chevron {
+  color: var(--gold);
+  font-size: 15px;
+  transition: transform .2s ease;
+}
+
+.language-menu.is-open .language-chevron {
+  transform: rotate(180deg);
+}
+
+.language-options {
+  position: absolute;
+  inset-block-start: calc(100% + 8px);
+  inset-inline-end: 0;
+  width: 180px;
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px);
+  background: rgba(255, 255, 255, .98);
+  border: 1px solid rgba(20, 83, 45, .14);
+  box-shadow: 0 18px 36px rgba(8, 47, 36, .16);
+  transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
+}
+
+.language-menu.is-open .language-options {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.language-options button {
+  width: 100%;
+  min-height: 39px;
+  padding: 7px 9px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  color: #385047;
+  background: transparent;
+  font: 800 12px/1.2 var(--font-ui);
+  cursor: pointer;
+  text-align: start;
+}
+
+.language-options button:hover,
+.language-options button:focus-visible,
+.language-options button.is-active {
+  color: var(--green-dark);
+  background: #e7f4ec;
+}
+
+.language-options span {
+  min-width: 30px;
+  height: 24px;
+  display: inline-grid;
+  place-items: center;
+  color: #fff;
+  background: var(--green);
+  font-size: 10px;
+}
+
+.language-options b {
+  font-weight: 900;
+}
+
+html[lang="amz"] body,
+html[lang="amz"] .language-current,
+html[lang="amz"] .language-options,
+html[lang="amz"] [data-i18n] {
+  font-family: "Noto Sans Tifinagh", "Ebrima", "Segoe UI", sans-serif;
 }
 
 .main-nav a.is-current::after {
@@ -1084,14 +1169,17 @@ html[dir="ltr"] .hero-copy {
     gap: 4px;
   }
 
-  .language-switch {
-    height: 32px;
+  .language-current {
+    min-width: 88px;
+    padding-inline: 7px;
   }
 
-  .language-switch button {
-    min-width: 25px;
-    padding: 0 4px;
-    font-size: 9px;
+  .language-current-name {
+    display: none;
+  }
+
+  .language-options {
+    width: min(180px, calc(100vw - 18px));
   }
 
   .platform-login {

@@ -187,73 +187,83 @@
       footerLogin: "Open the learning platform"
     },
     amz: {
-      metaTitle: "Dar Al Hadith d Lquran | Jamɛiya Mawahib Al Manan",
-      metaDescription: "Issin Jamɛiya Mawahib Al Manan, lprogramme n Lquran d chno khas i التسجيل f Ain El Aouda.",
-      brandPlace: "Jamɛiya Mawahib Al Manan",
-      navAbout: "Fellanegh",
-      navProgram: "Lprogramme",
-      navRegistration: "التسجيل",
-      navGallery: "Tiwlafin",
-      navContact: "Tawassol",
-      login: "Dkhel lplatforme",
-      menuOpen: "Ldi menu",
-      language: "Tutlayt",
-      heroKicker: "Jamɛiya Mawahib Al Manan · Ain El Aouda",
-      heroTitle: "Dar Al Hadith d Lquran",
-      heroCopy: "Amkan n tɛallom n Lquran, tajwid, Sunna d qiyam islamiya i rjal, nssa d drari mn 5 snin.",
-      trustLine: "Tɛallom b chwiya · Tajwid · Sunna d qiyam",
-      heroRegistration: "Maɛlomat التسجيل",
-      heroProgram: "Chof lprogramme",
+      metaTitle: "ⴷⴰⵔ ⵍⵃⴷⵉⵜ ⴷ ⵍⵇⵔⴰⵏ | ⵜⴰⵎⵓⵏⵜ ⵎⴰⵡⴰⵀⵉⴱ ⴰⵍ ⵎⴰⵏⴰⵏ",
+      metaDescription: "ⵙⵙⵏⴰⵜ ⵜⴰⵎⵓⵏⵜ ⵎⴰⵡⴰⵀⵉⴱ ⴰⵍ ⵎⴰⵏⴰⵏ ⴷ ⴰⵙⵏⴼⴰⵔ ⵏ ⵜⵖⵔⵉ ⴳ ⵄⵉⵏ ⵍⵄⵓⴷⴰ.",
+      brandPlace: "ⵜⴰⵎⵓⵏⵜ ⵎⴰⵡⴰⵀⵉⴱ ⴰⵍ ⵎⴰⵏⴰⵏ",
+      navAbout: "ⴼⵍⵍⴰⵏⵖ",
+      navProgram: "ⴰⵙⵏⴼⴰⵔ",
+      navRegistration: "ⴰⵙⵉⵊⵊⵍ",
+      navGallery: "ⵜⵉⵡⵍⴰⴼⵉⵏ",
+      navContact: "ⴰⵏⵎⵢⴰⵡⴰⴹ",
+      login: "ⴽⵛⵎ ⵖⵔ ⵜⵎⵏⵣⴰⵢⵜ",
+      menuOpen: "ⵍⴷⵉ ⴰⵎⵓⵖ",
+      language: "ⵜⵓⵜⵍⴰⵢⵜ",
+      heroKicker: "ⵜⴰⵎⵓⵏⵜ ⵎⴰⵡⴰⵀⵉⴱ ⴰⵍ ⵎⴰⵏⴰⵏ · ⵄⵉⵏ ⵍⵄⵓⴷⴰ",
+      heroTitle: "ⴷⴰⵔ ⵍⵃⴷⵉⵜ ⴷ ⵍⵇⵔⴰⵏ",
+      heroCopy: "ⴰⵎⴽⴰⵏ ⵏ ⵜⵖⵔⵉ ⵏ ⵍⵇⵔⴰⵏ ⴷ ⵜⵊⵡⵉⴷ ⴷ ⵙⵙⵓⵏⵏⴰ ⴷ ⵡⴰⵣⴰⵍⵏ ⵉⵙⵍⴰⵎⵉⵢⵏ ⵉ ⵉⵔⴳⴰⵣⵏ ⴷ ⵜⵍⴰⵡⵉⵏ ⴷ ⵉⴼⵔⵅⴰⵏ ⵙⴳ 5 ⵏ ⵉⵙⴳⴳⴰⵙⵏ.",
+      trustLine: "ⵜⵖⵔⵉ ⵙ ⵓⵙⵓⴷⵙ · ⵜⵊⵡⵉⴷ · ⵙⵙⵓⵏⵏⴰ ⴷ ⵡⴰⵣⴰⵍⵏ",
+      heroRegistration: "ⵜⴰⵍⵖⵓⵜ ⵏ ⵓⵙⵉⵊⵊⵍ",
+      heroProgram: "ⵙⵙⵏ ⴰⵙⵏⴼⴰⵔ",
       quickAgeValue: "5+",
-      quickAge: "التسجيل n drari mn 5 snin",
+      quickAge: "ⴰⵙⵉⵊⵊⵍ ⵏ ⵉⴼⵔⵅⴰⵏ ⵙⴳ 5 ⵏ ⵉⵙⴳⴳⴰⵙⵏ",
       quickFeeValue: "100",
-      quickFee: "dirham f chher",
-      quickAudienceValue: "Lkulchi",
-      quickAudience: "Tɛallom i rjal, nssa d drari",
-      aboutLabel: "Fellanegh",
-      aboutTitle: "Tɛallom n Lquran f jaw munaddam w mzyan",
-      aboutP1: "F Ain El Aouda, Jamɛiya Mawahib Al Manan katsstqbel rjal, nssa d drari bach yqraw Lquran w yḥessno lqira'a b tajwid.",
-      aboutP2: "Lprogramme kaymchi khatwa b khatwa, w kayjmaɛ bin Lquran, Sunna d qiyam islamiya.",
-      aboutCaption: "Amkan mوجد i tɛallom, lḥifd d lmراجعة",
-      programLabel: "Lprogramme tarbawi",
-      programTitle: "Ach kaytɛellem المستفيدون?",
-      program1Title: "Lquran lkarim",
-      program1Copy: "Tɛallom n Lquran i rjal, nssa d drari mn 5 snin.",
-      program2Title: "Qawaɛid tajwid",
-      program2Copy: "Tɛallom n qawaɛid li kayɛawno 3la qira'a s7i7a n Lquran.",
-      program3Title: "Sunna n Nabi",
-      program3Copy: "Tɛallom n Sunna d qiyam islamiya b tariqa wad7a w sahla.",
-      registrationLabel: "التسجيل",
-      registrationTitle: "Dossier sahl bach tdakhl ldar",
-      registrationCopy: "التسجيل mafto7 i rjal, nssa d drari. Ila bghiti tsjjel drari mn 5 snin, wajjed had l أوراق w tواصل mɛa l'idara.",
-      monthlyFee: "Lwajib chhri",
-      documentsTitle: "L أوراق المطلوبة",
-      document1: "Acte de naissance n التلميذ",
-      document2: "Copie n بطاقة التعريف n wali l'amr",
-      document3: "Numero telephone n baba aw mama",
-      galleryLabel: "Mn dakhel ldar",
-      galleryTitle: "Amkan n tɛallom b tartib",
-      galleryCopy: "Jaw n dars, lḥifd d lmراجعة kaychajjaɛ 3la lmuḍawama f tɛallom n Lquran.",
-      gallery1: "Dar Al Hadith d Lquran f Ain El Aouda",
-      gallery2: "Qاعة mوجدa bach تستقبل المستفيدين",
-      gallery3: "Anشطة كتعاون 3la lḥifd d tajwid",
-      contactLabel: "Tawassol",
-      contactTitle: "Marḥba bikom f Ain El Aouda",
-      contactCopy: "I ay soual 3la التسجيل, tواصل mɛa l'idara مباشرة.",
-      phone: "Telephone",
-      address: "L'adresse",
-      addressValue: "Hay Ennasr, sector 3, qrib mn lycée Abderrahmane Addakhil, Ain El Aouda",
-      map: "Ldi lmap",
-      call: "3ayet l'idara",
-      footerCopy: "Jamɛiya Mawahib Al Manan · Dar Al Hadith d Lquran",
-      footerLogin: "Dkhel lplatforme n التلاميذ d الأساتذة"
+      quickFee: "ⴷⵔⵀⵎ ⴳ ⴽⵓ ⵢⵢⵓⵔ",
+      quickAudienceValue: "ⵉ ⴽⵓⵍⵍⵓ",
+      quickAudience: "ⵜⵖⵔⵉ ⵉ ⵉⵔⴳⴰⵣⵏ ⴷ ⵜⵍⴰⵡⵉⵏ ⴷ ⵉⴼⵔⵅⴰⵏ",
+      aboutLabel: "ⴼⵍⵍⴰⵏⵖ",
+      aboutTitle: "ⵜⵖⵔⵉ ⵏ ⵍⵇⵔⴰⵏ ⴳ ⵓⵎⴽⴰⵏ ⵉⵙⵓⴷⵙⵏ ⴷ ⵉⵀⵏⵏⴰ",
+      aboutP1: "ⴳ ⵄⵉⵏ ⵍⵄⵓⴷⴰ, ⵜⴰⵎⵓⵏⵜ ⵎⴰⵡⴰⵀⵉⴱ ⴰⵍ ⵎⴰⵏⴰⵏ ⴰⵔ ⵜⵜⵇⴱⴰⵍ ⵉⵔⴳⴰⵣⵏ ⴷ ⵜⵍⴰⵡⵉⵏ ⴷ ⵉⴼⵔⵅⴰⵏ ⴰⴷ ⵖⵔⵏ ⵍⵇⵔⴰⵏ ⴷ ⵜⵖⵔⵉ ⵉⵚⵃⴰⵏ ⵙ ⵜⵊⵡⵉⴷ.",
+      aboutP2: "ⴰⵙⵏⴼⴰⵔ ⴰⵔ ⵉⵜⵜⴷⴷⵓ ⵙ ⵜⵔⴰⵢⵜ ⵉⴱⵢⵢⵏⵏ, ⵉⵙⵎⵓⵏ ⴳⴰⵔ ⵍⵇⵔⴰⵏ ⴷ ⵙⵙⵓⵏⵏⴰ ⴷ ⵡⴰⵣⴰⵍⵏ ⵉⵙⵍⴰⵎⵉⵢⵏ.",
+      aboutCaption: "ⴰⵎⴽⴰⵏ ⵉⵙⵓⴷⵙⵏ ⵉ ⵜⵖⵔⵉ ⴷ ⵍⵃⵉⴼⴹ ⴷ ⵓⵙⵎⴽⵜⵉ",
+      programLabel: "ⴰⵙⵏⴼⴰⵔ ⴰⵜⵔⴱⴰⵡⵉ",
+      programTitle: "ⵎⴰⴷ ⵔⴰⴷ ⵍⵎⴷⵏ ⵉⵎⵙⵜⴼⵉⴷⵏ?",
+      program1Title: "ⵍⵇⵔⴰⵏ ⴰⵎⵇⵔⴰⵏ",
+      program1Copy: "ⵜⵖⵔⵉ ⵏ ⵍⵇⵔⴰⵏ ⵉ ⵉⵔⴳⴰⵣⵏ ⴷ ⵜⵍⴰⵡⵉⵏ ⴷ ⵉⴼⵔⵅⴰⵏ ⵙⴳ 5 ⵏ ⵉⵙⴳⴳⴰⵙⵏ.",
+      program2Title: "ⵉⵍⵓⴳⴰⵏ ⵏ ⵜⵊⵡⵉⴷ",
+      program2Copy: "ⵜⵖⵔⵉ ⵏ ⵉⵍⵓⴳⴰⵏ ⵍⵍⵉ ⵉⵜⵜⴰⵡⵙⵏ ⵉ ⵜⵖⵔⵉ ⵉⵚⵃⴰⵏ ⵏ ⵍⵇⵔⴰⵏ.",
+      program3Title: "ⵙⵙⵓⵏⵏⴰ ⵏ ⵏⵏⴱⵉ",
+      program3Copy: "ⵜⵖⵔⵉ ⵏ ⵙⵙⵓⵏⵏⴰ ⴷ ⵡⴰⵣⴰⵍⵏ ⵉⵙⵍⴰⵎⵉⵢⵏ ⵙ ⵜⵔⴰⵢⵜ ⵉⴱⵢⵢⵏⵏ.",
+      registrationLabel: "ⴰⵙⵉⵊⵊⵍ",
+      registrationTitle: "ⴰⴽⴰⵔⴹⴰⵙ ⴰⴼⵙⵙⴰⵙ ⵉ ⵓⴽⵛⵎ ⵖⵔ ⴷⴷⴰⵔ",
+      registrationCopy: "ⴰⵙⵉⵊⵊⵍ ⵉⵍⴷⵉ ⵉ ⵉⵔⴳⴰⵣⵏ ⴷ ⵜⵍⴰⵡⵉⵏ ⴷ ⵉⴼⵔⵅⴰⵏ. ⵉ ⵓⵙⵉⵊⵊⵍ ⵏ ⵓⴼⵔⵓⵅ ⵙⴳ 5 ⵏ ⵉⵙⴳⴳⴰⵙⵏ, ⵙⵙⵓⴷⵙⴰⵜ ⵜⵉⴼⵔⵜⵉⵏ ⵍⵍⵉ ⵉⵍⴰⵇⵏ.",
+      monthlyFee: "ⴰⵡⴷⴰⵢ ⵏ ⵢⵢⵓⵔ",
+      documentsTitle: "ⵜⵉⴼⵔⵜⵉⵏ ⵍⵍⵉ ⵉⵍⴰⵇⵏ",
+      document1: "ⵜⴰⴼⵔⵜ ⵏ ⵜⵍⴰⵍⵉⵜ ⵏ ⵓⵏⵍⵎⴰⴷ",
+      document2: "ⵜⴰⵏⵖⵍⵜ ⵏ ⵜⴽⴰⵔⴹⴰ ⵜⴰⵏⴰⵎⵓⵔⵜ ⵏ ⵓⵡⴰⵍⵉⴷ",
+      document3: "ⵏⵓⵎⵉⵔⵓ ⵏ ⵜⵉⵍⵉⴼⵓⵏ ⵏ ⴱⴰⴱⴰ ⵏⵖ ⵢⵎⵎⴰ",
+      galleryLabel: "ⵙⴳ ⴷⴰⵅⵍ ⵏ ⴷⴷⴰⵔ",
+      galleryTitle: "ⴰⵎⴽⴰⵏ ⵏ ⵜⵖⵔⵉ ⵙ ⵜⵔⴰⵢⵜ",
+      galleryCopy: "ⴰⵎⴽⴰⵏ ⵉⵙⵎⵓⵏ ⴳⴰⵔ ⴷⴷⵔⵙ ⴷ ⵍⵃⵉⴼⴹ ⴷ ⵓⵙⵎⴽⵜⵉ, ⵉⵜⵜⵙⵎⵖⵓⵔ ⵍⵎⵓⴹⴰⵡⴰⵎⴰ ⴳ ⵜⵖⵔⵉ ⵏ ⵍⵇⵔⴰⵏ.",
+      gallery1: "ⴷⴰⵔ ⵍⵃⴷⵉⵜ ⴷ ⵍⵇⵔⴰⵏ ⴳ ⵄⵉⵏ ⵍⵄⵓⴷⴰ",
+      gallery2: "ⵜⴰⵇⴰⵄⵜ ⵉⵙⵓⴷⵙⵏ ⵉ ⵓⵙⵜⵇⴱⴰⵍ ⵏ ⵉⵎⵙⵜⴼⵉⴷⵏ",
+      gallery3: "ⵜⵉⵔⵎⴰⴷ ⵍⵍⵉ ⵉⵜⵜⵙⵎⵖⵓⵔⵏ ⵍⵃⵉⴼⴹ ⴷ ⵜⵊⵡⵉⴷ",
+      contactLabel: "ⴰⵏⵎⵢⴰⵡⴰⴹ",
+      contactTitle: "ⵎⴰⵔⵃⴱⴰ ⵙⵡⵏ ⴳ ⵄⵉⵏ ⵍⵄⵓⴷⴰ",
+      contactCopy: "ⵉ ⴽⵓ ⴰⵙⵇⵙⵉ ⵖⴼ ⵓⵙⵉⵊⵊⵍ, ⵏⵎⵢⴰⵡⴰⴹⴰⵜ ⴷ ⵍⵉⴷⴰⵔⴰ.",
+      phone: "ⵜⵉⵍⵉⴼⵓⵏ",
+      address: "ⴰⵏⵙⴰ",
+      addressValue: "ⵃⴰⵢ ⵏⵏⴰⵚⵔ, ⵙⴽⵜⵓⵔ 3, ⵖⵔ ⵜⴰⵏⴰⵡⵉⵜ ⵄⴱⴷ ⵔⵔⵃⵎⴰⵏ ⴷⴷⴰⵅⵉⵍ, ⵄⵉⵏ ⵍⵄⵓⴷⴰ",
+      map: "ⵍⴷⵉ ⵜⴰⴽⴰⵔⴹⴰ",
+      call: "ⵙⵉⵡⵍ ⵉ ⵍⵉⴷⴰⵔⴰ",
+      footerCopy: "ⵜⴰⵎⵓⵏⵜ ⵎⴰⵡⴰⵀⵉⴱ ⴰⵍ ⵎⴰⵏⴰⵏ · ⴷⴰⵔ ⵍⵃⴷⵉⵜ ⴷ ⵍⵇⵔⴰⵏ",
+      footerLogin: "ⴽⵛⵎ ⵖⵔ ⵜⵎⵏⵣⴰⵢⵜ ⵏ ⵉⵏⵍⵎⴰⴷⵏ ⴷ ⵉⵙⵍⵎⴰⴷⵏ"
     }
   };
 
   const html = document.documentElement;
   const menuButton = document.querySelector(".menu-toggle");
   const navigation = document.getElementById("main-nav");
+  const languageMenu = document.querySelector("[data-language-menu]");
+  const languageToggle = document.querySelector(".language-current");
   const languageButtons = document.querySelectorAll("[data-language]");
+  const currentLanguageCode = document.querySelector("[data-language-current-code]");
+  const currentLanguageName = document.querySelector("[data-language-current-name]");
+  const languageNames = {
+    ar: { code: "ع", name: "العربية" },
+    fr: { code: "FR", name: "Français" },
+    en: { code: "EN", name: "English" },
+    amz: { code: "ⵜⵛ", name: "ⵜⴰⵛⵍⵃⵉⵜ" }
+  };
   const metaDescription = document.querySelector('meta[name="description"]');
 
   function setLanguage(language) {
@@ -270,14 +280,35 @@
     languageButtons.forEach((button) => {
       const active = button.dataset.language === selected;
       button.classList.toggle("is-active", active);
-      button.setAttribute("aria-pressed", String(active));
+      button.setAttribute("aria-checked", String(active));
     });
+    const languageLabel = languageNames[selected] || languageNames.ar;
+    if (currentLanguageCode) currentLanguageCode.textContent = languageLabel.code;
+    if (currentLanguageName) currentLanguageName.textContent = languageLabel.name;
+    if (languageToggle) languageToggle.setAttribute("aria-label", values.language);
     localStorage.setItem("mawahib_public_language", selected);
     if (menuButton) menuButton.setAttribute("aria-label", values.menuOpen);
   }
 
+  if (languageToggle && languageMenu) {
+    languageToggle.addEventListener("click", () => {
+      const open = languageMenu.classList.toggle("is-open");
+      languageToggle.setAttribute("aria-expanded", String(open));
+    });
+  }
+
   languageButtons.forEach((button) => {
-    button.addEventListener("click", () => setLanguage(button.dataset.language));
+    button.addEventListener("click", () => {
+      setLanguage(button.dataset.language);
+      if (languageMenu) languageMenu.classList.remove("is-open");
+      if (languageToggle) languageToggle.setAttribute("aria-expanded", "false");
+    });
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!languageMenu || languageMenu.contains(event.target)) return;
+    languageMenu.classList.remove("is-open");
+    if (languageToggle) languageToggle.setAttribute("aria-expanded", "false");
   });
 
   if (menuButton && navigation) {

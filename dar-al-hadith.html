@@ -33,11 +33,18 @@
       </nav>
 
       <div class="nav-actions">
-        <div class="language-switch" role="group" aria-label="اللغة">
-          <button type="button" data-language="ar" aria-pressed="true">ع</button>
-          <button type="button" data-language="fr" aria-pressed="false">FR</button>
-          <button type="button" data-language="en" aria-pressed="false">EN</button>
-          <button type="button" data-language="amz" aria-pressed="false">AMZ</button>
+        <div class="language-menu" data-language-menu>
+          <button class="language-current" type="button" aria-haspopup="true" aria-expanded="false" aria-label="اختيار اللغة">
+            <span class="language-current-code" data-language-current-code>ع</span>
+            <span class="language-current-name" data-language-current-name>العربية</span>
+            <span class="language-chevron" aria-hidden="true">⌄</span>
+          </button>
+          <div class="language-options" role="menu">
+            <button type="button" data-language="ar" role="menuitemradio" aria-checked="true"><span>ع</span><b>العربية</b></button>
+            <button type="button" data-language="fr" role="menuitemradio" aria-checked="false"><span>FR</span><b>Français</b></button>
+            <button type="button" data-language="en" role="menuitemradio" aria-checked="false"><span>EN</span><b>English</b></button>
+            <button type="button" data-language="amz" role="menuitemradio" aria-checked="false"><span>ⵜⵛ</span><b>ⵜⴰⵛⵍⵃⵉⵜ</b></button>
+          </div>
         </div>
         <a class="platform-login" href="login.html" data-i18n="login">دخول المنصة</a>
         <button class="menu-toggle" type="button" aria-label="فتح القائمة" aria-expanded="false" aria-controls="main-nav">☰</button>
@@ -201,6 +208,6 @@
     <a href="login.html" data-i18n="footerLogin">دخول منصة التلاميذ والأساتذة</a>
   </footer>
 
-  <script src="dar-al-hadith.js?v=20260729-amazigh-digital-teacher-4"></script>
+  <script src="dar-al-hadith.js?v=20260729-tachelhit-tifinagh-1"></script>
 </body>
 </html>
