@@ -177,5 +177,188 @@
   window.remindSimpleHomework=async function(id){const item=myDevoirs.find(row=>row.id===id);if(!item)return;await Auth.sendMessage(item.student_id,'تذكير: لديك واجب اليوم في '+(item.surate||'السورة'));showToast('تم إرسال التذكير')};
   window.sendSimpleReport=async function(event){event.preventDefault();const button=event.submitter;const studentId=document.getElementById('simple-report-student').value;const student=myStudents.find(entry=>entry.username===studentId);const subject=student?studentName(student):studentId;const message=document.getElementById('simple-report-text').value.trim();if(!message){showToast('اكتب الرسالة');return}if(student)rememberStudent(studentId);setBusy(button,true);const result=await Auth.sendAdminReport(session.username,session.prenom,session.nom,'المعني: '+subject+'\n'+message,'متابعة');if(result.ok){resetForm('report-form');showToast('تم إرسال الرسالة')}else{setBusy(button,false);showToast(result.error||'تعذر الإرسال')}};
 
-  window.addEventListener('DOMContentLoaded',function(){window.renderAll=render;const wait=setInterval(function(){if(typeof session!=='undefined'&&session&&Array.isArray(myStudents)){clearInterval(wait);render()}},80);setTimeout(()=>clearInterval(wait),10000)});
+
+  const SESSION_MODE_KEY = 'mawahib_prof_live_session';
+  const SESSION_MODE_INTRO_KEY = 'mawahib_prof_live_session_intro_seen_20260730';
+
+  function sessionModeKey(){return SESSION_MODE_KEY + '_' + (session?.username || 'prof')}
+  function sessionModeIntroKey(){return SESSION_MODE_INTRO_KEY + '_' + (session?.username || 'prof')}
+  function readSessionMode(){try{return JSON.parse(localStorage.getItem(sessionModeKey())||'null')}catch{return null}}
+  function writeSessionMode(state){localStorage.setItem(sessionModeKey(),JSON.stringify(state));renderSessionMode()}
+  function clearSessionMode(){localStorage.removeItem(sessionModeKey());renderSessionMode()}
+  function sessionNow(){return new Date().toISOString()}
+  function sessionMinutes(from){const start=new Date(from||Date.now()).getTime();return Math.max(1,Math.round((Date.now()-start)/60000))}
+  function lastStudentNote(username){return (teacherNotesCache[username]||[])[0]||null}
+  function daysSince(value){if(!value)return 999;const time=new Date(value).getTime();return Number.isFinite(time)?Math.max(0,Math.floor((Date.now()-time)/86400000)):999}
+  function studentSessionScore(student,state){
+    const username=student.username;
+    const notes=teacherNotesCache[username]||[];
+    const last=notes[0];
+    const duties=myDevoirs.filter(item=>item.student_id===username&&homeworkIsOpen(item));
+    const todayDuties=duties.filter(item=>item.date_limite===today());
+    const already=(state?.records||[]).filter(item=>item.username===username).length;
+    let score=0;
+    score+=Math.min(40,daysSince(last?.savedAt||last?.date)*3);
+    score+=todayDuties.length*35;
+    score+=duties.length*15;
+    if(!last)score+=25;
+    if(last&&['????? ??????','??? ????','?????????? ????????????','?????? ????????'].includes(last.validation))score+=28;
+    score-=already*50;
+    return score;
+  }
+  function nextSessionStudent(state){
+    return [...myStudents].sort((a,b)=>studentSessionScore(b,state)-studentSessionScore(a,state))[0]||null;
+  }
+  function sessionStudentReason(student,state){
+    if(!student)return '???? ????? ?????.';
+    const duties=myDevoirs.filter(item=>item.student_id===student.username&&homeworkIsOpen(item));
+    const todayDuties=duties.filter(item=>item.date_limite===today());
+    const last=lastStudentNote(student.username);
+    if(todayDuties.length)return '???? ???? ?????? ?????? ?????? ??? ????.';
+    if(!last)return '?? ???? ?? ??? ???? ?? ?????.';
+    if(daysSince(last.savedAt||last.date)>=7)return '?? ??? ??? ???? ????? ??????.';
+    if(['????? ??????','??? ????','?????????? ????????????','?????? ????????'].includes(last.validation))return '??? ????? ????? ??????.';
+    return '?????? ????? ?????? ??? ????? ?????? ??? ??????.';
+  }
+  function sessionAdvice(student){
+    const last=student?lastStudentNote(student.username):null;
+    const open=myDevoirs.filter(item=>student&&item.student_id===student.username&&homeworkIsOpen(item));
+    if(open.some(item=>item.date_limite===today()))return '???? ????? ???? ?? ???? ????? ??? ?????.';
+    if(last&&['????? ??????','??? ????','?????????? ????????????','?????? ????????'].includes(last.validation))return '???? ?????? ????? ?? ?? ??????? ??? ???? ??????.';
+    if(last&&daysSince(last.savedAt||last.date)>10)return '???? ??????? ????? ??? ?? ???? ?????? ??????.';
+    return '???? ?????? ?? ??? ?????? ????? ????? ???.';
+  }
+  function sessionLastDebrief(){
+    const notes=Object.values(teacherNotesCache||{}).flat().slice(0,12);
+    const weak=notes.filter(note=>['????? ??????','??? ????','?????????? ????????????','?????? ????????'].includes(note.validation)).length;
+    const open=myDevoirs.filter(homeworkIsOpen).length;
+    if(!notes.length&&!open)return '?? ???? ?????? ????? ?? ????? ???????. ???? ????? ???? ??? ??????.';
+    return '??? ??????: '+notes.length+' ????? ?????? '+open+' ???? ?????? '+weak+' ????? ??????.';
+  }
+  function defaultSessionState(){
+    const picked=nextSessionStudent({records:[]});
+    return {active:true,id:'live_'+Date.now(),startedAt:sessionNow(),records:[],alerts:[],skippedIntro:false,current:picked?.username||'',createdBy:session?.username||''};
+  }
+  function sessionSummary(state){
+    const records=state?.records||[];
+    const alerts=state?.alerts||[];
+    const passed=[...new Set(records.map(item=>item.username))];
+    const strong=records.filter(item=>['?????','??? ???'].includes(item.validation));
+    const weak=records.filter(item=>['????? ??????','??? ????'].includes(item.validation));
+    const plus=[];
+    const minus=[];
+    if(records.length)plus.push('?? ????? '+records.length+' ?????.');
+    if(strong.length)plus.push(strong.length+' ????? ?????? ???.');
+    if(alerts.length)plus.push('?? ????? '+alerts.length+' ????? ??????? ????? ?????.');
+    if(!records.length)minus.push('?? ??? ????? ?? ?????.');
+    if(weak.length)minus.push(weak.length+' ???? ????? ?????? ?????.');
+    const remaining=Math.max(0,myStudents.length-passed.length);
+    if(remaining)minus.push(remaining+' ???? ?? ??? ?? ??? ?????.');
+    return {records,alerts,passed,strong,weak,remaining,plus:plus.length?plus:['????? ?????? ??????.'],minus:minus.length?minus:['?? ???? ???? ??? ?????.']};
+  }
+  function sessionModalHtml(state){
+    const current=myStudents.find(student=>student.username===state.current)||nextSessionStudent(state);
+    const summary=sessionSummary(state);
+    const recordRows=state.records.slice(-5).reverse().map(item=>'<div class="prof-session-log"><strong>'+escapeHtml(item.studentName)+'</strong><span>'+escapeHtml(item.surah||'')+' ? '+escapeHtml(item.validation||'')+'</span></div>').join('');
+    return '<div class="prof-session-backdrop" id="prof-session-backdrop"><section class="prof-session-panel" role="dialog" aria-modal="true" aria-labelledby="prof-session-title">'+
+      '<header class="prof-session-head"><div><p class="prof-session-kicker">??? ?????</p><h2 id="prof-session-title">???? ??????</h2><span>???? ??? '+sessionMinutes(state.startedAt)+' ?????</span></div><button type="button" class="prof-session-close" onclick="closeSessionPanel()">?</button></header>'+
+      (!state.skippedIntro?'<div class="prof-session-debrief"><strong>???? ??? ?????</strong><p>'+escapeHtml(sessionLastDebrief())+'</p><button type="button" onclick="skipSessionIntro()">???? ?????</button></div>':'')+
+      '<div class="prof-session-suggest"><div><span>???????? ?????</span><strong>'+escapeHtml(studentName(current))+'</strong><p>'+escapeHtml(sessionStudentReason(current,state))+'</p></div><button type="button" onclick="pickNextSessionStudent()">???? ???</button></div>'+
+      '<p class="prof-session-tip">'+escapeHtml(sessionAdvice(current))+'</p>'+
+      '<form class="prof-session-form" onsubmit="saveSessionModeRecitation(event)">'+
+        '<label><span>??????</span><select id="session-student" onchange="changeSessionStudent(this.value)">'+studentOptions(current?.username||'')+'</select></label>'+
+        '<label><span>??????</span><select id="session-surah" required><option value="">???? ??????</option>'+surahOptionsSimple('')+'</select></label>'+
+        '<label><span>???????</span><select id="session-scope" onchange="document.getElementById(\'session-range\').hidden=this.value!==\'???\'"><option value="?????">?????? ?????</option><option value="???">?? ??? ??? ???</option></select></label>'+
+        '<div id="session-range" class="prof-session-range" hidden><input id="session-start" type="number" min="1" inputmode="numeric" placeholder="??"><input id="session-end" type="number" min="1" inputmode="numeric" placeholder="???"></div>'+
+        '<label><span>???????</span><select id="session-result"><option>?????</option><option>??? ???</option><option>???</option><option>????? ??????</option><option>??? ????</option></select></label>'+
+        '<label class="wide"><span>??????</span><textarea id="session-comment" placeholder="?????? ????? ????????"></textarea></label>'+
+        '<div class="prof-session-actions"><button type="submit" class="save">??? ???????</button><button type="button" onclick="openSessionAlert()">????? ???????</button><button type="button" onclick="finishSessionMode()" class="finish">????? ?????</button></div>'+
+      '</form>'+
+      '<div class="prof-session-mini"><strong>?? ?? ??? ????</strong><span>'+summary.records.length+' ????? ? '+summary.alerts.length+' ?????</span></div>'+(recordRows||'<div class="prof-session-empty">?? ???? ????? ???.</div>')+
+    '</section></div>';
+  }
+  function renderSessionMode(){
+    if(!document.body.dataset.profPage)return;
+    document.querySelectorAll('#prof-session-float,#prof-session-backdrop,#prof-session-summary').forEach(node=>node.remove());
+    const state=readSessionMode();
+    const button=document.createElement('button');
+    button.type='button';
+    button.id='prof-session-float';
+    button.className='prof-session-float'+(state?.active?' active':'');
+    button.innerHTML='<span>?</span><strong>'+(state?.active?'????? ????':'??? ?????')+'</strong>';
+    button.onclick=()=>state?.active?openSessionPanel():startSessionMode();
+    document.body.appendChild(button);
+    if(state?.active&&state.panelOpen)document.body.insertAdjacentHTML('beforeend',sessionModalHtml(state));
+    maybeShowSessionModeIntro();
+  }
+  function maybeShowSessionModeIntro(){
+    if(!session||localStorage.getItem(sessionModeIntroKey())==='1'||document.getElementById('prof-session-intro'))return;
+    const btn=document.getElementById('prof-session-float');if(!btn)return;
+    const rect=btn.getBoundingClientRect();
+    const side=rect.left<window.innerWidth/2?'left':'right';
+    const intro=document.createElement('div');
+    intro.id='prof-session-intro';
+    intro.className='prof-session-intro '+side;
+    intro.innerHTML='<div class="prof-session-intro-arrow"></div><section><strong>??? ????? ??????</strong><p>???? ??? ???? ??? ??????. ?????? ?????? ?????? ???????? ???????? ???? ???? ??????.</p><button type="button" onclick="ackSessionModeIntro()">????</button></section>';
+    document.body.appendChild(intro);
+  }
+  function ackSessionModeIntro(){localStorage.setItem(sessionModeIntroKey(),'1');document.getElementById('prof-session-intro')?.remove()}
+  function openSessionPanel(){const state=readSessionMode();if(!state)return;state.panelOpen=true;writeSessionMode(state)}
+  function closeSessionPanel(){const state=readSessionMode();if(!state)return;state.panelOpen=false;writeSessionMode(state)}
+  function startSessionMode(){const state=defaultSessionState();state.panelOpen=true;writeSessionMode(state)}
+  function skipSessionIntro(){const state=readSessionMode();if(!state)return;state.skippedIntro=true;writeSessionMode(state)}
+  function changeSessionStudent(username){const state=readSessionMode();if(!state)return;state.current=username;rememberStudent(username);writeSessionMode(state)}
+  function pickNextSessionStudent(){const state=readSessionMode();if(!state)return;const current=state.current;const ranked=[...myStudents].filter(s=>s.username!==current).sort((a,b)=>studentSessionScore(b,state)-studentSessionScore(a,state));state.current=(ranked[0]||myStudents[0]||{}).username||'';writeSessionMode(state)}
+  async function saveSessionModeRecitation(event){
+    event.preventDefault();
+    const state=readSessionMode();if(!state)return;
+    const username=document.getElementById('session-student').value;
+    const student=myStudents.find(item=>item.username===username);
+    const surah=document.getElementById('session-surah').value;
+    const scope=document.getElementById('session-scope').value;
+    const start=document.getElementById('session-start').value;
+    const end=document.getElementById('session-end').value;
+    if(!username||!surah||(scope==='???'&&(!start||!end))){showToast('???? ?????? ???????');return}
+    const note={validation:document.getElementById('session-result').value,comment:document.getElementById('session-comment').value.trim(),surah,scope,ayahStart:scope==='???'?start:'',ayahEnd:scope==='???'?end:'',source:'mode_session',sessionId:state.id,date:today()};
+    await Auth.saveTeacherNote(username,note);
+    const record={username,studentName:studentName(student),...note,savedAt:sessionNow()};
+    state.records.push(record);
+    state.current=(nextSessionStudent(state)||{}).username||username;
+    state.skippedIntro=true;
+    writeSessionMode(state);
+    await refreshProfDashboard(false);
+    showToast('?? ??? ???????');
+  }
+  async function openSessionAlert(){
+    const state=readSessionMode();if(!state)return;
+    const student=myStudents.find(item=>item.username===state.current);
+    const text=prompt('???? ?????? ?????? ???????',student?'??????: '+studentName(student):'');
+    if(!text)return;
+    const result=await Auth.sendAdminReport(session.username,session.prenom,session.nom,'[??? ??????]\n'+text,'??? ?????');
+    if(result.ok){state.alerts.push({text,student:studentName(student),sentAt:sessionNow()});writeSessionMode(state);showToast('?? ????? ???????')}else showToast(result.error||'???? ????? ???????');
+  }
+  async function finishSessionMode(){
+    const state=readSessionMode();if(!state)return;
+    const summary=sessionSummary(state);
+    const payload={id:state.id,date:today(),mode:'live_session',startedAt:state.startedAt,endedAt:sessionNow(),durationMinutes:sessionMinutes(state.startedAt),present:summary.passed,absent:[],validations:state.records,total:myStudents.length,alerts:state.alerts,plus:summary.plus,minus:summary.minus};
+    if(typeof Auth.saveClassSession==='function')await Auth.saveClassSession(session.username,payload);
+    if(typeof Auth.sendAdminReport==='function')await Auth.sendAdminReport(session.username,session.prenom,session.nom,'[????? ???]\n?????: '+payload.durationMinutes+' ?????\n????????: '+summary.records.length+'\n?????????: '+summary.alerts.length+'\n??????????: '+summary.plus.join(' | ')+'\n????????: '+summary.minus.join(' | '),'????? ?????');
+    clearSessionMode();
+    showSessionSummary(summary,payload.durationMinutes);
+  }
+  function showSessionSummary(summary,minutes){
+    const html='<div class="prof-session-backdrop" id="prof-session-summary"><section class="prof-session-panel summary"><header class="prof-session-head"><div><p class="prof-session-kicker">????? ?????</p><h2>???? ?????</h2><span>'+minutes+' ?????</span></div><button type="button" class="prof-session-close" onclick="document.getElementById(\'prof-session-summary\')?.remove()">?</button></header><div class="prof-session-mini"><strong>'+summary.records.length+' ?????</strong><span>'+summary.passed.length+' ???? ? '+summary.alerts.length+' ?????</span></div><div class="prof-session-columns"><div><h3>??????????</h3>'+summary.plus.map(item=>'<p>'+escapeHtml(item)+'</p>').join('')+'</div><div><h3>?????? ???? ????? ??????</h3>'+summary.minus.map(item=>'<p>'+escapeHtml(item)+'</p>').join('')+'</div></div><button class="prof-session-done" onclick="document.getElementById(\'prof-session-summary\')?.remove()">??</button></section></div>';
+    document.body.insertAdjacentHTML('beforeend',html);
+  }
+  window.ackSessionModeIntro=ackSessionModeIntro;
+  window.openSessionPanel=openSessionPanel;
+  window.closeSessionPanel=closeSessionPanel;
+  window.skipSessionIntro=skipSessionIntro;
+  window.changeSessionStudent=changeSessionStudent;
+  window.pickNextSessionStudent=pickNextSessionStudent;
+  window.saveSessionModeRecitation=saveSessionModeRecitation;
+  window.openSessionAlert=openSessionAlert;
+  window.finishSessionMode=finishSessionMode;
+
+  window.addEventListener('DOMContentLoaded',function(){renderSessionMode();window.renderAll=render;const wait=setInterval(function(){if(typeof session!=='undefined'&&session&&Array.isArray(myStudents)){clearInterval(wait);render()}},80);setTimeout(()=>clearInterval(wait),10000)});
 })();
