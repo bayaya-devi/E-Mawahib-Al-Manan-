@@ -543,8 +543,8 @@ h3,
 :root {
   --desktop-shell: 1180px;
   --tablet-shell: 860px;
-  --mobile-pad: clamp(10px, 3.4vw, 16px);
-  --mobile-nav-height: 76px;
+  --mobile-pad: clamp(12px, 4vw, 18px);
+  --mobile-nav-height: 78px;
 }
 
 @media (min-width: 921px) {
@@ -581,7 +581,7 @@ h3,
 
 @media (max-width: 640px) {
   html {
-    font-size: 15px;
+    font-size: 16.5px;
     scroll-padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
   }
   body {
@@ -641,44 +641,45 @@ h3,
   .juz-header-actions { flex-direction: row !important; align-items: center !important; gap: 5px !important; }
   .juz-game-button, .juz-puzzle-button, .juz-recitation-button { min-height: 33px !important; padding-inline: 9px !important; font-size: 10px !important; }
 
-  .surah-journey { padding: 14px 0 18px !important; }
-  .surah-journey::before { left: 28px !important; width: 5px !important; transform: none !important; }
-  html[dir="rtl"] .surah-journey::before { left: auto !important; right: 28px !important; }
+  .surah-journey { padding: 18px 0 24px !important; }
+  .surah-journey::before { left: 34px !important; width: 6px !important; transform: none !important; }
+  html[dir="rtl"] .surah-journey::before { left: auto !important; right: 34px !important; }
   .journey-step, .journey-step:nth-child(odd), .journey-step:nth-child(even) {
-    min-height: 78px !important;
+    min-height: 96px !important;
     justify-content: stretch !important;
-    padding-left: 64px !important;
+    padding-left: 78px !important;
     padding-right: 0 !important;
-    margin: 0 !important;
+    margin: 0 0 8px !important;
   }
   html[dir="rtl"] .journey-step, html[dir="rtl"] .journey-step:nth-child(odd), html[dir="rtl"] .journey-step:nth-child(even) {
-    padding-right: 64px !important;
+    padding-right: 78px !important;
     padding-left: 0 !important;
   }
   .journey-orb {
-    left: 28px !important;
+    left: 34px !important;
     top: 50% !important;
-    width: 48px !important;
-    height: 48px !important;
-    border-width: 4px !important;
+    width: 62px !important;
+    height: 62px !important;
+    border-width: 5px !important;
+    font-size: 1.02rem !important;
     transform: translate(-50%, -50%) !important;
   }
   html[dir="rtl"] .journey-orb {
     left: auto !important;
-    right: 28px !important;
+    right: 34px !important;
     transform: translate(50%, -50%) !important;
   }
   .journey-node {
     width: 100% !important;
     max-width: none !important;
-    min-height: 58px !important;
-    padding: 9px 11px !important;
-    border-radius: 14px !important;
-    gap: 8px !important;
-    box-shadow: 0 8px 18px rgba(15,23,42,.10) !important;
+    min-height: 76px !important;
+    padding: 13px 14px !important;
+    border-radius: 17px !important;
+    gap: 10px !important;
+    box-shadow: 0 12px 24px rgba(15,23,42,.12) !important;
   }
-  .journey-node .quran-font, .journey-node strong { font-size: .95rem !important; }
-  .journey-meta, .journey-state { font-size: 9.5px !important; }
+  .journey-node .quran-font, .journey-node strong { font-size: 1.08rem !important; }
+  .journey-meta, .journey-state { font-size: 10.5px !important; }
 
   .grid, [class*="grid-cols-"] { min-width: 0; }
   .grid.grid-cols-2, .grid.grid-cols-3, .grid.grid-cols-4, .grid.grid-cols-5,
@@ -739,14 +740,14 @@ h3,
 }
 
 @media (max-width: 380px) {
-  :root { --mobile-pad: 8px; --mobile-nav-height: 70px; }
+  :root { --mobile-pad: 9px; --mobile-nav-height: 72px; }
   .reward-strip { grid-template-columns: 1fr !important; }
-  .journey-step, .journey-step:nth-child(odd), .journey-step:nth-child(even) { padding-left: 56px !important; }
-  html[dir="rtl"] .journey-step, html[dir="rtl"] .journey-step:nth-child(odd), html[dir="rtl"] .journey-step:nth-child(even) { padding-right: 56px !important; padding-left: 0 !important; }
-  .journey-orb { left: 24px !important; width: 44px !important; height: 44px !important; }
-  html[dir="rtl"] .journey-orb { right: 24px !important; left: auto !important; }
-  .surah-journey::before { left: 24px !important; }
-  html[dir="rtl"] .surah-journey::before { right: 24px !important; left: auto !important; }
+  .journey-step, .journey-step:nth-child(odd), .journey-step:nth-child(even) { padding-left: 68px !important; min-height: 92px !important; }
+  html[dir="rtl"] .journey-step, html[dir="rtl"] .journey-step:nth-child(odd), html[dir="rtl"] .journey-step:nth-child(even) { padding-right: 68px !important; padding-left: 0 !important; }
+  .journey-orb { left: 30px !important; width: 56px !important; height: 56px !important; }
+  html[dir="rtl"] .journey-orb { right: 30px !important; left: auto !important; }
+  .surah-journey::before { left: 30px !important; }
+  html[dir="rtl"] .surah-journey::before { right: 30px !important; left: auto !important; }
   .nav-bottom span { display: none !important; }
   .nav-bottom a > div, .nav-bottom button > div { width: 38px !important; height: 38px !important; }
 }
