@@ -1,8 +1,9 @@
 (function () {
   'use strict';
 
-  const INTRO_VERSION = '20260726-2';
+  const INTRO_VERSION = '20260726-3';
   const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const AudioContextApi = window.AudioContext || window.webkitAudioContext;
   let state = null;
   let introResizeHandler = null;
 
@@ -96,7 +97,19 @@
       timer: 0,
       restartTimer: 0,
       confidenceSamples: [],
-      capturedSegments: 0
+      capturedSegments: 0,
+      stream: null,
+      audioContext: null,
+      analyser: null,
+      meterFrame: 0,
+      speechFrames: 0,
+      peakLevel: 0,
+      currentInterim: '',
+      recognitionGeneration: 0,
+      recognitionErrors: 0,
+      recognitionStarted: false,
+      recognitionSoundDetected: false,
+      lastRecognitionError: ''
     };
     const modal = ensureModal();
     modal.classList.add('open');
@@ -107,6 +120,7 @@
 
   function closeVirtualTeacher() {
     stopRecognition(true);
+    releaseMicrophone();
     const modal = document.getElementById('virtual-teacher-modal');
     if (modal) modal.classList.remove('open');
     document.body.style.overflow = '';
@@ -121,9 +135,65 @@
   }
 
   async function requestMicrophone() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, channelCount: 1 } });
-    stream.getTracks().forEach(track => track.stop());
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw Object.assign(new Error('media-devices-unavailable'), { name: 'NotSupportedError' });
+    }
+    return navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1
+      }
+    });
+  }
+
+  function releaseMicrophone() {
+    if (!state) return;
+    cancelAnimationFrame(state.meterFrame);
+    state.meterFrame = 0;
+    if (state.audioContext) {
+      try { state.audioContext.close(); } catch (error) {}
+    }
+    state.audioContext = null;
+    state.analyser = null;
+    if (state.stream) {
+      state.stream.getTracks().forEach(track => {
+        try { track.stop(); } catch (error) {}
+      });
+    }
+    state.stream = null;
+  }
+
+  async function startAudioMonitor() {
+    if (!state?.stream || !AudioContextApi) return;
+    const context = new AudioContextApi();
+    if (context.state === 'suspended') {
+      try { await context.resume(); } catch (error) {}
+    }
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = .72;
+    context.createMediaStreamSource(state.stream).connect(analyser);
+    state.audioContext = context;
+    state.analyser = analyser;
+    const samples = new Uint8Array(analyser.fftSize);
+    const update = () => {
+      if (!state?.listening || state.analyser !== analyser) return;
+      analyser.getByteTimeDomainData(samples);
+      let energy = 0;
+      for (let index = 0; index < samples.length; index++) {
+        const value = (samples[index] - 128) / 128;
+        energy += value * value;
+      }
+      const level = Math.min(1, Math.sqrt(energy / samples.length) * 7);
+      state.peakLevel = Math.max(state.peakLevel, level);
+      if (level > .08) state.speechFrames += 1;
+      const meter = document.getElementById('virtual-teacher-meter-value');
+      if (meter) meter.style.transform = 'scaleX(' + Math.max(.03, level).toFixed(3) + ')';
+      state.meterFrame = requestAnimationFrame(update);
+    };
+    update();
   }
 
   async function startRecitation() {
@@ -141,7 +211,8 @@
       if (!loaded.verses || !loaded.verses.length) throw new Error('verses');
       state.verses = loaded.verses;
       state.selectedSurah = selected;
-      await requestMicrophone();
+      releaseMicrophone();
+      state.stream = await requestMicrophone();
       beginListening();
     } catch (error) {
       const denied = error && (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError');
@@ -160,7 +231,16 @@
     state.restartFailures = 0;
     state.confidenceSamples = [];
     state.capturedSegments = 0;
+    state.currentInterim = '';
+    state.recognitionErrors = 0;
+    state.recognitionStarted = false;
+    state.recognitionSoundDetected = false;
+    state.lastRecognitionError = '';
+    state.speechFrames = 0;
+    state.peakLevel = 0;
+    state.finishing = false;
     renderListening();
+    startAudioMonitor();
     createAndStartRecognition();
     clearInterval(state.timer);
     state.timer = setInterval(updateTimer, 500);
@@ -174,6 +254,7 @@
         '<div class="virtual-teacher-mic" aria-hidden="true">🎙️</div>',
         '<div class="virtual-teacher-status" id="virtual-teacher-status">أستمع الآن</div>',
         '<div class="virtual-teacher-timer" id="virtual-teacher-timer">00:00</div>',
+        '<div class="virtual-teacher-meter" aria-label="microphone"><span id="virtual-teacher-meter-value"></span></div>',
         '<div class="virtual-teacher-capture" id="virtual-teacher-live">ابدأ القراءة ولا تراقب الشاشة أثناء التسميع.</div>',
         '<div class="virtual-teacher-actions listening-actions">',
           '<button type="button" class="virtual-teacher-action secondary" id="virtual-teacher-cancel">إلغاء</button>',
@@ -181,7 +262,7 @@
         '</div>',
       '</div>'
     ].join('');
-    document.getElementById('virtual-teacher-cancel').addEventListener('click', () => { stopRecognition(true); renderSelection(); });
+    document.getElementById('virtual-teacher-cancel').addEventListener('click', () => { stopRecognition(true); releaseMicrophone(); renderSelection(); });
     document.getElementById('virtual-teacher-stop').addEventListener('click', finishRecitation);
   }
 
@@ -192,16 +273,54 @@
     if (element) element.textContent = String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
   }
 
+  function setListeningMessage(statusText, captureText) {
+    const status = document.getElementById('virtual-teacher-status');
+    const capture = document.getElementById('virtual-teacher-live');
+    if (status && statusText) status.textContent = statusText;
+    if (capture && captureText) capture.textContent = captureText;
+  }
+
+  function applyQuranContext(recognition) {
+    if (!state?.verses?.length || !('phrases' in recognition) || typeof window.SpeechRecognitionPhrase !== 'function') return;
+    try {
+      recognition.phrases = state.verses.slice(0, 50).map(verse => new window.SpeechRecognitionPhrase(String(verse.text || ''), 8));
+    } catch (error) {}
+  }
+
   function createAndStartRecognition() {
-    if (!state || !state.listening) return;
+    if (!state || !state.listening || state.manualStop) return;
+    const generation = ++state.recognitionGeneration;
     const recognition = new SpeechRecognitionApi();
-    recognition.lang = 'ar-SA';
-    recognition.continuous = true;
+    const languages = ['ar-SA', 'ar-MA', 'ar'];
+    const languageIndex = Math.min(Number(state.recognitionLanguageIndex || 0), languages.length - 1);
+    recognition.lang = languages[languageIndex];
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 5;
+    applyQuranContext(recognition);
     state.recognition = recognition;
+    let sessionHadResult = false;
+
+    recognition.onstart = () => {
+      if (!state || generation !== state.recognitionGeneration) return;
+      state.recognitionStarted = true;
+      state.restartFailures = 0;
+      setListeningMessage('\u0623\u0633\u062a\u0645\u0639 \u0627\u0644\u0622\u0646', '');
+    };
+    recognition.onaudiostart = () => {
+      if (state && generation === state.recognitionGeneration) state.recognitionStarted = true;
+    };
+    recognition.onsoundstart = () => {
+      if (state && generation === state.recognitionGeneration) state.recognitionSoundDetected = true;
+    };
+    recognition.onspeechstart = () => {
+      if (!state || generation !== state.recognitionGeneration) return;
+      state.recognitionSoundDetected = true;
+      setListeningMessage('\u0627\u0644\u0635\u0648\u062a \u0648\u0627\u0636\u062d', '\u0648\u0627\u0635\u0644 \u0627\u0644\u0642\u0631\u0627\u0621\u0629 \u062d\u062a\u0649 \u0622\u062e\u0631 \u0622\u064a\u0629.');
+    };
     recognition.onresult = event => {
-      if (!state) return;
+      if (!state || generation !== state.recognitionGeneration) return;
+      sessionHadResult = true;
       let interim = '';
       for (let index = event.resultIndex; index < event.results.length; index++) {
         const choice = chooseRecognitionAlternative(event.results[index]);
@@ -210,42 +329,77 @@
           appendTranscriptPart(choice.text);
           if (choice.confidence > 0) state.confidenceSamples.push(choice.confidence);
           state.capturedSegments += 1;
-        } else interim += ' ' + choice.text;
+          state.currentInterim = '';
+        } else {
+          interim += ' ' + choice.text;
+        }
       }
-      state.interim = interim.trim();
+      state.currentInterim = interim.trim();
+      state.interim = state.currentInterim;
       state.restartFailures = 0;
-      const live = document.getElementById('virtual-teacher-live');
-      if (live) live.textContent = state.capturedSegments ? 'تم التقاط القراءة. واصل حتى آخر آية.' : 'أستمع إليك...';
+      state.recognitionErrors = 0;
+      setListeningMessage('\u062a\u0645 \u0627\u0644\u062a\u0642\u0627\u0637 \u0627\u0644\u0642\u0631\u0627\u0621\u0629', '\u0648\u0627\u0635\u0644 \u062d\u062a\u0649 \u0622\u062e\u0631 \u0622\u064a\u0629.');
     };
-
-
-  recognition.onerror = event => {
-      if (!state) return;
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture') {
-        state.listening = false;
-        showError('تعذر استعمال الميكروفون. تحقق من الإذن ومن إعدادات الصوت ثم حاول مرة أخرى.', true);
+    recognition.onnomatch = () => {
+      if (!state || generation !== state.recognitionGeneration) return;
+      state.recognitionErrors += 1;
+      setListeningMessage('\u0627\u0644\u0635\u0648\u062a \u0648\u0635\u0644', '\u0642\u0631\u0651\u0628 \u0627\u0644\u0647\u0627\u062a\u0641 \u0642\u0644\u064a\u0644\u0627 \u0648\u0648\u0627\u0635\u0644 \u0627\u0644\u0642\u0631\u0627\u0621\u0629.');
+    };
+    recognition.onerror = event => {
+      if (!state || generation !== state.recognitionGeneration) return;
+      const errorCode = String(event.error || 'unknown');
+      state.lastRecognitionError = errorCode;
+      state.recognitionErrors += 1;
+      if (errorCode === 'not-allowed' || errorCode === 'service-not-allowed' || errorCode === 'audio-capture') {
         stopRecognition(true);
-      } else if (event.error === 'network') {
-        const status = document.getElementById('virtual-teacher-status');
-        if (status) status.textContent = 'الاتصال ضعيف، أحاول متابعة الاستماع...';
-      } else if (event.error === 'no-speech') {
-        const status = document.getElementById('virtual-teacher-status');
-        if (status) status.textContent = 'لم أسمع صوتا واضحا بعد...';
+        releaseMicrophone();
+        showError('\u062a\u0639\u0630\u0631 \u0627\u0633\u062a\u0639\u0645\u0627\u0644 \u0627\u0644\u0645\u064a\u0643\u0631\u0648\u0641\u0648\u0646. \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0625\u0630\u0646 \u062b\u0645 \u062d\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.', true);
+        return;
+      }
+      if (errorCode === 'language-not-supported' || errorCode === 'language-unavailable') {
+        state.recognitionLanguageIndex = Math.min(languageIndex + 1, languages.length - 1);
+      }
+      if (errorCode === 'network') {
+        setListeningMessage('\u0627\u0644\u0627\u062a\u0635\u0627\u0644 \u0636\u0639\u064a\u0641', '\u0644\u0627 \u062a\u0648\u0642\u0641 \u0627\u0644\u0642\u0631\u0627\u0621\u0629\u060c \u0633\u0623\u0639\u064a\u062f \u0627\u0644\u0627\u0633\u062a\u0645\u0627\u0639 \u062a\u0644\u0642\u0627\u0626\u064a\u0627.');
+      } else if (errorCode === 'no-speech') {
+        setListeningMessage('\u0623\u0646\u0627 \u062c\u0627\u0647\u0632', '\u0627\u0628\u062f\u0623 \u0627\u0644\u0642\u0631\u0627\u0621\u0629 \u0628\u0635\u0648\u062a \u0648\u0627\u0636\u062d.');
       }
     };
     recognition.onend = () => {
-      if (!state || !state.listening || state.manualStop) return;
-      state.restartFailures += 1;
-      const delay = Math.min(1400, 250 * state.restartFailures);
+      if (!state || generation !== state.recognitionGeneration) return;
+      if (state.finishing) {
+        if (state.currentInterim) appendTranscriptPart(state.currentInterim);
+        state.currentInterim = '';
+        state.interim = '';
+        if (typeof state.finishRecognition === 'function') state.finishRecognition();
+        return;
+      }
+      if (!state.listening || state.manualStop) return;
+      if (state.currentInterim) {
+        appendTranscriptPart(state.currentInterim);
+        state.currentInterim = '';
+        state.interim = '';
+      }
+      if (!sessionHadResult) state.restartFailures += 1;
+      const delay = Math.min(1200, 120 + state.restartFailures * 160);
       clearTimeout(state.restartTimer);
       state.restartTimer = setTimeout(() => {
-        if (state && state.listening && !state.manualStop) createAndStartRecognition();
+        if (state?.listening && !state.manualStop) createAndStartRecognition();
       }, delay);
     };
-    try { recognition.start(); }
-    catch (error) {
+    try {
+      recognition.start();
+    } catch (error) {
+      if (!state || generation !== state.recognitionGeneration) return;
       state.restartFailures += 1;
-      state.restartTimer = setTimeout(createAndStartRecognition, 500);
+      state.lastRecognitionError = error?.name || 'start-failed';
+      if (state.restartFailures >= 4) {
+        stopRecognition(true);
+        releaseMicrophone();
+        showError('\u062e\u062f\u0645\u0629 \u0627\u0644\u062a\u0639\u0631\u0641 \u0627\u0644\u0635\u0648\u062a\u064a \u0644\u0627 \u062a\u0639\u0645\u0644 \u0641\u064a \u0647\u0630\u0627 \u0627\u0644\u0645\u062a\u0635\u0641\u062d. \u062d\u062f\u0651\u062b Google Chrome \u0623\u0648 \u0627\u0633\u062a\u0639\u0645\u0644 \u062c\u0647\u0627\u0632\u0627 \u0622\u062e\u0631.', true);
+        return;
+      }
+      state.restartTimer = setTimeout(createAndStartRecognition, 350);
     }
   }
 
@@ -253,11 +407,13 @@
     if (!state) return;
     state.listening = false;
     state.manualStop = true;
+    state.recognitionGeneration += 1;
     clearInterval(state.timer);
     clearTimeout(state.restartTimer);
-    if (state.recognition) {
-      try { abort ? state.recognition.abort() : state.recognition.stop(); } catch (error) {}
-      state.recognition = null;
+    const recognition = state.recognition;
+    state.recognition = null;
+    if (recognition) {
+      try { abort ? recognition.abort() : recognition.stop(); } catch (error) {}
     }
   }
 
@@ -268,30 +424,49 @@
     state.manualStop = true;
     clearInterval(state.timer);
     clearTimeout(state.restartTimer);
-    document.getElementById('virtual-teacher-body').innerHTML = '<div class="virtual-teacher-analyzing"><span></span><strong>جاري إنهاء الاستماع...</strong></div>';
+    cancelAnimationFrame(state.meterFrame);
+    document.getElementById('virtual-teacher-body').innerHTML = '<div class="virtual-teacher-analyzing"><span></span><strong>\u062c\u0627\u0631\u064a \u0627\u0633\u062a\u0644\u0627\u0645 \u0622\u062e\u0631 \u0627\u0644\u0643\u0644\u0645\u0627\u062a...</strong></div>';
     const recognition = state.recognition;
     state.recognition = null;
     let completed = false;
     const complete = () => {
       if (completed || !state) return;
       completed = true;
-      setTimeout(analyzeFinishedRecitation, 160);
+      state.finishRecognition = null;
+      if (state.currentInterim) appendTranscriptPart(state.currentInterim);
+      state.currentInterim = '';
+      state.interim = '';
+      setTimeout(analyzeFinishedRecitation, 220);
     };
-    if (!recognition) { complete(); return; }
-    recognition.onend = complete;
+    state.finishRecognition = complete;
+    if (!recognition) {
+      complete();
+      return;
+    }
     try { recognition.stop(); } catch (error) { complete(); }
-    setTimeout(complete, 1200);
+    setTimeout(complete, 3200);
   }
 
   function analyzeFinishedRecitation() {
     if (!state) return;
     state.finishing = false;
-    const transcript = (state.transcriptParts.join(' ') + ' ' + state.interim).trim();
-    if (words(transcript).length < 4) {
-      renderUnverified('لم ألتقط كلمات كافية.', 'تحقق من إذن الميكروفون، ثم أعد التسميع بصوت واضح.');
+    const transcript = state.transcriptParts.join(' ').trim();
+    const heardWordCount = words(transcript).length;
+    const audioDetected = state.speechFrames >= 4 || state.recognitionSoundDetected || state.peakLevel >= .12;
+    const recognitionStarted = state.recognitionStarted;
+    const lastError = state.lastRecognitionError;
+    releaseMicrophone();
+    if (heardWordCount < 4) {
+      if (audioDetected) {
+        renderUnverified('\u0648\u0635\u0644 \u0635\u0648\u062a\u0643 \u0648\u0644\u0643\u0646 \u0644\u0645 \u064a\u062a\u0645 \u062a\u062d\u0648\u064a\u0644\u0647 \u0625\u0644\u0649 \u0643\u0644\u0645\u0627\u062a.', (lastError === 'network' ? '\u0627\u0644\u0627\u062a\u0635\u0627\u0644 \u0628\u062e\u062f\u0645\u0629 \u0627\u0644\u0635\u0648\u062a \u0645\u0646\u0642\u0637\u0639. ' : '') + '\u062d\u062f\u0651\u062b Google Chrome \u0648\u062a\u0623\u0643\u062f \u0645\u0646 \u0627\u0644\u0627\u062a\u0635\u0627\u0644 \u062b\u0645 \u0623\u0639\u062f \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629.');
+      } else if (!recognitionStarted) {
+        renderUnverified('\u0644\u0645 \u062a\u0628\u062f\u0623 \u062e\u062f\u0645\u0629 \u0627\u0644\u0627\u0633\u062a\u0645\u0627\u0639.', '\u062e\u062f\u0645\u0629 \u0627\u0644\u0635\u0648\u062a \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629 \u0641\u064a \u0647\u0630\u0627 \u0627\u0644\u0645\u062a\u0635\u0641\u062d. \u0627\u0633\u062a\u0639\u0645\u0644 Google Chrome \u0627\u0644\u0645\u062d\u062f\u0651\u062b.');
+      } else {
+        renderUnverified('\u0644\u0645 \u064a\u0635\u0644 \u0635\u0648\u062a \u0648\u0627\u0636\u062d.', '\u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0645\u064a\u0643\u0631\u0648\u0641\u0648\u0646\u060c \u0648\u0642\u0631\u0651\u0628 \u0627\u0644\u062c\u0647\u0627\u0632 \u0648\u0627\u0642\u0631\u0623 \u0628\u0635\u0648\u062a \u0645\u0633\u0645\u0648\u0639.');
+      }
       return;
     }
-    document.getElementById('virtual-teacher-body').innerHTML = '<div class="virtual-teacher-analyzing"><span></span><strong>جاري التحقق من الكلمات وترتيب الآيات...</strong></div>';
+    document.getElementById('virtual-teacher-body').innerHTML = '<div class="virtual-teacher-analyzing"><span></span><strong>\u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0643\u0644\u0645\u0627\u062a \u0648\u062a\u0631\u062a\u064a\u0628 \u0627\u0644\u0622\u064a\u0627\u062a...</strong></div>';
     const confidences = state.confidenceSamples.slice();
     setTimeout(() => renderResult(analyzeRecitation(state.verses, transcript, { confidences })), 100);
   }
@@ -430,7 +605,7 @@
     const body = document.getElementById('virtual-teacher-body');
     body.innerHTML = '<div class="virtual-teacher-unverified"><span aria-hidden="true">↻</span><h3>' + escapeHtml(title) + '</h3><p>' + escapeHtml(message) + '</p><strong>لم تُسجل أي نقطة أو ملاحظة.</strong></div><div class="virtual-teacher-actions"><button type="button" class="virtual-teacher-action secondary" id="virtual-teacher-back">اختيار سورة أخرى</button><button type="button" class="virtual-teacher-action" id="virtual-teacher-again">إعادة المحاولة</button></div>';
     document.getElementById('virtual-teacher-back').addEventListener('click', renderSelection);
-    document.getElementById('virtual-teacher-again').addEventListener('click', beginListening);
+    document.getElementById('virtual-teacher-again').addEventListener('click', startRecitation);
   }
 
   function teacherQueueKey() {
@@ -517,7 +692,7 @@
       '</div>'
     ].join('');
     document.getElementById('virtual-teacher-back').addEventListener('click', renderSelection);
-    document.getElementById('virtual-teacher-again').addEventListener('click', beginListening);
+    document.getElementById('virtual-teacher-again').addEventListener('click', startRecitation);
   }
 
   function ensureIntro() {

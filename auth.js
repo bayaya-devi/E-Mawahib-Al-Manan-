@@ -12,7 +12,7 @@ const Auth = (() => {
     const OFFLINE_CACHE_PREFIX = 'mawahib_offline_cache_';
     const OFFLINE_QUEUE_KEY = 'mawahib_offline_queue';
     const OFFLINE_STATUS_KEY = 'mawahib_offline_status';
-    const SERVICE_WORKER_VERSION = '20260726-digital-teacher-3';
+    const SERVICE_WORKER_VERSION = '20260729-amazigh-digital-teacher-4';
     const CLASS_SESSION_PREFIX = '[CLASS_SESSION] ';
     const TEACHER_NOTE_PREFIX = '[TEACHER_NOTE] ';
     const ADMIN_FINANCE_PREFIX = '[ADMIN_FINANCE] ';

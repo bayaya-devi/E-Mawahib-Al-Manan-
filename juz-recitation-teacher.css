@@ -55,6 +55,8 @@
 .virtual-teacher-mic { width: 104px; height: 104px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--platform-primary); font-size: 42px; box-shadow: 0 0 0 0 color-mix(in srgb, var(--platform-primary) 35%, transparent); animation: virtualTeacherPulse 1.35s ease-out infinite; }
 .virtual-teacher-status { margin-top: 22px; color: var(--platform-primary-dark); font-size: 18px; font-weight: 1000; }
 .virtual-teacher-timer { margin-top: 6px; direction: ltr; color: #64748b; font-size: 14px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.virtual-teacher-meter { width: min(230px, 78%); height: 8px; margin-top: 14px; overflow: hidden; border-radius: 4px; background: #dbe6e0; }
+.virtual-teacher-meter span { width: 100%; height: 100%; display: block; transform: scaleX(.03); transform-origin: right center; border-radius: inherit; background: var(--platform-primary); transition: transform 80ms linear; }
 .virtual-teacher-live { width: 100%; min-height: 66px; margin-top: 16px; padding: 11px 12px; border: 1px solid #e2e8f0; border-radius: 11px; color: #475569; background: #f8fafc; font-size: 13px; font-weight: 700; line-height: 1.8; }
 .virtual-teacher-error { padding: 13px; border: 1px solid #fecaca; border-radius: 11px; color: #991b1b; background: #fff1f2; font-size: 13px; font-weight: 800; line-height: 1.8; }
 .virtual-teacher-result { text-align: center; }

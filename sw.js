@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v38-digital-teacher-final-20260726';
+const CACHE_VERSION = 'mawahib-offline-v39-amazigh-digital-teacher-20260729';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -8,6 +8,12 @@ const STATIC_ASSETS = [
   './',
   './index.html',
   './login.html',
+  './dar-al-hadith.html',
+  './dar-al-hadith.css',
+  './dar-al-hadith.js',
+  './assets/dar-al-hadith/facade.webp',
+  './assets/dar-al-hadith/logo.webp',
+  './assets/dar-al-hadith/classroom.jpg',
   './loading.html',
   './dashboard.html',
   './profil.html',
@@ -41,9 +47,9 @@ const STATIC_ASSETS = [
   './prof-students.html',
   './prof-analytics.html',
   './prof-homework.html',
-  './controle-487-activity.html',
   './prof-report.html',
   './controle-mawahib-7x9k.html',
+  './controle-487-activity.html',
   './controle-487-stats.html',
   './controle-487-profs.html',
   './controle-487-messages.html',
