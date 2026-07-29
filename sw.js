@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v39-amazigh-digital-teacher-20260729';
+const CACHE_VERSION = 'mawahib-offline-v40-device-layout-20260729';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
