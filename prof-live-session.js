@@ -4,7 +4,7 @@ const KEY='mawahib_live_session_',INTRO='mawahib_live_session_intro_20260730_4_'
 const e=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const prof=()=>typeof session!=='undefined'?session:null,pupils=()=>typeof myStudents!=='undefined'&&Array.isArray(myStudents)?myStudents:[],works=()=>typeof myDevoirs!=='undefined'&&Array.isArray(myDevoirs)?myDevoirs:[];
 const label=s=>s?(typeof studentName==='function'?studentName(s):([s.prenom,s.nom].filter(Boolean).join(' ')||s.username)):'لا يوجد طالب';
-const key=()=>KEY+(prof()?.username||'prof'),introKey=()=>INTRO+(prof()?.username||'prof');
+const key=()=>KEY+(prof()?.username||'prof'),introKey=()=>INTRO+(prof()?.username||'prof'),tourKey=()=>'mawahib_live_session_tour_count_'+(prof()?.username||'prof');
 function read(){try{const s=JSON.parse(localStorage.getItem(key())||'null');if(!s)return null;if(!Number.isInteger(s.step))s.step=0;if(!s.attendance){s.attendance={};pupils().forEach(x=>s.attendance[x.username]='present')}if(!Array.isArray(s.chat))s.chat=[];if(typeof s.chatOpen!=='boolean')s.chatOpen=false;return s}catch{return null}}function write(s){localStorage.setItem(key(),JSON.stringify(s));render()}function openDuty(x){return typeof homeworkIsOpen==='function'?homeworkIsOpen(x):!['realise','valide','fait'].includes(String(x?.statut||'').toLowerCase())}function lastNote(s){return typeof teacherNotesCache!=='undefined'&&Array.isArray(teacherNotesCache[s.username])?teacherNotesCache[s.username][0]:null}
 function score(s,state){const n=lastNote(s),d=works().filter(x=>x.student_id===s.username&&openDuty(x)),seen=(state?.records||[]).filter(x=>x.username===s.username).length,age=n?Math.max(0,Math.floor((Date.now()-new Date(n.savedAt||n.date).getTime())/86400000)):20;return Math.min(40,age*3)+d.length*15+(weak.includes(n?.validation)?28:0)+(n?0:24)-seen*45}
 function suggest(state,exclude=''){return pupils().filter(s=>s.username!==exclude&&state?.attendance?.[s.username]!=='absent').sort((a,b)=>score(b,state)-score(a,state))[0]||pupils().find(s=>state?.attendance?.[s.username]!=='absent')||null}
@@ -54,13 +54,38 @@ function assistantReply(question,s){
   if(seconds>=5400){code='long_session';message='الحصة طويلة. فكر في إنهائها.'}
   if(!code||s.lastNudge===code)return;
   s.lastNudge=code;s.chat=s.chat||[];s.chat.push({role:'bot',text:message});s.chatOpen=true;localStorage.setItem(key(),JSON.stringify(s));render();
-}function panel(s){const titles=['ملخص السابقة','الحضور','الاقتراح','القراءات','الختام'];return '<div class="live-overlay" id="live-overlay"><section class="live-wizard"><header class="wizard-top"><div><small>الحصة المباشرة</small><strong id="live-timer">00:00</strong></div><div class="wizard-top-actions"><button class="wizard-alert" onclick="MawahibLive.alert()">تنبيه الإدارة</button><button onclick="MawahibLive.requestStop()">إيقاف</button></div></header><div class="wizard-progress">'+titles.map((x,i)=>'<span class="'+(i===s.step?'active':i<s.step?'done':'')+'"><i></i><b>'+x+'</b></span>').join('')+'</div><main class="wizard-stage" id="wizard-stage">'+stepHtml(s)+'</main><footer class="wizard-nav"><button type="button" '+(s.step===0?'disabled':'')+' onclick="MawahibLive.back()">السابق</button><span>'+(s.step+1)+' / 5</span><button type="button" '+(s.step===4?'disabled':'')+' onclick="MawahibLive.forward()">التالي</button></footer>'+assistantHtml(s)+'</section></div>'}
-function render(){if(!document.body?.dataset.profPage)return;document.querySelectorAll('#live-float,#live-overlay').forEach(n=>n.remove());const s=read(),b=document.createElement('button');b.id='live-float';b.className='live-float '+(s?'active':'');b.innerHTML='<span>✦</span><strong>'+(s?'الحصة جارية':'بدء الحصة')+'</strong>';b.onclick=()=>s?open():start();document.body.appendChild(b);if(s?.panel){document.body.insertAdjacentHTML('beforeend',panel(s));bindSwipe();updateTimer()}showIntro()}
+}function panel(s){const titles=['ملخص السابقة','الحضور','الاقتراح','القراءات','الختام'];return '<div class="live-overlay" id="live-overlay"><section class="live-wizard"><header class="wizard-top"><div><small>الحصة المباشرة · <span class="live-date">'+String(s.startedAt||'').slice(0,10)+'</span></small><strong id="live-timer">00:00</strong></div><div class="wizard-top-actions"><button class="wizard-alert" onclick="MawahibLive.alert()">تنبيه الإدارة</button><button onclick="MawahibLive.requestStop()">إيقاف</button></div></header><div class="wizard-progress">'+titles.map((x,i)=>'<span class="'+(i===s.step?'active':i<s.step?'done':'')+'"><i></i><b>'+x+'</b></span>').join('')+'</div><main class="wizard-stage" id="wizard-stage">'+stepHtml(s)+'</main><footer class="wizard-nav"><button type="button" '+(s.step===0?'disabled':'')+' onclick="MawahibLive.back()">السابق</button><span>'+(s.step+1)+' / 5</span><button type="button" '+(s.step===4?'disabled':'')+' onclick="MawahibLive.forward()">التالي</button></footer>'+assistantHtml(s)+'</section></div>'}
+function tourSteps(use){
+  return use===1?[
+    {target:'#live-timer',text:'هذا عداد مدة الحصة.'},
+    {target:'.wizard-progress',text:'هذه مراحل الحصة بالترتيب.'},
+    {target:'.wizard-nav button:last-child',text:'اضغط التالي أو اسحب للانتقال.'},
+    {target:'.assistant-peek',text:'المساعد يراقب ويقترح ويجيب.'},
+    {target:'.wizard-alert',text:'أرسل مشكلة إلى الإدارة من هنا.'}
+  ]:[
+    {target:'.wizard-progress',text:'أنهِ كل مرحلة بهدوء.'},
+    {target:'.assistant-peek',text:'اسأل المساعد عند الحاجة.'},
+    {target:'.wizard-nav button:first-child',text:'يمكنك الرجوع دون فقدان البيانات.'},
+    {target:'.wizard-top-actions button:last-child',text:'هذا الزر يفتح الملخص قبل الإنهاء.'}
+  ];
+}
+function showTour(){
+  const s=read();if(!s?.panel||!s.tourUse||s.tourUse>2||s.tourDone||document.getElementById('session-tour'))return;
+  const steps=tourSteps(s.tourUse),index=Math.max(0,Math.min(Number(s.tourIndex||0),steps.length-1)),step=steps[index],target=document.querySelector(step.target);
+  if(!target){s.tourIndex=index+1;if(s.tourIndex>=steps.length)s.tourDone=true;localStorage.setItem(key(),JSON.stringify(s));setTimeout(showTour,80);return}
+  const rect=target.getBoundingClientRect(),node=document.createElement('div');node.id='session-tour';node.className='session-tour';
+  node.innerHTML='<div class="tour-highlight"></div><section><span>'+(index+1)+' / '+steps.length+'</span><p>'+e(step.text)+'</p><div><button onclick="MawahibLive.skipTour()">تخطي</button><button onclick="MawahibLive.nextTour()">'+(index===steps.length-1?'تم':'التالي')+'</button></div></section><i>▼</i>';
+  document.body.appendChild(node);const light=node.querySelector('.tour-highlight');light.style.cssText='left:'+Math.max(4,rect.left-5)+'px;top:'+Math.max(4,rect.top-5)+'px;width:'+Math.min(innerWidth-8,rect.width+10)+'px;height:'+(rect.height+10)+'px';
+  const box=node.querySelector('section'),below=rect.bottom+170<innerHeight;box.style.left=Math.max(8,Math.min(innerWidth-288,rect.left+rect.width/2-140))+'px';box.style.top=(below?rect.bottom+24:Math.max(8,rect.top-148))+'px';const arrow=node.querySelector('i');arrow.style.left=Math.max(18,Math.min(innerWidth-30,rect.left+rect.width/2-10))+'px';arrow.style.top=(below?rect.bottom+2:rect.top-25)+'px';arrow.textContent=below?'▲':'▼';
+}
+function nextTour(){const s=read();if(!s)return;const length=tourSteps(s.tourUse).length;s.tourIndex=Number(s.tourIndex||0)+1;if(s.tourIndex>=length)s.tourDone=true;localStorage.setItem(key(),JSON.stringify(s));document.getElementById('session-tour')?.remove();if(!s.tourDone)setTimeout(showTour,80)}
+function skipTour(){const s=read();if(s){s.tourDone=true;localStorage.setItem(key(),JSON.stringify(s))}document.getElementById('session-tour')?.remove()}
+function render(){if(!document.body?.dataset.profPage)return;document.querySelectorAll('#live-float,#live-overlay,#session-tour').forEach(n=>n.remove());const s=read(),b=document.createElement('button');b.id='live-float';b.className='live-float '+(s?'active':'');b.innerHTML='<span>✦</span><strong>'+(s?'الحصة جارية':'بدء الحصة')+'</strong>';b.onclick=()=>s?open():start();document.body.appendChild(b);if(s?.panel){document.body.insertAdjacentHTML('beforeend',panel(s));bindSwipe();updateTimer();setTimeout(showTour,120)}showIntro()}
 function showIntro(){if(!prof()||localStorage.getItem(introKey())==='1'||document.getElementById('live-intro'))return;const n=document.createElement('div');n.id='live-intro';n.className='live-intro';n.innerHTML='<section><strong>وضع الحصة خطوة بخطوة</strong><p>ابدأ من الزر الذهبي. ستظهر مهمة واحدة في كل شاشة.</p><button onclick="MawahibLive.dismiss()">فهمت</button></section><b>↓</b>';document.body.appendChild(n)}
 function start(){
-  const id='live_'+Date.now(),attendance={};pupils().forEach(x=>attendance[x.username]='present');
+  const id='live_'+Date.now(),attendance={};pupils().forEach(x=>attendance[x.username]='present');const tourUse=Math.min(3,Number(localStorage.getItem(tourKey())||0)+1);localStorage.setItem(tourKey(),String(tourUse));
   const picked=suggest({records:[],attendance});
-  write({id,startedAt:new Date().toISOString(),current:picked?.username||'',records:[],alerts:[],chat:[],chatOpen:false,attendance,panel:true,step:0,lastSession:null,loadingPrevious:true,autoAt:Date.now()+8000});
+  write({id,startedAt:new Date().toISOString(),current:picked?.username||'',records:[],alerts:[],chat:[],chatOpen:false,attendance,panel:true,step:0,tourUse,tourIndex:0,tourDone:tourUse>2,lastSession:null,loadingPrevious:true,autoAt:Date.now()+8000});
   if(typeof Auth.getClassSessions==='function')Auth.getClassSessions(prof().username).then(previous=>{
     const current=read();if(!current||current.id!==id)return;
     current.lastSession=Array.isArray(previous)&&previous.length?[...previous].sort((a,b)=>String(b.endedAt||b.date||'').localeCompare(String(a.endedAt||a.date||'')))[0]:null;
@@ -75,5 +100,5 @@ function updateTimer(){const s=read(),node=document.getElementById('live-timer')
 function bindSwipe(){const stage=document.getElementById('wizard-stage');if(!stage)return;let startX=0;stage.addEventListener('touchstart',ev=>startX=ev.changedTouches[0].clientX,{passive:true});stage.addEventListener('touchend',ev=>{const delta=ev.changedTouches[0].clientX-startX;if(Math.abs(delta)<65)return;delta<0?forward():back()},{passive:true})}
 function toggleChat(){const s=read();if(s){s.chatOpen=!s.chatOpen;write(s)}}
 function ask(ev){ev.preventDefault();const input=document.getElementById('assistant-input'),question=input?.value.trim(),s=read();if(!s||!question)return;s.chat=s.chat||[];s.chat.push({role:'user',text:question},{role:'bot',text:assistantReply(question,s)});s.chatOpen=true;write(s);setTimeout(()=>document.getElementById('assistant-input')?.focus(),50)}function dismiss(){localStorage.setItem(introKey(),'1');document.getElementById('live-intro')?.remove()}
-window.MawahibLive={start,open,back,forward,skip,choose,nextStudent,scope,attendance,save,alert:alertAdmin,requestStop,finish,toggleChat,ask,dismiss};addEventListener('DOMContentLoaded',()=>{const timer=setInterval(()=>{if(prof()&&pupils()){clearInterval(timer);render()}},100);setTimeout(()=>clearInterval(timer),10000)});
+window.MawahibLive={start,open,back,forward,skip,choose,nextStudent,scope,attendance,save,alert:alertAdmin,requestStop,finish,toggleChat,ask,nextTour,skipTour,dismiss};addEventListener('DOMContentLoaded',()=>{const timer=setInterval(()=>{if(prof()&&pupils()){clearInterval(timer);render()}},100);setTimeout(()=>clearInterval(timer),10000)});
 })();
