@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v43-teacher-force-20260730';
+const CACHE_VERSION = 'mawahib-offline-v44-admin-modern-20260730';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -43,6 +43,9 @@ const STATIC_ASSETS = [
   './prof-simple.css',
   './admin-simple.css',
   './admin-simple.js',
+  './admin-command.css',
+  './admin-command-modern.css',
+  './admin-command.js',
   './dashboard_prof.html',
   './prof-recitation.html',
   './prof-students.html',
