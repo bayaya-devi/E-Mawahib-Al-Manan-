@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   const MODULE_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
-  const MODEL_ID = 'onnx-community/whisper-tiny';
+  const MODEL_ID = 'onnx-community/whisper-small';
   let pipelinePromise = null;
   function resample(channel, sourceRate, targetRate) {
     if (sourceRate === targetRate) return channel;

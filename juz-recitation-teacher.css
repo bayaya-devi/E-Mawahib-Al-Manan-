@@ -121,3 +121,13 @@
 @media(prefers-reduced-motion:reduce){.virtual-teacher-analyzing span{animation:none}}
 
 .virtual-teacher-capture.has-transcript{background:#eef8f2;border-color:#9ccdb0;color:#164f36;font-size:15px;font-weight:900;max-height:150px;overflow:auto;text-align:right}
+
+/* Structured virtual-teacher report: transcript, corrections, advice and /10 score. */
+.virtual-teacher-score-ten{width:118px;height:118px;margin:16px auto;display:flex;align-items:baseline;justify-content:center;gap:4px;border-radius:50%;background:var(--platform-primary);color:#fff;box-shadow:0 0 0 9px var(--platform-primary-soft)}
+.virtual-teacher-score-ten strong{font-size:34px;font-weight:1000}.virtual-teacher-score-ten span{font-size:14px;font-weight:900}
+.virtual-teacher-transcript,.virtual-teacher-corrections,.virtual-teacher-advice{margin:12px 0;padding:13px;border:1px solid #dbe5df;border-radius:10px;background:#fff;text-align:right}
+.virtual-teacher-transcript h3,.virtual-teacher-corrections h3{margin:0 0 7px;color:var(--platform-primary-dark);font-size:14px;font-weight:1000}
+.virtual-teacher-transcript p,.virtual-teacher-advice p{margin:0;color:#334155;font-size:14px;font-weight:750;line-height:1.9}
+.virtual-teacher-corrections ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}.virtual-teacher-corrections li{padding:8px 0;border-bottom:1px solid #edf2ef}.virtual-teacher-corrections li:last-child{border:0}.virtual-teacher-corrections li strong,.virtual-teacher-corrections li span{display:block}.virtual-teacher-corrections li strong{color:#9f1239;font-size:13px}.virtual-teacher-corrections li span{margin-top:3px;color:#475569;font-size:12px;font-weight:800;line-height:1.8}.virtual-teacher-corrections li.is-correct strong{color:#166534}
+.virtual-teacher-advice{border-color:#f3d37a;background:#fffaf0}.virtual-teacher-advice strong{display:block;color:#7c5200;font-size:13px}.virtual-teacher-scope{display:block;margin:10px auto;color:#64748b;font-size:10px;font-weight:800;line-height:1.7}
+@media(max-width:480px){.virtual-teacher-score-ten{width:102px;height:102px}.virtual-teacher-score-ten strong{font-size:30px}.virtual-teacher-transcript,.virtual-teacher-corrections,.virtual-teacher-advice{padding:11px}}

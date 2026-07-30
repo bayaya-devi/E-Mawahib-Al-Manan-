@@ -548,7 +548,7 @@ function setListeningMessage(statusText, captureText) {
     releaseMicrophone();
     if (heardWordCount < 4) {
       if (audioDetected) {
-        renderUnverified('\u0648\u0635\u0644 \u0635\u0648\u062a\u0643 \u0648\u0644\u0643\u0646 \u0644\u0645 \u064a\u062a\u0645 \u062a\u062d\u0648\u064a\u0644\u0647 \u0625\u0644\u0649 \u0643\u0644\u0645\u0627\u062a.', (lastError === 'network' ? '\u0627\u0644\u0627\u062a\u0635\u0627\u0644 \u0628\u062e\u062f\u0645\u0629 \u0627\u0644\u0635\u0648\u062a \u0645\u0646\u0642\u0637\u0639. ' : '') + '\u062d\u062f\u0651\u062b Google Chrome \u0648\u062a\u0623\u0643\u062f \u0645\u0646 \u0627\u0644\u0627\u062a\u0635\u0627\u0644 \u062b\u0645 \u0623\u0639\u062f \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629.');
+        renderUnverified('\u0648\u0635\u0644 \u0635\u0648\u062a\u0643 \u0648\u0644\u0643\u0646 \u0644\u0645 \u064a\u062a\u0645 \u062a\u062d\u0648\u064a\u0644\u0647 \u0625\u0644\u0649 \u0643\u0644\u0645\u0627\u062a.', (lastError === 'fallback-failed' ? '\u062a\u0639\u0630\u0631 \u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0645\u062d\u0631\u0643 \u0627\u0644\u0628\u062f\u064a\u0644. ' : '') + '\u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0627\u062a\u0635\u0627\u0644 \u062b\u0645 \u0623\u0639\u062f \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629.');
       } else if (!recognitionStarted) {
         renderUnverified('\u0644\u0645 \u062a\u0628\u062f\u0623 \u062e\u062f\u0645\u0629 \u0627\u0644\u0627\u0633\u062a\u0645\u0627\u0639.', '\u062e\u062f\u0645\u0629 \u0627\u0644\u0635\u0648\u062a \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629 \u0641\u064a \u0647\u0630\u0627 \u0627\u0644\u0645\u062a\u0635\u0641\u062d. \u0627\u0633\u062a\u0639\u0645\u0644 Google Chrome \u0627\u0644\u0645\u062d\u062f\u0651\u062b.');
       } else {
@@ -612,20 +612,48 @@ function setListeningMessage(statusText, captureText) {
   }
 
   function bestSequentialMatch(target, heard, cursor) {
-    if (!target.length || !heard.length || cursor >= heard.length) return { score: 0, next: cursor };
+    if (!target.length || !heard.length || cursor >= heard.length) return { score: 0, next: cursor, start: cursor, sample: [] };
     const direct = heard.slice(cursor, cursor + target.length);
     const directScore = sequenceSimilarity(target, direct);
-    if (directScore >= .82) return { score: directScore, next: cursor + direct.length };
-    const startMin = Math.max(0, cursor - 2);
+    if (directScore >= .40 || target.length <= 2) return { score: directScore, next: cursor + direct.length, start: cursor, sample: direct };
+    const startMin = cursor;
     const startMax = Math.min(heard.length - 1, cursor + Math.max(4, Math.min(12, Math.ceil(target.length * .45))));
     const lengths = [...new Set([Math.max(1, Math.floor(target.length * .68)), Math.max(1, target.length - 2), target.length, target.length + 2, Math.ceil(target.length * 1.32)])];
-    let best = { score: 0, next: cursor };
+    let best = { score: 0, rank: -1, next: cursor, start: cursor, sample: [] };
     for (let start = startMin; start <= startMax; start++) for (const length of lengths) {
       const sample = heard.slice(start, Math.min(heard.length, start + length));
       const score = sequenceSimilarity(target, sample);
-      if (score > best.score) best = { score, next: start + sample.length };
+      if (score > best.score) best = { score, next: start + sample.length, start, sample };
     }
     return best;
+  }
+
+  function alignWordCorrections(target, sample) {
+    const rows = target.length + 1, cols = sample.length + 1;
+    const matrix = Array.from({ length: rows }, () => Array(cols).fill(0));
+    for (let i = 0; i < rows; i++) matrix[i][0] = i;
+    for (let j = 0; j < cols; j++) matrix[0][j] = j;
+    for (let i = 1; i < rows; i++) for (let j = 1; j < cols; j++) {
+      const replace = matrix[i - 1][j - 1] + (1 - wordSimilarity(target[i - 1], sample[j - 1]));
+      matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, replace);
+    }
+    const corrections = []; let i = target.length, j = sample.length;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0) {
+        const similarity = wordSimilarity(target[i - 1], sample[j - 1]);
+        const diagonal = matrix[i - 1][j - 1] + (1 - similarity);
+        if (Math.abs(matrix[i][j] - diagonal) < .001) {
+          if (similarity < .72) corrections.push({ type: 'replace', expected: target[i - 1], heard: sample[j - 1] });
+          i -= 1; j -= 1; continue;
+        }
+      }
+      if (i > 0 && Math.abs(matrix[i][j] - (matrix[i - 1][j] + 1)) < .001) {
+        corrections.push({ type: 'missing', expected: target[i - 1], heard: '' }); i -= 1; continue;
+      }
+      if (j > 0) { j -= 1; continue; }
+      break;
+    }
+    return corrections.reverse().slice(0, 6);
   }
 
   function analyzeRecitation(verses, transcript, meta = {}) {
@@ -637,13 +665,13 @@ function setListeningMessage(statusText, captureText) {
       const match = bestSequentialMatch(target, heard, cursor);
       if (match.score >= .28) cursor = match.next;
       weightedScore += match.score * target.length;
-      return { num: verses[index].num, score: match.score, words: target.length };
+      return { num: verses[index].num || index + 1, score: match.score, words: target.length, corrections: alignWordCorrections(target, match.sample), heard: match.sample };
     });
     const coverage = Math.round(weightedScore / Math.max(1, expectedWords) * 100);
     const heardRatio = heard.length / Math.max(1, expectedWords);
     const observed = verseScores.filter(item => item.score >= .38).length;
     const mastered = verseScores.filter(item => item.score >= .78).length;
-    const review = verseScores.filter(item => item.score < .68).sort((a, b) => a.num - b.num).slice(0, 5);
+    const review = verseScores.filter(item => item.score < .82 || item.corrections.length).sort((a, b) => a.num - b.num).slice(0, 5);
     const confidenceValues = (meta.confidences || []).map(Number).filter(value => value > 0 && value <= 1);
     const confidence = confidenceValues.length ? confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length : null;
     const incomplete = heardRatio < .58 || observed < Math.ceil(verseScores.length * .55);
@@ -656,7 +684,10 @@ function setListeningMessage(statusText, captureText) {
     else if (coverage >= 84) { appreciation = 'جيد جدا'; encouragement = 'التسميع قريب جدا من النص، مع مواضع قليلة للمراجعة.'; }
     else if (coverage >= 74) { appreciation = 'جيد'; encouragement = 'راجع الآيات المحددة ثم أعد التسميع.'; }
     else { appreciation = 'يحتاج إلى مراجعة'; encouragement = 'تم التعرف على جزء معتبر، لكن توجد مواضع تحتاج إلى إعادة.'; }
-    return { status, isConclusive, coverage, mastered, total: verseScores.length, review, appreciation, encouragement, heardWords: heard.length, expectedWords, heardRatio, confidence };
+    const tolerantCoverage = Math.min(100, coverage + Math.min(8, (100 - coverage) * .45));
+    const scoreOutOf10 = Math.round(tolerantCoverage) / 10;
+    const advice = review.length ? '\u0631\u0627\u062c\u0639 \u0627\u0644\u0643\u0644\u0645\u0627\u062a \u0627\u0644\u0645\u062d\u062f\u062f\u0629 \u0628\u0647\u062f\u0648\u0621\u060c \u062b\u0645 \u0623\u0639\u062f \u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0622\u064a\u0629.' : coverage >= 92 ? '\u062d\u0627\u0641\u0638 \u0639\u0644\u0649 \u0647\u0630\u0627 \u0627\u0644\u0645\u0633\u062a\u0648\u0649 \u0648\u0631\u0627\u062c\u0639 \u0627\u0644\u0633\u0648\u0631\u0629 \u063a\u062f\u0627.' : coverage >= 75 ? '\u0631\u0627\u062c\u0639 \u0627\u0644\u0622\u064a\u0627\u062a \u0627\u0644\u0645\u062d\u062f\u062f\u0629 \u062b\u0645 \u0623\u0639\u062f \u0642\u0631\u0627\u0621\u062a\u0647\u0627 \u0628\u0628\u0637\u0621.' : '\u0627\u0633\u062a\u0645\u0639 \u0644\u0644\u0633\u0648\u0631\u0629 \u0622\u064a\u0629 \u0622\u064a\u0629\u060c \u062b\u0645 \u0623\u0639\u062f \u0627\u0644\u0645\u062d\u0627\u0648\u0644\u0629.';
+    return { status, isConclusive, coverage, scoreOutOf10, mastered, total: verseScores.length, review, appreciation, encouragement, advice, transcript: String(transcript || '').trim(), heardWords: heard.length, expectedWords, heardRatio, confidence };
   }
 
   function alternativeAffinity(text) {
@@ -754,7 +785,8 @@ function setListeningMessage(statusText, captureText) {
       surahId: state.selectedSurah.id,
       surahName: state.selectedSurah.nameAr,
       score: result.coverage,
-      engineVersion: 2,
+      scoreOutOf10: result.scoreOutOf10,
+      engineVersion: 3,
       appreciation: result.appreciation,
       masteredVerses: result.mastered,
       totalVerses: result.total,
@@ -766,19 +798,30 @@ function setListeningMessage(statusText, captureText) {
     writeTeacherQueue(queue);
     flushTeacherQueue();
   }
+  function correctionText(item) {
+    const items = (item.corrections || []).map(correction => correction.type === 'missing'
+      ? '\u0627\u0644\u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0646\u062a\u0638\u0631\u0629: ' + correction.expected
+      : '\u0627\u0644\u0645\u0646\u062a\u0638\u0631: ' + correction.expected + ' \u00b7 \u0627\u0644\u0645\u0633\u0645\u0648\u0639: ' + correction.heard);
+    return items.length ? items.join(' \u2014 ') : '\u0631\u0627\u062c\u0639 \u0627\u0644\u0622\u064a\u0629 \u0643\u0627\u0645\u0644\u0629.';
+  }
+
   function renderResult(result) {
     if (!state) return;
     if (!result.isConclusive) { renderUnverified(result.appreciation, result.encouragement); return; }
     publishTeacherResult(result);
-    const reviewText = result.review.length ? 'راجع الآيات: ' + result.review.map(item => item.num).join('، ') : 'لم يظهر موضع واضح يحتاج إلى إعادة.';
+    const corrections = result.review.length
+      ? result.review.map(item => '<li><strong>\u0627\u0644\u0622\u064a\u0629 ' + escapeHtml(item.num) + '</strong><span>' + escapeHtml(correctionText(item)) + '</span></li>').join('')
+      : '<li class="is-correct"><strong>\u0627\u0644\u0643\u0644\u0645\u0627\u062a \u0648\u0627\u0644\u062a\u0631\u062a\u064a\u0628 \u0635\u062d\u064a\u062d\u0627\u0646.</strong></li>';
     const body = document.getElementById('virtual-teacher-body');
     body.innerHTML = [
       '<div class="virtual-teacher-result">',
-        '<div class="virtual-teacher-result-head"><span>نتيجة التحليل</span><strong>' + escapeHtml(result.appreciation) + '</strong></div>',
-        '<div class="virtual-teacher-match"><div><span style="width:' + result.coverage + '%"></span></div><strong>' + result.coverage + '%</strong><small>تطابق الكلمات والترتيب</small></div>',
-        '<p class="virtual-teacher-encouragement">' + escapeHtml(result.encouragement) + '</p>',
-        '<div class="virtual-teacher-review">' + escapeHtml(reviewText) + '<br><small>هذا التحليل للكلمات والترتيب فقط. التجويد ومخارج الحروف يراجعها الأستاذ.</small></div>',
-        '<div class="virtual-teacher-actions"><button type="button" class="virtual-teacher-action secondary" id="virtual-teacher-back">اختيار سورة أخرى</button><button type="button" class="virtual-teacher-action" id="virtual-teacher-again">إعادة التسميع</button></div>',
+        '<div class="virtual-teacher-result-head"><span>\u0646\u062a\u064a\u062c\u0629 \u0627\u0644\u062a\u062d\u0644\u064a\u0644</span><strong>' + escapeHtml(result.appreciation) + '</strong></div>',
+        '<div class="virtual-teacher-score-ten"><strong>' + result.scoreOutOf10.toFixed(1) + '</strong><span>/ 10</span></div>',
+        '<section class="virtual-teacher-transcript"><h3>\u0645\u0627 \u0641\u0647\u0645\u0647 \u0627\u0644\u0646\u0638\u0627\u0645</h3><p>' + escapeHtml(result.transcript) + '</p></section>',
+        '<section class="virtual-teacher-corrections"><h3>\u0627\u0644\u062a\u0635\u062d\u064a\u062d</h3><ul>' + corrections + '</ul></section>',
+        '<section class="virtual-teacher-advice"><strong>\u0646\u0635\u064a\u062d\u0629 \u0627\u0644\u0623\u0633\u062a\u0627\u0630</strong><p>' + escapeHtml(result.advice) + '</p></section>',
+        '<small class="virtual-teacher-scope">\u0627\u0644\u0646\u0642\u0637\u0629 \u0644\u0644\u0643\u0644\u0645\u0627\u062a \u0648\u0627\u0644\u062a\u0631\u062a\u064a\u0628. \u0627\u0644\u062a\u062c\u0648\u064a\u062f \u0648\u0645\u062e\u0627\u0631\u062c \u0627\u0644\u062d\u0631\u0648\u0641 \u064a\u0631\u0627\u062c\u0639\u0647\u0627 \u0627\u0644\u0623\u0633\u062a\u0627\u0630.</small>',
+        '<div class="virtual-teacher-actions"><button type="button" class="virtual-teacher-action secondary" id="virtual-teacher-back">\u0627\u062e\u062a\u064a\u0627\u0631 \u0633\u0648\u0631\u0629 \u0623\u062e\u0631\u0649</button><button type="button" class="virtual-teacher-action" id="virtual-teacher-again">\u0625\u0639\u0627\u062f\u0629 \u0627\u0644\u0642\u0631\u0627\u0621\u0629</button></div>',
       '</div>'
     ].join('');
     document.getElementById('virtual-teacher-back').addEventListener('click', renderSelection);
