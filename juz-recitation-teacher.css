@@ -119,3 +119,5 @@
 @keyframes virtualTeacherSpin{to{transform:rotate(360deg)}}
 @media(max-width:480px){.virtual-teacher-listening{min-height:350px}.virtual-teacher-status{font-size:17px}.virtual-teacher-result-head strong{font-size:21px}}
 @media(prefers-reduced-motion:reduce){.virtual-teacher-analyzing span{animation:none}}
+
+.virtual-teacher-capture.has-transcript{background:#eef8f2;border-color:#9ccdb0;color:#164f36;font-size:15px;font-weight:900;max-height:150px;overflow:auto;text-align:right}

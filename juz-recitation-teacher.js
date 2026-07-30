@@ -4,6 +4,7 @@
   const INTRO_VERSION = '20260726-3';
   const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition;
   const AudioContextApi = window.AudioContext || window.webkitAudioContext;
+  const exclusiveMobileRecognition = /Android|HONOR|HUAWEI/i.test(navigator.userAgent || '');
   let state = null;
   let introResizeHandler = null;
 
@@ -213,6 +214,7 @@
       state.selectedSurah = selected;
       releaseMicrophone();
       state.stream = await requestMicrophone();
+      if (exclusiveMobileRecognition) releaseMicrophone();
       beginListening();
     } catch (error) {
       const denied = error && (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError');
@@ -239,13 +241,31 @@
     state.speechFrames = 0;
     state.peakLevel = 0;
     state.finishing = false;
+    state.transcriptionWatchAttempts = 0;
     renderListening();
     startAudioMonitor();
     createAndStartRecognition();
     clearInterval(state.timer);
     state.timer = setInterval(updateTimer, 500);
+    clearInterval(state.transcriptionWatchdog);
+    state.transcriptionWatchdog = setInterval(checkTranscriptionHealth, 4000);
   }
 
+  function checkTranscriptionHealth() {
+    if (!state?.listening || state.finishing) return;
+    const elapsed = Date.now() - state.startedAt;
+    const hasText = Boolean(visibleTranscript(state.currentInterim));
+    if (hasText || elapsed < 10000 || state.transcriptionWatchAttempts >= 2) return;
+    state.transcriptionWatchAttempts += 1;
+    state.recognitionLanguageIndex = (Number(state.recognitionLanguageIndex || 0) + 1) % 3;
+    setListeningMessage('أعيد ضبط الاستماع', 'واصل القراءة بصوت واضح.');
+    const recognition = state.recognition;
+    state.recognition = null;
+    state.recognitionGeneration += 1;
+    if (recognition) { try { recognition.abort(); } catch (error) {} }
+    clearTimeout(state.restartTimer);
+    state.restartTimer = setTimeout(createAndStartRecognition, 250);
+  }
   function renderListening() {
     const body = document.getElementById('virtual-teacher-body');
     body.innerHTML = [
@@ -255,7 +275,7 @@
         '<div class="virtual-teacher-status" id="virtual-teacher-status">أستمع الآن</div>',
         '<div class="virtual-teacher-timer" id="virtual-teacher-timer">00:00</div>',
         '<div class="virtual-teacher-meter" aria-label="microphone"><span id="virtual-teacher-meter-value"></span></div>',
-        '<div class="virtual-teacher-capture" id="virtual-teacher-live">ابدأ القراءة ولا تراقب الشاشة أثناء التسميع.</div>',
+        '<div class="virtual-teacher-capture" id="virtual-teacher-live" aria-live="polite">سيظهر هنا ما أسمعه منك.</div>',
         '<div class="virtual-teacher-actions listening-actions">',
           '<button type="button" class="virtual-teacher-action secondary" id="virtual-teacher-cancel">إلغاء</button>',
           '<button type="button" class="virtual-teacher-action" id="virtual-teacher-stop">إنهاء وتحليل</button>',
@@ -273,11 +293,23 @@
     if (element) element.textContent = String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
   }
 
-  function setListeningMessage(statusText, captureText) {
+    function visibleTranscript(interimText) {
+    if (!state) return '';
+    return state.transcriptParts.concat(interimText ? [interimText] : []).join(' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function showLiveTranscript(interimText) {
+    const capture = document.getElementById('virtual-teacher-live');
+    if (!capture) return;
+    const text = visibleTranscript(interimText);
+    capture.textContent = text || 'تحدث الآن بصوت واضح.';
+    capture.classList.toggle('has-transcript', Boolean(text));
+  }
+function setListeningMessage(statusText, captureText) {
     const status = document.getElementById('virtual-teacher-status');
     const capture = document.getElementById('virtual-teacher-live');
     if (status && statusText) status.textContent = statusText;
-    if (capture && captureText) capture.textContent = captureText;
+    if (capture && captureText && !visibleTranscript(state?.currentInterim || '')) capture.textContent = captureText;
   }
 
   function applyQuranContext(recognition) {
@@ -305,6 +337,7 @@
       if (!state || generation !== state.recognitionGeneration) return;
       state.recognitionStarted = true;
       state.restartFailures = 0;
+      showLiveTranscript(state.currentInterim);
       setListeningMessage('\u0623\u0633\u062a\u0645\u0639 \u0627\u0644\u0622\u0646', '');
     };
     recognition.onaudiostart = () => {
@@ -336,6 +369,7 @@
       }
       state.currentInterim = interim.trim();
       state.interim = state.currentInterim;
+      showLiveTranscript(state.currentInterim);
       state.restartFailures = 0;
       state.recognitionErrors = 0;
       setListeningMessage('\u062a\u0645 \u0627\u0644\u062a\u0642\u0627\u0637 \u0627\u0644\u0642\u0631\u0627\u0621\u0629', '\u0648\u0627\u0635\u0644 \u062d\u062a\u0649 \u0622\u062e\u0631 \u0622\u064a\u0629.');
@@ -369,6 +403,7 @@
       if (!state || generation !== state.recognitionGeneration) return;
       if (state.finishing) {
         if (state.currentInterim) appendTranscriptPart(state.currentInterim);
+        showLiveTranscript('');
         state.currentInterim = '';
         state.interim = '';
         if (typeof state.finishRecognition === 'function') state.finishRecognition();
@@ -377,6 +412,7 @@
       if (!state.listening || state.manualStop) return;
       if (state.currentInterim) {
         appendTranscriptPart(state.currentInterim);
+        showLiveTranscript('');
         state.currentInterim = '';
         state.interim = '';
       }
@@ -409,6 +445,7 @@
     state.manualStop = true;
     state.recognitionGeneration += 1;
     clearInterval(state.timer);
+    clearInterval(state.transcriptionWatchdog);
     clearTimeout(state.restartTimer);
     const recognition = state.recognition;
     state.recognition = null;
@@ -423,6 +460,7 @@
     state.listening = false;
     state.manualStop = true;
     clearInterval(state.timer);
+    clearInterval(state.transcriptionWatchdog);
     clearTimeout(state.restartTimer);
     cancelAnimationFrame(state.meterFrame);
     document.getElementById('virtual-teacher-body').innerHTML = '<div class="virtual-teacher-analyzing"><span></span><strong>\u062c\u0627\u0631\u064a \u0627\u0633\u062a\u0644\u0627\u0645 \u0622\u062e\u0631 \u0627\u0644\u0643\u0644\u0645\u0627\u062a...</strong></div>';
