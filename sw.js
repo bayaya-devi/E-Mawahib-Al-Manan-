@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v42-browser-asr-20260730';
+const CACHE_VERSION = 'mawahib-offline-v43-teacher-force-20260730';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
