@@ -1177,8 +1177,11 @@ const Auth = (() => {
     async function saveTeacherNote(studentId, payload) {
         const session = getSession();
         const date = new Date().toLocaleDateString('ar-MA', { day: 'numeric', month: 'long' });
-        const body = TEACHER_NOTE_PREFIX + JSON.stringify({ ...payload, studentId, profId: session?.username || '', profName: session?.prenom || '', savedAt: new Date().toISOString() });
+        const savedNote = { ...payload, studentId, profId: session?.username || '', profName: session?.prenom || '', savedAt: new Date().toISOString() };
+        const body = TEACHER_NOTE_PREFIX + JSON.stringify(savedNote);
         const row = { username: '__teacher_notes__:' + studentId, text: body, date };
+        const cachedNotes = _readOfflineCache(studentId, 'teacher_notes', []);
+        _writeOfflineCache(studentId, 'teacher_notes', [savedNote, ...cachedNotes.filter(note => note && note.savedAt !== savedNote.savedAt)].slice(0, 200));
         if (!_isOnline()) {
             _queueOfflineMutation('teacherNote', { studentId, row });
             return { ok: true, offline: true };
