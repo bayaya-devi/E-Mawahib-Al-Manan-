@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v45-admin-bento-20260730';
+const CACHE_VERSION = 'mawahib-offline-v46-global-rtl-20260730';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -32,6 +32,7 @@ const STATIC_ASSETS = [
   './first-use-guide.js',
   './platform-theme.js',
   './platform-theme.css',
+  './mawahib-design-system.css',
   './juz-puzzle.js',
   './juz-puzzle.css',
   './juz-recitation-teacher.js',
