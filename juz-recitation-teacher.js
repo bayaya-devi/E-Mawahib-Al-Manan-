@@ -5,6 +5,7 @@
   const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition;
   const AudioContextApi = window.AudioContext || window.webkitAudioContext;
   const exclusiveMobileRecognition = /Android|HONOR|HUAWEI/i.test(navigator.userAgent || '');
+  const BrowserAsr = window.MawahibBrowserAsr;
   let state = null;
   let introResizeHandler = null;
 
@@ -110,7 +111,11 @@
       recognitionErrors: 0,
       recognitionStarted: false,
       recognitionSoundDetected: false,
-      lastRecognitionError: ''
+      lastRecognitionError: '',
+      recorder: null,
+      audioChunks: [],
+      recordingBlob: null,
+      fallbackMode: false
     };
     const modal = ensureModal();
     modal.classList.add('open');
@@ -166,6 +171,45 @@
     state.stream = null;
   }
 
+  function startLocalRecording() {
+    if (!state?.stream || typeof MediaRecorder === 'undefined') return false;
+    try {
+      const choices = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+      const mimeType = choices.find(type => !MediaRecorder.isTypeSupported || MediaRecorder.isTypeSupported(type));
+      const recorder = mimeType ? new MediaRecorder(state.stream, { mimeType }) : new MediaRecorder(state.stream);
+      state.audioChunks = []; state.recordingBlob = null;
+      recorder.ondataavailable = event => { if (event.data && event.data.size && state) state.audioChunks.push(event.data); };
+      recorder.start(750); state.recorder = recorder; return true;
+    } catch (error) { state.recorder = null; return false; }
+  }
+
+  function stopLocalRecording() {
+    if (!state?.recorder) return Promise.resolve(state?.recordingBlob || null);
+    const recorder = state.recorder;
+    if (recorder.state === 'inactive') return Promise.resolve(state.recordingBlob || null);
+    return new Promise(resolve => {
+      let settled = false;
+      const done = () => {
+        if (settled || !state) return resolve(null); settled = true;
+        const type = recorder.mimeType || state.audioChunks[0]?.type || 'audio/webm';
+        state.recordingBlob = state.audioChunks.length ? new Blob(state.audioChunks, { type }) : null;
+        state.recorder = null; resolve(state.recordingBlob);
+      };
+      recorder.addEventListener('stop', done, { once: true });
+      try { recorder.stop(); } catch (error) { done(); }
+      setTimeout(done, 1200);
+    });
+  }
+
+  function switchToBrowserFallback(message) {
+    if (!state || state.fallbackMode) return;
+    state.fallbackMode = true; state.lastRecognitionError = 'google-service-unavailable';
+    const recognition = state.recognition; state.recognition = null; state.recognitionGeneration += 1;
+    clearTimeout(state.restartTimer);
+    if (recognition) { try { recognition.abort(); } catch (error) {} }
+    setListeningMessage('\u0627\u0644\u0645\u062d\u0631\u0643 \u0627\u0644\u0628\u062f\u064a\u0644 \u064a\u0639\u0645\u0644', message || '\u0648\u0627\u0635\u0644 \u0627\u0644\u0642\u0631\u0627\u0621\u0629\u060c \u0648\u0633\u064a\u062a\u0645 \u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u062a\u0633\u062c\u064a\u0644 \u0639\u0644\u0649 \u062c\u0647\u0627\u0632\u0643.');
+  }
+
   async function startAudioMonitor() {
     if (!state?.stream || !AudioContextApi) return;
     const context = new AudioContextApi();
@@ -203,8 +247,8 @@
     if (!selected) return;
     const startButton = document.getElementById('virtual-teacher-start');
     if (startButton) { startButton.disabled = true; startButton.textContent = 'جاري التحضير...'; }
-    if (!SpeechRecognitionApi) {
-      showError('التحليل الصوتي غير متاح في هذا المتصفح. افتح المنصة في Google Chrome أو Microsoft Edge واسمح باستعمال الميكروفون.', true);
+    if (!SpeechRecognitionApi && (!BrowserAsr || typeof MediaRecorder === 'undefined')) {
+      showError('\u0627\u0644\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0635\u0648\u062a\u064a \u063a\u064a\u0631 \u0645\u062a\u0627\u062d \u0641\u064a \u0647\u0630\u0627 \u0627\u0644\u0645\u062a\u0635\u0641\u062d. \u062d\u062f\u0651\u062b \u0627\u0644\u0645\u062a\u0635\u0641\u062d \u062b\u0645 \u062d\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.', true);
       return;
     }
     try {
@@ -214,7 +258,8 @@
       state.selectedSurah = selected;
       releaseMicrophone();
       state.stream = await requestMicrophone();
-      if (exclusiveMobileRecognition) releaseMicrophone();
+      state.fallbackMode = exclusiveMobileRecognition || !SpeechRecognitionApi;
+      if (!startLocalRecording() && state.fallbackMode) throw new Error('recording-unavailable');
       beginListening();
     } catch (error) {
       const denied = error && (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError');
@@ -244,7 +289,8 @@
     state.transcriptionWatchAttempts = 0;
     renderListening();
     startAudioMonitor();
-    createAndStartRecognition();
+    if (state.fallbackMode) setListeningMessage('\u0627\u0644\u062a\u0633\u062c\u064a\u0644 \u062c\u0627\u0647\u0632', '\u0627\u0642\u0631\u0623 \u0627\u0644\u0633\u0648\u0631\u0629 \u0643\u0627\u0645\u0644\u0629\u060c \u062b\u0645 \u0627\u0636\u063a\u0637 \u0625\u0646\u0647\u0627\u0621 \u0648\u062a\u062d\u0644\u064a\u0644.');
+    else createAndStartRecognition();
     clearInterval(state.timer);
     state.timer = setInterval(updateTimer, 500);
     clearInterval(state.transcriptionWatchdog);
@@ -252,7 +298,7 @@
   }
 
   function checkTranscriptionHealth() {
-    if (!state?.listening || state.finishing) return;
+    if (!state?.listening || state.finishing || state.fallbackMode) return;
     const elapsed = Date.now() - state.startedAt;
     const hasText = Boolean(visibleTranscript(state.currentInterim));
     if (hasText || elapsed < 10000 || state.transcriptionWatchAttempts >= 2) return;
@@ -320,7 +366,7 @@ function setListeningMessage(statusText, captureText) {
   }
 
   function createAndStartRecognition() {
-    if (!state || !state.listening || state.manualStop) return;
+    if (!state || !state.listening || state.manualStop || state.fallbackMode || !SpeechRecognitionApi) return;
     const generation = ++state.recognitionGeneration;
     const recognition = new SpeechRecognitionApi();
     const languages = ['ar-SA', 'ar-MA', 'ar'];
@@ -385,9 +431,10 @@ function setListeningMessage(statusText, captureText) {
       state.lastRecognitionError = errorCode;
       state.recognitionErrors += 1;
       if (errorCode === 'not-allowed' || errorCode === 'service-not-allowed' || errorCode === 'audio-capture') {
-        stopRecognition(true);
-        releaseMicrophone();
-        showError('\u062a\u0639\u0630\u0631 \u0627\u0633\u062a\u0639\u0645\u0627\u0644 \u0627\u0644\u0645\u064a\u0643\u0631\u0648\u0641\u0648\u0646. \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0625\u0630\u0646 \u062b\u0645 \u062d\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.', true);
+        if (errorCode === 'audio-capture' && !state.stream) {
+          stopRecognition(true); releaseMicrophone();
+          showError('\u062a\u0639\u0630\u0631 \u0627\u0633\u062a\u0639\u0645\u0627\u0644 \u0627\u0644\u0645\u064a\u0643\u0631\u0648\u0641\u0648\u0646. \u062a\u062d\u0642\u0642 \u0645\u0646 \u0627\u0644\u0625\u0630\u0646 \u062b\u0645 \u062d\u0627\u0648\u0644 \u0645\u0631\u0629 \u0623\u062e\u0631\u0649.', true);
+        } else switchToBrowserFallback('\u062e\u062f\u0645\u0629 Google \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629. \u0648\u0627\u0635\u0644 \u0627\u0644\u0642\u0631\u0627\u0621\u0629\u060c \u0648\u0633\u064a\u062d\u0644\u0644 \u0627\u0644\u0645\u062d\u0631\u0643 \u0627\u0644\u0628\u062f\u064a\u0644 \u0627\u0644\u062a\u0633\u062c\u064a\u0644.');
         return;
       }
       if (errorCode === 'language-not-supported' || errorCode === 'language-unavailable') {
@@ -430,9 +477,7 @@ function setListeningMessage(statusText, captureText) {
       state.restartFailures += 1;
       state.lastRecognitionError = error?.name || 'start-failed';
       if (state.restartFailures >= 4) {
-        stopRecognition(true);
-        releaseMicrophone();
-        showError('\u062e\u062f\u0645\u0629 \u0627\u0644\u062a\u0639\u0631\u0641 \u0627\u0644\u0635\u0648\u062a\u064a \u0644\u0627 \u062a\u0639\u0645\u0644 \u0641\u064a \u0647\u0630\u0627 \u0627\u0644\u0645\u062a\u0635\u0641\u062d. \u062d\u062f\u0651\u062b Google Chrome \u0623\u0648 \u0627\u0633\u062a\u0639\u0645\u0644 \u062c\u0647\u0627\u0632\u0627 \u0622\u062e\u0631.', true);
+        switchToBrowserFallback('\u062a\u0639\u0630\u0631 \u062a\u0634\u063a\u064a\u0644 \u062e\u062f\u0645\u0629 Google. \u0648\u0627\u0635\u0644 \u0627\u0644\u0642\u0631\u0627\u0621\u0629\u060c \u0648\u0633\u064a\u062d\u0644\u0644 \u0627\u0644\u0645\u062d\u0631\u0643 \u0627\u0644\u0628\u062f\u064a\u0644 \u0627\u0644\u062a\u0633\u062c\u064a\u0644.');
         return;
       }
       state.restartTimer = setTimeout(createAndStartRecognition, 350);
@@ -454,7 +499,7 @@ function setListeningMessage(statusText, captureText) {
     }
   }
 
-  function finishRecitation() {
+  async function finishRecitation() {
     if (!state || state.finishing) return;
     state.finishing = true;
     state.listening = false;
@@ -467,14 +512,21 @@ function setListeningMessage(statusText, captureText) {
     const recognition = state.recognition;
     state.recognition = null;
     let completed = false;
-    const complete = () => {
+    const complete = async () => {
       if (completed || !state) return;
-      completed = true;
-      state.finishRecognition = null;
+      completed = true; state.finishRecognition = null;
       if (state.currentInterim) appendTranscriptPart(state.currentInterim);
-      state.currentInterim = '';
-      state.interim = '';
-      setTimeout(analyzeFinishedRecitation, 220);
+      state.currentInterim = ''; state.interim = '';
+      const blob = await stopLocalRecording();
+      const hasTranscript = words(state.transcriptParts.join(' ')).length >= 4;
+      if (!hasTranscript && blob && BrowserAsr) {
+        document.getElementById('virtual-teacher-body').innerHTML = '<div class="virtual-teacher-analyzing"><span></span><strong>\u062c\u0627\u0631\u064a \u062a\u0634\u063a\u064a\u0644 \u0627\u0644\u0645\u062d\u0631\u0643 \u0627\u0644\u0628\u062f\u064a\u0644 \u0648\u062a\u062d\u0644\u064a\u0644 \u0627\u0644\u0642\u0631\u0627\u0621\u0629...</strong><small>\u0642\u062f \u064a\u0633\u062a\u063a\u0631\u0642 \u0627\u0644\u062a\u062d\u0636\u064a\u0631 \u0648\u0642\u062a\u0627 \u0623\u0637\u0648\u0644 \u0641\u064a \u0623\u0648\u0644 \u0627\u0633\u062a\u0639\u0645\u0627\u0644.</small></div>';
+        try {
+          const text = await BrowserAsr.transcribe(blob, progress => { const label = document.querySelector('.virtual-teacher-analyzing strong'); if (label && progress) label.textContent = progress; });
+          if (text) state.transcriptParts = [text];
+        } catch (error) { state.lastRecognitionError = 'fallback-failed'; }
+      }
+      setTimeout(analyzeFinishedRecitation, 100);
     };
     state.finishRecognition = complete;
     if (!recognition) {

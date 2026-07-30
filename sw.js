@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v41-device-layout-force-20260729';
+const CACHE_VERSION = 'mawahib-offline-v42-browser-asr-20260730';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -35,6 +35,7 @@ const STATIC_ASSETS = [
   './juz-puzzle.js',
   './juz-puzzle.css',
   './juz-recitation-teacher.js',
+  './browser-asr-fallback.js',
   './juz-recitation-teacher.css',
   './notifications.js',
   './surah-autoplay.js',
