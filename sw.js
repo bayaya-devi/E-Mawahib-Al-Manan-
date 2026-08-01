@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v52-large-login-type-20260801';
+const CACHE_VERSION = 'mawahib-offline-v53-premium-platform-20260801';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -33,6 +33,7 @@ const STATIC_ASSETS = [
   './platform-theme.js',
   './platform-theme.css',
   './mawahib-design-system.css',
+  './mawahib-premium-2026.css',
   './juz-puzzle.js',
   './juz-puzzle.css',
   './juz-recitation-teacher.js',
