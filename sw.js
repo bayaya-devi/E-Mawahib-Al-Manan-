@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v51-large-type-20260801';
+const CACHE_VERSION = 'mawahib-offline-v52-large-login-type-20260801';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
