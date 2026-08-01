@@ -9,8 +9,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js?v=20260730-carnet-sync-8"></script>
   <script src="registry.js"></script>
-  <link rel="stylesheet" href="platform-theme.css?v=20260730-mobile-journey-zoom-1">
-  <script src="platform-theme.js?v=20260723-juz-verse-puzzle-1"></script>
+  <link rel="stylesheet" href="platform-theme.css?v=20260801-design-restore-1">
+  <script src="platform-theme.js?v=20260801-design-restore-1"></script>
   <style>
     :root {
       --teacher-bg: #f5f5f7;
@@ -845,15 +845,7 @@
 
     function initProfNavAutoHide() {
       const nav = document.getElementById('prof-nav');
-      if (!nav) return;
-      let timer = null;
-      let lastY = window.scrollY || 0;
-      const update = () => {
-        const y = window.scrollY || 0;
-        nav.classList.toggle('is-hidden', y > lastY && y > 80);
-        lastY = y;
-      };
-      window.addEventListener('scroll', update, { passive: true });
+      if (nav) nav.classList.remove('is-hidden', 'nav-scroll-hidden');
     }
 
     function setAllPresent(value) {

@@ -957,23 +957,9 @@
   }
 
   function initNavAutoHide() {
-    let lastY = window.scrollY || 0;
-    let revealTimer = null;
-
-    window.addEventListener('scroll', () => {
-      const y = window.scrollY || 0;
-      const navs = Array.from(document.querySelectorAll('.nav-bottom, .prof-nav, .admin-nav, .admin-simple-nav'));
-      if (!navs.length) { lastY = y; return; }
-      const delta = Math.abs(y - lastY);
-      if (delta < 10) return;
-
-      const scrollingDown = y > lastY;
-      const nearTop = y < 80;
-      navs.forEach(nav => nav.classList.toggle('nav-scroll-hidden', scrollingDown && !nearTop));
-      lastY = y;
-
-      clearTimeout(revealTimer);
-    }, { passive: true });
+    document.querySelectorAll('.nav-bottom, .prof-nav, .admin-nav, .admin-simple-nav').forEach(nav => {
+      nav.classList.remove('nav-scroll-hidden', 'is-hidden');
+    });
   }
 
   function syncSurahTheme() {
