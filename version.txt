@@ -1,3 +1,3 @@
-mawahib-site-version=20260801-density-theme-1
+mawahib-site-version=20260801-typography-accordion-1
 sites-package=embedded-worker
-updated=2026-08-01T21:46:18+01:00
+updated=2026-08-01T22:12:44+01:00

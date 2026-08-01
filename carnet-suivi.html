@@ -51,8 +51,13 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 10px;
+      cursor: pointer;
+      list-style: none;
     }
+    .day-title::-webkit-details-marker { display: none; }
+    .day-title::before { content: '\25BE'; color: var(--platform-primary, #14532d); font-size: 18px; font-weight: 900; transition: transform .18s ease; }
+    .day-group:not([open]) .day-title::before { transform: rotate(-90deg); }
+    .day-content { padding-top: 10px; }
     .recitation-row {
       position: relative;
       padding: 12px 14px 12px 0;
@@ -102,7 +107,7 @@
       .nav-bottom .max-w-4xl { padding-inline: 6px; }
     }
   </style>
-<link rel="stylesheet" href="mawahib-design-system.css?v=20260801-density-theme-1">
+<link rel="stylesheet" href="mawahib-design-system.css?v=20260801-typography-accordion-1">
 </head>
 <body>
   <script>Auth.requireAuth('login.html');</script>
@@ -175,17 +180,17 @@
         list.innerHTML = '<div class="day-group text-slate-500 font-bold">لا يوجد تسميع مسجل بعد.</div>';
         return;
       }
-      list.innerHTML = days.map(day => {
-        return '<article class="day-group">'
-          + '<div class="day-title"><h2 class="text-lg font-black text-slate-900">' + escapeHtml(day.date) + '</h2><span class="text-xs font-black text-slate-400">' + day.items.length + ' تسميع</span></div>'
-          + day.items.map(note => {
+      list.innerHTML = days.map((day, index) => {
+        return '<details class="day-group"' + (index === 0 ? ' open' : '') + '>'
+          + '<summary class="day-title"><h2 class="text-lg font-black text-slate-900">' + escapeHtml(day.date) + '</h2><span class="text-xs font-black text-slate-400">' + day.items.length + ' تسميع</span></summary>'
+          + '<div class="day-content">' + day.items.map(note => {
             return '<div class="recitation-row">'
               + '<div class="flex items-start justify-between gap-3"><div><strong class="text-base text-slate-900">' + escapeHtml(note.surah || 'تسميع عام') + '</strong><p class="text-xs font-black text-slate-500 mt-1">' + escapeHtml(rangeLabel(note)) + '</p></div><span class="chip ' + tone(note.validation) + '">' + escapeHtml(note.validation || '-') + '</span></div>'
               + (note.comment ? '<p class="text-sm text-slate-700 font-bold mt-2">' + escapeHtml(note.comment) + '</p>' : '')
               + (note.profName ? '<p class="text-xs text-slate-400 font-black mt-2">الأستاذ: ' + escapeHtml(note.profName) + '</p>' : '')
               + '</div>';
-          }).join('')
-          + '</article>';
+          }).join('') + '</div>'
+          + '</details>';
       }).join('');
     }
 
