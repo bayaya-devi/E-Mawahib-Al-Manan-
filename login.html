@@ -145,170 +145,21 @@
     </style>
     <script src="platform-theme.js?v=20260729-amazigh-digital-teacher-4"></script>
 <link rel="stylesheet" href="mawahib-design-system.css?v=20260730-global-rtl-1">
-<link rel="stylesheet" href="login-2026.css?v=20260801-layout-1"><script defer src="login-layout.js?v=20260801-layout-1"></script></head>
-<body class="flex items-center justify-center p-4 relative overflow-hidden">
-
-    <div class="deco-circle w-96 h-96 -top-20 -left-20"></div>
-    <div class="deco-circle w-64 h-64 bottom-10 right-10"></div>
-
-    <div class="card w-full max-w-sm p-6 relative fade-in z-20">
-
-        <div class="text-center mb-5">
-            <img src="logo.webp" alt="مواهب المنان" class="h-16 mx-auto mb-4 object-contain">
-            <h1 class="text-xl font-black text-gray-800">منصة دار القرآن</h1>
-            <p class="text-xs text-emerald-700 font-semibold mt-1">جمعية مواهب المنان • عين العودة</p>
-        </div>
-        <a class="discover-link" href="dar-al-hadith.html" aria-label="اعرف المزيد عن الجمعية">
-            <span class="discover-icon" aria-hidden="true">ⓘ</span>
-            <span>اعرف المزيد</span>
-            <span aria-hidden="true">←</span>
-        </a>
-        <div class="flex bg-gray-100 rounded-xl p-1 mb-5 gap-1"></div>
-
-        <div id="error-box" class="error-box mb-4"></div>
-
-        <div id="form-login" class="space-y-3">
-            
-            <div class="flex justify-center gap-4 mb-3 bg-gray-50 p-2 rounded-lg border border-gray-100">
-                <label class="flex items-center gap-1.5 cursor-pointer">
-                    <input type="radio" name="role" value="student" checked onchange="toggleRoleUI()" class="w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500">
-                    <span class="font-bold text-gray-700 text-xs">تلميذ</span>
-                </label>
-                <label class="flex items-center gap-1.5 cursor-pointer">
-                    <input type="radio" name="role" value="prof" onchange="toggleRoleUI()" class="w-3.5 h-3.5 text-emerald-600 focus:ring-emerald-500">
-                    <span class="font-bold text-gray-700 text-xs">أستاذ</span>
-                </label>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1">الاسم :</label>
-                <input id="login-prenom" type="text" class="input-field">
-            </div>
-            
-            <div id="container-nom">
-                <label class="block text-xs font-bold text-gray-600 mb-1">الاسم العائلي :</label>
-                <input id="login-nom" type="text" class="input-field">
-            </div>
-
-            <div id="container-classe" class="hidden">
-                <label class="block text-xs font-bold text-gray-600 mb-1">القسم :</label>
-                <input type="text" id="login-classe" class="input-field" placeholder="ex: 1A, 2B...">
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1">كلمة المرور :</label>
-                <input id="login-password" type="password" dir="ltr" autocomplete="current-password" class="input-field" placeholder="••••••"
-                       onkeydown="if(event.key==='Enter') doLogin()">
-            </div>
-            <button class="btn-primary mt-3" onclick="doLogin()">دخول</button>
-            <p id="student-login-help" class="mt-2 text-center text-xs font-medium text-gray-400 leading-relaxed">
-                إذا لم تكن لديك معلومات الدخول، تواصل مع الإدارة.
-            </p>
-        </div>
-
-        <div id="form-register" class="space-y-3 hidden">
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1">الاسم</label>
-                <input id="reg-prenom" type="text" class="input-field">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1">اللقب</label>
-                <input id="reg-nom" type="text" class="input-field">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-600 mb-1">كلمة المرور</label>
-                <input id="reg-password" type="password" dir="ltr" autocomplete="new-password" class="input-field" placeholder="4 أحرف على الأقل"
-                       onkeydown="if(event.key==='Enter') doRegister()">
-            </div>
-            <button class="btn-primary mt-3" onclick="doRegister()">إنشاء الحساب</button>
-        </div>
-    </div>
-    
-    <script>
-        if (Auth.getSession()) {
-            const s = Auth.getSession();
-            sessionStorage.setItem('loading_redirect', s.role === 'admin' ? 'controle-mawahib-7x9k.html' : (s.role === 'prof' ? 'dashboard_prof.html' : 'dashboard.html'));
-            window.location.href = 'loading.html';
-        }
-
-        function targetForSession(session) {
-            if (session?.role === 'admin') return 'controle-mawahib-7x9k.html';
-            if (session?.role === 'prof') return 'dashboard_prof.html';
-            return 'dashboard.html';
-        }
-
-        function showTab(tab) {
-            const isLogin = tab === 'login';
-            document.getElementById('form-login').classList.toggle('hidden', !isLogin);
-            document.getElementById('form-register').classList.toggle('hidden', isLogin);
-            document.getElementById('tab-login').className = `flex-1 py-1.5 font-bold text-xs ${isLogin ? 'tab-active' : 'tab-inactive'} transition-all`;
-            hideError();
-        }
-
-        function showError(msg) {
-            const box = document.getElementById('error-box');
-            box.textContent = msg;
-            box.style.display = 'block';
-        }
-        function hideError() {
-            document.getElementById('error-box').style.display = 'none';
-        }
-
-        async function doRegister() {
-            // ✅ .trim() sur tous les champs
-            const prenom   = document.getElementById('reg-prenom').value.trim();
-            const nom      = document.getElementById('reg-nom').value.trim();
-            const password = document.getElementById('reg-password').value.trim();
-            
-            const result = await Auth.register(prenom, nom, password);
-            
-            if (result.ok) {
-                window.location.href = 'dashboard.html';
-            } else {
-                showError(result.error);
-            }
-        }
-
-        function toggleRoleUI() {
-            const role = document.querySelector('input[name="role"]:checked').value;
-            const containerNom = document.getElementById('container-nom');
-            const containerClasse = document.getElementById('container-classe');
-
-            if (role === 'prof') {
-                containerNom.classList.add('hidden');
-                containerClasse.classList.remove('hidden');
-                document.getElementById('student-login-help').classList.add('hidden');
-            } else {
-                containerNom.classList.remove('hidden');
-                containerClasse.classList.add('hidden');
-                document.getElementById('student-login-help').classList.remove('hidden');
-            }
-        }
-
-        async function doLogin() {
-            const role = document.querySelector('input[name="role"]:checked').value;
-            // ✅ .trim() sur tous les champs
-            const prenom   = document.getElementById('login-prenom').value.trim();
-            const password = document.getElementById('login-password').value.trim();
-
-            if (role === 'prof') {
-                const classe = document.getElementById('login-classe').value.trim(); // ✅
-                const result = await Auth.loginProf(prenom, classe, password);
-                if (result.ok) {
-                sessionStorage.setItem('loading_redirect', targetForSession(Auth.getSession()));
-    window.location.href = 'loading.html';
-}
-                else { showError(result.error); }
-            } else {
-                const nom = document.getElementById('login-nom').value.trim(); // ✅
-                const result = await Auth.login(prenom, nom, password);
-                if (result.ok) {
-    sessionStorage.setItem('loading_redirect', 'dashboard.html');
-    window.location.href = 'loading.html';
-}
-                else { showError(result.error); }
-            }
-        }
-    </script>
-</body>
-</html>
+<link rel="stylesheet" href="login-2026.css?v=20260801-login-premium-2"></head>
+<body class="login-page">
+<main class="login-shell" aria-label="منصة دار القرآن">
+<section class="login-brand" aria-labelledby="platform-title"><img src="logo.webp" alt="جمعية مواهب المنان" class="brand-logo"><h1 id="platform-title">منصة دار القرآن</h1><p class="brand-subtitle">جمعية مواهب المنان - عين العودة</p><span class="brand-divider" aria-hidden="true">✦</span><p class="brand-copy">منصة تعليمية متكاملة تربط الطلاب والمعلمين والإدارة لخدمة كتاب الله تعالى.</p><a class="discover-link" href="dar-al-hadith.html" aria-label="زيارة الموقع"><span aria-hidden="true">◎</span><span>زيارة الموقع</span></a></section>
+<section class="login-card" aria-labelledby="login-title"><header class="login-card-head"><h2 id="login-title">تسجيل الدخول</h2><span class="login-star" aria-hidden="true">✦</span><p>مرحباً بك، يرجى إدخال بياناتك للدخول إلى المنصة</p></header><div id="error-box" class="error-box" role="alert" aria-live="polite" hidden></div><form id="form-login" novalidate onsubmit="event.preventDefault(); doLogin();"><fieldset class="role-selector"><legend>نوع الحساب</legend><label class="role-option" for="role-student"><input id="role-student" type="radio" name="role" value="student" checked onchange="toggleRoleUI()"><span class="role-icon" aria-hidden="true">♙</span><span>تلميذ</span></label><label class="role-option" for="role-prof"><input id="role-prof" type="radio" name="role" value="prof" onchange="toggleRoleUI()"><span class="role-icon" aria-hidden="true">⌘</span><span>أستاذ</span></label></fieldset><div class="field-group"><label for="login-prenom">الاسم</label><div class="field-control"><span aria-hidden="true">♙</span><input id="login-prenom" type="text" autocomplete="given-name" placeholder="أدخل اسمك"></div></div><div id="container-nom" class="field-group"><label for="login-nom">الاسم العائلي</label><div class="field-control"><span aria-hidden="true">♙</span><input id="login-nom" type="text" autocomplete="family-name" placeholder="أدخل اسم العائلة"></div></div><div id="container-classe" class="field-group hidden"><label for="login-classe">القسم</label><div class="field-control"><span aria-hidden="true">▦</span><input id="login-classe" type="text" dir="auto" autocomplete="organization" placeholder="أدخل القسم"></div></div><div class="field-group"><label for="login-password">كلمة المرور</label><div class="field-control password-control"><span aria-hidden="true">⌑</span><input id="login-password" type="password" dir="ltr" autocomplete="current-password" placeholder="أدخل كلمة المرور"><button type="button" class="password-toggle" onclick="toggleLoginPassword()" aria-label="إظهار كلمة المرور" aria-pressed="false">◉</button></div></div><button id="login-submit" type="submit" class="btn-primary"><span aria-hidden="true">↲</span><span class="login-submit-label">دخول</span></button><p id="student-login-help" class="login-help">إذا لم تكن لديك معلومات الدخول، تواصل مع الإدارة.</p></form><div id="form-register" class="hidden" aria-hidden="true"><input id="reg-prenom" type="text"><input id="reg-nom" type="text"><input id="reg-password" type="password" dir="ltr"><button type="button" onclick="doRegister()">إنشاء الحساب</button></div></section>
+</main>
+<script>
+if(Auth.getSession()){const s=Auth.getSession();sessionStorage.setItem('loading_redirect',s.role==='admin'?'controle-mawahib-7x9k.html':(s.role==='prof'?'dashboard_prof.html':'dashboard.html'));window.location.href='loading.html';}
+function targetForSession(session){if(session?.role==='admin')return 'controle-mawahib-7x9k.html';if(session?.role==='prof')return 'dashboard_prof.html';return 'dashboard.html';}
+function showTab(tab){const isLogin=tab==='login';document.getElementById('form-login').classList.toggle('hidden',!isLogin);document.getElementById('form-register').classList.toggle('hidden',isLogin);hideError();}
+function showError(message){const box=document.getElementById('error-box');box.textContent=message||'معلومات الدخول غير صحيحة.';box.hidden=false;}
+function hideError(){const box=document.getElementById('error-box');box.hidden=true;box.textContent='';}
+function setLoginSubmitting(active){const button=document.getElementById('login-submit');button.disabled=active;button.querySelector('.login-submit-label').textContent=active?'جاري الدخول...':'دخول';button.setAttribute('aria-busy',String(active));}
+function toggleLoginPassword(){const input=document.getElementById('login-password'),button=document.querySelector('.password-toggle'),visible=input.type==='text';input.type=visible?'password':'text';button.setAttribute('aria-label',visible?'إظهار كلمة المرور':'إخفاء كلمة المرور');button.setAttribute('aria-pressed',String(!visible));input.focus();}
+async function doRegister(){const prenom=document.getElementById('reg-prenom').value.trim(),nom=document.getElementById('reg-nom').value.trim(),password=document.getElementById('reg-password').value.trim(),result=await Auth.register(prenom,nom,password);if(result.ok)window.location.href='dashboard.html';else showError(result.error);}
+function toggleRoleUI(){const isProf=document.querySelector('input[name="role"]:checked').value==='prof';document.getElementById('container-nom').classList.toggle('hidden',isProf);document.getElementById('container-classe').classList.toggle('hidden',!isProf);document.getElementById('student-login-help').classList.toggle('hidden',isProf);hideError();}
+async function doLogin(){if(document.getElementById('login-submit').disabled)return;hideError();const role=document.querySelector('input[name="role"]:checked').value,prenom=document.getElementById('login-prenom').value.trim(),password=document.getElementById('login-password').value.trim(),nom=document.getElementById('login-nom').value.trim(),classe=document.getElementById('login-classe').value.trim();if(!prenom)return showError('يرجى إدخال الاسم.');if(role==='student'&&!nom)return showError('يرجى إدخال الاسم العائلي.');if(role==='prof'&&!classe)return showError('يرجى إدخال القسم.');if(!password)return showError('يرجى إدخال كلمة المرور.');setLoginSubmitting(true);try{const result=role==='prof'?await Auth.loginProf(prenom,classe,password):await Auth.login(prenom,nom,password);if(!result.ok)return showError(result.error||'معلومات الدخول غير صحيحة.');sessionStorage.setItem('loading_redirect',role==='prof'?targetForSession(Auth.getSession()):'dashboard.html');window.location.href='loading.html';}catch(_){showError('تعذر الاتصال، يرجى المحاولة مرة أخرى.');}finally{setLoginSubmitting(false);}}
+</script></body></html>
