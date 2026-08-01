@@ -3,3 +3,5 @@
 /* Warmer institutional palette requested for the login surface. */
 .login-page{background:linear-gradient(120deg,#e6ded3,#f1e9df 56%,#ddd0c2)}.login-card{background:rgba(247,242,235,.97);border-color:#d4c4b5}.login-brand:before{background:linear-gradient(180deg,rgba(250,246,240,.72),rgba(232,221,209,.16));border-color:rgba(132,97,63,.2)}.field-control,.role-selector{background:#f8f3ec;border-color:#d8cbbd}.role-option:has(input:checked){background:#eee5db;border-color:#46735d}.discover-link{background:#eee4d8;border-color:#b98a4a}.login-card-head p,.brand-copy,.login-help{color:#625d55}
 @media(min-width:992px){.login-page{zoom:.68}}
+
+.login-brand{gap:18px}.login-card-head p{font-size:17px}.field-group>label{font-size:16px}.field-control input{font-size:17px}.login-help{font-size:15px}.discover-link{font-size:16px}@media(max-width:480px){.login-card-head p{font-size:15px}.field-group>label{font-size:15px}.field-control input{font-size:16px}.login-help{font-size:15px}}
