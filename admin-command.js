@@ -1,7 +1,7 @@
 (function(){
 'use strict';
 const page=document.body.dataset.adminPage||'home';
-const routes=[['home','controle-mawahib-7x9k.html','🏠','الرئيسية'],['students','controle-487-eleves.html','👩‍🎓','الطلاب'],['teachers','controle-487-profs.html','🧑‍🏫','الأساتذة'],['classes','controle-487-classes.html','🏫','الأقسام'],['finance','controle-487-finance.html','💳','المالية'],['activity','controle-487-activity.html','📡','المتابعة'],['messages','controle-487-messages.html','✉️','الرسائل'],['parents','controle-487-parents.html','👪','الأولياء']];
+const routes=[['home','controle-mawahib-7x9k.html','🏠','الرئيسية'],['students','controle-487-eleves.html','👩‍🎓','الطلاب'],['teachers','controle-487-profs.html','🧑‍🏫','الأساتذة'],['classes','controle-487-classes.html','🏫','الأقسام'],['finance','controle-487-finance.html','💳','المالية'],['activity','controle-487-activity.html','📡','المتابعة'],['messages','controle-487-messages.html','✉️','الرسائل'],['parents','controle-487-parents.html','👪','الأولياء'],['remote','remote-class.html','◉','عن بُعد']];
 const state={students:[],profs:{},reports:[],finance:[],meta:{},activity:[],tab:'identity',studentQuery:'',studentFilters:{gender:'all',className:'all',age:'all',absence:'all'},liveTab:'students',activityChannel:null};
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const studentName=s=>[s?.prenom,s?.nom].filter(Boolean).join(' ').trim()||s?.username||'طالب';

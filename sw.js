@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v62-ui-rebuild-20260802';
+const CACHE_VERSION = 'mawahib-offline-v63-remote-class-20260802';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -16,6 +16,9 @@ const STATIC_ASSETS = [
   './assets/dar-al-hadith/classroom.jpg',
   './loading.html',
   './dashboard.html',
+  './remote-class.html',
+  './remote-class.css',
+  './remote-class.js',
   './profil.html',
   './parent.html',
   './carnet-suivi.html',

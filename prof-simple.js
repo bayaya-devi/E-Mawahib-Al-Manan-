@@ -55,7 +55,7 @@
   function resetForm(id){const form=document.getElementById(id);if(form)form.reset();document.querySelectorAll('.prof-range').forEach(node=>node.classList.add('prof-hidden'))}
 
   function shell(){
-    document.querySelector('.shell').outerHTML='<div class="prof-simple-shell"><header class="prof-simple-head"><div class="prof-simple-identity"><img src="logo.webp" class="prof-simple-logo" alt=""><div class="min-w-0"><div class="prof-simple-title">'+escapeHtml(session?.prenom||'الأستاذ')+'</div><div class="prof-simple-subtitle">'+escapeHtml(session?.nom||'')+'</div></div></div><button type="button" class="prof-small-action danger" onclick="deconnexion()">خروج</button></header><main id="prof-simple-main" class="prof-simple-main"></main></div>';
+    document.querySelector('.shell').outerHTML='<div class="prof-simple-shell"><header class="prof-simple-head"><div class="prof-simple-identity"><img src="logo.webp" class="prof-simple-logo" alt=""><div class="min-w-0"><div class="prof-simple-title">'+escapeHtml(session?.prenom||'الأستاذ')+'</div><div class="prof-simple-subtitle">'+escapeHtml(session?.nom||'')+'</div></div></div><a href="remote-class.html" class="prof-small-action">عن بُعد</a><button type="button" class="prof-small-action danger" onclick="deconnexion()">خروج</button></header><main id="prof-simple-main" class="prof-simple-main"></main></div>';
   }
 
   function pageHeader(title,help){return '<h1 class="prof-simple-heading">'+title+'</h1><p class="prof-simple-help">'+help+'</p>'}

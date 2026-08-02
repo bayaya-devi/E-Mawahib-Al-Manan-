@@ -12,7 +12,7 @@ const Auth = (() => {
     const OFFLINE_CACHE_PREFIX = 'mawahib_offline_cache_';
     const OFFLINE_QUEUE_KEY = 'mawahib_offline_queue';
     const OFFLINE_STATUS_KEY = 'mawahib_offline_status';
-    const SERVICE_WORKER_VERSION = '20260730-admin-bento-11';
+    const SERVICE_WORKER_VERSION = '20260802-remote-class-1';
     const CLASS_SESSION_PREFIX = '[CLASS_SESSION] ';
     const TEACHER_NOTE_PREFIX = '[TEACHER_NOTE] ';
     const ADMIN_FINANCE_PREFIX = '[ADMIN_FINANCE] ';
@@ -1431,6 +1431,47 @@ const Auth = (() => {
         return { ok: true };
     }
 
+    const REMOTE_CLASS_PREFIX = '[REMOTE_CLASS] ';
+    const REMOTE_ATTENDANCE_PREFIX = '[REMOTE_CLASS_ATTENDANCE] ';
+
+    function parseRemoteRow(row, prefix) {
+        const text = String(row?.text || '');
+        if (!text.startsWith(prefix)) return null;
+        try { return { ...JSON.parse(text.slice(prefix.length)), rowId: row.id, createdAt: row.created_at || '' }; }
+        catch (_) { return null; }
+    }
+
+    async function saveRemoteClass(payload) {
+        const session = getSession();
+        if (!session || session.role !== 'prof') return { ok: false, error: 'غير مسموح' };
+        const classId = 'remote_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+        const body = { ...payload, id: classId, profId: session.username, profName: session.prenom || 'الأستاذ', createdAt: new Date().toISOString(), status: 'scheduled' };
+        const { error } = await supabase.from('messages').insert([{ username: '__remote_class__:' + session.username, text: REMOTE_CLASS_PREFIX + JSON.stringify(body), date: new Date().toLocaleDateString('ar-MA') }]);
+        if (error) return { ok: false, error: userError(error, 'تعذر تنظيم الحصة الآن.') };
+        return { ok: true, session: body };
+    }
+
+    async function getRemoteClasses() {
+        const { data, error } = await supabase.from('messages').select('*').like('username', '__remote_class__:%').order('id', { ascending: false });
+        if (error) { logError('getRemoteClasses', error); return []; }
+        return (data || []).map(row => parseRemoteRow(row, REMOTE_CLASS_PREFIX)).filter(Boolean);
+    }
+
+    async function recordRemoteAttendance(classId, payload) {
+        const session = getSession();
+        if (!session) return { ok: false };
+        const body = { classId, username: session.username, role: session.role, name: [session.prenom, session.nom].filter(Boolean).join(' '), joinedAt: new Date().toISOString(), ...payload };
+        const { error } = await supabase.from('messages').insert([{ username: '__remote_attendance__:' + classId, text: REMOTE_ATTENDANCE_PREFIX + JSON.stringify(body), date: new Date().toLocaleDateString('ar-MA') }]);
+        return { ok: !error };
+    }
+
+    async function getRemoteAttendance(classId) {
+        const { data, error } = await supabase.from('messages').select('*').eq('username', '__remote_attendance__:' + classId).order('id', { ascending: false });
+        if (error) return [];
+        const latest = new Map();
+        (data || []).map(row => parseRemoteRow(row, REMOTE_ATTENDANCE_PREFIX)).filter(Boolean).forEach(item => { if (!latest.has(item.username)) latest.set(item.username, item); });
+        return Array.from(latest.values());
+    }
     function getSupabaseClient() { return supabase; }
 
     return {
@@ -1439,7 +1480,7 @@ const Auth = (() => {
         assignStudentToProf, removeStudentFromProf, setStudentProfessors, updateStudentAccount, updateProfAccount,
         getSchedule, setSchedule, getMessages, sendMessage, deleteMessageById, clearMessages, sendAdminReport, getAdminReports, getProfReports,
         saveFinanceEntry, getFinanceEntries, deleteFinanceEntry,
-        saveClassSession, getClassSessions, saveTeacherNote, getTeacherNotes,
+        saveClassSession, getClassSessions, saveTeacherNote, getTeacherNotes, saveRemoteClass, getRemoteClasses, recordRemoteAttendance, getRemoteAttendance,
         getProfile, updateProfile, getProgress, recordActivity, completeSurah, normalizeSurahId, getRewardState, awardJuzStars, getLastCelebration, getLastInactivity, syncRewardsFromSurahs, getClassStarRanking, storeMissionAttempt, prepareOfflineLessons,
         ajouterDevoir, getDevoirs, annulerDevoir, updateDevoirStatut, marquerDevoirTermine,
         getSupabaseClient, syncOfflineQueue, getOfflineStatus
