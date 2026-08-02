@@ -957,9 +957,25 @@
   }
 
   function initNavAutoHide() {
-    document.querySelectorAll('.nav-bottom, .prof-nav, .admin-nav, .admin-simple-nav').forEach(nav => {
-      nav.classList.remove('nav-scroll-hidden', 'is-hidden');
-    });
+    const navs = Array.from(document.querySelectorAll('.nav-bottom, .prof-nav, .admin-nav, .admin-simple-nav'));
+    if (!navs.length) return;
+    let previousY = window.scrollY || 0;
+    let scheduled = false;
+    const show = () => navs.forEach(nav => nav.classList.remove('nav-scroll-hidden', 'is-hidden'));
+    const hide = () => navs.forEach(nav => nav.classList.add('nav-scroll-hidden', 'is-hidden'));
+    window.addEventListener('scroll', () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        const currentY = window.scrollY || 0;
+        const delta = currentY - previousY;
+        if (currentY < 32 || delta < -8) show();
+        else if (delta > 8) hide();
+        previousY = currentY;
+        scheduled = false;
+      });
+    }, { passive: true });
+    document.addEventListener('pointerdown', show, { passive: true });
   }
 
   function syncSurahTheme() {
