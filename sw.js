@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v61-bottom-nav-scroll-20260802';
+const CACHE_VERSION = 'mawahib-offline-v62-ui-rebuild-20260802';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
