@@ -1,3 +1,3 @@
-mawahib-site-version=20260802-admin-history-classes-1
+mawahib-site-version=20260802-premium-refresh-1
 sites-package=embedded-worker
-updated=2026-08-02T12:40:59+01:00
+updated=2026-08-02T12:58:15+01:00
