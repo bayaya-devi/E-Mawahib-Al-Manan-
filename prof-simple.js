@@ -12,7 +12,7 @@
   function options(items,selected){return items.map(item=>'<option value="'+escapeHtml(item.value)+'" '+(item.value===selected?'selected':'')+'>'+escapeHtml(item.label)+'</option>').join('')}
   function studentOptions(selected){return options(myStudents.map(student=>({value:student.username,label:studentName(student)})),selected)}
   function surahs(){return typeof SURAH_REGISTRY!=='undefined'?SURAH_REGISTRY:[]}
-  function surahOptionsSimple(selected){return options(surahs().filter(s=>s.available).map(s=>({value:s.nameAr,label:s.nameAr})),selected)}
+  function surahOptionsSimple(selected){return options(surahs().map(s=>({value:s.nameAr,label:s.nameAr})),selected)}
   function surahAyat(name){const item=surahs().find(s=>s.nameAr===name);return item?.ayat||1}
   function validVerseRange(scope,start,end){if(scope!=='جزء')return true;const first=Number(start);const last=Number(end);return Number.isInteger(first)&&Number.isInteger(last)&&first>=1&&last>=first}
   function homeworkIsOpen(item){return !['termine','complete','valide','non_realise'].includes(item?.statut)}

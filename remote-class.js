@@ -2,9 +2,11 @@
 (() => {
   let current = null;
   let allClasses = [];
+  let classStates = new Map();
   let jitsiApi = null;
   let attendanceTimer = null;
   let currentRoom = null;
+  let conferenceParticipants = new Map();
   const $ = selector => document.querySelector(selector);
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
   const nameOf = user => [user?.prenom, user?.nom].filter(Boolean).join(' ').trim() || user?.username || 'طالب';
@@ -16,7 +18,8 @@
   const isJoinable = item => {
     const start = new Date(`${item.date}T${item.time || '00:00'}`);
     const end = new Date(start.getTime() + Number(item.duration || 60) * 60000);
-    return now() >= new Date(start.getTime() - 15 * 60000) && now() <= new Date(end.getTime() + 30 * 60000);
+    const state = classStates.get(item.id);
+    return state?.status === 'open' && now() >= new Date(start.getTime() - 15 * 60000) && now() <= new Date(end.getTime() + 30 * 60000);
   };
   const sortByDate = list => list.slice().sort((a, b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`));
 
@@ -61,11 +64,13 @@
 
   async function loadRemoteClasses() {
     allClasses = (await Auth.getRemoteClasses()).filter(isAllowed);
+    classStates = new Map((await Promise.all(allClasses.map(async item => [item.id, await Auth.getRemoteClassStatus(item.id)]))));
     const list = sortByDate(allClasses).filter(item => new Date(`${item.date}T${item.time}`).getTime() + Number(item.duration || 60) * 60000 > Date.now() - 1800000);
     $('#remote-list-title').textContent = isTeacher() ? 'حصصي القادمة' : isAdmin() ? 'الحصص المبرمجة والجارية' : 'حصصي القادمة';
     $('#remote-classes').innerHTML = list.length ? list.map(item => {
-      const join = isJoinable(item);
-      const label = join ? (isAdmin() ? 'دخول للمراقبة' : 'دخول الحصة') : 'في الموعد';
+      const join = isTeacher() && item.profId === current.username ? true : isJoinable(item);
+      const ready = classStates.get(item.id)?.status === 'open';
+      const label = join ? (isAdmin() ? 'دخول للمراقبة' : isTeacher() ? 'فتح الحصة' : 'دخول الحصة') : (ready ? 'في الموعد' : 'بانتظار الأستاذ');
       return `<article class="remote-class-card"><div class="remote-class-time"><b>${escapeHtml(item.time || '')}</b><small>${escapeHtml(item.date || '')}</small></div><div class="remote-class-main"><h3>${escapeHtml(item.title || 'حصة عن بُعد')}</h3><p>${escapeHtml(dateLabel(item.date))} · ${Number(item.duration || 60)} دقيقة · ${escapeHtml(item.profName || '')}</p></div><button class="remote-class-action" ${join ? '' : 'disabled'} onclick="joinRemoteClass('${escapeHtml(item.id)}')">${label}</button></article>`;
     }).join('') : '<div class="remote-empty">لا توجد حصة مبرمجة لك حاليًا.</div>';
   }
@@ -84,6 +89,7 @@
   async function joinRemoteClass(id) {
     const item = allClasses.find(entry => entry.id === id);
     if (!item) return;
+    if (!isTeacher() && !isJoinable(item)) { alert('تُفتح الحصة عند دخول الأستاذ.'); return; }
     currentRoom = item;
     $('#remote-room').hidden = false;
     $('#remote-room-name').textContent = item.title || 'الحصة عن بُعد';
@@ -101,23 +107,53 @@
         interfaceConfigOverwrite: { TOOLBAR_BUTTONS: ['microphone', 'hangup', 'participants-pane', 'chat', 'raisehand', 'settings'], SHOW_JITSI_WATERMARK: false, MOBILE_APP_PROMO: false }
       });
       jitsiApi.addEventListener('videoConferenceJoined', async () => {
-        $('#remote-room-status').textContent = 'متصل بالصوت';
+        $('#remote-room-status').textContent = isTeacher() ? 'يتم تفعيل التحكم...' : 'متصل بالصوت';
         await Auth.recordRemoteAttendance(item.id, { action: 'joined' });
         refreshPresence();
         attendanceTimer = setInterval(() => { if (!document.hidden) refreshPresence(); }, 10000);
       });
+      jitsiApi.addEventListener('participantRoleChanged', async event => {
+        if (!isTeacher() || event.role !== 'moderator') return;
+        try {
+          jitsiApi.executeCommand('toggleLobby', true);
+          jitsiApi.executeCommand('toggleModeration', true, 'audio');
+          jitsiApi.executeCommand('setMeetingTimer', { duration: Number(item.duration || 60) * 60 });
+          await Auth.setRemoteClassStatus(item.id, { status: 'open', title: item.title });
+          $('#remote-room-status').textContent = 'الحصة مفتوحة والتحكم الصوتي مفعل';
+        } catch (_) { $('#remote-room-status').textContent = 'الحصة مفتوحة'; }
+      });
       jitsiApi.addEventListener('videoConferenceLeft', leaveRemoteRoom);
-      jitsiApi.addEventListener('participantJoined', refreshPresence);
-      jitsiApi.addEventListener('participantLeft', refreshPresence);
+      jitsiApi.addEventListener('participantJoined', event => {
+        conferenceParticipants.set(event.id, event.displayName || 'مشارك');
+        renderConferenceParticipants();
+        refreshPresence();
+      });
+      jitsiApi.addEventListener('participantLeft', event => {
+        conferenceParticipants.delete(event.id);
+        renderConferenceParticipants();
+        refreshPresence();
+      });
     } catch (error) {
       $('#remote-room-status').textContent = 'تعذر تشغيل خدمة الصوت. تحقق من الإنترنت ثم أعد المحاولة.';
     }
   }
 
+  function renderConferenceParticipants() {
+    if (!isTeacher() || !conferenceParticipants.size) return false;
+    $('#remote-presence').innerHTML = Array.from(conferenceParticipants.entries()).map(([id, name]) => `<div><span>${escapeHtml(name)}</span><button type="button" onclick="muteRemoteParticipant('${escapeHtml(id)}')">كتم</button></div>`).join('');
+    return true;
+  }
+
   async function refreshPresence() {
-    if (!currentRoom) return;
+    if (!currentRoom || renderConferenceParticipants()) return;
     const list = await Auth.getRemoteAttendance(currentRoom.id);
     $('#remote-presence').innerHTML = list.length ? list.map(item => `<div>${escapeHtml(item.name || item.username)}</div>`).join('') : '<div>لم ينضم أحد بعد.</div>';
+  }
+
+  function muteRemoteParticipant(id) {
+    if (!jitsiApi || !isTeacher() || !id) return;
+    try { jitsiApi.executeCommand('muteRemoteParticipant', id, 'audio'); $('#remote-room-status').textContent = 'تم كتم المشارك'; }
+    catch (_) { $('#remote-room-status').textContent = 'تعذر كتم المشارك.'; }
   }
 
   function muteEveryoneRemote() {
@@ -126,7 +162,9 @@
     catch (_) { $('#remote-room-status').textContent = 'استخدم قائمة المشاركين لكتم المشارك المطلوب.'; }
   }
 
-  function leaveRemoteRoom() {
+  async function leaveRemoteRoom() {
+    const closingRoom = currentRoom;
+    if (isTeacher() && closingRoom) await Auth.setRemoteClassStatus(closingRoom.id, { status: 'closed', title: closingRoom.title });
     if (attendanceTimer) clearInterval(attendanceTimer);
     attendanceTimer = null;
     if (jitsiApi) { try { jitsiApi.dispose(); } catch (_) {} }
@@ -141,6 +179,7 @@
   window.joinRemoteClass = joinRemoteClass;
   window.leaveRemoteRoom = leaveRemoteRoom;
   window.muteEveryoneRemote = muteEveryoneRemote;
+  window.muteRemoteParticipant = muteRemoteParticipant;
   window.remoteLogout = () => { Auth.logout(); location.replace('login.html'); };
   document.addEventListener('DOMContentLoaded', setup);
 })();

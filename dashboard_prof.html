@@ -18,7 +18,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="auth.js?v=20260730-carnet-sync-8"></script>
+  <script src="auth.js?v=20260802-remote-class-1"></script>
   <script src="first-use-guide.js?v=20260726-first-use-1"></script>
   <script src="registry.js"></script>
   <link rel="stylesheet" href="platform-theme.css?v=20260801-design-restore-1">
@@ -339,7 +339,7 @@
 
   </style>
   <link rel="stylesheet" href="prof-simple.css?v=20260720-global-latest-1">
-<link rel="stylesheet" href="mawahib-design-system.css?v=20260802-nav-juz-lock-1">
+<link rel="stylesheet" href="mawahib-design-system.css?v=20260802-remote-class-1">
 </head>
 <body data-prof-page="home">
   <div class="shell">
@@ -546,7 +546,6 @@
     function surahOptions() {
       if (typeof SURAH_REGISTRY === 'undefined') return '';
       return SURAH_REGISTRY
-        .filter(s => s.available)
         .map(s => '<option value="' + escapeHtml(s.nameAr) + '">' + escapeHtml(s.nameFr || s.id) + '</option>')
         .join('');
     }
