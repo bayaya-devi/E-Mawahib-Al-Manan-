@@ -1,3 +1,2 @@
-mawahib-site-version=20260803-live-session-surahs-2
-sites-package=embedded-worker
+mawahib-site-version=20260803-arabic-fonts-1
 updated=2026-08-03T00:00:00+01:00
