@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v66-arabic-fonts-20260803';
+const CACHE_VERSION = 'mawahib-offline-v67-student-create-20260804';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
