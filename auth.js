@@ -1064,8 +1064,15 @@ const Auth = (() => {
     }
 
     async function setSchedule(username, schedule_text) {
-        const { error } = await supabase.from('horaires').upsert([{ username, schedule_text }]);
-        if (error) logError('setSchedule', error);
+        const target = String(username || '').trim();
+        const value = String(schedule_text || '').trim();
+        if (!target || !value) return { ok: false, error: 'تعذر حفظ أوقات الحصص: بيانات ناقصة.' };
+        const { error } = await supabase.from('horaires').upsert([{ username: target, schedule_text: value }]);
+        if (error) {
+            logError('setSchedule', error);
+            return { ok: false, error: userError(error, 'تعذر حفظ أوقات الحصص الآن.') };
+        }
+        return { ok: true };
     }
 
     // --- 6. MESSAGES ---
@@ -1080,9 +1087,16 @@ const Auth = (() => {
     }
 
     async function sendMessage(username, text) {
+        const target = String(username || '').trim();
+        const content = String(text || '').trim();
+        if (!target || !content) return { ok: false, error: 'اختر المستلم واكتب الرسالة أولاً.' };
         const date = new Date().toLocaleDateString('ar-MA', { day: 'numeric', month: 'long' });
-        const { error } = await supabase.from('messages').insert([{ username, text, date }]);
-        if (error) logError('sendMessage', error);
+        const { error } = await supabase.from('messages').insert([{ username: target, text: content, date }]);
+        if (error) {
+            logError('sendMessage', error);
+            return { ok: false, error: userError(error, 'تعذر إرسال الرسالة الآن. تحقق من الاتصال ثم أعد المحاولة.') };
+        }
+        return { ok: true };
     }
 
     async function deleteMessageById(id) {
