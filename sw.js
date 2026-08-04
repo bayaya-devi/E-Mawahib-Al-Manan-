@@ -1,6 +1,6 @@
 importScripts('./offline-lessons.js');
 
-const CACHE_VERSION = 'mawahib-offline-v68-admin-data-20260804';
+const CACHE_VERSION = 'mawahib-offline-v69-admin-premium-20260804';
 const STATIC_CACHE = CACHE_VERSION + '-static';
 const RUNTIME_CACHE = CACHE_VERSION + '-runtime';
 
@@ -49,6 +49,7 @@ const STATIC_ASSETS = [
   './admin-simple.js',
   './admin-command.css',
   './admin-command-modern.css',
+  './admin-command-premium.css',
   './admin-command.js',
   './admin-data.js',
   './dashboard_prof.html',
