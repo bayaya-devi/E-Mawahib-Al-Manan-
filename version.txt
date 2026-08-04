@@ -1,2 +1,2 @@
-mawahib-site-version=20260804-student-create-1
-updated=2026-08-04T00:00:00+01:00
+mawahib-site-version=20260804-admin-data-1
+updated=2026-08-04T19:20:00+01:00
