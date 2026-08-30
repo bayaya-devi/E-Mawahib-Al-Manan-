@@ -14,8 +14,8 @@ describe("authorization policy", () => {
     );
   });
 
-  it("reserves platform management for super admins", () => {
+  it("reserves platform management for direction", () => {
     expect(can("admin", "platform:manage")).toBe(false);
-    expect(can("super_admin", "platform:manage")).toBe(true);
+    expect(can("direction", "platform:manage")).toBe(true);
   });
 });

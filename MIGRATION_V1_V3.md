@@ -45,7 +45,25 @@ transformations. The codebase is evidence, not an authoritative database schema.
 - Provision Auth identities without changing V1 login behavior.
 - Import profiles, roles, parent-child links, teacher-class links, and status.
 - Test student, parent, teacher, admin, suspended, and multi-role access.
-- Run V3 read-only beside V1 for invited internal users.
+- Run V3 read-only beside V1 for selected internal users.
+
+#### Secure V1 account procedure
+
+1. Export V1 accounts read-only into an encrypted, access-controlled workspace.
+2. Normalize stable legacy IDs and login identifiers; never match by display name.
+3. Produce an HMAC fingerprint for reconciliation and duplicate detection.
+4. Drop every V1 password, reversible password, hash of unknown quality, and
+   hardcoded administrative credential from the import artifact.
+5. Create a fresh Supabase Auth identity with a new temporary secret.
+6. Call `provision_account_data` to create profile, role, school membership,
+   private alias, and audit event in one database transaction.
+7. Keep the account `pending` until row counts and relationships reconcile.
+8. Require a fresh password path before broad activation; do not reactivate V1
+   credentials in V3.
+
+`npm run migration:v1:prepare -- input.json output.json` creates a password-free
+reconciliation artifact. It requires `V1_MIGRATION_FINGERPRINT_KEY` and never
+writes the normalized raw login identifier to the artifact.
 
 ### Phase 3: Academic core
 

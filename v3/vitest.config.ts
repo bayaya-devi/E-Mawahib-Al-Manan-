@@ -8,7 +8,11 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: [
+      "src/**/*.test.{ts,tsx}",
+      "tests/database/**/*.test.ts",
+      "tests/migration/**/*.test.ts",
+    ],
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
     coverage: {

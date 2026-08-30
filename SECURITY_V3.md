@@ -27,7 +27,8 @@ traceable administrative history are baseline requirements.
 
 ## 4. Authorization and RLS
 
-- Roles are stored in `user_roles`, never trusted from browser state.
+- Roles are stored in `user_roles`, never trusted from browser state, localStorage,
+  sessionStorage, or editable Auth user metadata.
 - Clients cannot insert, update, or delete roles, profiles, or audit logs.
 - Every table must enable RLS in the migration that creates it.
 - A new table without explicit policies fails review and SQL security tests.
@@ -35,9 +36,10 @@ traceable administrative history are baseline requirements.
 - Service-role credentials are forbidden in `NEXT_PUBLIC_*` variables and client
   bundles. Privileged operations live in trusted server code.
 
-The bootstrap migration provides only self-read and privileged read policies.
-Mutation policies are withheld until each write use case has ownership rules and
-an audit event. This is intentional deny-by-default behavior.
+The identity and school migrations provide scoped reads only. Client mutation
+policies remain withheld. Account creation and status changes are server-only
+transactions that independently validate the acting administrator and append an
+audit event. This is intentional deny-by-default behavior.
 
 ## 5. Input, output, and files
 
@@ -57,7 +59,7 @@ an audit event. This is intentional deny-by-default behavior.
 
 ## 7. Audit and observability
 
-Privileged mutations will append immutable records containing actor, action,
+Privileged identity mutations append immutable records containing actor, action,
 target, timestamp, request ID, and minimal metadata. Audit logs are not editable
 through the client. Operational logs use structured error codes and redact user
 content. Alerts are required for repeated login failures, role changes, bulk

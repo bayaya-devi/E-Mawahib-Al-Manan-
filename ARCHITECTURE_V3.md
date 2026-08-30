@@ -80,8 +80,8 @@ Application checks provide useful errors; RLS remains the final security barrier
 
 An Auth user has one profile and one or more explicit roles. Roles are data, not
 client metadata. Clients may read permitted role rows but cannot create, update,
-or delete them. Role provisioning will be implemented as a trusted server use
-case with an audit event in the next identity slice.
+or delete them. Account provisioning and status changes are trusted server use
+cases backed by service-role RPCs that recheck the actor and append audit events.
 
 The initial capability matrix is intentionally small. It will expand through
 reviewed use cases rather than broad labels such as "admin can do everything".
@@ -96,8 +96,8 @@ reviewed use cases rather than broad labels such as "admin can do everything".
 
 Examples are committed as `.env.*.example`; real `.env` files remain ignored.
 Public variables contain only the Supabase URL and publishable anonymous key.
-Privileged keys must stay in server secret storage and are not part of this
-frontend foundation.
+Privileged keys stay in server secret storage and are consumed only by modules
+guarded with `server-only`.
 
 ## 8. Quality gates
 

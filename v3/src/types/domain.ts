@@ -3,12 +3,12 @@ export const APP_ROLES = [
   "parent",
   "teacher",
   "admin",
-  "super_admin",
+  "direction",
 ] as const;
 
 export type AppRole = (typeof APP_ROLES)[number];
 
-export const ACCOUNT_STATUSES = ["invited", "active", "suspended", "archived"] as const;
+export const ACCOUNT_STATUSES = ["pending", "active", "suspended", "archived"] as const;
 
 export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
 

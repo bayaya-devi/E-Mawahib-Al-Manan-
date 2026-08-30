@@ -1,10 +1,12 @@
 import type { AppRole } from "@/types";
 
 export const CAPABILITIES = {
-  "learning:read-own": ["student", "parent", "teacher", "admin", "super_admin"],
-  "learning:assess": ["teacher", "admin", "super_admin"],
-  "school:manage": ["admin", "super_admin"],
-  "platform:manage": ["super_admin"],
+  "learning:read-own": ["student", "parent", "teacher", "admin", "direction"],
+  "learning:assess": ["teacher", "admin", "direction"],
+  "account:create-basic": ["admin", "direction"],
+  "account:create-privileged": ["direction"],
+  "school:manage": ["admin", "direction"],
+  "platform:manage": ["direction"],
 } as const satisfies Record<string, readonly AppRole[]>;
 
 export type Capability = keyof typeof CAPABILITIES;

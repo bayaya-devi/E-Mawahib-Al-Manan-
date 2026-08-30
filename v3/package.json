@@ -11,8 +11,11 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:db": "vitest run tests/database/migrations.test.ts",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "migration:v1:prepare": "node scripts/migration/prepare-v1-accounts.mjs",
+    "bootstrap:direction": "node scripts/bootstrap-direction.mjs",
     "check": "npm run lint && npm run typecheck && npm run test:run && npm run build"
   },
   "engines": {
@@ -27,6 +30,7 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^7.0.1",
