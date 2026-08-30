@@ -13,6 +13,7 @@ export default defineConfig({
   },
   projects: [
     { name: "chrome", use: { ...devices["Desktop Chrome"], channel: "chrome" } },
+    { name: "tablet", use: { ...devices["iPad Mini"], browserName: "chromium", channel: "chrome" } },
     { name: "mobile", use: { ...devices["Pixel 5"], channel: "chrome" } },
   ],
   webServer: {

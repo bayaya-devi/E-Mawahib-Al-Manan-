@@ -1,28 +1,38 @@
-const foundations = [
-  ["الهوية والصلاحيات", "Supabase Auth + RBAC + RLS"],
-  ["البنية", "Next.js App Router + TypeScript"],
-  ["الجودة", "Lint + Typecheck + Tests + Build"],
-  ["الترحيل", "خطة تدريجية تحافظ على بيانات V1"],
-] as const;
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 
-export default function FoundationStatusPage() {
+import { PublicShell } from "@/components/shell";
+import { Badge, ButtonLink } from "@/components/ui";
+
+export default function PublicPage() {
   return (
-    <main className="foundation-shell">
-      <section className="foundation-panel" aria-labelledby="foundation-title">
-        <p className="foundation-kicker">E-Mawahib Al-Manan</p>
-        <h1 id="foundation-title">الأساس التقني للإصدار الثالث</h1>
-        <p className="foundation-summary">
-          مساحة تطوير مستقلة وآمنة. لم يتم نقل وظائف الإصدار الحالي بعد.
-        </p>
-        <dl className="foundation-grid">
-          {foundations.map(([term, description]) => (
-            <div key={term}>
-              <dt>{term}</dt>
-              <dd>{description}</dd>
-            </div>
-          ))}
-        </dl>
+    <PublicShell>
+      <section className="public-hero" aria-labelledby="public-title">
+        <div>
+          <Badge tone="brand"><ShieldCheck aria-hidden="true" size={14} />بيئة تعليمية موثوقة</Badge>
+          <h1 id="public-title">التعلّم والمتابعة في مساحة واحدة هادئة</h1>
+          <p>واجهة عربية واضحة تجمع الطالب والأسرة والمعلّم والإدارة، وتحفظ لكل مستخدم مساحته وصلاحياته.</p>
+          <div className="public-hero__actions">
+            <ButtonLink href="/student">الدخول إلى المنصة <ArrowLeft aria-hidden="true" size={18} /></ButtonLink>
+            <ButtonLink href="/design-system" variant="secondary">مرجع الواجهة</ButtonLink>
+          </div>
+        </div>
+        <div className="public-hero__signal" aria-label="هوية مواهب المنان">
+          <span aria-hidden="true">م</span>
+          <strong>معرفةٌ تُبنى<br />بخطوات ثابتة</strong>
+        </div>
       </section>
-    </main>
+      <section className="public-band" id="about">
+        <p>من الطالب إلى الإدارة</p>
+        <h2>تجربة واحدة، ومساحات مصممة بحسب المسؤولية.</h2>
+      </section>
+      <section className="public-details" id="program">
+        <span>البرنامج</span>
+        <h2>التعلّم، المتابعة، التدريس والإدارة ضمن بنية موحّدة.</h2>
+      </section>
+      <section className="public-details" id="contact">
+        <span>تواصل معنا</span>
+        <h2>تُعرض بيانات التواصل المعتمدة عند ربط المحتوى المؤسسي.</h2>
+      </section>
+    </PublicShell>
   );
 }
