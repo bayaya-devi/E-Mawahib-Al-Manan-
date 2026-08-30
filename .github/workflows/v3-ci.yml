@@ -1,0 +1,37 @@
+name: V3 quality gate
+
+on:
+  pull_request:
+    paths:
+      - "v3/**"
+      - ".github/workflows/v3-ci.yml"
+      - "ARCHITECTURE_V3.md"
+      - "MIGRATION_V1_V3.md"
+      - "SECURITY_V3.md"
+  push:
+    branches:
+      - "codex/v3-foundation"
+    paths:
+      - "v3/**"
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: v3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: v3/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:run
+      - run: npm run build
