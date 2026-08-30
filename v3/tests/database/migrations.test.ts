@@ -252,6 +252,19 @@ describe("V3 migrations and RLS", () => {
       "family_relationships",
       "parent_profiles",
       "profiles",
+      "public_categories",
+      "public_category_translations",
+      "public_news",
+      "public_news_translations",
+      "public_program_translations",
+      "public_programs",
+      "public_replay_categories",
+      "public_replay_translations",
+      "public_replays",
+      "public_schedule_translations",
+      "public_schedules",
+      "public_site_profile_translations",
+      "public_site_profiles",
       "school_memberships",
       "schools",
       "student_profiles",
@@ -303,6 +316,19 @@ describe("V3 migrations and RLS", () => {
       "parent_profiles_select_self_or_admin",
       "profiles_select_own",
       "profiles_select_scoped",
+      "public_category_read",
+      "public_category_translation_read",
+      "public_news_read",
+      "public_news_translation_read",
+      "public_program_read",
+      "public_program_translation_read",
+      "public_replay_category_read",
+      "public_replay_read",
+      "public_replay_translation_read",
+      "public_schedule_read",
+      "public_schedule_translation_read",
+      "public_site_profile_read",
+      "public_site_profile_translation_read",
       "school_memberships_select_scoped",
       "schools_select_member",
       "student_profiles_select_scoped",
@@ -310,6 +336,77 @@ describe("V3 migrations and RLS", () => {
       "user_roles_select_administration",
       "user_roles_select_own",
     ]);
+  });
+
+  it("publishes only approved public content while administrators retain draft access", async () => {
+    const publishedNews = "40000000-0000-4000-8000-000000000001";
+    const draftNews = "40000000-0000-4000-8000-000000000002";
+    await database.exec(`
+      insert into public.public_news
+        (id, school_id, status, published_at, created_by, updated_by)
+      values
+        ('${publishedNews}', '${schools.first}', 'published', now(), '${users.adminA}', '${users.adminA}'),
+        ('${draftNews}', '${schools.first}', 'draft', null, '${users.adminA}', '${users.adminA}');
+      insert into public.public_news_translations
+        (news_id, locale, slug, title, excerpt, body)
+      values
+        ('${publishedNews}', 'ar', 'published-news', 'Published', 'Excerpt', 'Body'),
+        ('${draftNews}', 'ar', 'draft-news', 'Draft', 'Excerpt', 'Body');
+    `);
+
+    const anonymous = await runAsDatabaseRole(
+      "anon",
+      "select id from public.public_news order by id",
+    );
+    expect(anonymous.rows).toEqual([{ id: publishedNews }]);
+    const administrative = await asUser<{ id: string }>(
+      users.adminA,
+      "select id from public.public_news order by id",
+    );
+    expect(administrative).toEqual([{ id: publishedNews }, { id: draftNews }]);
+  });
+
+  it("deduplicates replay views and resists repeated artificial likes", async () => {
+    const replayId = "50000000-0000-4000-8000-000000000001";
+    const visitorA = "a".repeat(64);
+    const visitorB = "b".repeat(64);
+    const network = "c".repeat(64);
+    await database.exec(`
+      insert into public.public_replays
+        (id, school_id, status, video_url, published_at, created_by, updated_by)
+      values
+        ('${replayId}', '${schools.first}', 'published', 'https://video.example.test/1', now(), '${users.adminA}', '${users.adminA}');
+    `);
+
+    const firstLike = await runAsDatabaseRole(
+      "service_role",
+      `select * from public.toggle_public_replay_like('${replayId}', '${visitorA}', '${network}')`,
+    );
+    expect(firstLike.rows).toEqual([{ liked: true, likes_count: 1 }]);
+    await expect(
+      runAsDatabaseRole(
+        "service_role",
+        `select * from public.toggle_public_replay_like('${replayId}', '${visitorB}', '${network}')`,
+      ),
+    ).rejects.toThrow(/like_rate_limited/);
+    const unlike = await runAsDatabaseRole(
+      "service_role",
+      `select * from public.toggle_public_replay_like('${replayId}', '${visitorA}', '${network}')`,
+    );
+    expect(unlike.rows).toEqual([{ liked: false, likes_count: 0 }]);
+
+    await runAsDatabaseRole(
+      "service_role",
+      `select public.register_public_replay_view('${replayId}', '${visitorA}')`,
+    );
+    await runAsDatabaseRole(
+      "service_role",
+      `select public.register_public_replay_view('${replayId}', '${visitorA}')`,
+    );
+    const replay = await database.query<{ views_count: number; likes_count: number }>(
+      `select views_count, likes_count from public.public_replays where id = '${replayId}'`,
+    );
+    expect(replay.rows).toEqual([{ views_count: 1, likes_count: 0 }]);
   });
 
   it("isolates one student from every other student", async () => {

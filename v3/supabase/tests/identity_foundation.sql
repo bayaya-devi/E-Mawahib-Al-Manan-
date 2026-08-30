@@ -68,8 +68,16 @@ begin
     raise exception 'Unexpected account statuses: %', actual_statuses;
   end if;
 
-  if (select count(*) from pg_policies where schemaname = 'public') <> 15 then
-    raise exception 'Unexpected RLS policy count';
+  if (select count(*) from pg_policies where schemaname = 'public' and policyname in (
+    'profiles_select_own', 'profiles_select_scoped', 'user_roles_select_own',
+    'user_roles_select_administration', 'audit_logs_select_administration',
+    'schools_select_member', 'school_memberships_select_scoped',
+    'student_profiles_select_scoped', 'parent_profiles_select_self_or_admin',
+    'teacher_profiles_select_self_or_admin', 'admin_profiles_select_self_or_direction',
+    'family_relationships_select_scoped', 'classes_select_scoped',
+    'class_enrollments_select_scoped', 'class_teacher_assignments_select_scoped'
+  )) <> 15 then
+    raise exception 'An identity RLS policy is missing';
   end if;
 end;
 $$;

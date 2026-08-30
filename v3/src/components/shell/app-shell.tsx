@@ -14,6 +14,7 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  Newspaper,
   Users,
   UsersRound,
   WalletCards,
@@ -59,6 +60,7 @@ const navigation: Record<ShellKind, NavItem[]> = {
     { label: "الفريق", href: "/admin#staff", icon: Users },
     { label: "المالية", href: "/admin#finance", icon: WalletCards },
     { label: "الرقابة", href: "/admin#audit", icon: ShieldCheck },
+    { label: "الموقع", href: "/admin/site", icon: Newspaper },
   ],
 };
 

@@ -11,6 +11,7 @@ const serverEnvironmentSchema = z.object({
 
 const privilegedServerEnvironmentSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20),
+  PUBLIC_INTERACTION_HMAC_KEY: z.string().min(32),
   AUTH_INTERNAL_EMAIL_DOMAIN: z
     .string()
     .min(3)
@@ -32,6 +33,7 @@ export function getPrivilegedServerEnvironment() {
     ...getServerEnvironment(),
     ...privilegedServerEnvironmentSchema.parse({
       SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      PUBLIC_INTERACTION_HMAC_KEY: process.env.PUBLIC_INTERACTION_HMAC_KEY,
       AUTH_INTERNAL_EMAIL_DOMAIN: process.env.AUTH_INTERNAL_EMAIL_DOMAIN,
     }),
   };

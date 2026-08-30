@@ -14,7 +14,7 @@ type RootLayoutProps = Readonly<{ children: ReactNode }>;
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" data-scroll-behavior="smooth">
       <body>
         <a className="skip-link" href="#main-content">
           انتقل إلى المحتوى

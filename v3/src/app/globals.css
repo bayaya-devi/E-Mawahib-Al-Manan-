@@ -2,6 +2,7 @@
 @import "@fontsource-variable/noto-sans-arabic";
 @import "@fontsource-variable/noto-kufi-arabic";
 @import "../styles/design-system.css";
+@import "../styles/public-site.css";
 
 :root {
   color-scheme: light;

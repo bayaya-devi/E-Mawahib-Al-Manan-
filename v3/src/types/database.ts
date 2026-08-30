@@ -9,6 +9,8 @@ export type Json =
 export type DatabaseAppRole = "student" | "parent" | "teacher" | "admin" | "direction";
 export type DatabaseAccountStatus = "pending" | "active" | "suspended" | "archived";
 export type DatabaseMembershipStatus = DatabaseAccountStatus;
+export type DatabasePublicLocale = "ar" | "fr" | "en" | "amz";
+export type DatabasePublicationStatus = "draft" | "published" | "archived";
 
 type ProfileRow = {
   id: string;
@@ -123,10 +125,64 @@ type AuditLogRow = {
   occurred_at: string;
 };
 
+type SiteProfileRow = {
+  id: string; school_id: string; phone: string | null; email: string | null;
+  map_url: string | null; minimum_age: number | null; monthly_fee: number | null;
+  registration_open: boolean; updated_by: string | null; created_at: string; updated_at: string;
+};
+type SiteProfileTranslationRow = {
+  profile_id: string; locale: DatabasePublicLocale; name: string; tagline: string;
+  description: string; address: string | null; registration_note: string | null;
+};
+type PublicCategoryRow = {
+  id: string; school_id: string; slug: string; sort_order: number; active: boolean; created_at: string;
+};
+type PublicCategoryTranslationRow = { category_id: string; locale: DatabasePublicLocale; name: string };
+type PublicProgramRow = {
+  id: string; school_id: string; slug: string; status: DatabasePublicationStatus;
+  image_url: string | null; sort_order: number; published_at: string | null;
+  created_by: string; updated_by: string; created_at: string; updated_at: string;
+};
+type PublicProgramTranslationRow = {
+  program_id: string; locale: DatabasePublicLocale; title: string; summary: string; body: string | null;
+};
+type PublicScheduleRow = {
+  id: string; school_id: string; program_id: string | null; audience: string;
+  day_of_week: number; starts_at: string; ends_at: string; location: string | null;
+  active: boolean; effective_from: string | null; effective_to: string | null;
+  updated_by: string; created_at: string; updated_at: string;
+};
+type PublicScheduleTranslationRow = { schedule_id: string; locale: DatabasePublicLocale; title: string; notes: string | null };
+type PublicNewsRow = {
+  id: string; school_id: string; category_id: string | null; status: DatabasePublicationStatus;
+  image_url: string | null; event_date: string | null; published_at: string | null;
+  created_by: string; updated_by: string; created_at: string; updated_at: string;
+};
+type PublicNewsTranslationRow = {
+  news_id: string; locale: DatabasePublicLocale; slug: string; title: string; excerpt: string; body: string;
+};
+type PublicReplayRow = {
+  id: string; school_id: string; status: DatabasePublicationStatus; video_url: string;
+  thumbnail_url: string | null; speaker: string | null; event_date: string | null;
+  featured: boolean; views_count: number; likes_count: number; published_at: string | null;
+  created_by: string; updated_by: string; created_at: string; updated_at: string;
+};
+type PublicReplayTranslationRow = {
+  replay_id: string; locale: DatabasePublicLocale; slug: string; title: string; description: string;
+};
+type PublicReplayCategoryRow = { replay_id: string; category_id: string };
+
 type ReadonlyTable<Row> = {
   Row: Row;
   Insert: never;
   Update: never;
+  Relationships: [];
+};
+
+type MutableTable<Row, Insert = Partial<Row>> = {
+  Row: Row;
+  Insert: Insert;
+  Update: Partial<Row>;
   Relationships: [];
 };
 
@@ -146,6 +202,19 @@ export type Database = {
       class_enrollments: ReadonlyTable<ClassEnrollmentRow>;
       class_teacher_assignments: ReadonlyTable<ClassTeacherAssignmentRow>;
       audit_logs: ReadonlyTable<AuditLogRow>;
+      public_site_profiles: MutableTable<SiteProfileRow>;
+      public_site_profile_translations: MutableTable<SiteProfileTranslationRow>;
+      public_categories: MutableTable<PublicCategoryRow>;
+      public_category_translations: MutableTable<PublicCategoryTranslationRow>;
+      public_programs: MutableTable<PublicProgramRow>;
+      public_program_translations: MutableTable<PublicProgramTranslationRow>;
+      public_schedules: MutableTable<PublicScheduleRow>;
+      public_schedule_translations: MutableTable<PublicScheduleTranslationRow>;
+      public_news: MutableTable<PublicNewsRow>;
+      public_news_translations: MutableTable<PublicNewsTranslationRow>;
+      public_replays: MutableTable<PublicReplayRow>;
+      public_replay_translations: MutableTable<PublicReplayTranslationRow>;
+      public_replay_categories: MutableTable<PublicReplayCategoryRow>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -201,6 +270,14 @@ export type Database = {
         };
         Returns: undefined;
       };
+      toggle_public_replay_like: {
+        Args: { target_replay_id: string; target_visitor_hash: string; target_network_hash: string };
+        Returns: { liked: boolean; likes_count: number }[];
+      };
+      register_public_replay_view: {
+        Args: { target_replay_id: string; target_visitor_hash: string };
+        Returns: number;
+      };
     };
     Enums: {
       account_status: DatabaseAccountStatus;
@@ -209,6 +286,9 @@ export type Database = {
       enrollment_status: ClassEnrollmentRow["status"];
       teacher_assignment_kind: ClassTeacherAssignmentRow["assignment_kind"];
       guardian_relationship: FamilyRelationshipRow["relationship"];
+      public_locale: DatabasePublicLocale;
+      publication_status: DatabasePublicationStatus;
+      public_content_kind: "news" | "replay";
     };
     CompositeTypes: Record<string, never>;
   };
