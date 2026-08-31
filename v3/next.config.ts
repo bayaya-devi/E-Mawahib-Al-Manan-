@@ -2,9 +2,9 @@ import type { NextConfig } from "next";
 
 const appVersion = process.env.npm_package_version ?? "0.1.0";
 const buildSha =
-  process.env.VERCEL_GIT_COMMIT_SHA ??
-  process.env.GITHUB_SHA ??
-  process.env.BUILD_SHA ??
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.GITHUB_SHA ||
+  process.env.BUILD_SHA ||
   "development";
 const buildDate = process.env.BUILD_DATE ?? new Date().toISOString();
 
