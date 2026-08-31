@@ -9,6 +9,7 @@ export async function getLoginRateLimit(request: Request, input: unknown): Promi
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim(); const network = forwarded || request.headers.get("x-real-ip") || "unknown";
   const keys = [`login:${digest(login, environment.INTERACTION_HMAC_KEY)}`, `network:${digest(network, environment.INTERACTION_HMAC_KEY)}`];
   const result = await createAdminClient().rpc("auth_rate_limit_allowed", { target_keys: keys });
+  if (result.error) console.error("auth_rate_limit_check_failed", { code: result.error.code });
   return { allowed: result.data === true, keys };
 }
 export async function recordLoginRateLimit(keys: string[], success: boolean): Promise<void> { await createAdminClient().rpc("record_auth_rate_limit", { target_keys: keys, target_success: success }); }
