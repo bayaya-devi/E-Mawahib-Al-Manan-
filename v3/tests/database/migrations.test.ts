@@ -269,6 +269,7 @@ describe("V3 migrations and RLS", () => {
       "class_enrollments",
       "class_teacher_assignments",
       "classes",
+      "contact_points",
       "conversation_members",
       "conversation_messages",
       "conversations",
@@ -283,7 +284,13 @@ describe("V3 migrations and RLS", () => {
       "learning_events",
       "learning_goals",
       "message_attachments",
+      "notification_campaigns",
+      "notification_deliveries",
+      "notification_events",
+      "notification_policies",
       "notification_preferences",
+      "notification_recipients",
+      "notification_templates",
       "offline_mutation_receipts",
       "parent_profiles",
       "permissions",
@@ -333,6 +340,8 @@ describe("V3 migrations and RLS", () => {
       "teacher_session_reports",
       "teacher_session_runs",
       "teacher_session_students",
+      "user_contact_links",
+      "user_devices",
       "user_notifications",
       "user_roles",
       "validated_learning_content",
@@ -385,6 +394,7 @@ describe("V3 migrations and RLS", () => {
       "class_enrollments_select_scoped",
       "class_teacher_assignments_select_scoped",
       "classes_select_scoped",
+      "contact_points_admin_read",
       "conversation_members_member_read",
       "conversation_messages_member_read",
       "conversations_member_read",
@@ -401,7 +411,13 @@ describe("V3 migrations and RLS", () => {
       "learning_events_read_scoped",
       "learning_goals_read_scoped",
       "message_attachments_member_read",
+      "notification_campaigns_admin_read",
+      "notification_deliveries_scoped_read",
+      "notification_events_scoped_read",
+      "notification_policies_admin_read",
       "notification_preferences_own_read",
+      "notification_recipients_scoped_read",
+      "notification_templates_admin_read",
       "notifications_read_own",
       "offline_mutation_receipts_own_read",
       "parent_profiles_select_self_or_admin",
@@ -451,6 +467,8 @@ describe("V3 migrations and RLS", () => {
       "teacher_session_reports_read",
       "teacher_session_runs_read",
       "teacher_session_students_read",
+      "user_contact_links_scoped_read",
+      "user_devices_own_read",
       "user_roles_select_administration",
       "user_roles_select_own",
       "validated_content_read",
@@ -908,7 +926,7 @@ describe("V3 migrations and RLS", () => {
     expect(feature).toEqual([{ enabled: true }]);
     await expect(asUser(users.adminA, "select public.system_diagnostics()" )).rejects.toThrow(/diagnostics_forbidden/);
     const diagnostics = await asUser<{ value: { schema_version: string } }>(users.direction, "select public.system_diagnostics() as value");
-    expect(diagnostics[0]?.value.schema_version).toBe("202608310004");
+    expect(diagnostics[0]?.value.schema_version).toBe("202608310005");
     const mutationId = "91000000-0000-4000-8000-000000000001";
     const claimed = await asUser<{ state: string }>(users.studentA, `select public.claim_offline_mutation('${mutationId}', 'quran.practice') as state`);
     expect(claimed).toEqual([{ state: "claimed" }]);
@@ -962,5 +980,63 @@ describe("V3 migrations and RLS", () => {
     expect(notifications).toEqual([{ category: "request" }]);
     const audit = await asUser<{ action: string }>(users.adminA, `select action from public.audit_logs where entity_id = '${requestId}' order by id`);
     expect(audit).toEqual([{ action: "service_request.created" }, { action: "service_request.status_changed" }]);
+  });
+
+  it("shares one normalized contact safely across legitimate linked accounts", async () => {
+    const saveParent = `select public.save_user_contact('${users.parentA}', 'phone', '+212612345678', '06 12 34 56 78', 'MA', 'parent', true, true, false, true, false, 'father')`;
+    const saveStudent = `select public.save_user_contact('${users.studentA}', 'phone', '+212612345678', '06 12 34 56 78', 'MA', 'parent', true, true, false, true, false, 'father')`;
+    await runAsUser(users.parentA, saveParent);
+    await runAsUser(users.studentA, saveStudent);
+    const points = await database.query<{ count: number }>("select count(*)::integer as count from public.contact_points where normalized_value = '+212612345678'");
+    expect(points.rows).toEqual([{ count: 1 }]);
+    const studentContacts = await asUser<{ masked_value: string }>(users.studentA, "select masked_value from public.list_my_contacts()");
+    expect(studentContacts).toEqual([{ masked_value: "+21261****678" }]);
+    const teacherLinks = await asUser<{ id: string }>(users.teacherA, "select id from public.user_contact_links");
+    expect(teacherLinks).toEqual([]);
+    const rawStudentPoints = await asUser<{ normalized_value: string }>(users.studentA, "select normalized_value from public.contact_points");
+    expect(rawStudentPoints).toEqual([]);
+    await expect(runAsUser(users.parentA, `select public.save_user_contact('${users.parentA}', 'phone', '0612345678', '0612345678', 'MA', 'personal')`)).rejects.toThrow(/invalid_contact_value/);
+  });
+
+  it("routes an absence to the student and guardian while deduplicating delivery", async () => {
+    const contact = await database.query<{ id: string }>("select id from public.contact_points where normalized_value = '+212612345678'");
+    await runAsUser(users.adminA, `select public.set_contact_verification('${contact.rows[0]?.id}', 'verified')`);
+    await runAsUser(users.parentA, "select public.set_notification_channels('attendance', true, false, false, true, false, 'immediate', null, null)");
+    await runAsUser(users.studentA, "select public.set_notification_channels('attendance', true, false, false, true, false, 'immediate', null, null)");
+    const session = "92000000-0000-4000-8000-000000000001";
+    const attendance = "92000000-0000-4000-8000-000000000002";
+    await database.exec(`
+      insert into public.course_sessions(id, class_id, teacher_id, starts_at, ends_at, title)
+      values('${session}', '${classes.first}', '${users.teacherA}', now(), now() + interval '1 hour', 'Attendance notification');
+      insert into public.attendance_records(id, session_id, student_id, status, recorded_by)
+      values('${attendance}', '${session}', '${users.studentA}', 'absent', '${users.teacherA}');
+    `);
+    const recipients = await database.query<{ user_id: string }>(`select user_id from public.notification_recipients where event_id = (select id from public.notification_events where entity_id = '${attendance}') order by user_id`);
+    expect(recipients.rows.map(({ user_id }) => user_id)).toEqual([users.studentA, users.parentA].sort());
+    const inApp = await database.query<{ count: number }>(`select count(*)::integer as count from public.notification_deliveries where event_id = (select id from public.notification_events where entity_id = '${attendance}') and channel = 'in_app'`);
+    expect(inApp.rows).toEqual([{ count: 2 }]);
+    const sms = await database.query<{ count: number }>(`select count(*)::integer as count from public.notification_deliveries where event_id = (select id from public.notification_events where entity_id = '${attendance}') and channel = 'sms'`);
+    expect(sms.rows).toEqual([{ count: 1 }]);
+    await database.exec(`select public.route_notification_event((select id from public.notification_events where entity_id = '${attendance}'))`);
+    const afterRepeat = await database.query<{ count: number }>(`select count(*)::integer as count from public.notification_deliveries where event_id = (select id from public.notification_events where entity_id = '${attendance}')`);
+    expect(afterRepeat.rows).toEqual([{ count: 3 }]);
+  });
+
+  it("moves exhausted provider deliveries to the dead-letter queue", async () => {
+    const delivery = await database.query<{ id: string }>("select id from public.notification_deliveries where channel = 'sms' limit 1");
+    await database.exec(`update public.notification_deliveries set max_attempts = 1 where id = '${delivery.rows[0]?.id}'`);
+    await runAsDatabaseRole("service_role", "select * from public.claim_notification_deliveries(10)");
+    await runAsDatabaseRole("service_role", `select public.finish_notification_delivery('${delivery.rows[0]?.id}', false, 'test', null, 'TEMPORARY', 'provider unavailable')`);
+    const state = await database.query<{ status: string }>(`select status from public.notification_deliveries where id = '${delivery.rows[0]?.id}'`);
+    expect(state.rows).toEqual([{ status: "dead_letter" }]);
+  });
+
+  it("previews scoped campaigns and reserves urgent broadcasts for direction", async () => {
+    const estimate = await asUser<{ total: number }>(users.adminA, `select public.estimate_notification_audience('${schools.first}', '{"type":"role","role":"student"}'::jsonb) as total`);
+    expect(estimate).toEqual([{ total: 2 }]);
+    await expect(asUser(users.adminA, `select public.create_notification_campaign('${schools.first}', 'Urgent', 'Test', '', '{"type":"all"}'::jsonb, '{in_app}'::public.notification_channel[], 'urgent')`)).rejects.toThrow(/urgent_broadcast_forbidden/);
+    const campaign = await asUser<{ id: string }>(users.direction, `select public.create_notification_campaign('${schools.first}', 'Direction notice', 'Important information', '', '{"type":"users","user_ids":["${users.studentA}"]}'::jsonb, '{in_app}'::public.notification_channel[], 'urgent') as id`);
+    const recipients = await database.query<{ user_id: string }>(`select nr.user_id from public.notification_recipients nr join public.notification_events ne on ne.id = nr.event_id where ne.entity_id = '${campaign[0]?.id}'`);
+    expect(recipients.rows).toEqual([{ user_id: users.studentA }]);
   });
 });

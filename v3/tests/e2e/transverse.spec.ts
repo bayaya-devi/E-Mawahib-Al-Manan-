@@ -27,6 +27,22 @@ test("publishes a PWA manifest and notification entry point", async ({ page, req
   await expect(page.getByRole("button", { name: "الإشعارات" })).toBeVisible();
 });
 
+test("communication settings are reachable and mobile safe", async ({ page }) => {
+  for (const path of ["/student/settings", "/family/settings", "/teacher/settings"]) {
+    await page.goto(path);
+    await expect(page.getByRole("heading", { name: "وسائل الاتصال" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "تفضيلات الإشعارات" })).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(1);
+  }
+});
+
+test("administration exposes the audited notification composer", async ({ page }) => {
+  await page.goto("/admin/communications");
+  await expect(page.getByRole("heading", { name: "الإشعارات والإرسالات" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "معاينة المستلمين" })).toBeVisible();
+});
+
 test("sends the production security boundary headers", async ({ request }) => {
   const response = await request.get("/ar");
   expect(response.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");

@@ -24,6 +24,12 @@ export type DatabaseServiceRequestKind = "leave" | "absence" | "equipment" | "in
 export type DatabaseServiceRequestStatus = "submitted" | "acknowledged" | "in_progress" | "waiting_user" | "resolved" | "rejected" | "cancelled";
 export type DatabaseRequestPriority = "low" | "normal" | "high" | "urgent";
 export type DatabaseNotificationCategory = "message" | "request" | "assignment" | "learning" | "attendance" | "session" | "administration" | "system";
+export type DatabaseContactKind = "email" | "phone";
+export type DatabaseContactLabel = "personal" | "professional" | "parent" | "emergency" | "other";
+export type DatabaseContactVerificationStatus = "unverified" | "pending" | "verified" | "disabled";
+export type DatabaseNotificationPriority = "low" | "normal" | "important" | "urgent";
+export type DatabaseNotificationChannel = "in_app" | "push" | "email" | "sms" | "whatsapp";
+export type DatabaseNotificationDeliveryStatus = "pending" | "processing" | "sent" | "delivered" | "failed" | "dead_letter" | "cancelled";
 
 type ProfileRow = {
   id: string;
@@ -207,7 +213,7 @@ type ValidatedLearningContentRow = { id: string; school_id: string | null; kind:
 type RecitationAttemptRow = { id: string; student_id: string; surah_number: number; verse_from: number; verse_to: number; status: "recording" | "processing" | "completed" | "inconclusive" | "failed"; transcript: string | null; transcript_confidence: number | null; audio_storage_path: string | null; asr_engine: string | null; started_at: string; completed_at: string | null };
 type RecitationResultRow = { attempt_id: string; memorization_score: number | null; matched_words: number; expected_words: number; is_conclusive: boolean; recommendation: string | null; acoustic_tajwid_status: "not_evaluated"; analysed_at: string };
 type RecitationErrorRow = { id: number; attempt_id: string; verse_number: number | null; kind: string; expected_text: string | null; observed_text: string | null; word_position: number | null; confidence: number | null };
-type UserNotificationRow = { id: string; user_id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string; category: DatabaseNotificationCategory; entity_type: string | null; entity_id: string | null; dedup_key: string | null };
+type UserNotificationRow = { id: string; user_id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string; category: DatabaseNotificationCategory; entity_type: string | null; entity_id: string | null; dedup_key: string | null; event_id: string | null; priority: DatabaseNotificationPriority; archived_at: string | null; expires_at: string | null };
 type AuthorizedDocumentRow = { id: string; student_id: string; title: string; storage_path: string; visible_to_family: boolean; uploaded_by: string; created_at: string };
 type TeacherSessionRunRow = { id: string; course_session_id: string; class_id: string; teacher_id: string; status: DatabaseTeacherSessionStatus; started_at: string; ended_at: string | null; created_at: string };
 type TeacherSessionStudentRow = { run_id: string; student_id: string; attendance: DatabaseAttendanceStatus; minutes_late: number; processed_at: string | null; behavior: "excellent" | "good" | "mixed" | "difficult" | null; difficulty_flags: Json; teacher_note: string | null; updated_at: string };
@@ -233,8 +239,17 @@ type ConversationMessageRow = { id: number; conversation_id: string; sender_id: 
 type MessageAttachmentRow = { id: string; message_id: number; storage_path: string; file_name: string; mime_type: string; size_bytes: number; checksum: string; created_at: string };
 type ServiceRequestRow = { id: string; reference: string; school_id: string; requester_id: string; client_id: string | null; kind: DatabaseServiceRequestKind; status: DatabaseServiceRequestStatus; priority: DatabaseRequestPriority; title: string; details: string | null; assigned_to: string | null; due_at: string | null; resolved_at: string | null; created_at: string; updated_at: string };
 type ServiceRequestEventRow = { id: number; request_id: string; actor_id: string; event_kind: string; from_status: DatabaseServiceRequestStatus | null; to_status: DatabaseServiceRequestStatus | null; note: string | null; created_at: string };
-type NotificationPreferenceRow = { user_id: string; category: DatabaseNotificationCategory; in_app: boolean; browser: boolean; realtime: boolean; updated_at: string };
+type NotificationPreferenceRow = { user_id: string; category: DatabaseNotificationCategory; in_app: boolean; browser: boolean; realtime: boolean; push: boolean; email: boolean; sms: boolean; whatsapp: boolean; digest_frequency: "immediate" | "daily" | "weekly" | "never"; quiet_hours_start: string | null; quiet_hours_end: string | null; updated_at: string };
 type PushSubscriptionRow = { id: string; user_id: string; endpoint: string; p256dh: string; auth_secret: string; user_agent: string | null; last_used_at: string; created_at: string };
+type ContactPointRow = { id: string; kind: DatabaseContactKind; normalized_value: string; display_value: string; country_code: string | null; verification_status: DatabaseContactVerificationStatus; verified_at: string | null; status: DatabaseMembershipStatus; created_by: string | null; created_at: string; updated_at: string };
+type UserContactLinkRow = { id: string; contact_point_id: string; user_id: string; label: DatabaseContactLabel; relationship: string | null; is_primary: boolean; notification_enabled: boolean; use_for_login: boolean; use_for_notifications: boolean; is_emergency: boolean; created_by: string | null; created_at: string; updated_at: string };
+type UserDeviceRow = { id: string; user_id: string; device_key: string; name: string; platform: string | null; browser: string | null; push_subscription_id: string | null; enabled: boolean; last_seen_at: string; created_at: string; updated_at: string };
+type NotificationPolicyRow = { id: string; school_id: string; event_type: string; minimum_priority: DatabaseNotificationPriority; mandatory_channels: DatabaseNotificationChannel[]; notify_student: boolean; notify_guardians: boolean; bypass_quiet_hours: boolean; escalation_after: string | null; cooldown: string; enabled: boolean; updated_by: string | null; created_at: string; updated_at: string };
+type NotificationTemplateRow = { id: string; school_id: string | null; event_type: string; locale: DatabasePublicLocale; channel: DatabaseNotificationChannel; title_template: string; body_template: string; active: boolean; updated_by: string | null; created_at: string; updated_at: string };
+type NotificationEventRow = { id: string; school_id: string | null; event_type: string; category: DatabaseNotificationCategory; priority: DatabaseNotificationPriority; subject_user_id: string | null; class_id: string | null; entity_type: string | null; entity_id: string | null; title: string; body: string; href: string | null; payload: Json; dedup_key: string; scheduled_at: string; expires_at: string | null; processed_at: string | null; created_by: string | null; created_at: string };
+type NotificationCampaignRow = { id: string; school_id: string; title: string; body: string; href: string | null; audience: Json; channels: DatabaseNotificationChannel[]; priority: DatabaseNotificationPriority; locale: DatabasePublicLocale; status: "draft" | "scheduled" | "processing" | "sent" | "partially_failed" | "cancelled"; scheduled_at: string | null; expires_at: string | null; estimated_recipients: number; delivered_count: number; failed_count: number; created_by: string; created_at: string; updated_at: string };
+type NotificationRecipientRow = { event_id: string; user_id: string; relationship: string; created_at: string };
+type NotificationDeliveryRow = { id: string; event_id: string; user_id: string; channel: DatabaseNotificationChannel; contact_point_id: string | null; device_id: string | null; provider: string | null; status: DatabaseNotificationDeliveryStatus; masked_destination: string | null; idempotency_key: string; attempt_count: number; max_attempts: number; next_attempt_at: string; locked_at: string | null; sent_at: string | null; delivered_at: string | null; failed_at: string | null; provider_message_id: string | null; error_code: string | null; error_detail: string | null; created_at: string; updated_at: string };
 
 type ReadonlyTable<Row> = {
   Row: Row;
@@ -328,6 +343,15 @@ export type Database = {
       service_request_events: ReadonlyTable<ServiceRequestEventRow>;
       notification_preferences: ReadonlyTable<NotificationPreferenceRow>;
       push_subscriptions: ReadonlyTable<PushSubscriptionRow>;
+      contact_points: ReadonlyTable<ContactPointRow>;
+      user_contact_links: ReadonlyTable<UserContactLinkRow>;
+      user_devices: ReadonlyTable<UserDeviceRow>;
+      notification_policies: ReadonlyTable<NotificationPolicyRow>;
+      notification_templates: ReadonlyTable<NotificationTemplateRow>;
+      notification_events: ReadonlyTable<NotificationEventRow>;
+      notification_campaigns: ReadonlyTable<NotificationCampaignRow>;
+      notification_recipients: ReadonlyTable<NotificationRecipientRow>;
+      notification_deliveries: ReadonlyTable<NotificationDeliveryRow>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -453,6 +477,19 @@ export type Database = {
       update_service_request: { Args: { target_request_id: string; target_status: DatabaseServiceRequestStatus; target_note?: string | null; target_assigned_to?: string | null }; Returns: undefined };
       mark_notification_read: { Args: { target_notification_id: string }; Returns: undefined };
       set_notification_preference: { Args: { target_category: DatabaseNotificationCategory; target_in_app: boolean; target_browser: boolean; target_realtime: boolean }; Returns: undefined };
+      list_my_contacts: { Args: Record<never, never>; Returns: Array<{ link_id: string; kind: DatabaseContactKind; masked_value: string; label: DatabaseContactLabel; is_primary: boolean; notification_enabled: boolean; use_for_login: boolean; use_for_notifications: boolean; is_emergency: boolean; verification_status: DatabaseContactVerificationStatus }> };
+      save_user_contact: { Args: { target_user_id: string; target_kind: DatabaseContactKind; target_normalized_value: string; target_display_value: string; target_country_code: string; target_label: DatabaseContactLabel; target_is_primary?: boolean; target_notification_enabled?: boolean; target_use_for_login?: boolean; target_use_for_notifications?: boolean; target_is_emergency?: boolean; target_relationship?: string | null }; Returns: string };
+      remove_user_contact: { Args: { target_link_id: string }; Returns: undefined };
+      set_notification_channels: { Args: { target_category: DatabaseNotificationCategory; target_in_app: boolean; target_push: boolean; target_email: boolean; target_sms: boolean; target_whatsapp: boolean; target_digest_frequency?: string; target_quiet_start?: string | null; target_quiet_end?: string | null }; Returns: undefined };
+      register_user_device: { Args: { target_device_key: string; target_name: string; target_platform: string; target_browser: string; target_push_subscription_id?: string | null }; Returns: string };
+      remove_user_device: { Args: { target_device_id: string }; Returns: undefined };
+      mark_all_notifications_read: { Args: Record<never, never>; Returns: undefined };
+      archive_notification: { Args: { target_notification_id: string; target_archived?: boolean }; Returns: undefined };
+      estimate_notification_audience: { Args: { target_school_id: string; target_audience: Json }; Returns: number };
+      create_notification_campaign: { Args: { target_school_id: string; target_title: string; target_body: string; target_href: string; target_audience: Json; target_channels: DatabaseNotificationChannel[]; target_priority: DatabaseNotificationPriority; target_locale?: DatabasePublicLocale; target_scheduled_at?: string; target_expires_at?: string | null }; Returns: string };
+      process_due_notification_events: { Args: { target_limit?: number }; Returns: number };
+      claim_notification_deliveries: { Args: { target_limit?: number }; Returns: Array<{ delivery_id: string; channel: DatabaseNotificationChannel; destination: string; title: string; body: string; href: string | null; attempt_count: number }> };
+      finish_notification_delivery: { Args: { target_delivery_id: string; target_success: boolean; target_provider?: string | null; target_provider_message_id?: string | null; target_error_code?: string | null; target_error_detail?: string | null }; Returns: undefined };
       auth_rate_limit_allowed: { Args: { target_keys: string[] }; Returns: boolean };
       record_auth_rate_limit: { Args: { target_keys: string[]; target_success: boolean }; Returns: undefined };
       has_permission: { Args: { required_permission: string }; Returns: boolean };
@@ -501,6 +538,12 @@ export type Database = {
       service_request_status: DatabaseServiceRequestStatus;
       request_priority: DatabaseRequestPriority;
       notification_category: DatabaseNotificationCategory;
+      contact_kind: DatabaseContactKind;
+      contact_label: DatabaseContactLabel;
+      contact_verification_status: DatabaseContactVerificationStatus;
+      notification_priority: DatabaseNotificationPriority;
+      notification_channel: DatabaseNotificationChannel;
+      notification_delivery_status: DatabaseNotificationDeliveryStatus;
     };
     CompositeTypes: Record<string, never>;
   };

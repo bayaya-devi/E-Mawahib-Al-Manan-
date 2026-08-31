@@ -1,5 +1,7 @@
 # Security V3
 
+Le modèle de confidentialité des coordonnées et la chaîne de livraison sont détaillés dans `CONTACTS_NOTIFICATIONS_V3.md`. Les coordonnées brutes restent derrière RLS et des fonctions `security definer` à portée contrôlée ; les fournisseurs et leurs secrets sont exclusivement côté serveur.
+
 ## 1. Security objectives
 
 V3 handles children, families, teaching records, voice-related learning data, and

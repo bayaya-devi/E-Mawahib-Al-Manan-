@@ -1,5 +1,20 @@
 # V3 Release Checklist
 
+## Contacts et notifications
+
+- [x] Coordonnées centralisées et relations plusieurs-à-plusieurs
+- [x] Normalisation E.164 côté interface et validation en base
+- [x] Masquage, vérification et RLS
+- [x] Centre in-app avec lecture, filtres et archivage
+- [x] Préférences par catégorie et canal
+- [x] Appareils utilisateur
+- [x] Routage élève/responsables pour l'absence et le retard
+- [x] Composeur administratif avec aperçu et confirmation
+- [x] Déduplication, retry exponentiel et dead-letter
+- [x] Abstraction serveur email/SMS/push
+- [ ] Configurer et valider les fournisseurs réels en préproduction
+- [ ] Configurer le planificateur authentifié du worker
+
 > Le socle local est candidat staging. La production reste bloquee tant que les controles marques staging/operateur ne sont pas prouves.
 
 ## Durcissement Production

@@ -46,7 +46,7 @@ const navigation: Record<ShellKind, NavItem[]> = {
     { label: "المتابعة", href: "/family#follow-up", icon: ChartNoAxesCombined },
     { label: "الواجبات", href: "/family#assignments", icon: ClipboardCheck },
     { label: "الرسائل", href: "/family/messages", icon: MessageSquareText },
-    { label: "الإعدادات", href: "/family#settings", icon: Settings },
+    { label: "الإعدادات", href: "/family/settings", icon: Settings },
   ],
   teacher: [
     { label: "الرئيسية", href: "/teacher", icon: Home },
@@ -54,6 +54,7 @@ const navigation: Record<ShellKind, NavItem[]> = {
     { label: "الطلاب", href: "/teacher/students", icon: UsersRound },
     { label: "المهني", href: "/teacher/professional", icon: ClipboardCheck },
     { label: "الرسائل", href: "/teacher/messages", icon: MessageSquareText },
+    { label: "الإعدادات", href: "/teacher/settings", icon: Settings },
   ],
   admin: [
     { label: "القيادة", href: "/admin", icon: LayoutDashboard },
