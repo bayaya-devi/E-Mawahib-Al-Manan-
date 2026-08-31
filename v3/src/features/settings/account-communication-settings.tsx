@@ -1,11 +1,12 @@
 "use client";
 
-import { Bell, Laptop, Mail, Phone, Plus, ShieldCheck, Trash2 } from "lucide-react";
+import { Bell, KeyRound, Laptop, Mail, Phone, Plus, ShieldCheck, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 import { Badge, Button, Card, Input, Select, useToast } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import type { DatabaseContactKind, DatabaseContactLabel, DatabaseNotificationCategory } from "@/types/database";
+import { enablePushNotifications } from "@/features/notifications/push-subscription";
 import { normalizeContact } from "./normalize-contact";
 
 type Contact = { link_id: string; kind: DatabaseContactKind; masked_value: string; label: DatabaseContactLabel; is_primary: boolean; notification_enabled: boolean; use_for_login: boolean; use_for_notifications: boolean; is_emergency: boolean; verification_status: "unverified" | "pending" | "verified" | "disabled" };
@@ -26,6 +27,9 @@ export function AccountCommunicationSettings() {
   const [label, setLabel] = useState<DatabaseContactLabel>("personal");
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
+  const [otpLinkId, setOtpLinkId] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpBusy, setOtpBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (process.env.NEXT_PUBLIC_APP_ENV === "test") return;
@@ -60,10 +64,23 @@ export function AccountCommunicationSettings() {
     setPreferences((items) => [...items.filter((item) => item.category !== category), next]);
   }
   async function removeDevice(id: string) { await createClient().rpc("remove_user_device", { target_device_id: id }); await load(); }
+  async function requestOtp(linkId: string) {
+    setOtpBusy(true); const response = await fetch("/api/contacts/verification/request", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ linkId }) });
+    const result = await response.json().catch(() => ({ message: "تعذر إرسال الرمز." })) as { message: string };
+    setOtpBusy(false); showToast({ title: result.message, tone: response.ok ? "success" : "info" }); if (response.ok) { setOtpLinkId(linkId); setOtpCode(""); await load(); }
+  }
+  async function verifyOtp() {
+    if (!otpLinkId || otpCode.length !== 6) return; setOtpBusy(true);
+    const response = await fetch("/api/contacts/verification/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ linkId: otpLinkId, code: otpCode }) });
+    const result = await response.json().catch(() => ({ message: "رمز غير صحيح أو منتهي." })) as { message: string };
+    setOtpBusy(false); showToast({ title: result.message, tone: response.ok ? "success" : "info" }); if (response.ok) { setOtpLinkId(null); setOtpCode(""); await load(); }
+  }
+  async function enablePush() { try { await enablePushNotifications(); await load(); showToast({ title: "تم تفعيل إشعارات الجهاز", tone: "success" }); } catch (error) { showToast({ title: error instanceof Error ? error.message : "تعذر تفعيل الإشعارات", tone: "info" }); } }
 
   return <div className="communication-settings">
     <section className="settings-section"><header><span><Phone size={20} /></span><div><h2>وسائل الاتصال</h2><p>تظهر البيانات مخفية لحماية الخصوصية.</p></div></header>
-      <div className="contact-list">{contacts.map((contact) => <Card key={contact.link_id} className="contact-row"><span className="contact-icon">{contact.kind === "email" ? <Mail size={19} /> : <Phone size={19} />}</span><div><strong dir="ltr">{contact.masked_value}</strong><small>{contactLabels[contact.label]}</small></div><Badge tone={contact.verification_status === "verified" ? "success" : "warning"}>{contact.verification_status === "verified" ? "موثّق" : contact.verification_status === "pending" ? "قيد التحقق" : "غير موثّق"}</Badge><Button variant="quiet" size="icon" aria-label="حذف" onClick={() => void removeContact(contact.link_id)}><Trash2 size={17} /></Button></Card>)}</div>
+      <div className="contact-list">{contacts.map((contact) => <Card key={contact.link_id} className="contact-row"><span className="contact-icon">{contact.kind === "email" ? <Mail size={19} /> : <Phone size={19} />}</span><div><strong dir="ltr">{contact.masked_value}</strong><small>{contactLabels[contact.label]}</small></div><Badge tone={contact.verification_status === "verified" ? "success" : "warning"}>{contact.verification_status === "verified" ? "موثّق" : contact.verification_status === "pending" ? "قيد التحقق" : "غير موثّق"}</Badge><span className="contact-actions">{contact.verification_status !== "verified" ? <Button variant="secondary" size="sm" loading={otpBusy && otpLinkId === contact.link_id} onClick={() => void requestOtp(contact.link_id)}><KeyRound size={16} />تحقق</Button> : null}<Button variant="quiet" size="icon" aria-label="حذف" onClick={() => void removeContact(contact.link_id)}><Trash2 size={17} /></Button></span></Card>)}</div>
+      {otpLinkId ? <div className="otp-form"><Input label="رمز التحقق" dir="ltr" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otpCode} onChange={(event) => setOtpCode(event.target.value.replace(/\D/gu, ""))} /><Button loading={otpBusy} disabled={otpCode.length !== 6} onClick={() => void verifyOtp()}>تأكيد الرمز</Button></div> : null}
       <div className="contact-form"><Select label="النوع" value={kind} onChange={(event) => setKind(event.target.value as DatabaseContactKind)}><option value="phone">هاتف</option><option value="email">بريد إلكتروني</option></Select><Select label="الاستخدام" value={label} onChange={(event) => setLabel(event.target.value as DatabaseContactLabel)}>{Object.entries(contactLabels).map(([key, text]) => <option key={key} value={key}>{text}</option>)}</Select><Input label={kind === "phone" ? "رقم الهاتف" : "البريد الإلكتروني"} dir="ltr" value={value} onChange={(event) => setValue(event.target.value)} placeholder={kind === "phone" ? "+212 6..." : "name@example.com"} /><Button loading={busy} onClick={() => void addContact()}><Plus size={18} />إضافة</Button></div>
     </section>
 
@@ -71,7 +88,7 @@ export function AccountCommunicationSettings() {
       <div className="preference-grid"><div className="preference-head"><span>الفئة</span><span>داخل التطبيق</span><span>الجهاز</span><span>البريد</span><span>رسالة نصية</span></div>{categories.map((category) => { const current = preferenceFor(category); return <div className="preference-row" key={category}><strong>{categoryLabels[category]}</strong>{(["in_app", "push", "email", "sms"] as const).map((channel) => <label className="setting-toggle" key={channel}><input type="checkbox" checked={current[channel]} onChange={() => void toggle(category, channel)} /><span /></label>)}</div>; })}</div>
     </section>
 
-    <section className="settings-section"><header><span><Laptop size={20} /></span><div><h2>الأجهزة</h2><p>يمكن إيقاف جهاز لم تعد تستخدمه.</p></div></header>
+    <section className="settings-section"><header><span><Laptop size={20} /></span><div><h2>الأجهزة</h2><p>يمكن إيقاف جهاز لم تعد تستخدمه.</p></div></header><div><Button variant="secondary" onClick={() => void enablePush()}><Bell size={18} />تفعيل إشعارات هذا الجهاز</Button></div>
       <div className="device-list">{devices.length ? devices.map((device) => <Card className="device-row" key={device.id}><ShieldCheck size={19} /><div><strong>{device.name}</strong><small>{[device.platform, device.browser].filter(Boolean).join(" · ") || "جهاز مسجل"}</small></div><time>{new Intl.DateTimeFormat("ar-MA", { dateStyle: "medium" }).format(new Date(device.last_seen_at))}</time><Button variant="quiet" size="sm" onClick={() => void removeDevice(device.id)}>إيقاف</Button></Card>) : <p className="settings-empty">لا توجد أجهزة مسجلة للإشعارات.</p>}</div>
     </section>
   </div>;

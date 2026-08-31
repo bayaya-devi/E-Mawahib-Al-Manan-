@@ -22,6 +22,7 @@
     "migration:v1:verify": "node scripts/migration/verify-v1-v3.mjs",
     "bootstrap:direction": "node scripts/bootstrap-direction.mjs",
     "quran:extract-v1": "node scripts/quran/extract-v1-quran.mjs",
+    "notifications:vapid": "web-push generate-vapid-keys --json",
     "check": "npm run security:secrets && npm run lint && npm run typecheck && npm run test:run && npm run build"
   },
   "engines": {
@@ -38,6 +39,8 @@
     "next": "16.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
+    "server-only": "^0.0.1",
+    "web-push": "^3.6.7",
     "zod": "^4.5.4"
   },
   "devDependencies": {
@@ -50,6 +53,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9",
     "eslint-config-next": "16.3.3",

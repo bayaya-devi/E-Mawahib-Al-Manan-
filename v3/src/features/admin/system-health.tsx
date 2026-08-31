@@ -34,6 +34,6 @@ export function SystemHealth() {
   </section>;
 }
 
-function serviceLabel(key: string) { return ({ authentication: "الدخول", database: "قاعدة البيانات", storage: "الملفات", serviceWorker: "النسخة المحلية" } as Record<string, string>)[key] ?? key; }
+function serviceLabel(key: string) { return ({ authentication: "الدخول", database: "قاعدة البيانات", storage: "الملفات", serviceWorker: "النسخة المحلية", notificationWorker: "عامل الإرسال", notificationEmail: "البريد الخارجي", notificationSms: "الرسائل النصية", notificationPush: "إشعارات الجهاز", contactOtp: "رموز التحقق" } as Record<string, string>)[key] ?? key; }
 function diagnosticLabel(key: string) { return ({ auth_without_profile: "حساب بلا ملف", profile_without_role: "ملف بلا دور", student_without_class: "طالب بلا قسم", class_without_teacher: "قسم بلا أستاذ", stuck_offline_mutations: "مزامنة عالقة" } as Record<string, string>)[key] ?? key; }
 async function fetchHealth(): Promise<HealthPayload> { const response = await fetch("/api/admin/health", { cache: "no-store" }); return response.json() as Promise<HealthPayload>; }

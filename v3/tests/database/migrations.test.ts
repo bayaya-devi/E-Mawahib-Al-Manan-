@@ -270,6 +270,7 @@ describe("V3 migrations and RLS", () => {
       "class_teacher_assignments",
       "classes",
       "contact_points",
+      "contact_verification_challenges",
       "conversation_members",
       "conversation_messages",
       "conversations",
@@ -926,7 +927,7 @@ describe("V3 migrations and RLS", () => {
     expect(feature).toEqual([{ enabled: true }]);
     await expect(asUser(users.adminA, "select public.system_diagnostics()" )).rejects.toThrow(/diagnostics_forbidden/);
     const diagnostics = await asUser<{ value: { schema_version: string } }>(users.direction, "select public.system_diagnostics() as value");
-    expect(diagnostics[0]?.value.schema_version).toBe("202608310005");
+    expect(diagnostics[0]?.value.schema_version).toBe("202608310006");
     const mutationId = "91000000-0000-4000-8000-000000000001";
     const claimed = await asUser<{ state: string }>(users.studentA, `select public.claim_offline_mutation('${mutationId}', 'quran.practice') as state`);
     expect(claimed).toEqual([{ state: "claimed" }]);
@@ -996,6 +997,28 @@ describe("V3 migrations and RLS", () => {
     const rawStudentPoints = await asUser<{ normalized_value: string }>(users.studentA, "select normalized_value from public.contact_points");
     expect(rawStudentPoints).toEqual([]);
     await expect(runAsUser(users.parentA, `select public.save_user_contact('${users.parentA}', 'phone', '0612345678', '0612345678', 'MA', 'personal')`)).rejects.toThrow(/invalid_contact_value/);
+  });
+
+  it("verifies contacts with expiring one-time challenges hidden from users", async () => {
+    const link = await database.query<{ id: string }>(`select id from public.user_contact_links where user_id = '${users.parentA}' limit 1`);
+    const digest = "a".repeat(64);
+    const created = await runAsDatabaseRole("service_role", `select * from public.create_contact_verification_challenge('${users.parentA}', '${link.rows[0]?.id}', '${digest}')`);
+    expect(created.rows).toHaveLength(1);
+    await expect(runAsDatabaseRole("service_role", `select * from public.create_contact_verification_challenge('${users.parentA}', '${link.rows[0]?.id}', '${"c".repeat(64)}')`)).rejects.toThrow(/otp_rate_limited/u);
+    await expect(asUser<{ id: string }>(users.parentA, "select id from public.contact_verification_challenges")).rejects.toThrow(/permission denied/u);
+    const wrong = await runAsDatabaseRole("service_role", `select public.verify_contact_verification_challenge('${users.parentA}', '${link.rows[0]?.id}', '${"b".repeat(64)}') as verified`);
+    expect(wrong.rows).toEqual([{ verified: false }]);
+    const correct = await runAsDatabaseRole("service_role", `select public.verify_contact_verification_challenge('${users.parentA}', '${link.rows[0]?.id}', '${digest}') as verified`);
+    expect(correct.rows).toEqual([{ verified: true }]);
+    const contact = await database.query<{ verification_status: string }>(`select verification_status from public.contact_points c join public.user_contact_links l on l.contact_point_id = c.id where l.id = '${link.rows[0]?.id}'`);
+    expect(contact.rows).toEqual([{ verification_status: "verified" }]);
+  });
+
+  it("registers a push endpoint only for its authenticated owner", async () => {
+    await runAsUser(users.studentA, `select public.save_push_subscription('device-key-00000001','Phone','Android','Browser','https://push.example.test/subscription-a','${"p".repeat(40)}','auth-secret')`);
+    const stored = await database.query("select endpoint, user_id from public.push_subscriptions where endpoint = 'https://push.example.test/subscription-a'");
+    expect(stored.rows).toEqual([{ endpoint: "https://push.example.test/subscription-a", user_id: users.studentA }]);
+    await expect(asUser<{ endpoint: string }>(users.teacherA, "select endpoint from public.push_subscriptions")).rejects.toThrow(/permission denied/u);
   });
 
   it("routes an absence to the student and guardian while deduplicating delivery", async () => {

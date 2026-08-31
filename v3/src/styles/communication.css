@@ -85,6 +85,8 @@
 .contact-row, .device-row { min-height: 66px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); }
 .contact-row > div, .device-row > div { min-width: 0; display: grid; }
 .contact-row strong { direction: ltr; text-align: start; }
+.contact-actions { display: flex; align-items: center; gap: var(--space-2); }
+.otp-form { max-width: 420px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--space-3); }
 .contact-icon { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; color: var(--brand); background: var(--canvas-raised); }
 .contact-form { display: grid; grid-template-columns: 150px 160px minmax(220px, 1fr) auto; align-items: end; gap: var(--space-3); }
 .preference-grid { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; border-block: 1px solid var(--border); }
@@ -135,4 +137,6 @@
   .preference-head span { line-height: 1.25; }
   .contact-row, .device-row { grid-template-columns: auto minmax(0, 1fr) auto; }
   .contact-row .ui-badge, .device-row time { grid-column: 2; }
+  .contact-actions { grid-column: 2 / -1; }
+  .otp-form { grid-template-columns: 1fr; }
 }

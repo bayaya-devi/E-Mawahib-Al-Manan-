@@ -11,9 +11,11 @@
 - [x] Routage élève/responsables pour l'absence et le retard
 - [x] Composeur administratif avec aperçu et confirmation
 - [x] Déduplication, retry exponentiel et dead-letter
-- [x] Abstraction serveur email/SMS/push
-- [ ] Configurer et valider les fournisseurs réels en préproduction
-- [ ] Configurer le planificateur authentifié du worker
+- [x] Adaptateurs réels Resend email, Twilio SMS et Web Push/VAPID
+- [x] OTP HMAC expirant, limité et vérifiable depuis les paramètres
+- [x] Planificateur GitHub authentifié du worker ajouté
+- [ ] Ajouter les secrets fournisseurs dans le coffre de préproduction et effectuer les envois live
+- [ ] Activer le workflow avec `V3_APP_URL` et `NOTIFICATION_WORKER_SECRET`
 
 > Le socle local est candidat staging. La production reste bloquee tant que les controles marques staging/operateur ne sont pas prouves.
 
@@ -42,7 +44,7 @@ Décision actuelle : **GO pour déploiement en staging, NO-GO pour bascule produ
 - [x] Messagerie : conversations, membres, non-lu, recherche, archivage, historique et relations autorisées.
 - [x] Pièces jointes privées : allowlist, limite 10 Mo, SHA-256, chemin non prévisible et URL signée 60 secondes.
 - [x] Demandes séparées : référence, type, priorité, assignation, workflow et chronologie.
-- [x] Notifications in-app Realtime, préférences et notifications navigateur lorsque l’application est active.
+- [x] Notifications in-app Realtime, préférences, abonnements Web Push et service worker lorsque l’application est fermée.
 - [x] PWA, manifest, cache Coran et cache audio borné à 24 fichiers.
 - [x] File IndexedDB idempotente, retry automatique, état non synchronisé et conservation des conflits.
 - [x] Limitation des tentatives de connexion, des messages et des interactions publiques.
@@ -52,9 +54,9 @@ Décision actuelle : **GO pour déploiement en staging, NO-GO pour bascule produ
 ## Tests Exécutés
 
 - [x] Lint et typecheck.
-- [x] Vitest : 50/50 tests, dont 25/25 migrations/RLS et refus admin sans MFA `aal2`.
+- [x] Vitest : 66/66 tests, dont 32/32 migrations/RLS et refus admin sans MFA `aal2`.
 - [x] Build production Next.js réussi.
-- [x] Playwright complet : 75/75 sur Chrome desktop, iPad Mini et Pixel 5.
+- [x] Playwright : 85/87 au premier passage sur Chrome desktop, tablette et mobile ; les deux timeouts Chrome ont été rejoués isolément et réussis (2/2).
 - [x] Trois scénarios supplémentaires de coupure réseau IndexedDB réussis sur desktop, tablette et mobile.
 - [x] Parcours couverts : public, langues, auth/RLS, élève, famille, professeur, mode séance, rapport, admin, messagerie, demande, suspension, progression, replay, actualité et offline.
 
@@ -73,7 +75,7 @@ Décision actuelle : **GO pour déploiement en staging, NO-GO pour bascule produ
 
 ## Restant / Risques
 
-- Les notifications navigateur sont déclenchées par Realtime lorsque l’application est ouverte. Le Web Push lorsque l’application est totalement fermée nécessite encore un expéditeur VAPID/Edge Function et ses secrets.
+- Les fournisseurs externes sont implémentés mais aucun secret Resend/Twilio/VAPID n’est présent sur ce poste. Un envoi live reste donc un contrôle de préproduction obligatoire et ne doit pas être déclaré réussi avant réception réelle.
 - Le binaire SWC natif Windows de ce poste est invalide. Next utilise le fallback WASM et le build réussit ; le CI Linux doit rester la référence de release.
 - Aucun test local ne remplace un smoke test réel Supabase Auth, Storage et Realtime.
 - Le bundle de migration refuse les formats ambigus. Toute ligne en quarantaine doit être résolue, jamais forcée.

@@ -1,4 +1,4 @@
-const VERSION = "mawahib-v3-20260831-hardening-1";
+const VERSION = "mawahib-v3-20260831-notifications-2";
 const STATIC_CACHE = `${VERSION}-static`;
 const QURAN_CACHE = `${VERSION}-quran`;
 const AUDIO_CACHE = `${VERSION}-audio`;
@@ -7,6 +7,11 @@ const STATIC = ["/", "/manifest.webmanifest"];
 self.addEventListener("install", (event) => event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC))));
 self.addEventListener("activate", (event) => event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => !key.startsWith(VERSION)).map((key) => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener("message", (event) => { if (event.data?.type === "SKIP_WAITING") void self.skipWaiting(); });
+self.addEventListener("push", (event) => {
+  let payload = { title: "e-Mawahib", body: "لديك إشعار جديد.", href: "/", tag: "mawahib-notification" };
+  try { if (event.data) payload = { ...payload, ...event.data.json() }; } catch { if (event.data) payload.body = event.data.text(); }
+  event.waitUntil(self.registration.showNotification(payload.title, { body: payload.body, tag: payload.tag, data: { href: payload.href }, dir: "rtl", lang: "ar" }));
+});
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;

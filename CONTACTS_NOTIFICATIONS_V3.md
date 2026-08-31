@@ -19,18 +19,35 @@
 
 Le déclencheur de présence capture toute erreur du moteur. Une panne de notification ne peut donc pas annuler l'enregistrement d'une absence ou d'un retard.
 
-## Fournisseurs
+## Fournisseurs opérationnels
 
-Les fournisseurs email, SMS et push sont des webhooks serveur configurés par variables d'environnement. Aucun secret n'est envoyé au navigateur. WhatsApp reste volontairement désactivé jusqu'à l'intégration d'une API Business officielle.
+- Email : API Resend avec clé d'idempotence par livraison.
+- SMS : API Twilio Messages avec destination E.164 et numéro expéditeur ou Messaging Service.
+- Push : Web Push standard signé par VAPID, sans fournisseur applicatif payant.
+- Les anciens webhooks restent un fallback compatible. Aucun secret n'est envoyé au navigateur.
+- WhatsApp reste volontairement désactivé jusqu'à l'intégration d'une API Business officielle.
 
 Variables :
 
 - `NOTIFICATION_WORKER_SECRET`
+- `RESEND_API_KEY` / `EMAIL_FROM`
+- `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN`
+- `TWILIO_FROM_NUMBER` ou `TWILIO_MESSAGING_SERVICE_SID`
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT`
+- `OTP_HMAC_SECRET`
 - `NOTIFICATION_EMAIL_WEBHOOK_URL` / `NOTIFICATION_EMAIL_WEBHOOK_TOKEN`
 - `NOTIFICATION_SMS_WEBHOOK_URL` / `NOTIFICATION_SMS_WEBHOOK_TOKEN`
 - `NOTIFICATION_PUSH_WEBHOOK_URL` / `NOTIFICATION_PUSH_WEBHOOK_TOKEN`
 
-Le planificateur appelle `POST /api/notifications/worker` avec `Authorization: Bearer <NOTIFICATION_WORKER_SECRET>`. Sans fournisseur configuré, les livraisons restent traçables et finissent en file d'intervention ; elles ne sont jamais comptées comme réussies.
+Le planificateur appelle `GET` ou `POST /api/notifications/worker` avec `Authorization: Bearer <NOTIFICATION_WORKER_SECRET>`. Le workflow GitHub `v3-notification-worker.yml` le fait toutes les cinq minutes après configuration de la variable `V3_APP_URL` et du secret `NOTIFICATION_WORKER_SECRET`. Sans fournisseur configuré, les livraisons ne sont jamais comptées comme réussies.
+
+Générer les clés push avec `npm run notifications:vapid`. La clé privée ne doit jamais être commitée. `OTP_HMAC_SECRET` doit être un secret aléatoire indépendant d'au moins 32 caractères.
+
+## Vérification OTP
+
+Le code comporte six chiffres, expire après dix minutes et n'est stocké que sous forme de HMAC SHA-256. Un nouveau code ne peut être demandé qu'après 60 secondes, avec cinq demandes par heure et cinq essais par code. Le navigateur ne peut ni lire la table des défis ni choisir lui-même le statut `verified`.
+
+L'OTP est envoyé immédiatement par Resend pour un email ou Twilio pour un téléphone. Une erreur fournisseur annule le défi ; aucun code fantôme n'est présenté comme envoyé.
 
 ## Contrôles administratifs
 
@@ -50,3 +67,7 @@ Le planificateur appelle `POST /api/notifications/worker` avec `Authorization: B
 - déduplication ;
 - retry et dead-letter ;
 - absence d'écriture directe depuis le navigateur.
+- OTP expirant et illisible par le client ;
+- propriété des abonnements push ;
+- adaptateurs Resend et Twilio ;
+- état de configuration visible dans la page de santé admin.

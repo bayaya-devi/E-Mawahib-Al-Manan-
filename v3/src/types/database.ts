@@ -250,6 +250,7 @@ type NotificationEventRow = { id: string; school_id: string | null; event_type: 
 type NotificationCampaignRow = { id: string; school_id: string; title: string; body: string; href: string | null; audience: Json; channels: DatabaseNotificationChannel[]; priority: DatabaseNotificationPriority; locale: DatabasePublicLocale; status: "draft" | "scheduled" | "processing" | "sent" | "partially_failed" | "cancelled"; scheduled_at: string | null; expires_at: string | null; estimated_recipients: number; delivered_count: number; failed_count: number; created_by: string; created_at: string; updated_at: string };
 type NotificationRecipientRow = { event_id: string; user_id: string; relationship: string; created_at: string };
 type NotificationDeliveryRow = { id: string; event_id: string; user_id: string; channel: DatabaseNotificationChannel; contact_point_id: string | null; device_id: string | null; provider: string | null; status: DatabaseNotificationDeliveryStatus; masked_destination: string | null; idempotency_key: string; attempt_count: number; max_attempts: number; next_attempt_at: string; locked_at: string | null; sent_at: string | null; delivered_at: string | null; failed_at: string | null; provider_message_id: string | null; error_code: string | null; error_detail: string | null; created_at: string; updated_at: string };
+type ContactVerificationChallengeRow = { id: string; contact_point_id: string; user_id: string; code_digest: string; attempt_count: number; max_attempts: number; expires_at: string; consumed_at: string | null; cancelled_at: string | null; created_at: string };
 
 type ReadonlyTable<Row> = {
   Row: Row;
@@ -352,6 +353,7 @@ export type Database = {
       notification_campaigns: ReadonlyTable<NotificationCampaignRow>;
       notification_recipients: ReadonlyTable<NotificationRecipientRow>;
       notification_deliveries: ReadonlyTable<NotificationDeliveryRow>;
+      contact_verification_challenges: ReadonlyTable<ContactVerificationChallengeRow>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -488,8 +490,13 @@ export type Database = {
       estimate_notification_audience: { Args: { target_school_id: string; target_audience: Json }; Returns: number };
       create_notification_campaign: { Args: { target_school_id: string; target_title: string; target_body: string; target_href: string; target_audience: Json; target_channels: DatabaseNotificationChannel[]; target_priority: DatabaseNotificationPriority; target_locale?: DatabasePublicLocale; target_scheduled_at?: string; target_expires_at?: string | null }; Returns: string };
       process_due_notification_events: { Args: { target_limit?: number }; Returns: number };
-      claim_notification_deliveries: { Args: { target_limit?: number }; Returns: Array<{ delivery_id: string; channel: DatabaseNotificationChannel; destination: string; title: string; body: string; href: string | null; attempt_count: number }> };
-      finish_notification_delivery: { Args: { target_delivery_id: string; target_success: boolean; target_provider?: string | null; target_provider_message_id?: string | null; target_error_code?: string | null; target_error_detail?: string | null }; Returns: undefined };
+      claim_notification_deliveries: { Args: { target_limit?: number }; Returns: Array<{ delivery_id: string; channel: DatabaseNotificationChannel; destination: string; title: string; body: string; href: string | null; attempt_count: number; provider_payload: Json }> };
+      finish_notification_delivery: { Args: { target_delivery_id: string; target_success: boolean; target_provider?: string | null; target_provider_message_id?: string | null; target_error_code?: string | null; target_error_detail?: string | null; target_permanent?: boolean }; Returns: undefined };
+      create_contact_verification_challenge: { Args: { target_user_id: string; target_link_id: string; target_code_digest: string }; Returns: Array<{ challenge_id: string; contact_kind: DatabaseContactKind; destination: string }> };
+      cancel_contact_verification_challenge: { Args: { target_challenge_id: string; target_user_id: string; target_reason: string }; Returns: undefined };
+      verify_contact_verification_challenge: { Args: { target_user_id: string; target_link_id: string; target_code_digest: string }; Returns: boolean };
+      save_push_subscription: { Args: { target_device_key: string; target_name: string; target_platform: string; target_browser: string; target_endpoint: string; target_p256dh: string; target_auth_secret: string }; Returns: string };
+      disable_push_subscription: { Args: { target_endpoint: string }; Returns: undefined };
       auth_rate_limit_allowed: { Args: { target_keys: string[] }; Returns: boolean };
       record_auth_rate_limit: { Args: { target_keys: string[]; target_success: boolean }; Returns: undefined };
       has_permission: { Args: { required_permission: string }; Returns: boolean };
