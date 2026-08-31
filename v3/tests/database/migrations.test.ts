@@ -260,6 +260,7 @@ describe("V3 migrations and RLS", () => {
       "admin_permission_grants",
       "admin_profiles",
       "admin_tasks",
+      "app_schema_versions",
       "assignment_submissions",
       "assignments",
       "attendance_records",
@@ -275,6 +276,7 @@ describe("V3 migrations and RLS", () => {
       "exam_results",
       "exams",
       "family_relationships",
+      "feature_flags",
       "finance_transactions",
       "game_attempts",
       "inventory_items",
@@ -282,7 +284,9 @@ describe("V3 migrations and RLS", () => {
       "learning_goals",
       "message_attachments",
       "notification_preferences",
+      "offline_mutation_receipts",
       "parent_profiles",
+      "permissions",
       "profiles",
       "public_categories",
       "public_category_translations",
@@ -305,6 +309,7 @@ describe("V3 migrations and RLS", () => {
       "recitation_errors",
       "recitation_results",
       "review_passages",
+      "role_permissions",
       "school_announcements",
       "school_documents",
       "school_events",
@@ -389,6 +394,7 @@ describe("V3 migrations and RLS", () => {
       "exam_results_read_scoped",
       "exams_read_scoped",
       "family_relationships_select_scoped",
+      "feature_flags_active_read",
       "finance_transactions_admin_read",
       "game_attempts_read_scoped",
       "inventory_items_admin_read",
@@ -397,7 +403,9 @@ describe("V3 migrations and RLS", () => {
       "message_attachments_member_read",
       "notification_preferences_own_read",
       "notifications_read_own",
+      "offline_mutation_receipts_own_read",
       "parent_profiles_select_self_or_admin",
+      "permissions_active_read",
       "profiles_select_own",
       "profiles_select_scoped",
       "public_category_read",
@@ -421,6 +429,8 @@ describe("V3 migrations and RLS", () => {
       "recitation_errors_read_scoped",
       "recitation_results_read_scoped",
       "review_passages_read_scoped",
+      "role_permissions_active_read",
+      "schema_versions_direction_read",
       "school_documents_admin_read",
       "school_incidents_admin_read",
       "school_memberships_select_scoped",
@@ -887,6 +897,28 @@ describe("V3 migrations and RLS", () => {
     await expect(runAsUserAtAal1(users.adminA, `select public.admin_resolve_task('${task}', 'done')`)).rejects.toThrow(/administration_mfa_required/);
     const state = await database.query<{ status: string }>(`select status from public.admin_tasks where id = '${task}'`);
     expect(state.rows).toEqual([{ status: "open" }]);
+  });
+
+  it("enforces permissions, feature flags, and diagnostics without exposing them to suspended users", async () => {
+    const teacherPermission = await asUser<{ allowed: boolean }>(users.teacherA, "select public.has_permission('teacher.write.attendance') as allowed");
+    expect(teacherPermission).toEqual([{ allowed: true }]);
+    const studentPermission = await asUser<{ allowed: boolean }>(users.studentA, "select public.has_permission('admin.manage.payroll') as allowed");
+    expect(studentPermission).toEqual([{ allowed: false }]);
+    const feature = await asUser<{ enabled: boolean }>(users.studentA, "select public.is_feature_enabled('offline_mutations_v3') as enabled");
+    expect(feature).toEqual([{ enabled: true }]);
+    await expect(asUser(users.adminA, "select public.system_diagnostics()" )).rejects.toThrow(/diagnostics_forbidden/);
+    const diagnostics = await asUser<{ value: { schema_version: string } }>(users.direction, "select public.system_diagnostics() as value");
+    expect(diagnostics[0]?.value.schema_version).toBe("202608310004");
+    const mutationId = "91000000-0000-4000-8000-000000000001";
+    const claimed = await asUser<{ state: string }>(users.studentA, `select public.claim_offline_mutation('${mutationId}', 'quran.practice') as state`);
+    expect(claimed).toEqual([{ state: "claimed" }]);
+    await runAsUser(users.studentA, `select public.finish_offline_mutation('${mutationId}', true, null)`);
+    const repeated = await asUser<{ state: string }>(users.studentA, `select public.claim_offline_mutation('${mutationId}', 'quran.practice') as state`);
+    expect(repeated).toEqual([{ state: "completed" }]);
+    await database.exec(`update public.profiles set status = 'suspended', suspension_reason = 'test' where id = '${users.teacherA}'`);
+    const suspended = await asUser<{ allowed: boolean }>(users.teacherA, "select public.has_permission('teacher.write.attendance') as allowed");
+    expect(suspended).toEqual([{ allowed: false }]);
+    await database.exec(`update public.profiles set status = 'active', suspension_reason = null where id = '${users.teacherA}'`);
   });
 
   it("limits messaging to real school relationships and keeps conversations private", async () => {

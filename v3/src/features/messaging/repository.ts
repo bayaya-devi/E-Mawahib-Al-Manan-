@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { logServerError } from "@/lib/observability/logger";
 import type { MessagingWorkspaceData } from "./models";
 
 const emptyData: MessagingWorkspaceData = { currentUserId: null, canManageRequests: false, conversations: [], messages: [], targets: [], requests: [] };
@@ -54,5 +55,5 @@ export async function getMessagingWorkspace(): Promise<MessagingWorkspaceData> {
       targets: allowed.filter((id): id is string => Boolean(id)).map((id) => ({ id, name: names.get(id) ?? "مستخدم" })),
       requests: (requestResult.data ?? []).map((item) => ({ id: item.id, reference: item.reference, requesterName: names.get(item.requester_id) ?? "مستخدم", assignedName: item.assigned_to ? names.get(item.assigned_to) ?? "مستخدم" : null, kind: item.kind, status: item.status, priority: item.priority, title: item.title, details: item.details, createdAt: item.created_at, events: (requestEventResult.data ?? []).filter((event) => event.request_id === item.id).map((event) => ({ id: event.id, requestId: event.request_id, eventKind: event.event_kind, fromStatus: event.from_status, toStatus: event.to_status, note: event.note, createdAt: event.created_at })) })),
     };
-  } catch { return emptyData; }
+  } catch (error) { logServerError("MESSAGING_WORKSPACE_LOAD_FAILED", error); return emptyData; }
 }

@@ -16,7 +16,8 @@ test("people directory has real account creation workflow", async ({ page }) => 
 });
 
 test("every Command domain is reachable on small screens", async ({ page }) => {
-  for (const [path, heading] of [["operations", "الدراسة والحضور"], ["workforce", "الفريق المهني"], ["resources", "المالية والمعدات"], ["communications", "التواصل والمحتوى"], ["governance", "الحسابات والصلاحيات والتدقيق"]] as const) {
+  test.setTimeout(75_000);
+  for (const [path, heading] of [["operations", "الدراسة والحضور"], ["workforce", "الفريق المهني"], ["resources", "المالية والمعدات"], ["communications", "التواصل والمحتوى"], ["governance", "الحسابات والصلاحيات والتدقيق"], ["system", "سلامة المنصة"]] as const) {
     await page.goto(`/admin/${path}`); await expect(page.getByRole("heading", { name: heading })).toBeVisible();
   }
 });

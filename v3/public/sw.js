@@ -1,11 +1,12 @@
-const VERSION = "mawahib-v3-20260831";
+const VERSION = "mawahib-v3-20260831-hardening-1";
 const STATIC_CACHE = `${VERSION}-static`;
 const QURAN_CACHE = `${VERSION}-quran`;
 const AUDIO_CACHE = `${VERSION}-audio`;
 const STATIC = ["/", "/manifest.webmanifest"];
 
-self.addEventListener("install", (event) => event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC)).then(() => self.skipWaiting())));
+self.addEventListener("install", (event) => event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(STATIC))));
 self.addEventListener("activate", (event) => event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => !key.startsWith(VERSION)).map((key) => caches.delete(key)))).then(() => self.clients.claim())));
+self.addEventListener("message", (event) => { if (event.data?.type === "SKIP_WAITING") void self.skipWaiting(); });
 self.addEventListener("fetch", (event) => {
   const request = event.request;
   if (request.method !== "GET") return;

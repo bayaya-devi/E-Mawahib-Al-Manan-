@@ -2,6 +2,7 @@
 
 import {
   BookOpenText,
+  Activity,
   ChartNoAxesCombined,
   CircleUserRound,
   ClipboardCheck,
@@ -62,6 +63,7 @@ const navigation: Record<ShellKind, NavItem[]> = {
     { label: "الموارد", href: "/admin/resources", icon: WalletCards },
     { label: "التواصل", href: "/admin/communications", icon: Newspaper },
     { label: "الرقابة", href: "/admin/governance", icon: ShieldCheck },
+    { label: "سلامة النظام", href: "/admin/system", icon: Activity },
   ],
 };
 

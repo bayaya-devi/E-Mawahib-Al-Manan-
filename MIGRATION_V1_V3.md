@@ -1,5 +1,7 @@
 # Migration V1 vers V3
 
+Avant/apres chaque bascule, exporter les comptages `users`, `students`, `teachers`, `progressions`, `classes` et `messages`, puis executer `npm run migration:v1:verify -- --before before.json --after after.json`. Un resultat SQL sans erreur ne suffit pas: toute diminution bloque la bascule et declenche la procedure de reprise.
+
 La migration est additive. La V1 reste en lecture seule pendant la répétition et aucune table V1 n'est supprimée.
 
 ## Règle non négociable

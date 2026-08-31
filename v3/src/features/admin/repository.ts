@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { logServerError } from "@/lib/observability/logger";
 import type { AdminCommandData, CommandPerson, CommandTask, DirectionInsight } from "./models";
 
 const empty: AdminCommandData = { school: null, metrics: [], tasks: [], insights: [], people: [], classes: [], timeline: [], reports: [], requests: [], incidents: [], inventory: [], finance: [], salaries: [], years: [], rooms: [], events: [], announcements: [], audit: [] };
@@ -75,7 +76,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       finance: (finance.data ?? []).map((row) => ({ id: row.id, direction: row.direction, category: row.category, amount: Number(row.amount), currency: row.currency, occurredOn: row.occurred_on })),
       salaries: (salaries.data ?? []).map((row) => ({ id: row.id, teacherName: names.get(row.teacher_id) ?? "أستاذ", month: row.period_month, net: Number(row.net_amount), status: row.status })),
       years: years.data?.map((row) => ({ id: row.id, name: row.name, startsOn: row.starts_on, endsOn: row.ends_on, active: row.active })) ?? [], rooms: rooms.data ?? [], events: events.data?.map((row) => ({ id: row.id, title: row.title, startsAt: row.starts_at })) ?? [], announcements: announcements.data?.map((row) => ({ id: row.id, title: row.title, audience: row.audience, publishedAt: row.published_at })) ?? [], audit: audit.data?.map((row) => ({ id: row.id, action: row.action, entityType: row.entity_type, occurredAt: row.occurred_at })) ?? [] };
-  } catch { return empty; }
+  } catch (error) { logServerError("ADMIN_COMMAND_LOAD_FAILED", error); return empty; }
 }
 
 function countBy(values: readonly string[]): Map<string, number> { const map = new Map<string, number>(); for (const value of values) map.set(value, (map.get(value) ?? 0) + 1); return map; }

@@ -27,6 +27,13 @@ test("publishes a PWA manifest and notification entry point", async ({ page, req
   await expect(page.getByRole("button", { name: "الإشعارات" })).toBeVisible();
 });
 
+test("sends the production security boundary headers", async ({ request }) => {
+  const response = await request.get("/ar");
+  expect(response.headers()["content-security-policy"]).toContain("frame-ancestors 'none'");
+  expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(response.headers()["x-frame-options"]).toBe("DENY");
+});
+
 test("keeps a request in IndexedDB while the device is offline", async ({ page, context }) => {
   await page.goto("/student/messages");
   await page.getByRole("button", { name: "الطلبات" }).click();

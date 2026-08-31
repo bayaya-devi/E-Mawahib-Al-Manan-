@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { logServerError } from "@/lib/observability/logger";
 import type { DatabaseAssignmentStatus } from "@/types/database";
 import type { FamilyChildData, FamilyChildSummary, StudentDashboardData, StudentHistoryData } from "./models";
 
@@ -54,7 +55,8 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
       progress: (progressResult.data ?? []).map((row) => ({ surahNumber: row.surah_number, status: row.status, percent: row.completion_percent, stars: row.stars })),
       notifications: (notificationResult.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body, href: row.href, read: Boolean(row.read_at), createdAt: row.created_at })),
     };
-  } catch {
+  } catch (error) {
+    logServerError("STUDENT_DASHBOARD_LOAD_FAILED", error);
     return emptyStudent;
   }
 }
@@ -70,7 +72,8 @@ export async function getFamilyChildren(): Promise<FamilyChildSummary[]> {
     if (!ids.length) return [];
     const profiles = await client.from("profiles").select("id,display_name").in("id", ids);
     return (profiles.data ?? []).map((profile) => ({ id: profile.id, name: profile.display_name }));
-  } catch {
+  } catch (error) {
+    logServerError("FAMILY_CHILDREN_LOAD_FAILED", error);
     return [];
   }
 }
@@ -111,7 +114,8 @@ export async function getFamilyChild(studentId: string): Promise<FamilyChildData
       messages: (messages.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body, createdAt: row.created_at, read: Boolean(row.read_at) })),
       documents: (documents.data ?? []).map((row) => ({ id: row.id, title: row.title, storagePath: row.storage_path, createdAt: row.created_at })),
     };
-  } catch {
+  } catch (error) {
+    logServerError("FAMILY_CHILD_LOAD_FAILED", error);
     return null;
   }
 }
@@ -137,7 +141,8 @@ export async function getStudentHistory(): Promise<StudentHistoryData> {
       recitations: attemptRows.map((attempt) => { const result = byAttempt.get(attempt.id); return { id: attempt.id, surahNumber: attempt.surah_number, verseFrom: attempt.verse_from, verseTo: attempt.verse_to, status: attempt.status, startedAt: attempt.started_at, score: result?.memorization_score ?? null, conclusive: result?.is_conclusive ?? false, recommendation: result?.recommendation ?? null }; }),
       reviews: (reviews.data ?? []).map((review) => ({ id: review.id, surahNumber: review.surah_number, verseFrom: review.verse_from, verseTo: review.verse_to, reason: review.reason, dueAt: review.due_at })),
     };
-  } catch {
+  } catch (error) {
+    logServerError("STUDENT_HISTORY_LOAD_FAILED", error);
     return empty;
   }
 }

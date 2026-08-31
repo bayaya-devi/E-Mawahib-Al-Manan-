@@ -8,6 +8,11 @@
 @import "../styles/admin-command.css";
 @import "../styles/communication.css";
 
+.fatal-state { min-height: 100dvh; display: grid; place-items: center; padding: 24px; background: var(--canvas, #f5f2ec); color: var(--ink, #17251f); text-align: center; }
+.fatal-state > div { width: min(100%, 520px); display: grid; gap: 14px; }
+.fatal-state h1, .fatal-state p { margin: 0; }
+.fatal-state button { justify-self: center; min-height: 44px; padding: 0 22px; border: 0; border-radius: 8px; color: white; background: #0d6849; font: inherit; font-weight: 800; cursor: pointer; }
+
 :root {
   color-scheme: light;
   --font-body: "Noto Sans Arabic Variable", Tahoma, Arial, sans-serif;

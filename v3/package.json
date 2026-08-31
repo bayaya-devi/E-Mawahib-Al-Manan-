@@ -14,12 +14,15 @@
     "test:db": "vitest run tests/database/migrations.test.ts",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "security:secrets": "node scripts/check-secrets.mjs",
+    "security:audit": "npm audit --omit=dev --audit-level=high",
     "migration:v1:prepare": "node scripts/migration/prepare-v1-accounts.mjs",
     "migration:v1:learning": "node scripts/migration/prepare-v1-learning.mjs",
     "migration:v1:complete": "node scripts/migration/prepare-v1-complete.mjs",
+    "migration:v1:verify": "node scripts/migration/verify-v1-v3.mjs",
     "bootstrap:direction": "node scripts/bootstrap-direction.mjs",
     "quran:extract-v1": "node scripts/quran/extract-v1-quran.mjs",
-    "check": "npm run lint && npm run typecheck && npm run test:run && npm run build"
+    "check": "npm run security:secrets && npm run lint && npm run typecheck && npm run test:run && npm run build"
   },
   "engines": {
     "node": ">=22.0.0 <25"

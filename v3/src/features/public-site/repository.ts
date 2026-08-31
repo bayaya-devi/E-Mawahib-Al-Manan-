@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { logServerError } from "@/lib/observability/logger";
 import type { PublicLocale } from "./content";
 
 export type PublicSiteData = {
@@ -40,5 +41,5 @@ export async function getPublicSiteData(locale: PublicLocale): Promise<PublicSit
       news: newsRows.flatMap((row) => { const translation = nt.get(row.id); return translation ? [{ id: row.id, title: translation.title, excerpt: translation.excerpt, body: translation.body, imageUrl: row.image_url, eventDate: row.event_date, publishedAt: row.published_at }] : []; }),
       replays: replayRows.flatMap((row) => { const translation = rt.get(row.id); return translation ? [{ id: row.id, title: translation.title, description: translation.description, videoUrl: row.video_url, thumbnailUrl: row.thumbnail_url, speaker: row.speaker, eventDate: row.event_date, featured: row.featured, viewsCount: Number(row.views_count), likesCount: Number(row.likes_count) }] : []; }),
     };
-  } catch { return empty; }
+  } catch (error) { logServerError("PUBLIC_SITE_LOAD_FAILED", error, { locale }); return empty; }
 }

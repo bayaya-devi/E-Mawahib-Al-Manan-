@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { logServerError } from "@/lib/observability/logger";
 import type { TeacherHomeData, TeacherProfessionalData, TeacherSessionData } from "./models";
 
 const emptyHome: TeacherHomeData = { teacher: null, classes: [], students: [], schedule: [], nextCourse: null, openRun: null, messages: [], requests: [], alerts: [], taskCount: 0 };
@@ -63,7 +64,7 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
       alerts: (alerts.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body, read: Boolean(row.read_at), createdAt: row.created_at })),
       taskCount: (submissionRows.data ?? []).length + (assignmentRows.data ?? []).filter((item) => !item.student_id && !item.class_id).length,
     };
-  } catch { return emptyHome; }
+  } catch (error) { logServerError("TEACHER_HOME_LOAD_FAILED", error); return emptyHome; }
 }
 
 export async function getTeacherSession(): Promise<TeacherSessionData> {
@@ -78,7 +79,7 @@ export async function getTeacherSession(): Promise<TeacherSessionData> {
       client.from("teacher_session_reports").select("id").eq("run_id", home.openRun.id).eq("status", "draft").maybeSingle(),
     ]);
     return { ...home, attendance: (rows.data ?? []).map((row) => ({ studentId: row.student_id, status: row.attendance, minutesLate: row.minutes_late, processed: Boolean(row.processed_at) })), openReportId: report.data?.id ?? null, elapsedSeconds, defaultDueDate };
-  } catch { return { ...home, attendance: [], openReportId: null, elapsedSeconds, defaultDueDate }; }
+  } catch (error) { logServerError("TEACHER_SESSION_LOAD_FAILED", error); return { ...home, attendance: [], openReportId: null, elapsedSeconds, defaultDueDate }; }
 }
 
 export async function getTeacherProfessional(): Promise<TeacherProfessionalData> {
@@ -96,7 +97,7 @@ export async function getTeacherProfessional(): Promise<TeacherProfessionalData>
       documents: (documents.data ?? []).map((row) => ({ id: row.id, title: row.title, category: row.category, storagePath: row.storage_path, visibleFrom: row.visible_from })),
       reports: (reports.data ?? []).map((row) => ({ id: row.id, runId: row.run_id, status: row.status, submittedAt: row.submitted_at, present: row.present_count, absent: row.absent_count, late: row.late_count })),
     };
-  } catch { return { schedule: home.schedule, requests: home.requests, salaries: [], documents: [], reports: [] }; }
+  } catch (error) { logServerError("TEACHER_PROFESSIONAL_LOAD_FAILED", error); return { schedule: home.schedule, requests: home.requests, salaries: [], documents: [], reports: [] }; }
 }
 
 function countBy(values: readonly string[]): Map<string, number> { const counts = new Map<string, number>(); for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1); return counts; }

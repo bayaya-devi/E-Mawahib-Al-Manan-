@@ -51,6 +51,7 @@
 .notification-list small, .notification-list time { color: var(--ink-soft); font-size: .72rem; }
 .notification-empty { padding: var(--space-8); color: var(--ink-soft); text-align: center; }
 .offline-status { position: fixed; inset-inline-end: 18px; inset-block-end: 18px; z-index: 70; min-height: 38px; display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-3); border: 1px solid var(--warning); border-radius: 20px; color: var(--ink); background: var(--surface); box-shadow: var(--shadow-2); font-weight: 750; cursor: pointer; }
+.app-update-status { position: fixed; inset-inline-start: 18px; inset-block-end: 18px; z-index: 70; min-height: 40px; padding: 0 16px; border: 1px solid var(--brand); border-radius: 20px; color: #fff; background: var(--brand); box-shadow: var(--shadow-2); font: inherit; font-weight: 800; cursor: pointer; }
 .mfa-page { min-height: 100svh; display: grid; place-items: center; padding: var(--space-5); background: var(--canvas); }
 .mfa-panel { width: min(440px, 100%); display: grid; gap: var(--space-4); padding: clamp(24px, 5vw, 48px); border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-2); }
 .mfa-panel > span { color: var(--gold); font-weight: 800; }
@@ -69,4 +70,5 @@
   .message-thread__history article { max-width: 92%; }
   .request-layout { grid-template-columns: 1fr; }
   .offline-status { inset-block-end: 92px; }
+  .app-update-status { inset-block-end: 92px; }
 }

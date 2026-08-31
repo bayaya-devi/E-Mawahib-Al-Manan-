@@ -455,6 +455,11 @@ export type Database = {
       set_notification_preference: { Args: { target_category: DatabaseNotificationCategory; target_in_app: boolean; target_browser: boolean; target_realtime: boolean }; Returns: undefined };
       auth_rate_limit_allowed: { Args: { target_keys: string[] }; Returns: boolean };
       record_auth_rate_limit: { Args: { target_keys: string[]; target_success: boolean }; Returns: undefined };
+      has_permission: { Args: { required_permission: string }; Returns: boolean };
+      is_feature_enabled: { Args: { target_key: string }; Returns: boolean };
+      claim_offline_mutation: { Args: { target_id: string; target_kind: string }; Returns: "claimed" | "completed" | "busy" };
+      finish_offline_mutation: { Args: { target_id: string; target_success: boolean; target_error_code?: string | null }; Returns: undefined };
+      system_diagnostics: { Args: Record<never, never>; Returns: Json };
       set_account_status: {
         Args: {
           target_user_id: string;

@@ -1,5 +1,21 @@
 # V3 Release Checklist
 
+> Le socle local est candidat staging. La production reste bloquee tant que les controles marques staging/operateur ne sont pas prouves.
+
+## Durcissement Production
+
+- [x] Threat model et registre de risques.
+- [x] Acces aux espaces refuse par role cote serveur.
+- [x] Permissions extensibles et feature flags en base.
+- [x] Recu serveur idempotent pour mutations offline.
+- [x] Mise a jour PWA controlee et purge des caches versions precedentes.
+- [x] CSP et en-tetes de securite.
+- [x] Error boundaries et diagnostic technique direction.
+- [x] CI: secret scan, audit dependances, lint, types, tests, build et E2E.
+- [ ] Staging: backup puis restauration exercee.
+- [ ] Staging: charge 1 000 eleves/100 professeurs/historiques.
+- [ ] Staging: alertes/monitoring sans PII.
+
 Date de validation locale : 2026-08-31  
 Décision actuelle : **GO pour déploiement en staging, NO-GO pour bascule production avant les contrôles live ci-dessous.**
 

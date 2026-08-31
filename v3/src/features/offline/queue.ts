@@ -5,6 +5,8 @@ export type OfflineMutation = {
   attempts?: number;
   createdAt?: string;
   lastError?: string;
+  state?: "pending" | "syncing" | "synced" | "failed" | "conflict";
+  nextRetryAt?: string;
 };
 
 const databaseName = "mawahib-v3-offline";
@@ -12,7 +14,7 @@ const storeName = "sync-queue";
 
 export async function enqueueOfflineMutation(item: OfflineMutation): Promise<void> {
   const database = await openDatabase();
-  await transactionPromise(database, "readwrite", (store) => store.put({ ...item, attempts: item.attempts ?? 0, createdAt: item.createdAt ?? new Date().toISOString() }));
+  await transactionPromise(database, "readwrite", (store) => store.put({ ...item, attempts: item.attempts ?? 0, createdAt: item.createdAt ?? new Date().toISOString(), state: item.state ?? "pending" }));
   window.dispatchEvent(new CustomEvent("mawahib:offline-queue"));
 }
 
