@@ -18,6 +18,7 @@ export type DatabaseTeacherSessionStatus = "in_progress" | "report_pending" | "c
 export type DatabaseRecitationAppreciation = "excellent" | "very_good" | "good" | "needs_review" | "insufficient";
 export type DatabaseWorkflowStatus = "draft" | "submitted" | "seen" | "in_review" | "approved" | "rejected" | "resolved" | "cancelled";
 export type DatabaseTeacherRequestKind = "absence" | "leave" | "salary_problem" | "equipment" | "schedule" | "general";
+export type DatabaseAdminTaskStatus = "open" | "in_progress" | "done" | "dismissed";
 
 type ProfileRow = {
   id: string;
@@ -97,6 +98,7 @@ type ClassRow = {
   status: DatabaseMembershipStatus;
   created_at: string;
   updated_at: string;
+  academic_year_id: string | null;
 };
 
 type ClassEnrollmentRow = {
@@ -182,7 +184,7 @@ type PublicReplayCategoryRow = { replay_id: string; category_id: string };
 type QuranSurahRow = { number: number; slug: string; name_arabic: string; name_latin: string; verse_count: number; source_label: string; checksum: string; created_at: string };
 type QuranVerseRow = { surah_number: number; verse_number: number; canonical_text: string; audio_code: string; checksum: string };
 type QuranAudioTrackRow = { id: string; reciter_key: string; reciter_name: string; riwaya: string; url_template: string; fallback_url_template: string | null; active: boolean; created_at: string };
-type CourseSessionRow = { id: string; class_id: string; teacher_id: string; starts_at: string; ends_at: string; title: string; location: string | null; status: "scheduled" | "completed" | "cancelled"; created_at: string };
+type CourseSessionRow = { id: string; class_id: string; teacher_id: string; room_id: string | null; starts_at: string; ends_at: string; title: string; location: string | null; status: "scheduled" | "completed" | "cancelled"; created_at: string };
 type AttendanceRecordRow = { id: string; session_id: string; student_id: string; status: DatabaseAttendanceStatus; minutes_late: number; recorded_by: string; recorded_at: string };
 type SchoolAnnouncementRow = { id: string; school_id: string; class_id: string | null; title: string; body: string; audience: "all" | "students" | "families" | "teachers"; published_at: string; expires_at: string | null; created_by: string };
 type SchoolEventRow = { id: string; school_id: string; class_id: string | null; title: string; description: string | null; starts_at: string; ends_at: string | null; created_by: string };
@@ -210,6 +212,16 @@ type StaffMessageRow = { id: string; school_id: string; sender_id: string; recip
 type TeacherRequestRow = { id: string; school_id: string; teacher_id: string; kind: DatabaseTeacherRequestKind; status: DatabaseWorkflowStatus; title: string; details: string | null; starts_on: string | null; ends_on: string | null; admin_response: string | null; resolved_by: string | null; submitted_at: string; updated_at: string; resolved_at: string | null };
 type TeacherSalaryRecordRow = { id: string; school_id: string; teacher_id: string; period_month: string; gross_amount: number; deductions: number; net_amount: number; currency: string; status: "pending" | "paid" | "issue_reported" | "resolved"; paid_at: string | null; note: string | null; created_at: string; updated_at: string };
 type TeacherDocumentRow = { id: string; teacher_id: string; title: string; category: "contract" | "payslip" | "certificate" | "policy" | "other"; storage_path: string; visible_from: string; expires_at: string | null; uploaded_by: string; created_at: string };
+type AcademicYearRow = { id: string; school_id: string; name: string; starts_on: string; ends_on: string; active: boolean; created_by: string; created_at: string };
+type SchoolRoomRow = { id: string; school_id: string; name: string; capacity: number | null; location_note: string | null; active: boolean; created_at: string };
+type StudentDigitalFileRow = { student_id: string; school_id: string; guardian_phone: string | null; payment_required: boolean; monthly_fee: number | null; identity_document_received: boolean; birth_certificate_received: boolean; guardian_identity_received: boolean; medical_or_accessibility_notes: string | null; administrative_notes: string | null; updated_by: string; updated_at: string };
+type StaffProfileRow = { user_id: string; school_id: string; employee_number: string | null; job_title: string; phone: string | null; hired_on: string | null; employment_status: DatabaseMembershipStatus; updated_at: string };
+type SchoolIncidentRow = { id: string; school_id: string; student_id: string | null; teacher_id: string | null; session_report_id: string | null; category: string; severity: number; summary: string; status: "open" | "in_review" | "resolved" | "dismissed"; occurred_at: string; created_by: string; resolved_by: string | null; resolved_at: string | null; created_at: string; updated_at: string };
+type InventoryItemRow = { id: string; school_id: string; name: string; category: string; asset_code: string | null; quantity: number; minimum_quantity: number; status: "available" | "assigned" | "maintenance" | "retired"; room_id: string | null; purchase_date: string | null; purchase_amount: number | null; notes: string | null; updated_at: string };
+type FinanceTransactionRow = { id: string; school_id: string; direction: "income" | "expense"; category: string; amount: number; currency: string; occurred_on: string; description: string | null; student_id: string | null; teacher_id: string | null; created_by: string; created_at: string };
+type SchoolDocumentRow = { id: string; school_id: string; title: string; category: string; storage_path: string; related_user_id: string | null; visible_to_related_user: boolean; uploaded_by: string; created_at: string };
+type AdminPermissionGrantRow = { user_id: string; permission: "people" | "academics" | "attendance" | "hr" | "finance" | "inventory" | "content" | "accounts" | "audit"; school_id: string; granted_by: string; granted_at: string };
+type AdminTaskRow = { id: string; school_id: string; kind: string; priority: number; title: string; reason: string; href: string | null; entity_type: string | null; entity_id: string | null; status: DatabaseAdminTaskStatus; assigned_to: string | null; due_at: string | null; resolved_by: string | null; resolved_at: string | null; created_at: string; updated_at: string };
 
 type ReadonlyTable<Row> = {
   Row: Row;
@@ -285,6 +297,16 @@ export type Database = {
       teacher_requests: ReadonlyTable<TeacherRequestRow>;
       teacher_salary_records: ReadonlyTable<TeacherSalaryRecordRow>;
       teacher_documents: ReadonlyTable<TeacherDocumentRow>;
+      academic_years: ReadonlyTable<AcademicYearRow>;
+      school_rooms: ReadonlyTable<SchoolRoomRow>;
+      student_digital_files: ReadonlyTable<StudentDigitalFileRow>;
+      staff_profiles: ReadonlyTable<StaffProfileRow>;
+      school_incidents: ReadonlyTable<SchoolIncidentRow>;
+      inventory_items: ReadonlyTable<InventoryItemRow>;
+      finance_transactions: ReadonlyTable<FinanceTransactionRow>;
+      school_documents: ReadonlyTable<SchoolDocumentRow>;
+      admin_permission_grants: ReadonlyTable<AdminPermissionGrantRow>;
+      admin_tasks: ReadonlyTable<AdminTaskRow>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -395,6 +417,9 @@ export type Database = {
       };
       teacher_cancel_request: { Args: { target_request_id: string }; Returns: undefined };
       admin_review_teacher_request: { Args: { target_request_id: string; target_status: DatabaseWorkflowStatus; target_response?: string | null }; Returns: undefined };
+      admin_resolve_task: { Args: { target_task_id: string; target_status: DatabaseAdminTaskStatus }; Returns: undefined };
+      admin_create_incident: { Args: { target_student_id: string | null; target_teacher_id: string | null; target_category: string; target_severity: number; target_summary: string }; Returns: string };
+      admin_create_command_record: { Args: { target_kind: string; payload: Json }; Returns: string };
       set_account_status: {
         Args: {
           target_user_id: string;

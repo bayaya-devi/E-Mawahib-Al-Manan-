@@ -55,12 +55,13 @@ const navigation: Record<ShellKind, NavItem[]> = {
     { label: "الرسائل", href: "/teacher/messages", icon: MessageSquareText },
   ],
   admin: [
-    { label: "نظرة عامة", href: "/admin", icon: LayoutDashboard },
-    { label: "الطلاب", href: "/admin#students", icon: GraduationCap },
-    { label: "الفريق", href: "/admin#staff", icon: Users },
-    { label: "المالية", href: "/admin#finance", icon: WalletCards },
-    { label: "الرقابة", href: "/admin#audit", icon: ShieldCheck },
-    { label: "الموقع", href: "/admin/site", icon: Newspaper },
+    { label: "القيادة", href: "/admin", icon: LayoutDashboard },
+    { label: "الأشخاص", href: "/admin/people", icon: Users },
+    { label: "الدراسة", href: "/admin/operations", icon: GraduationCap },
+    { label: "الفريق", href: "/admin/workforce", icon: ClipboardCheck },
+    { label: "الموارد", href: "/admin/resources", icon: WalletCards },
+    { label: "التواصل", href: "/admin/communications", icon: Newspaper },
+    { label: "الرقابة", href: "/admin/governance", icon: ShieldCheck },
   ],
 };
 

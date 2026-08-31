@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
-import { AppShell, ShellPage } from "@/components/shell";
+import { AppShell } from "@/components/shell";
+import { CommandDashboard } from "@/features/admin/command-dashboard";
+import { getAdminCommandData } from "@/features/admin/repository";
 
 export const metadata: Metadata = { title: "مساحة الإدارة" };
-export default function AdminPage() { return <AppShell kind="admin"><ShellPage kind="admin" /></AppShell>; }
+export const dynamic = "force-dynamic";
+export default async function AdminPage() { return <AppShell kind="admin"><CommandDashboard data={await getAdminCommandData()} /></AppShell>; }

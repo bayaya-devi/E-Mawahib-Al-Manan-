@@ -244,7 +244,10 @@ describe("V3 migrations and RLS", () => {
 
   it("enables RLS and removes client writes on every public business table", async () => {
     const expectedTables = [
+      "academic_years",
+      "admin_permission_grants",
       "admin_profiles",
+      "admin_tasks",
       "assignment_submissions",
       "assignments",
       "attendance_records",
@@ -257,7 +260,9 @@ describe("V3 migrations and RLS", () => {
       "exam_results",
       "exams",
       "family_relationships",
+      "finance_transactions",
       "game_attempts",
+      "inventory_items",
       "learning_events",
       "learning_goals",
       "parent_profiles",
@@ -283,10 +288,15 @@ describe("V3 migrations and RLS", () => {
       "recitation_results",
       "review_passages",
       "school_announcements",
+      "school_documents",
       "school_events",
+      "school_incidents",
       "school_memberships",
+      "school_rooms",
       "schools",
       "staff_messages",
+      "staff_profiles",
+      "student_digital_files",
       "student_profiles",
       "student_surah_progress",
       "student_verse_progress",
@@ -338,7 +348,10 @@ describe("V3 migrations and RLS", () => {
       order by policyname
     `);
     expect(result.rows.map(({ policyname }) => policyname)).toEqual([
+      "academic_years_admin_read",
+      "admin_permission_grants_read",
       "admin_profiles_select_self_or_direction",
+      "admin_tasks_admin_read",
       "announcements_read_scoped",
       "assignment_submissions_read_scoped",
       "assignments_read_scoped",
@@ -353,7 +366,9 @@ describe("V3 migrations and RLS", () => {
       "exam_results_read_scoped",
       "exams_read_scoped",
       "family_relationships_select_scoped",
+      "finance_transactions_admin_read",
       "game_attempts_read_scoped",
+      "inventory_items_admin_read",
       "learning_events_read_scoped",
       "learning_goals_read_scoped",
       "notifications_read_own",
@@ -380,9 +395,14 @@ describe("V3 migrations and RLS", () => {
       "recitation_errors_read_scoped",
       "recitation_results_read_scoped",
       "review_passages_read_scoped",
+      "school_documents_admin_read",
+      "school_incidents_admin_read",
       "school_memberships_select_scoped",
+      "school_rooms_admin_read",
       "schools_select_member",
       "staff_messages_read",
+      "staff_profiles_admin_read",
+      "student_digital_files_admin_read",
       "student_profiles_select_scoped",
       "surah_progress_read_scoped",
       "teacher_documents_read",
@@ -807,5 +827,29 @@ describe("V3 migrations and RLS", () => {
     await runAsUser(users.teacherA, `select public.teacher_cancel_request('${cancellable[0]?.request_id}')`);
     const cancelled = await asUser<{ status: string }>(users.teacherA, `select status from public.teacher_requests where id = '${cancellable[0]?.request_id}'`);
     expect(cancelled).toEqual([{ status: "cancelled" }]);
+  });
+
+  it("isolates Command records by school and audits administrative actions", async () => {
+    const taskA = "70000000-0000-4000-8000-000000000001";
+    const taskB = "70000000-0000-4000-8000-000000000002";
+    await database.exec(`
+      insert into public.admin_tasks (id, school_id, kind, title, reason)
+      values
+        ('${taskA}', '${schools.first}', 'report', 'First task', 'First school'),
+        ('${taskB}', '${schools.second}', 'report', 'Second task', 'Second school');
+    `);
+    const adminTasks = await asUser<{ id: string }>(users.adminA, "select id from public.admin_tasks order by id");
+    expect(adminTasks).toEqual([{ id: taskA }]);
+    await runAsUser(users.adminA, `select public.admin_resolve_task('${taskA}', 'done'::public.admin_task_status)`);
+    await expect(runAsUser(users.adminA, `select public.admin_resolve_task('${taskB}', 'done'::public.admin_task_status)`)).rejects.toThrow(/task_not_accessible/);
+    const taskAudit = await asUser<{ action: string }>(users.adminA, "select action from public.audit_logs where action = 'admin.task_status_changed'");
+    expect(taskAudit).toEqual([{ action: "admin.task_status_changed" }]);
+
+    await runAsUser(users.adminA, `select public.admin_create_incident('${users.studentA}', null, 'attendance', 2::smallint, 'Repeated absence')`);
+    await expect(runAsUser(users.adminA, `select public.admin_create_incident('${users.studentB}', null, 'attendance', 2::smallint, 'Out of scope')`)).rejects.toThrow(/incident_scope_denied/);
+    await runAsUser(users.adminA, `select public.admin_create_command_record('room', '{"name":"Room A","capacity":"20"}'::jsonb)`);
+    const rooms = await asUser<{ name: string }>(users.adminA, "select name from public.school_rooms");
+    expect(rooms).toEqual([{ name: "Room A" }]);
+    await expect(runAsUser(users.adminA, `select public.admin_create_command_record('salary', '{"teacher_id":"${users.teacherB}","period_month":"2026-08-01","gross":"1000","deductions":"0"}'::jsonb)`)).rejects.toThrow(/teacher_scope_denied/);
   });
 });
