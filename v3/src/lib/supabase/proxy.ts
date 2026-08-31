@@ -44,15 +44,6 @@ export async function refreshSession(request: NextRequest) {
     if (profile.error || roles.error || profile.data?.status !== "active" || !mayAccessPath(path.startsWith("/api/admin") ? "/admin" : path, actorRoles)) {
       return deny(request, 403);
     }
-    const privileged = actorRoles.some((role) => role === "admin" || role === "direction");
-    if (privileged) {
-      const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-      if (assurance.data?.currentLevel !== "aal2") {
-        if (path.startsWith("/api/")) return NextResponse.json({ ok: false, code: "MFA_REQUIRED" }, { status: 403 });
-        const target = request.nextUrl.clone(); target.pathname = "/auth/mfa"; target.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
-        return NextResponse.redirect(target);
-      }
-    }
   }
 
   return response;
