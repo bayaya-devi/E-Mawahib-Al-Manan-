@@ -37,11 +37,16 @@ const privilegedServerEnvironmentSchema = z.object({
 });
 
 export function getServerEnvironment() {
+  const vercelHost =
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+  const appBaseUrl =
+    process.env.APP_BASE_URL ?? (vercelHost ? `https://${vercelHost}` : undefined);
+
   return {
     ...getClientEnvironment(),
     ...serverEnvironmentSchema.parse({
       SUPABASE_JWT_SECRET: process.env.SUPABASE_JWT_SECRET,
-      APP_BASE_URL: process.env.APP_BASE_URL,
+      APP_BASE_URL: appBaseUrl,
     }),
   };
 }

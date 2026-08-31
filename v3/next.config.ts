@@ -1,5 +1,13 @@
 import type { NextConfig } from "next";
 
+const appVersion = process.env.npm_package_version ?? "0.1.0";
+const buildSha =
+  process.env.VERCEL_GIT_COMMIT_SHA ??
+  process.env.GITHUB_SHA ??
+  process.env.BUILD_SHA ??
+  "development";
+const buildDate = process.env.BUILD_DATE ?? new Date().toISOString();
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -24,6 +32,11 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
     typedEnv: true,
+  },
+  env: {
+    NEXT_PUBLIC_APP_VERSION: appVersion,
+    NEXT_PUBLIC_BUILD_SHA: buildSha,
+    NEXT_PUBLIC_BUILD_DATE: buildDate,
   },
   async headers() {
     return [
