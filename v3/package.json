@@ -20,6 +20,7 @@
     "migration:v1:learning": "node scripts/migration/prepare-v1-learning.mjs",
     "migration:v1:complete": "node scripts/migration/prepare-v1-complete.mjs",
     "migration:v1:verify": "node scripts/migration/verify-v1-v3.mjs",
+    "migration:v1:production": "node scripts/migration/import-v1-production.mjs",
     "bootstrap:direction": "node scripts/bootstrap-direction.mjs",
     "quran:extract-v1": "node scripts/quran/extract-v1-quran.mjs",
     "notifications:vapid": "web-push generate-vapid-keys --json",

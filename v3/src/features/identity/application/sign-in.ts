@@ -9,6 +9,7 @@ import type { AppRole } from "@/types";
 
 import { AUTH_MESSAGES } from "../domain/auth-messages";
 import { loginInputSchema } from "./schemas";
+import { deriveLegacyAuthPassword, verifyLegacyPassword } from "./legacy-password";
 
 type SignInResult =
   | { ok: true; roles: AppRole[] }
@@ -42,10 +43,20 @@ export async function signInWithAlias(input: unknown): Promise<SignInResult> {
   const email =
     resolvedEmail ?? `unknown-${randomUUID()}@${environment.AUTH_INTERNAL_EMAIL_DOMAIN}`;
   const client = await createClient();
-  const { data, error } = await client.auth.signInWithPassword({
+  let { data, error } = await client.auth.signInWithPassword({
     email,
     password: parsed.data.password,
   });
+
+  if (error && resolvedEmail && await verifyLegacyPassword(parsed.data.login, parsed.data.password)) {
+    const migratedPassword = deriveLegacyAuthPassword(parsed.data.login, parsed.data.password);
+    if (migratedPassword) {
+      ({ data, error } = await client.auth.signInWithPassword({
+        email,
+        password: migratedPassword,
+      }));
+    }
+  }
 
   if (error || !data.user || !resolvedEmail) {
     return {

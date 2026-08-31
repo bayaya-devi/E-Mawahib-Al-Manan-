@@ -12,6 +12,7 @@ const serverEnvironmentSchema = z.object({
 const privilegedServerEnvironmentSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(20),
   INTERACTION_HMAC_KEY: z.string().min(32),
+  LEGACY_AUTH_HMAC_KEY: z.string().min(32).optional(),
   AUTH_INTERNAL_EMAIL_DOMAIN: z
     .string()
     .min(3)
@@ -57,6 +58,7 @@ export function getPrivilegedServerEnvironment() {
     ...privilegedServerEnvironmentSchema.parse({
       SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
       INTERACTION_HMAC_KEY: process.env.INTERACTION_HMAC_KEY,
+      LEGACY_AUTH_HMAC_KEY: process.env.LEGACY_AUTH_HMAC_KEY,
       AUTH_INTERNAL_EMAIL_DOMAIN: process.env.AUTH_INTERNAL_EMAIL_DOMAIN,
       NOTIFICATION_WORKER_SECRET: process.env.NOTIFICATION_WORKER_SECRET,
       CRON_SECRET: process.env.CRON_SECRET,
