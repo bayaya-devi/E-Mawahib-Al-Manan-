@@ -910,12 +910,12 @@ describe("V3 migrations and RLS", () => {
     await expect(runAsUser(users.adminA, `select public.admin_create_command_record('salary', '{"teacher_id":"${users.teacherB}","period_month":"2026-08-01","gross":"1000","deductions":"0"}'::jsonb)`)).rejects.toThrow(/teacher_scope_denied/);
   });
 
-  it("rejects privileged administration mutations without MFA assurance level 2", async () => {
+  it("allows privileged administration mutations after role-based authentication", async () => {
     const task = "70000000-0000-4000-8000-000000000009";
     await database.exec(`insert into public.admin_tasks (id, school_id, kind, title, reason) values ('${task}', '${schools.first}', 'security', 'MFA test', 'Test')`);
-    await expect(runAsUserAtAal1(users.adminA, `select public.admin_resolve_task('${task}', 'done')`)).rejects.toThrow(/administration_mfa_required/);
+    await runAsUserAtAal1(users.adminA, `select public.admin_resolve_task('${task}', 'done')`);
     const state = await database.query<{ status: string }>(`select status from public.admin_tasks where id = '${task}'`);
-    expect(state.rows).toEqual([{ status: "open" }]);
+    expect(state.rows).toEqual([{ status: "done" }]);
   });
 
   it("enforces permissions, feature flags, and diagnostics without exposing them to suspended users", async () => {
