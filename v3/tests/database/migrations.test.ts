@@ -286,10 +286,18 @@ describe("V3 migrations and RLS", () => {
       "school_events",
       "school_memberships",
       "schools",
+      "staff_messages",
       "student_profiles",
       "student_surah_progress",
       "student_verse_progress",
+      "teacher_documents",
       "teacher_profiles",
+      "teacher_recitations",
+      "teacher_requests",
+      "teacher_salary_records",
+      "teacher_session_reports",
+      "teacher_session_runs",
+      "teacher_session_students",
       "user_notifications",
       "user_roles",
       "validated_learning_content",
@@ -374,9 +382,17 @@ describe("V3 migrations and RLS", () => {
       "review_passages_read_scoped",
       "school_memberships_select_scoped",
       "schools_select_member",
+      "staff_messages_read",
       "student_profiles_select_scoped",
       "surah_progress_read_scoped",
+      "teacher_documents_read",
       "teacher_profiles_select_self_or_admin",
+      "teacher_recitations_read",
+      "teacher_requests_read",
+      "teacher_salary_records_read",
+      "teacher_session_reports_read",
+      "teacher_session_runs_read",
+      "teacher_session_students_read",
       "user_roles_select_administration",
       "user_roles_select_own",
       "validated_content_read",
@@ -694,5 +710,102 @@ describe("V3 migrations and RLS", () => {
     await expect(runAsUser(users.studentA, `select public.update_own_assignment('${assignment}', 'in_progress', null)`)).rejects.toThrow(/assignment_status_cannot_regress/);
     await expect(runAsUser(users.studentA, `select public.update_own_assignment('${assignment}', 'corrected', null)`)).rejects.toThrow(/student_cannot_correct_assignment/);
     await expect(runAsUser(users.studentB, `select public.update_own_assignment('${assignment}', 'submitted', null)`)).rejects.toThrow();
+  });
+
+  it("runs the complete teacher session workflow without crossing class boundaries", async () => {
+    const course = "60000000-0000-4000-8000-000000000001";
+    await database.exec(`
+      insert into public.course_sessions (id, class_id, teacher_id, starts_at, ends_at, title)
+      values ('${course}', '${classes.first}', '${users.teacherA}', now(), now() + interval '90 minutes', 'Quran session');
+    `);
+
+    await expect(
+      asUser(users.teacherB, `select public.teacher_start_session('${course}')`),
+    ).rejects.toThrow(/course_session_not_accessible/);
+
+    const started = await asUser<{ run_id: string }>(
+      users.teacherA,
+      `select public.teacher_start_session('${course}') as run_id`,
+    );
+    const runId = started[0]?.run_id;
+    expect(runId).toBeTruthy();
+
+    await runAsUser(
+      users.teacherA,
+      `select public.teacher_save_attendance(
+        '${runId}',
+        '[{"student_id":"${users.studentA}","status":"late","minutes_late":7}]'::jsonb
+      )`,
+    );
+    await expect(
+      runAsUser(
+        users.teacherA,
+        `select public.teacher_record_student_work(
+          '${runId}', '${users.studentB}', 114::smallint, 1::smallint, 6::smallint,
+          'good'::public.recitation_appreciation, '', 'good'::public.session_behavior_status,
+          '[]'::jsonb, false, 114::smallint, 1::smallint, 6::smallint, false, null
+        )`,
+      ),
+    ).rejects.toThrow(/student_not_in_session_class/);
+
+    await runAsUser(
+      users.teacherA,
+      `select public.teacher_record_student_work(
+        '${runId}', '${users.studentA}', 114::smallint, 1::smallint, 6::smallint,
+        'very_good'::public.recitation_appreciation, 'Stable work', 'good'::public.session_behavior_status,
+        '["review"]'::jsonb, true, 113::smallint, 1::smallint, 5::smallint,
+        true, now() + interval '7 days'
+      )`,
+    );
+
+    const report = await asUser<{ report_id: string }>(
+      users.teacherA,
+      `select public.teacher_open_session_report('${runId}') as report_id`,
+    );
+    const reportId = report[0]?.report_id;
+    await runAsUser(
+      users.teacherA,
+      `select public.teacher_submit_session_report(
+        '${reportId}', 'completed'::public.session_program_status,
+        'good'::public.session_behavior_status, '["review"]'::jsonb,
+        '["${users.studentA}"]'::jsonb, false, '', 'ready'::public.equipment_status, '', 'Completed'
+      )`,
+    );
+
+    const attendance = await asUser<{ status: string; minutes_late: number }>(
+      users.studentA,
+      `select status, minutes_late from public.attendance_records where session_id = '${course}'`,
+    );
+    expect(attendance).toEqual([{ status: "late", minutes_late: 7 }]);
+    const ownRecitations = await asUser<{ surah_number: number }>(
+      users.studentA,
+      "select surah_number from public.teacher_recitations",
+    );
+    expect(ownRecitations).toEqual([{ surah_number: 114 }]);
+    const foreignReports = await asUser<{ id: string }>(users.teacherB, "select id from public.teacher_session_reports");
+    expect(foreignReports).toEqual([]);
+    const adminReports = await asUser<{ status: string }>(users.adminA, `select status from public.teacher_session_reports where id = '${reportId}'`);
+    expect(adminReports).toEqual([{ status: "submitted" }]);
+
+    const createdRequest = await asUser<{ request_id: string }>(
+      users.teacherA,
+      "select public.teacher_create_request('equipment'::public.teacher_request_kind, 'Need material', 'A replacement is needed', null, null) as request_id",
+    );
+    const visibleRequests = await asUser<{ title: string }>(users.adminA, "select title from public.teacher_requests");
+    expect(visibleRequests).toEqual([{ title: "Need material" }]);
+    await runAsUser(
+      users.adminA,
+      `select public.admin_review_teacher_request('${createdRequest[0]?.request_id}', 'approved'::public.workflow_status, 'Approved')`,
+    );
+    const reviewed = await asUser<{ status: string; admin_response: string }>(users.teacherA, "select status, admin_response from public.teacher_requests");
+    expect(reviewed).toEqual([{ status: "approved", admin_response: "Approved" }]);
+
+    const cancellable = await asUser<{ request_id: string }>(
+      users.teacherA,
+      "select public.teacher_create_request('general'::public.teacher_request_kind, 'Second request', '', null, null) as request_id",
+    );
+    await runAsUser(users.teacherA, `select public.teacher_cancel_request('${cancellable[0]?.request_id}')`);
+    const cancelled = await asUser<{ status: string }>(users.teacherA, `select status from public.teacher_requests where id = '${cancellable[0]?.request_id}'`);
+    expect(cancelled).toEqual([{ status: "cancelled" }]);
   });
 });

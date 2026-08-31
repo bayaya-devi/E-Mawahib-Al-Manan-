@@ -14,6 +14,10 @@ export type DatabasePublicationStatus = "draft" | "published" | "archived";
 export type DatabaseLearningProgressStatus = "not_started" | "in_progress" | "mastered" | "review";
 export type DatabaseAssignmentStatus = "todo" | "in_progress" | "submitted" | "corrected";
 export type DatabaseAttendanceStatus = "present" | "absent" | "late" | "excused";
+export type DatabaseTeacherSessionStatus = "in_progress" | "report_pending" | "completed" | "cancelled";
+export type DatabaseRecitationAppreciation = "excellent" | "very_good" | "good" | "needs_review" | "insufficient";
+export type DatabaseWorkflowStatus = "draft" | "submitted" | "seen" | "in_review" | "approved" | "rejected" | "resolved" | "cancelled";
+export type DatabaseTeacherRequestKind = "absence" | "leave" | "salary_problem" | "equipment" | "schedule" | "general";
 
 type ProfileRow = {
   id: string;
@@ -198,6 +202,14 @@ type RecitationResultRow = { attempt_id: string; memorization_score: number | nu
 type RecitationErrorRow = { id: number; attempt_id: string; verse_number: number | null; kind: string; expected_text: string | null; observed_text: string | null; word_position: number | null; confidence: number | null };
 type UserNotificationRow = { id: string; user_id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string };
 type AuthorizedDocumentRow = { id: string; student_id: string; title: string; storage_path: string; visible_to_family: boolean; uploaded_by: string; created_at: string };
+type TeacherSessionRunRow = { id: string; course_session_id: string; class_id: string; teacher_id: string; status: DatabaseTeacherSessionStatus; started_at: string; ended_at: string | null; created_at: string };
+type TeacherSessionStudentRow = { run_id: string; student_id: string; attendance: DatabaseAttendanceStatus; minutes_late: number; processed_at: string | null; behavior: "excellent" | "good" | "mixed" | "difficult" | null; difficulty_flags: Json; teacher_note: string | null; updated_at: string };
+type TeacherRecitationRow = { id: string; run_id: string; student_id: string; surah_number: number; verse_from: number; verse_to: number; appreciation: DatabaseRecitationAppreciation; comment: string | null; recorded_by: string; recorded_at: string };
+type TeacherSessionReportRow = { id: string; run_id: string; teacher_id: string; class_id: string; status: DatabaseWorkflowStatus; program_status: "completed" | "partial" | "not_completed" | null; present_count: number; absent_count: number; late_count: number; behavior: "excellent" | "good" | "mixed" | "difficult" | null; difficulty_flags: Json; follow_up_students: Json; incident: boolean; incident_summary: string | null; equipment: "ready" | "missing" | "damaged" | null; equipment_details: string | null; optional_note: string | null; submitted_at: string | null; seen_at: string | null; created_at: string; updated_at: string };
+type StaffMessageRow = { id: string; school_id: string; sender_id: string; recipient_id: string; subject: string; body: string; related_request_id: string | null; read_at: string | null; created_at: string };
+type TeacherRequestRow = { id: string; school_id: string; teacher_id: string; kind: DatabaseTeacherRequestKind; status: DatabaseWorkflowStatus; title: string; details: string | null; starts_on: string | null; ends_on: string | null; admin_response: string | null; resolved_by: string | null; submitted_at: string; updated_at: string; resolved_at: string | null };
+type TeacherSalaryRecordRow = { id: string; school_id: string; teacher_id: string; period_month: string; gross_amount: number; deductions: number; net_amount: number; currency: string; status: "pending" | "paid" | "issue_reported" | "resolved"; paid_at: string | null; note: string | null; created_at: string; updated_at: string };
+type TeacherDocumentRow = { id: string; teacher_id: string; title: string; category: "contract" | "payslip" | "certificate" | "policy" | "other"; storage_path: string; visible_from: string; expires_at: string | null; uploaded_by: string; created_at: string };
 
 type ReadonlyTable<Row> = {
   Row: Row;
@@ -265,6 +277,14 @@ export type Database = {
       recitation_errors: ReadonlyTable<RecitationErrorRow>;
       user_notifications: ReadonlyTable<UserNotificationRow>;
       authorized_documents: ReadonlyTable<AuthorizedDocumentRow>;
+      teacher_session_runs: ReadonlyTable<TeacherSessionRunRow>;
+      teacher_session_students: ReadonlyTable<TeacherSessionStudentRow>;
+      teacher_recitations: ReadonlyTable<TeacherRecitationRow>;
+      teacher_session_reports: ReadonlyTable<TeacherSessionReportRow>;
+      staff_messages: ReadonlyTable<StaffMessageRow>;
+      teacher_requests: ReadonlyTable<TeacherRequestRow>;
+      teacher_salary_records: ReadonlyTable<TeacherSalaryRecordRow>;
+      teacher_documents: ReadonlyTable<TeacherDocumentRow>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -344,6 +364,37 @@ export type Database = {
         Args: { target_assignment_id: string; target_status: DatabaseAssignmentStatus; target_response?: string | null };
         Returns: undefined;
       };
+      teacher_owns_class: { Args: { target_class_id: string }; Returns: boolean };
+      teacher_start_session: { Args: { target_course_session_id: string }; Returns: string };
+      teacher_save_attendance: { Args: { target_run_id: string; attendance_rows: Json }; Returns: undefined };
+      teacher_record_student_work: {
+        Args: {
+          target_run_id: string; target_student_id: string; target_surah_number: number;
+          target_verse_from: number; target_verse_to: number; target_appreciation: DatabaseRecitationAppreciation;
+          target_comment: string; target_behavior: "excellent" | "good" | "mixed" | "difficult";
+          target_difficulties: Json; target_create_goal: boolean; target_goal_surah: number;
+          target_goal_from: number; target_goal_to: number; target_create_assignment: boolean;
+          target_assignment_due: string | null;
+        };
+        Returns: string;
+      };
+      teacher_open_session_report: { Args: { target_run_id: string }; Returns: string };
+      teacher_submit_session_report: {
+        Args: {
+          target_report_id: string; target_program_status: "completed" | "partial" | "not_completed";
+          target_behavior: "excellent" | "good" | "mixed" | "difficult"; target_difficulties: Json;
+          target_follow_up_students: Json; target_incident: boolean; target_incident_summary: string;
+          target_equipment: "ready" | "missing" | "damaged"; target_equipment_details: string;
+          target_optional_note: string;
+        };
+        Returns: undefined;
+      };
+      teacher_create_request: {
+        Args: { target_kind: DatabaseTeacherRequestKind; target_title: string; target_details: string; target_starts_on?: string | null; target_ends_on?: string | null };
+        Returns: string;
+      };
+      teacher_cancel_request: { Args: { target_request_id: string }; Returns: undefined };
+      admin_review_teacher_request: { Args: { target_request_id: string; target_status: DatabaseWorkflowStatus; target_response?: string | null }; Returns: undefined };
       set_account_status: {
         Args: {
           target_user_id: string;
@@ -376,6 +427,10 @@ export type Database = {
       learning_progress_status: DatabaseLearningProgressStatus;
       assignment_status: DatabaseAssignmentStatus;
       attendance_status: DatabaseAttendanceStatus;
+      teacher_session_status: DatabaseTeacherSessionStatus;
+      recitation_appreciation: DatabaseRecitationAppreciation;
+      workflow_status: DatabaseWorkflowStatus;
+      teacher_request_kind: DatabaseTeacherRequestKind;
     };
     CompositeTypes: Record<string, never>;
   };

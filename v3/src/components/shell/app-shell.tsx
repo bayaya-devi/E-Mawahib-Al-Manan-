@@ -49,10 +49,10 @@ const navigation: Record<ShellKind, NavItem[]> = {
   ],
   teacher: [
     { label: "الرئيسية", href: "/teacher", icon: Home },
-    { label: "الطلاب", href: "/teacher#students", icon: UsersRound },
-    { label: "التسميع", href: "/teacher#recitation", icon: BookOpenText },
-    { label: "الواجبات", href: "/teacher#assignments", icon: ClipboardCheck },
-    { label: "الإبلاغ", href: "/teacher#reports", icon: MessageSquareText },
+    { label: "وضع الحصة", href: "/teacher/session", icon: BookOpenText },
+    { label: "الطلاب", href: "/teacher/students", icon: UsersRound },
+    { label: "المهني", href: "/teacher/professional", icon: ClipboardCheck },
+    { label: "الرسائل", href: "/teacher/messages", icon: MessageSquareText },
   ],
   admin: [
     { label: "نظرة عامة", href: "/admin", icon: LayoutDashboard },
