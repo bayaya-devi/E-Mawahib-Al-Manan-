@@ -35,10 +35,10 @@ type NavItem = { label: string; href: string; icon: LucideIcon };
 const navigation: Record<ShellKind, NavItem[]> = {
   student: [
     { label: "الرئيسية", href: "/student", icon: Home },
-    { label: "مسار الحفظ", href: "/student#learning", icon: BookOpenText },
-    { label: "الواجبات", href: "/student#assignments", icon: ClipboardCheck },
-    { label: "المواعيد", href: "/student#schedule", icon: CalendarDays },
-    { label: "الإعدادات", href: "/student#settings", icon: Settings },
+    { label: "مسار الحفظ", href: "/student/quran", icon: BookOpenText },
+    { label: "الواجبات", href: "/student/assignments", icon: ClipboardCheck },
+    { label: "السجل", href: "/student/history", icon: CalendarDays },
+    { label: "الإعدادات", href: "/student/settings", icon: Settings },
   ],
   family: [
     { label: "الرئيسية", href: "/family", icon: Home },
@@ -101,7 +101,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
             <strong>مواهب المنان</strong>
           </Link>
           <nav className="app-rail__nav" aria-label="التنقل الرئيسي">
-            {items.map((item) => <NavLink key={item.label} item={item} active={pathname === item.href} />)}
+            {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
           </nav>
           <a className="app-rail__profile" href={`/${kind}#profile`}>
             <Avatar name="حساب المستخدم" size="sm" />
@@ -130,7 +130,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
         </div>
 
         <nav className="mobile-nav" aria-label="التنقل الرئيسي للهاتف">
-          {items.map((item) => <NavLink key={item.label} item={item} active={pathname === item.href} />)}
+          {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
         </nav>
         <CommandPalette items={commands} open={commandOpen} onOpenChange={setCommandOpen} />
       </div>
@@ -141,9 +141,15 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const Icon = item.icon;
   return (
-    <a className={cn("app-nav-link", active && "is-active")} href={item.href} aria-current={active ? "page" : undefined}>
+    <Link className={cn("app-nav-link", active && "is-active")} href={item.href} aria-current={active ? "page" : undefined}>
       <Icon aria-hidden="true" size={21} strokeWidth={active ? 2.4 : 1.8} />
       <span>{item.label}</span>
-    </a>
+    </Link>
   );
+}
+
+function isActivePath(pathname: string, href: string): boolean {
+  const base = href.split("#")[0] ?? href;
+  if (base === "/student" || base === "/family" || base === "/teacher" || base === "/admin") return pathname === base;
+  return pathname === base || pathname.startsWith(`${base}/`);
 }

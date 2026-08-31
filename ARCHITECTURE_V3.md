@@ -105,13 +105,23 @@ guarded with `server-only`.
 The GitHub workflow repeats these gates on V3 changes. Browser tests use the
 installed stable Chrome channel and run separately with `npm run test:e2e`.
 
-## 9. Decisions deferred on purpose
+## 9. Learning and family slice
 
-- No V1 screen or feature has been copied yet.
+- `features/quran` owns the immutable 114-surah snapshot and the single dynamic route.
+- `features/games` creates exercises only from canonical verses or validated content.
+- `features/recitation` separates browser ASR, memorization comparison, and the
+  unavailable future acoustic-tajwid capability.
+- `features/learning` owns student/family read models and typed repositories.
+- Student and family pages are server-rendered from RLS-filtered Supabase reads.
+- Sensitive progress, assignment, and recitation writes use narrow database RPCs.
+
+## 10. Decisions deferred on purpose
+
 - No production Supabase project is linked to V3.
-- No V1 data has been transformed.
+- V1 learning data has a reviewed preparation/import path but no production batch
+  has been executed.
 - Offline conflict rules will be designed per command, not guessed globally.
 - PWA caching starts only after authentication and data-sensitivity rules exist.
 - Observability vendor selection remains open; structured audit events are ready.
 
-These are migration tasks, not omissions hidden behind the foundation label.
+These are migration tasks, not omissions hidden behind the current slice.

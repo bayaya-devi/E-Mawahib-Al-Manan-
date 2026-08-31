@@ -73,7 +73,15 @@ writes the normalized raw login identifier to the artifact.
 
 ### Phase 4: Quran learning and assignments
 
-- Normalize surahs, ayahs, readings, exercises, attempts, progress, and homework.
+- The immutable V1 Quran snapshot is extracted with `npm run quran:extract-v1`.
+  Extraction fails unless all 114 surahs and 6,236 sequential verses validate.
+- `npm run migration:v1:learning -- progressions.json prepared.json` normalizes a
+  V1 `progressions` export without changing the source export.
+- The service-only `import_v1_learning_progress` RPC first stores the complete raw
+  payload in `private.v1_learning_imports`, then applies conservative upserts.
+- Replaying an identical account payload returns `false` and changes nothing.
+- Existing mastery, completion percentage, steps, stars, and dates only move
+  forward; a V3 value is never reduced by an older V1 row.
 - Preserve every historical completion and teacher recitation with source IDs.
 - Compare student totals, unlocked steps, stars, and completion dates per account.
 

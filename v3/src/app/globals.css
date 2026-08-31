@@ -3,6 +3,7 @@
 @import "@fontsource-variable/noto-kufi-arabic";
 @import "../styles/design-system.css";
 @import "../styles/public-site.css";
+@import "../styles/learning.css";
 
 :root {
   color-scheme: light;

@@ -11,6 +11,9 @@ export type DatabaseAccountStatus = "pending" | "active" | "suspended" | "archiv
 export type DatabaseMembershipStatus = DatabaseAccountStatus;
 export type DatabasePublicLocale = "ar" | "fr" | "en" | "amz";
 export type DatabasePublicationStatus = "draft" | "published" | "archived";
+export type DatabaseLearningProgressStatus = "not_started" | "in_progress" | "mastered" | "review";
+export type DatabaseAssignmentStatus = "todo" | "in_progress" | "submitted" | "corrected";
+export type DatabaseAttendanceStatus = "present" | "absent" | "late" | "excused";
 
 type ProfileRow = {
   id: string;
@@ -172,6 +175,30 @@ type PublicReplayTranslationRow = {
 };
 type PublicReplayCategoryRow = { replay_id: string; category_id: string };
 
+type QuranSurahRow = { number: number; slug: string; name_arabic: string; name_latin: string; verse_count: number; source_label: string; checksum: string; created_at: string };
+type QuranVerseRow = { surah_number: number; verse_number: number; canonical_text: string; audio_code: string; checksum: string };
+type QuranAudioTrackRow = { id: string; reciter_key: string; reciter_name: string; riwaya: string; url_template: string; fallback_url_template: string | null; active: boolean; created_at: string };
+type CourseSessionRow = { id: string; class_id: string; teacher_id: string; starts_at: string; ends_at: string; title: string; location: string | null; status: "scheduled" | "completed" | "cancelled"; created_at: string };
+type AttendanceRecordRow = { id: string; session_id: string; student_id: string; status: DatabaseAttendanceStatus; minutes_late: number; recorded_by: string; recorded_at: string };
+type SchoolAnnouncementRow = { id: string; school_id: string; class_id: string | null; title: string; body: string; audience: "all" | "students" | "families" | "teachers"; published_at: string; expires_at: string | null; created_by: string };
+type SchoolEventRow = { id: string; school_id: string; class_id: string | null; title: string; description: string | null; starts_at: string; ends_at: string | null; created_by: string };
+type LearningGoalRow = { id: string; student_id: string; surah_number: number; verse_from: number; verse_to: number; target_date: string | null; completed_at: string | null; created_by: string | null; created_at: string };
+type StudentSurahProgressRow = { student_id: string; surah_number: number; status: DatabaseLearningProgressStatus; completion_percent: number; highest_completed_step: number; stars: number; started_at: string | null; mastered_at: string | null; last_activity_at: string | null; updated_at: string };
+type StudentVerseProgressRow = { student_id: string; surah_number: number; verse_number: number; status: DatabaseLearningProgressStatus; successful_attempts: number; error_count: number; last_practised_at: string | null };
+type ReviewPassageRow = { id: string; student_id: string; surah_number: number; verse_from: number; verse_to: number; reason: string | null; due_at: string | null; resolved_at: string | null; created_at: string };
+type LearningEventRow = { id: number; student_id: string; event_kind: string; surah_number: number | null; metadata: Json; occurred_at: string };
+type AssignmentRow = { id: string; school_id: string; class_id: string | null; student_id: string | null; teacher_id: string; title: string; instructions: string | null; surah_number: number | null; verse_from: number | null; verse_to: number | null; due_at: string | null; created_at: string };
+type AssignmentSubmissionRow = { assignment_id: string; student_id: string; status: DatabaseAssignmentStatus; response: string | null; submitted_at: string | null; corrected_at: string | null; teacher_feedback: string | null; updated_at: string };
+type ExamRow = { id: string; class_id: string | null; title: string; juz_number: number | null; starts_at: string | null; created_by: string; created_at: string };
+type ExamResultRow = { exam_id: string; student_id: string; score: number | null; appreciation: string | null; completed_at: string | null };
+type GameAttemptRow = { id: string; student_id: string; kind: string; surah_number: number | null; score: number; duration_ms: number | null; completed: boolean; created_at: string };
+type ValidatedLearningContentRow = { id: string; school_id: string | null; kind: string; prompt: string; answer: string; distractors: Json; source_reference: string; validated_by: string; active: boolean; created_at: string };
+type RecitationAttemptRow = { id: string; student_id: string; surah_number: number; verse_from: number; verse_to: number; status: "recording" | "processing" | "completed" | "inconclusive" | "failed"; transcript: string | null; transcript_confidence: number | null; audio_storage_path: string | null; asr_engine: string | null; started_at: string; completed_at: string | null };
+type RecitationResultRow = { attempt_id: string; memorization_score: number | null; matched_words: number; expected_words: number; is_conclusive: boolean; recommendation: string | null; acoustic_tajwid_status: "not_evaluated"; analysed_at: string };
+type RecitationErrorRow = { id: number; attempt_id: string; verse_number: number | null; kind: string; expected_text: string | null; observed_text: string | null; word_position: number | null; confidence: number | null };
+type UserNotificationRow = { id: string; user_id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string };
+type AuthorizedDocumentRow = { id: string; student_id: string; title: string; storage_path: string; visible_to_family: boolean; uploaded_by: string; created_at: string };
+
 type ReadonlyTable<Row> = {
   Row: Row;
   Insert: never;
@@ -215,6 +242,29 @@ export type Database = {
       public_replays: MutableTable<PublicReplayRow>;
       public_replay_translations: MutableTable<PublicReplayTranslationRow>;
       public_replay_categories: MutableTable<PublicReplayCategoryRow>;
+      quran_surahs: ReadonlyTable<QuranSurahRow>;
+      quran_verses: ReadonlyTable<QuranVerseRow>;
+      quran_audio_tracks: ReadonlyTable<QuranAudioTrackRow>;
+      course_sessions: ReadonlyTable<CourseSessionRow>;
+      attendance_records: ReadonlyTable<AttendanceRecordRow>;
+      school_announcements: ReadonlyTable<SchoolAnnouncementRow>;
+      school_events: ReadonlyTable<SchoolEventRow>;
+      learning_goals: ReadonlyTable<LearningGoalRow>;
+      student_surah_progress: ReadonlyTable<StudentSurahProgressRow>;
+      student_verse_progress: ReadonlyTable<StudentVerseProgressRow>;
+      review_passages: ReadonlyTable<ReviewPassageRow>;
+      learning_events: ReadonlyTable<LearningEventRow>;
+      assignments: ReadonlyTable<AssignmentRow>;
+      assignment_submissions: ReadonlyTable<AssignmentSubmissionRow>;
+      exams: ReadonlyTable<ExamRow>;
+      exam_results: ReadonlyTable<ExamResultRow>;
+      game_attempts: ReadonlyTable<GameAttemptRow>;
+      validated_learning_content: ReadonlyTable<ValidatedLearningContentRow>;
+      recitation_attempts: ReadonlyTable<RecitationAttemptRow>;
+      recitation_results: ReadonlyTable<RecitationResultRow>;
+      recitation_errors: ReadonlyTable<RecitationErrorRow>;
+      user_notifications: ReadonlyTable<UserNotificationRow>;
+      authorized_documents: ReadonlyTable<AuthorizedDocumentRow>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -260,6 +310,40 @@ export type Database = {
         };
         Returns: string;
       };
+      import_v1_learning_progress: {
+        Args: {
+          target_student_id: string;
+          target_source_key: string;
+          target_source_fingerprint: string;
+          target_raw_payload: Json;
+          normalized_rows: Json;
+        };
+        Returns: boolean;
+      };
+      record_recitation_attempt: {
+        Args: {
+          target_surah_number: number;
+          target_verse_from: number;
+          target_verse_to: number;
+          target_transcript: string;
+          target_confidence: number | null;
+          target_score: number | null;
+          target_matched_words: number;
+          target_expected_words: number;
+          target_conclusive: boolean;
+          target_recommendation: string;
+          target_errors: Json;
+        };
+        Returns: string;
+      };
+      record_quran_practice: {
+        Args: { target_surah_number: number; target_verse_number: number; target_success: boolean };
+        Returns: undefined;
+      };
+      update_own_assignment: {
+        Args: { target_assignment_id: string; target_status: DatabaseAssignmentStatus; target_response?: string | null };
+        Returns: undefined;
+      };
       set_account_status: {
         Args: {
           target_user_id: string;
@@ -289,6 +373,9 @@ export type Database = {
       public_locale: DatabasePublicLocale;
       publication_status: DatabasePublicationStatus;
       public_content_kind: "news" | "replay";
+      learning_progress_status: DatabaseLearningProgressStatus;
+      assignment_status: DatabaseAssignmentStatus;
+      attendance_status: DatabaseAttendanceStatus;
     };
     CompositeTypes: Record<string, never>;
   };

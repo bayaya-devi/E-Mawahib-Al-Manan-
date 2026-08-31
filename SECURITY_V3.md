@@ -74,6 +74,17 @@ exports, unusual finance changes, and policy denials.
 - AI assessment must be optional, explainable, human-reviewable, and must not send
   recordings to a provider before consent and processor review.
 
+The learning schema enforces these boundaries through `can_access_student`:
+
+- a student reads only rows whose `student_id` is their Auth user ID;
+- a parent reads every actively linked child and no unlinked child;
+- a teacher reads only students actively enrolled in an assigned class;
+- administration is constrained by school membership, while direction is global;
+- Quran reference tables are read-only to clients;
+- assignment correction, canonical Quran writes, and V1 imports are never direct
+  browser table writes;
+- acoustic tajwid is stored only as `not_evaluated` in this release.
+
 ## 9. Offline security
 
 - Cache the minimum needed for the signed-in user, never whole-class directories.
@@ -91,8 +102,9 @@ exports, unusual finance changes, and policy denials.
 - Browser security headers and CSP tuned to actual audio/video integrations.
 - Independent review of the first complete identity and people migration slice.
 
-## 11. Known foundation gaps
+## 11. Known gaps
 
 No production Supabase project is linked, MFA/rate limiting are not configured,
-and no real user data has been migrated. These are blockers for V3 production,
-but not for using this branch as the development foundation.
+and no real user data has been migrated. The browser ASR depends on browser and
+operating-system speech support; unsupported devices receive an explicit state,
+not a fabricated score. These remain blockers for a production cutover.

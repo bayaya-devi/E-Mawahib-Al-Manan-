@@ -245,11 +245,21 @@ describe("V3 migrations and RLS", () => {
   it("enables RLS and removes client writes on every public business table", async () => {
     const expectedTables = [
       "admin_profiles",
+      "assignment_submissions",
+      "assignments",
+      "attendance_records",
       "audit_logs",
+      "authorized_documents",
       "class_enrollments",
       "class_teacher_assignments",
       "classes",
+      "course_sessions",
+      "exam_results",
+      "exams",
       "family_relationships",
+      "game_attempts",
+      "learning_events",
+      "learning_goals",
       "parent_profiles",
       "profiles",
       "public_categories",
@@ -265,11 +275,24 @@ describe("V3 migrations and RLS", () => {
       "public_schedules",
       "public_site_profile_translations",
       "public_site_profiles",
+      "quran_audio_tracks",
+      "quran_surahs",
+      "quran_verses",
+      "recitation_attempts",
+      "recitation_errors",
+      "recitation_results",
+      "review_passages",
+      "school_announcements",
+      "school_events",
       "school_memberships",
       "schools",
       "student_profiles",
+      "student_surah_progress",
+      "student_verse_progress",
       "teacher_profiles",
+      "user_notifications",
       "user_roles",
+      "validated_learning_content",
     ];
     const result = await database.query<{
       relname: string;
@@ -308,11 +331,24 @@ describe("V3 migrations and RLS", () => {
     `);
     expect(result.rows.map(({ policyname }) => policyname)).toEqual([
       "admin_profiles_select_self_or_direction",
+      "announcements_read_scoped",
+      "assignment_submissions_read_scoped",
+      "assignments_read_scoped",
+      "attendance_records_read_scoped",
       "audit_logs_select_administration",
       "class_enrollments_select_scoped",
       "class_teacher_assignments_select_scoped",
       "classes_select_scoped",
+      "course_sessions_read_scoped",
+      "documents_read_scoped",
+      "events_read_scoped",
+      "exam_results_read_scoped",
+      "exams_read_scoped",
       "family_relationships_select_scoped",
+      "game_attempts_read_scoped",
+      "learning_events_read_scoped",
+      "learning_goals_read_scoped",
+      "notifications_read_own",
       "parent_profiles_select_self_or_admin",
       "profiles_select_own",
       "profiles_select_scoped",
@@ -329,12 +365,22 @@ describe("V3 migrations and RLS", () => {
       "public_schedule_translation_read",
       "public_site_profile_read",
       "public_site_profile_translation_read",
+      "quran_audio_tracks_read",
+      "quran_surahs_read",
+      "quran_verses_read",
+      "recitation_attempts_read_scoped",
+      "recitation_errors_read_scoped",
+      "recitation_results_read_scoped",
+      "review_passages_read_scoped",
       "school_memberships_select_scoped",
       "schools_select_member",
       "student_profiles_select_scoped",
+      "surah_progress_read_scoped",
       "teacher_profiles_select_self_or_admin",
       "user_roles_select_administration",
       "user_roles_select_own",
+      "validated_content_read",
+      "verse_progress_read_scoped",
     ]);
   });
 
@@ -595,5 +641,58 @@ describe("V3 migrations and RLS", () => {
         "select source_name from private.legacy_account_links",
       ),
     ).rejects.toThrow();
+  });
+
+  it("lets one parent follow multiple linked children but no unrelated child", async () => {
+    const studentC = "00000000-0000-4000-8000-000000000008";
+    await database.exec(`
+      insert into auth.users (id, email) values ('${studentC}', 'student-c@example.test');
+      insert into public.profiles (id, display_name, first_name, last_name, status)
+      values ('${studentC}', 'Student C', 'Student', 'C', 'active');
+      insert into public.user_roles (user_id, role) values ('${studentC}', 'student');
+      insert into public.school_memberships (school_id, user_id, status)
+      values ('${schools.first}', '${studentC}', 'active');
+      insert into public.student_profiles (user_id) values ('${studentC}');
+      insert into public.family_relationships (parent_id, student_id, relationship)
+      values ('${users.parentA}', '${studentC}', 'guardian');
+      insert into public.student_surah_progress (student_id, surah_number, status, completion_percent)
+      values
+        ('${users.studentA}', 114, 'mastered', 100),
+        ('${studentC}', 113, 'in_progress', 40),
+        ('${users.studentB}', 112, 'mastered', 100);
+    `);
+    const familyRows = await asUser<{ student_id: string }>(users.parentA, "select student_id from public.student_surah_progress order by student_id");
+    expect(familyRows.map(({ student_id }) => student_id)).toEqual([users.studentA, studentC]);
+    const childRows = await asUser<{ student_id: string }>(users.studentA, "select student_id from public.student_surah_progress order by student_id");
+    expect(childRows.map(({ student_id }) => student_id)).toEqual([users.studentA]);
+    const teacherRows = await asUser<{ student_id: string }>(users.teacherA, "select student_id from public.student_surah_progress order by student_id");
+    expect(teacherRows.map(({ student_id }) => student_id)).toEqual([users.studentA]);
+  });
+
+  it("imports V1 learning progress once while retaining the raw payload", async () => {
+    const call = `select public.import_v1_learning_progress(
+      '${users.studentA}', 'v1.progressions', 'fingerprint-a',
+      '{"legacy":"kept"}'::jsonb,
+      '[{"surah_number":111,"completed":true,"completion_percent":100,"highest_completed_step":4,"stars":12}]'::jsonb
+    ) as imported`;
+    const first = await runAsDatabaseRole("service_role", call);
+    const second = await runAsDatabaseRole("service_role", call);
+    expect(first.rows).toEqual([{ imported: true }]);
+    expect(second.rows).toEqual([{ imported: false }]);
+    const stored = await database.query<{ status: string; completion_percent: number }>(`select status, completion_percent from public.student_surah_progress where student_id = '${users.studentA}' and surah_number = 111`);
+    expect(stored.rows).toEqual([{ status: "mastered", completion_percent: 100 }]);
+  });
+
+  it("records student practice and permits only own assignment workflow", async () => {
+    const assignment = "50000000-0000-4000-8000-000000000001";
+    await database.exec(`insert into public.assignments (id, school_id, student_id, teacher_id, title) values ('${assignment}', '${schools.first}', '${users.studentA}', '${users.teacherA}', 'Review')`);
+    await runAsUser(users.studentA, "select public.record_quran_practice(114::smallint, 1::smallint, true)");
+    await runAsUser(users.studentA, `select public.update_own_assignment('${assignment}', 'in_progress', null)`);
+    await runAsUser(users.studentA, `select public.update_own_assignment('${assignment}', 'submitted', 'Done')`);
+    const submission = await database.query<{ status: string; response: string }>(`select status, response from public.assignment_submissions where assignment_id = '${assignment}' and student_id = '${users.studentA}'`);
+    expect(submission.rows).toEqual([{ status: "submitted", response: "Done" }]);
+    await expect(runAsUser(users.studentA, `select public.update_own_assignment('${assignment}', 'in_progress', null)`)).rejects.toThrow(/assignment_status_cannot_regress/);
+    await expect(runAsUser(users.studentA, `select public.update_own_assignment('${assignment}', 'corrected', null)`)).rejects.toThrow(/student_cannot_correct_assignment/);
+    await expect(runAsUser(users.studentB, `select public.update_own_assignment('${assignment}', 'submitted', null)`)).rejects.toThrow();
   });
 });
