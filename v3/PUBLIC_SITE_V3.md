@@ -22,7 +22,7 @@ Content is archived rather than physically deleted so publication history is ret
 
 The browser receives a random, HTTP-only, same-site visitor cookie. The server combines it with coarse request characteristics and stores only HMAC-SHA256 fingerprints. It never stores the raw cookie, IP address, or user agent. Likes are unique per visitor and rate-limited per coarse network fingerprint and day. Views are counted once per visitor and replay per day.
 
-`PUBLIC_INTERACTION_HMAC_KEY` must be a random deployment secret of at least 32 characters and must remain stable between deployments.
+`INTERACTION_HMAC_KEY` must be a random deployment secret of at least 32 characters and must remain stable between deployments.
 
 This mechanism is intentionally privacy-conscious and reasonably resistant to ordinary repeated clicks. It is not intended to defeat a distributed botnet; edge rate limiting can be added later without changing the data model.
 

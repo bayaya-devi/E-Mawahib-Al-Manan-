@@ -7,7 +7,7 @@ export async function getLoginRateLimit(request: Request, input: unknown): Promi
   const environment = getPrivilegedServerEnvironment(); const record = input && typeof input === "object" ? input as Record<string, unknown> : {};
   const login = typeof record.login === "string" ? record.login.normalize("NFKC").trim().toLocaleLowerCase("fr") : "invalid";
   const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim(); const network = forwarded || request.headers.get("x-real-ip") || "unknown";
-  const keys = [`login:${digest(login, environment.PUBLIC_INTERACTION_HMAC_KEY)}`, `network:${digest(network, environment.PUBLIC_INTERACTION_HMAC_KEY)}`];
+  const keys = [`login:${digest(login, environment.INTERACTION_HMAC_KEY)}`, `network:${digest(network, environment.INTERACTION_HMAC_KEY)}`];
   const result = await createAdminClient().rpc("auth_rate_limit_allowed", { target_keys: keys });
   return { allowed: result.data === true, keys };
 }
