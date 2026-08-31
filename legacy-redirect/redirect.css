@@ -1,0 +1,6 @@
+:root { color-scheme: light; font-family: Arial, sans-serif; background: #f3efe7; color: #17372d; }
+body { min-height: 100svh; display: grid; place-items: center; margin: 0; padding: 24px; text-align: center; }
+main { display: grid; justify-items: center; gap: 14px; }
+img { width: 82px; height: 80px; object-fit: contain; }
+p { margin: 0; font-size: 1.1rem; font-weight: 700; }
+a { color: #0d5a45; font-weight: 800; }
