@@ -1,122 +1,89 @@
-# Migration V1 to V3
+# Migration V1 vers V3
 
-## 1. Non-negotiable rule
+La migration est additive. La V1 reste en lecture seule pendant la répétition et aucune table V1 n'est supprimée.
 
-V1 stays online and unchanged until a V3 slice has passed data reconciliation,
-authorization tests, user acceptance, and rollback rehearsal. The V3 branch does
-not deploy over the GitHub Pages production site.
+## Règle non négociable
 
-## 2. Current V1 evidence
+La V1 reste en ligne et inchangée tant qu'une tranche V3 n'a pas réussi la réconciliation des données, les tests d'autorisation, la recette utilisateur et un exercice de rollback. La branche V3 ne remplace jamais automatiquement le site GitHub Pages de production.
 
-The audit found a static application with approximately 142 HTML pages, 22
-JavaScript files, and 14 stylesheets. Several files exceed 1,300 lines, including
-the student dashboard, admin page, authentication script, registry, and surah
-pages. Business concepts are stored across browser state and broad Supabase
-tables. The `messages` table currently carries unrelated records through text
-prefixes such as teacher notes, admin reports, sessions, remote classes, finance,
-and virtual recitations.
+## État V1 constaté
 
-Existing production data includes concepts represented by tables such as
-`eleves`, `profs`, `profils_admin`, `progressions`, `devoirs`, `horaires`,
-`messages`, `parent_feedback`, `school_classes`, `class_students`,
-`school_messages`, `student_admin_profiles`, and `admin_audit_logs`.
+L'audit a trouvé une application statique d'environ 142 pages HTML, 22 fichiers JavaScript et 14 feuilles de style. Plusieurs fichiers dépassent 1 300 lignes. Les concepts métier sont répartis entre l'état navigateur et des tables Supabase larges. La table V1 `messages` transporte aussi des rapports, séances, devoirs, finances et récitations au moyen de préfixes textuels.
 
-This inventory must be confirmed against a read-only export before writing final
-transformations. The codebase is evidence, not an authoritative database schema.
+Les tables rencontrées incluent notamment `eleves`, `profs`, `profils_admin`, `progressions`, `devoirs`, `horaires`, `messages`, `parent_feedback`, `school_classes`, `class_students`, `school_messages`, `student_admin_profiles` et `admin_audit_logs`. Cet inventaire doit être confirmé par un export en lecture seule : le code constitue une preuve, pas le schéma de production définitif.
 
-## 3. Migration sequence
+## Préparation
 
-### Phase 0: Foundation (this branch)
+1. Exporter séparément comptes, progressions, professeurs, relations, devoirs, données administratives, messages et historiques.
+2. Exécuter `npm run migration:v1:prepare`, puis `npm run migration:v1:learning` pour les contrôles spécialisés.
+3. Exécuter `npm run migration:v1:complete -- export-v1.json bundle-v3.json` pour produire le bundle global et le rapport de quarantaine.
+4. Examiner obligatoirement `sections.review` et les compteurs avant toute écriture.
 
-- Isolate V3 under `/v3`.
-- Establish strict TypeScript, CI, tests, Supabase SSR, RBAC, and RLS conventions.
-- Document domain boundaries and security invariants.
-- Make no production data or routing change.
+Les mots de passe V1 et les identifiants bruts ne sont jamais copiés. Les comptes sont créés dans Supabase Auth avec réinitialisation obligatoire. Les messages préfixés `HOMEWORK`, `SESSION_REPORT`, `INCIDENT`, `REQUEST` et équivalents sont convertis vers les tables métier. Les préfixes de cache, synchronisation, version et débogage sont ignorés.
 
-### Phase 1: Read-only discovery
+## Chargement contrôlé
 
-- Export schema, policies, row counts, null rates, duplicates, and orphan rows.
-- Create a stable V1 identifier map for every student, parent, teacher, and class.
-- Classify overloaded message prefixes into explicit target domains.
-- Record checksums and totals so every later import can be reconciled.
+- Créer un lot dans `private.migration_batches` avec l'empreinte SHA-256 du bundle.
+- Charger les comptes et renseigner `private.legacy_account_links`.
+- Résoudre les identifiants V1 vers les UUID V3 avant les relations.
+- Charger dans cet ordre : écoles/comptes, classes/affectations, familles, progression, devoirs, séances, demandes, conversations, historique.
+- Comparer les totaux source/cible et échantillonner les dossiers avant de marquer le lot `completed`.
 
-### Phase 2: Identity and people
+## Répétition et retour arrière
 
-- Provision Auth identities without changing V1 login behavior.
-- Import profiles, roles, parent-child links, teacher-class links, and status.
-- Test student, parent, teacher, admin, suspended, and multi-role access.
-- Run V3 read-only beside V1 for selected internal users.
+Les importations de progression et les écritures hors connexion sont idempotentes. Un retour arrière cible uniquement le `batch_id` du lot, jamais les données créées ensuite par les utilisateurs. La bascule nécessite la validation de `V3_RELEASE_CHECKLIST.md`.
 
-#### Secure V1 account procedure
+## Séquence de migration
 
-1. Export V1 accounts read-only into an encrypted, access-controlled workspace.
-2. Normalize stable legacy IDs and login identifiers; never match by display name.
-3. Produce an HMAC fingerprint for reconciliation and duplicate detection.
-4. Drop every V1 password, reversible password, hash of unknown quality, and
-   hardcoded administrative credential from the import artifact.
-5. Create a fresh Supabase Auth identity with a new temporary secret.
-6. Call `provision_account_data` to create profile, role, school membership,
-   private alias, and audit event in one database transaction.
-7. Keep the account `pending` until row counts and relationships reconcile.
-8. Require a fresh password path before broad activation; do not reactivate V1
-   credentials in V3.
+### Fondation
 
-`npm run migration:v1:prepare -- input.json output.json` creates a password-free
-reconciliation artifact. It requires `V1_MIGRATION_FINGERPRINT_KEY` and never
-writes the normalized raw login identifier to the artifact.
+- Isoler V3 sous `/v3` avec TypeScript strict, CI, tests, Supabase SSR, RBAC et RLS.
+- Ne changer ni les données ni le routage de production.
 
-### Phase 3: Academic core
+### Découverte en lecture seule
 
-- Migrate schools, classes, enrolments, schedules, attendance, and sessions.
-- Keep V1 as the writer while V3 builds reconciled read models.
-- Introduce idempotent dual-write only after replay and rollback tests.
+- Exporter schéma, politiques, volumes, valeurs nulles, doublons et orphelins.
+- Créer une correspondance stable pour chaque élève, parent, professeur et classe.
+- Enregistrer empreintes et totaux afin de réconcilier chaque import.
 
-### Phase 4: Quran learning and assignments
+### Identité et personnes
 
-- The immutable V1 Quran snapshot is extracted with `npm run quran:extract-v1`.
-  Extraction fails unless all 114 surahs and 6,236 sequential verses validate.
-- `npm run migration:v1:learning -- progressions.json prepared.json` normalizes a
-  V1 `progressions` export without changing the source export.
-- The service-only `import_v1_learning_progress` RPC first stores the complete raw
-  payload in `private.v1_learning_imports`, then applies conservative upserts.
-- Replaying an identical account payload returns `false` and changes nothing.
-- Existing mastery, completion percentage, steps, stars, and dates only move
-  forward; a V3 value is never reduced by an older V1 row.
-- Preserve every historical completion and teacher recitation with source IDs.
-- Compare student totals, unlocked steps, stars, and completion dates per account.
+- Provisionner Supabase Auth sans réutiliser les mots de passe V1.
+- Importer profils, rôles, liens famille, affectations et statuts.
+- Garder les comptes `pending` jusqu'à la réconciliation et imposer un nouveau secret.
+- Tester élève, parent, professeur, admin, direction, suspension et multi-rôle.
 
-### Phase 5: Messaging, requests, finance, and notifications
+`npm run migration:v1:prepare -- input.json output.json` produit un artefact sans mot de passe ni identifiant brut. Il exige `V1_MIGRATION_FINGERPRINT_KEY` et utilise une empreinte HMAC pour les doublons.
 
-- Split the overloaded `messages` records into typed entities.
-- Import parent feedback and reports with their original timestamps and status.
-- Rebuild finance as an auditable ledger; never infer balances from UI text.
-- Add an outbox before enabling push or offline synchronization.
+### Noyau scolaire
 
-### Phase 6: Cutover by role
+- Migrer écoles, classes, inscriptions, horaires, présences et séances.
+- Garder V1 comme source d'écriture jusqu'à validation des modèles V3.
+- Ne mettre en place un double-write qu'après tests de rejeu et rollback.
 
-- Pilot staff first, then teachers, parents, and students class by class.
-- Freeze the migrated V1 slice briefly, replay the final delta, and reconcile.
-- Switch a feature flag, monitor errors and data totals, retain a tested rollback.
-- Retire V1 pages only after the agreed observation period.
+### Apprentissage du Coran
 
-## 4. Data preservation controls
+- `npm run quran:extract-v1` valide exactement 114 sourates et 6 236 versets séquentiels.
+- `npm run migration:v1:learning -- progressions.json prepared.json` normalise les progressions.
+- `import_v1_learning_progress` conserve la charge brute privée, applique des upserts conservateurs et refuse les régressions.
+- Réconcilier maîtrise, pourcentage, étapes, étoiles et dates compte par compte.
 
-- All imports carry `legacy_source`, `legacy_id`, and migration batch metadata.
-- Migrations are idempotent and never match people by display name alone.
-- Every batch records source count, inserted count, updated count, rejected count,
-  and a hash or aggregate suitable for reconciliation.
-- Rejected rows go to a quarantine report; they are never silently discarded.
-- Production backup and restore rehearsal precede the first write migration.
-- Renaming a person or changing credentials never creates a new learner identity.
+### Systèmes transverses
 
-## 5. Rollback model
+- Transformer les préfixes techniques vers conversations, demandes, devoirs, rapports et incidents.
+- Importer les retours parents et rapports avec date et statut d'origine.
+- Reconstruire la finance comme registre auditable, jamais depuis du texte d'interface.
+- Rejouer le delta final par classe avant le changement de source d'autorité.
 
-Before a slice becomes authoritative, rollback means disabling the V3 feature flag
-and returning traffic to V1. Once V3 becomes the writer, compensating migrations
-and an event/outbox replay are required; direct database reversal is not assumed.
+## Contrôles de préservation
 
-## 6. Definition of migrated
+- Les imports portent une source, un identifiant V1, un lot et une empreinte.
+- Aucune personne n'est rapprochée par son seul nom d'affichage.
+- Chaque lot enregistre source, insertions, mises à jour, rejets et empreinte de contrôle.
+- Les lignes ambiguës vont en quarantaine et ne sont jamais ignorées silencieusement.
+- Une sauvegarde et un exercice de restauration précèdent la première écriture production.
+- Renommer une personne ou changer son mot de passe ne crée jamais une nouvelle identité d'apprentissage.
 
-A slice is migrated only when its schema, policies, import, reconciliation,
-automated tests, mobile journey, observability, operator procedure, and rollback
-have all been demonstrated. Visual similarity alone is not migration completion.
+## Définition de « migré »
+
+Une tranche est migrée seulement lorsque schéma, RLS, import, réconciliation, tests automatisés, parcours mobile, observabilité, procédure opérateur et rollback ont été démontrés. Une ressemblance visuelle ne constitue pas une migration.

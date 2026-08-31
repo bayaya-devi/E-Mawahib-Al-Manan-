@@ -151,6 +151,7 @@ async function asUser<Row extends Record<string, unknown>>(
   sql: string,
 ): Promise<Row[]> {
   await database.query("select set_config('request.jwt.claim.sub', $1, false)", [userId]);
+  await database.query("select set_config('request.jwt.claims', $1, false)", [JSON.stringify({ sub: userId, aal: "aal2" })]);
   await database.exec("set role authenticated");
   try {
     const result = await database.query<Row>(sql);
@@ -158,18 +159,29 @@ async function asUser<Row extends Record<string, unknown>>(
   } finally {
     await database.exec("reset role");
     await database.query("select set_config('request.jwt.claim.sub', '', false)");
+    await database.query("select set_config('request.jwt.claims', '', false)");
   }
 }
 
 async function runAsUser(userId: string, sql: string): Promise<void> {
   await database.query("select set_config('request.jwt.claim.sub', $1, false)", [userId]);
+  await database.query("select set_config('request.jwt.claims', $1, false)", [JSON.stringify({ sub: userId, aal: "aal2" })]);
   await database.exec("set role authenticated");
   try {
     await database.exec(sql);
   } finally {
     await database.exec("reset role");
     await database.query("select set_config('request.jwt.claim.sub', '', false)");
+    await database.query("select set_config('request.jwt.claims', '', false)");
   }
+}
+
+async function runAsUserAtAal1(userId: string, sql: string): Promise<void> {
+  await database.query("select set_config('request.jwt.claim.sub', $1, false)", [userId]);
+  await database.query("select set_config('request.jwt.claims', $1, false)", [JSON.stringify({ sub: userId, aal: "aal1" })]);
+  await database.exec("set role authenticated");
+  try { await database.exec(sql); }
+  finally { await database.exec("reset role"); await database.query("select set_config('request.jwt.claim.sub', '', false)"); await database.query("select set_config('request.jwt.claims', '', false)"); }
 }
 
 async function runAsDatabaseRole(role: "anon" | "service_role", sql: string) {
@@ -256,6 +268,9 @@ describe("V3 migrations and RLS", () => {
       "class_enrollments",
       "class_teacher_assignments",
       "classes",
+      "conversation_members",
+      "conversation_messages",
+      "conversations",
       "course_sessions",
       "exam_results",
       "exams",
@@ -265,6 +280,8 @@ describe("V3 migrations and RLS", () => {
       "inventory_items",
       "learning_events",
       "learning_goals",
+      "message_attachments",
+      "notification_preferences",
       "parent_profiles",
       "profiles",
       "public_categories",
@@ -280,6 +297,7 @@ describe("V3 migrations and RLS", () => {
       "public_schedules",
       "public_site_profile_translations",
       "public_site_profiles",
+      "push_subscriptions",
       "quran_audio_tracks",
       "quran_surahs",
       "quran_verses",
@@ -294,6 +312,8 @@ describe("V3 migrations and RLS", () => {
       "school_memberships",
       "school_rooms",
       "schools",
+      "service_request_events",
+      "service_requests",
       "staff_messages",
       "staff_profiles",
       "student_digital_files",
@@ -360,6 +380,9 @@ describe("V3 migrations and RLS", () => {
       "class_enrollments_select_scoped",
       "class_teacher_assignments_select_scoped",
       "classes_select_scoped",
+      "conversation_members_member_read",
+      "conversation_messages_member_read",
+      "conversations_member_read",
       "course_sessions_read_scoped",
       "documents_read_scoped",
       "events_read_scoped",
@@ -371,6 +394,8 @@ describe("V3 migrations and RLS", () => {
       "inventory_items_admin_read",
       "learning_events_read_scoped",
       "learning_goals_read_scoped",
+      "message_attachments_member_read",
+      "notification_preferences_own_read",
       "notifications_read_own",
       "parent_profiles_select_self_or_admin",
       "profiles_select_own",
@@ -388,6 +413,7 @@ describe("V3 migrations and RLS", () => {
       "public_schedule_translation_read",
       "public_site_profile_read",
       "public_site_profile_translation_read",
+      "push_subscriptions_own_read",
       "quran_audio_tracks_read",
       "quran_surahs_read",
       "quran_verses_read",
@@ -400,6 +426,8 @@ describe("V3 migrations and RLS", () => {
       "school_memberships_select_scoped",
       "school_rooms_admin_read",
       "schools_select_member",
+      "service_request_events_scoped_read",
+      "service_requests_scoped_read",
       "staff_messages_read",
       "staff_profiles_admin_read",
       "student_digital_files_admin_read",
@@ -851,5 +879,56 @@ describe("V3 migrations and RLS", () => {
     const rooms = await asUser<{ name: string }>(users.adminA, "select name from public.school_rooms");
     expect(rooms).toEqual([{ name: "Room A" }]);
     await expect(runAsUser(users.adminA, `select public.admin_create_command_record('salary', '{"teacher_id":"${users.teacherB}","period_month":"2026-08-01","gross":"1000","deductions":"0"}'::jsonb)`)).rejects.toThrow(/teacher_scope_denied/);
+  });
+
+  it("rejects privileged administration mutations without MFA assurance level 2", async () => {
+    const task = "70000000-0000-4000-8000-000000000009";
+    await database.exec(`insert into public.admin_tasks (id, school_id, kind, title, reason) values ('${task}', '${schools.first}', 'security', 'MFA test', 'Test')`);
+    await expect(runAsUserAtAal1(users.adminA, `select public.admin_resolve_task('${task}', 'done')`)).rejects.toThrow(/administration_mfa_required/);
+    const state = await database.query<{ status: string }>(`select status from public.admin_tasks where id = '${task}'`);
+    expect(state.rows).toEqual([{ status: "open" }]);
+  });
+
+  it("limits messaging to real school relationships and keeps conversations private", async () => {
+    const allowed = await asUser<{ allowed: boolean }>(users.studentA, `select public.can_message_user('${users.teacherA}') as allowed`);
+    expect(allowed).toEqual([{ allowed: true }]);
+    const denied = await asUser<{ allowed: boolean }>(users.studentA, `select public.can_message_user('${users.teacherB}') as allowed`);
+    expect(denied).toEqual([{ allowed: false }]);
+    const parentAllowed = await asUser<{ allowed: boolean }>(users.parentA, `select public.can_message_user('${users.teacherA}') as allowed`);
+    expect(parentAllowed).toEqual([{ allowed: true }]);
+
+    const created = await asUser<{ id: string }>(users.studentA, `select public.create_direct_conversation('${users.teacherA}', 'Follow-up') as id`);
+    const conversationId = created[0]?.id;
+    const clientId = "80000000-0000-4000-8000-000000000001";
+    const first = await asUser<{ id: number }>(users.studentA, `select public.send_conversation_message('${conversationId}', 'Hello teacher', '${clientId}') as id`);
+    const repeated = await asUser<{ id: number }>(users.studentA, `select public.send_conversation_message('${conversationId}', 'Hello teacher', '${clientId}') as id`);
+    expect(repeated).toEqual(first);
+    const teacherMessages = await asUser<{ body: string }>(users.teacherA, "select body from public.conversation_messages");
+    expect(teacherMessages).toEqual([{ body: "Hello teacher" }]);
+    const parentMessages = await asUser<{ body: string }>(users.parentA, "select body from public.conversation_messages");
+    expect(parentMessages).toEqual([]);
+    const otherSchoolMessages = await asUser<{ body: string }>(users.teacherB, "select body from public.conversation_messages");
+    expect(otherSchoolMessages).toEqual([]);
+    await expect(asUser(users.studentA, `select public.create_direct_conversation('${users.teacherB}', 'Denied')`)).rejects.toThrow(/messaging_relationship_denied/);
+  });
+
+  it("creates idempotent requests with scoped workflow history and notifications", async () => {
+    const clientId = "90000000-0000-4000-8000-000000000001";
+    const sql = `select public.create_service_request('technical_problem', 'Audio problem', 'No sound', 'high', '${clientId}') as id`;
+    const first = await asUser<{ id: string }>(users.studentA, sql);
+    const second = await asUser<{ id: string }>(users.studentA, sql);
+    expect(second).toEqual(first);
+    const requestId = first[0]?.id;
+    const adminRows = await asUser<{ reference: string }>(users.adminA, `select reference from public.service_requests where id = '${requestId}'`);
+    expect(adminRows[0]?.reference).toMatch(/^REQ-\d{4}-\d{6}$/u);
+    const foreignRows = await asUser<{ id: string }>(users.teacherB, "select id from public.service_requests");
+    expect(foreignRows).toEqual([]);
+    await runAsUser(users.adminA, `select public.update_service_request('${requestId}', 'in_progress', 'Checking', '${users.adminA}')`);
+    const events = await asUser<{ event_kind: string }>(users.studentA, `select event_kind from public.service_request_events where request_id = '${requestId}' order by id`);
+    expect(events).toEqual([{ event_kind: "created" }, { event_kind: "status_changed" }]);
+    const notifications = await asUser<{ category: string }>(users.studentA, "select category from public.user_notifications where category = 'request'");
+    expect(notifications).toEqual([{ category: "request" }]);
+    const audit = await asUser<{ action: string }>(users.adminA, `select action from public.audit_logs where entity_id = '${requestId}' order by id`);
+    expect(audit).toEqual([{ action: "service_request.created" }, { action: "service_request.status_changed" }]);
   });
 });

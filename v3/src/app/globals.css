@@ -6,6 +6,7 @@
 @import "../styles/learning.css";
 @import "../styles/teacher.css";
 @import "../styles/admin-command.css";
+@import "../styles/communication.css";
 
 :root {
   color-scheme: light;

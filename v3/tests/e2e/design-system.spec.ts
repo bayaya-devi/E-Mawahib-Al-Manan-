@@ -2,10 +2,10 @@ import { expect, test } from "@playwright/test";
 
 const shells = [
   ["/ar", "دار الحديث والقرآن"],
-  ["/student", "ابدأ من حيث توقفت"],
-  ["/family", "كل ما يهم الأسرة في مكان واحد"],
-  ["/teacher", "ركّز على الطالب والتسميع"],
-  ["/admin", "قرار واضح من بيانات موثوقة"],
+  ["/student", "تابع حفظك بهدوء وثبات"],
+  ["/family", "متابعة الأبناء"],
+  ["/teacher", "يومك الدراسي، خطوة بخطوة"],
+  ["/admin", "مركز قيادة المؤسسة"],
 ] as const;
 
 for (const [path, heading] of shells) {

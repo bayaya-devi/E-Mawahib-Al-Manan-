@@ -1,9 +1,7 @@
 "use client";
 
 import {
-  Bell,
   BookOpenText,
-  CalendarDays,
   ChartNoAxesCombined,
   CircleUserRound,
   ClipboardCheck,
@@ -25,7 +23,9 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
-import { Avatar, CommandPalette, IconButton, ToastProvider } from "@/components/ui";
+import { Avatar, CommandPalette, ToastProvider } from "@/components/ui";
+import { NotificationCenter } from "@/features/notifications";
+import { OfflineProvider } from "@/features/offline";
 import type { CommandItem } from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
 
@@ -37,14 +37,14 @@ const navigation: Record<ShellKind, NavItem[]> = {
     { label: "الرئيسية", href: "/student", icon: Home },
     { label: "مسار الحفظ", href: "/student/quran", icon: BookOpenText },
     { label: "الواجبات", href: "/student/assignments", icon: ClipboardCheck },
-    { label: "السجل", href: "/student/history", icon: CalendarDays },
+    { label: "الرسائل", href: "/student/messages", icon: MessageSquareText },
     { label: "الإعدادات", href: "/student/settings", icon: Settings },
   ],
   family: [
     { label: "الرئيسية", href: "/family", icon: Home },
     { label: "المتابعة", href: "/family#follow-up", icon: ChartNoAxesCombined },
     { label: "الواجبات", href: "/family#assignments", icon: ClipboardCheck },
-    { label: "الرسائل", href: "/family#messages", icon: MessageSquareText },
+    { label: "الرسائل", href: "/family/messages", icon: MessageSquareText },
     { label: "الإعدادات", href: "/family#settings", icon: Settings },
   ],
   teacher: [
@@ -94,7 +94,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   }, []);
 
   return (
-    <ToastProvider>
+    <ToastProvider><OfflineProvider>
       <div className={cn("app-shell", `app-shell--${kind}`)}>
         <aside className="app-rail" aria-label="التنقل الرئيسي">
           <Link className="brand-mark" href="/" aria-label="مواهب المنان">
@@ -121,7 +121,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
                 <Search aria-hidden="true" size={18} />
                 <span>بحث</span><kbd>Ctrl K</kbd>
               </button>
-              <IconButton label="الإشعارات"><Bell aria-hidden="true" size={20} /></IconButton>
+              <NotificationCenter />
               <a className="mobile-profile" href={`/${kind}#profile`} aria-label="الملف الشخصي">
                 <CircleUserRound aria-hidden="true" size={24} />
               </a>
@@ -135,7 +135,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
         </nav>
         <CommandPalette items={commands} open={commandOpen} onOpenChange={setCommandOpen} />
       </div>
-    </ToastProvider>
+    </OfflineProvider></ToastProvider>
   );
 }
 

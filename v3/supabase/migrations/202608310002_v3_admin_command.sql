@@ -136,6 +136,7 @@ create function public.admin_resolve_task(target_task_id uuid, target_status pub
 returns void language plpgsql security definer set search_path = public, pg_temp as $$
 declare task public.admin_tasks%rowtype;
 begin
+  perform public.require_administration_aal2();
   select * into task from public.admin_tasks where id = target_task_id;
   if task.id is null or not public.can_manage_school(task.school_id) then raise exception 'task_not_accessible'; end if;
   if target_status not in ('in_progress','done','dismissed') then raise exception 'invalid_task_status'; end if;
@@ -151,6 +152,7 @@ create function public.admin_create_incident(target_student_id uuid, target_teac
 returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
 declare school uuid; created uuid;
 begin
+  perform public.require_administration_aal2();
   select school_id into school from public.school_memberships where user_id = coalesce(target_student_id, target_teacher_id) and status = 'active' limit 1;
   if school is null or not public.can_manage_school(school) then raise exception 'incident_scope_denied'; end if;
   insert into public.school_incidents(school_id, student_id, teacher_id, category, severity, summary, created_by)
@@ -165,6 +167,7 @@ create function public.admin_create_command_record(target_kind text, payload jso
 returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
 declare school uuid; created uuid; actor uuid := (select auth.uid());
 begin
+  perform public.require_administration_aal2();
   select school_id into school from public.school_memberships where user_id = actor and status = 'active' limit 1;
   if school is null or not public.can_manage_school(school) then raise exception 'command_scope_denied'; end if;
   if target_kind = 'academic_year' then

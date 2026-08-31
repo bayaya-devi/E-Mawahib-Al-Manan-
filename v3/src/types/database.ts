@@ -19,6 +19,11 @@ export type DatabaseRecitationAppreciation = "excellent" | "very_good" | "good" 
 export type DatabaseWorkflowStatus = "draft" | "submitted" | "seen" | "in_review" | "approved" | "rejected" | "resolved" | "cancelled";
 export type DatabaseTeacherRequestKind = "absence" | "leave" | "salary_problem" | "equipment" | "schedule" | "general";
 export type DatabaseAdminTaskStatus = "open" | "in_progress" | "done" | "dismissed";
+export type DatabaseConversationKind = "direct" | "group" | "support";
+export type DatabaseServiceRequestKind = "leave" | "absence" | "equipment" | "incident" | "salary_problem" | "administrative_question" | "complaint" | "class_change" | "technical_problem" | "other";
+export type DatabaseServiceRequestStatus = "submitted" | "acknowledged" | "in_progress" | "waiting_user" | "resolved" | "rejected" | "cancelled";
+export type DatabaseRequestPriority = "low" | "normal" | "high" | "urgent";
+export type DatabaseNotificationCategory = "message" | "request" | "assignment" | "learning" | "attendance" | "session" | "administration" | "system";
 
 type ProfileRow = {
   id: string;
@@ -202,7 +207,7 @@ type ValidatedLearningContentRow = { id: string; school_id: string | null; kind:
 type RecitationAttemptRow = { id: string; student_id: string; surah_number: number; verse_from: number; verse_to: number; status: "recording" | "processing" | "completed" | "inconclusive" | "failed"; transcript: string | null; transcript_confidence: number | null; audio_storage_path: string | null; asr_engine: string | null; started_at: string; completed_at: string | null };
 type RecitationResultRow = { attempt_id: string; memorization_score: number | null; matched_words: number; expected_words: number; is_conclusive: boolean; recommendation: string | null; acoustic_tajwid_status: "not_evaluated"; analysed_at: string };
 type RecitationErrorRow = { id: number; attempt_id: string; verse_number: number | null; kind: string; expected_text: string | null; observed_text: string | null; word_position: number | null; confidence: number | null };
-type UserNotificationRow = { id: string; user_id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string };
+type UserNotificationRow = { id: string; user_id: string; title: string; body: string; href: string | null; read_at: string | null; created_at: string; category: DatabaseNotificationCategory; entity_type: string | null; entity_id: string | null; dedup_key: string | null };
 type AuthorizedDocumentRow = { id: string; student_id: string; title: string; storage_path: string; visible_to_family: boolean; uploaded_by: string; created_at: string };
 type TeacherSessionRunRow = { id: string; course_session_id: string; class_id: string; teacher_id: string; status: DatabaseTeacherSessionStatus; started_at: string; ended_at: string | null; created_at: string };
 type TeacherSessionStudentRow = { run_id: string; student_id: string; attendance: DatabaseAttendanceStatus; minutes_late: number; processed_at: string | null; behavior: "excellent" | "good" | "mixed" | "difficult" | null; difficulty_flags: Json; teacher_note: string | null; updated_at: string };
@@ -222,6 +227,14 @@ type FinanceTransactionRow = { id: string; school_id: string; direction: "income
 type SchoolDocumentRow = { id: string; school_id: string; title: string; category: string; storage_path: string; related_user_id: string | null; visible_to_related_user: boolean; uploaded_by: string; created_at: string };
 type AdminPermissionGrantRow = { user_id: string; permission: "people" | "academics" | "attendance" | "hr" | "finance" | "inventory" | "content" | "accounts" | "audit"; school_id: string; granted_by: string; granted_at: string };
 type AdminTaskRow = { id: string; school_id: string; kind: string; priority: number; title: string; reason: string; href: string | null; entity_type: string | null; entity_id: string | null; status: DatabaseAdminTaskStatus; assigned_to: string | null; due_at: string | null; resolved_by: string | null; resolved_at: string | null; created_at: string; updated_at: string };
+type ConversationRow = { id: string; school_id: string; kind: DatabaseConversationKind; subject: string; created_by: string; last_message_at: string | null; created_at: string };
+type ConversationMemberRow = { conversation_id: string; user_id: string; joined_at: string; last_read_at: string | null; archived_at: string | null };
+type ConversationMessageRow = { id: number; conversation_id: string; sender_id: string; body: string; client_id: string; edited_at: string | null; created_at: string };
+type MessageAttachmentRow = { id: string; message_id: number; storage_path: string; file_name: string; mime_type: string; size_bytes: number; checksum: string; created_at: string };
+type ServiceRequestRow = { id: string; reference: string; school_id: string; requester_id: string; client_id: string | null; kind: DatabaseServiceRequestKind; status: DatabaseServiceRequestStatus; priority: DatabaseRequestPriority; title: string; details: string | null; assigned_to: string | null; due_at: string | null; resolved_at: string | null; created_at: string; updated_at: string };
+type ServiceRequestEventRow = { id: number; request_id: string; actor_id: string; event_kind: string; from_status: DatabaseServiceRequestStatus | null; to_status: DatabaseServiceRequestStatus | null; note: string | null; created_at: string };
+type NotificationPreferenceRow = { user_id: string; category: DatabaseNotificationCategory; in_app: boolean; browser: boolean; realtime: boolean; updated_at: string };
+type PushSubscriptionRow = { id: string; user_id: string; endpoint: string; p256dh: string; auth_secret: string; user_agent: string | null; last_used_at: string; created_at: string };
 
 type ReadonlyTable<Row> = {
   Row: Row;
@@ -307,6 +320,14 @@ export type Database = {
       school_documents: ReadonlyTable<SchoolDocumentRow>;
       admin_permission_grants: ReadonlyTable<AdminPermissionGrantRow>;
       admin_tasks: ReadonlyTable<AdminTaskRow>;
+      conversations: ReadonlyTable<ConversationRow>;
+      conversation_members: ReadonlyTable<ConversationMemberRow>;
+      conversation_messages: ReadonlyTable<ConversationMessageRow>;
+      message_attachments: ReadonlyTable<MessageAttachmentRow>;
+      service_requests: ReadonlyTable<ServiceRequestRow>;
+      service_request_events: ReadonlyTable<ServiceRequestEventRow>;
+      notification_preferences: ReadonlyTable<NotificationPreferenceRow>;
+      push_subscriptions: ReadonlyTable<PushSubscriptionRow>;
     };
     Views: Record<string, never>;
     Functions: {
@@ -420,6 +441,20 @@ export type Database = {
       admin_resolve_task: { Args: { target_task_id: string; target_status: DatabaseAdminTaskStatus }; Returns: undefined };
       admin_create_incident: { Args: { target_student_id: string | null; target_teacher_id: string | null; target_category: string; target_severity: number; target_summary: string }; Returns: string };
       admin_create_command_record: { Args: { target_kind: string; payload: Json }; Returns: string };
+      can_message_user: { Args: { target_user_id: string }; Returns: boolean };
+      require_administration_aal2: { Args: Record<never, never>; Returns: undefined };
+      is_conversation_member: { Args: { target_conversation_id: string }; Returns: boolean };
+      create_direct_conversation: { Args: { target_user_id: string; target_subject: string }; Returns: string };
+      send_conversation_message: { Args: { target_conversation_id: string; target_body: string; target_client_id: string }; Returns: number };
+      mark_conversation_read: { Args: { target_conversation_id: string }; Returns: undefined };
+      register_message_attachment: { Args: { target_message_id: number; target_storage_path: string; target_file_name: string; target_mime_type: string; target_size_bytes: number; target_checksum: string }; Returns: string };
+      archive_conversation: { Args: { target_conversation_id: string; target_archived?: boolean }; Returns: undefined };
+      create_service_request: { Args: { target_kind: DatabaseServiceRequestKind; target_title: string; target_details?: string | null; target_priority?: DatabaseRequestPriority; target_client_id?: string | null }; Returns: string };
+      update_service_request: { Args: { target_request_id: string; target_status: DatabaseServiceRequestStatus; target_note?: string | null; target_assigned_to?: string | null }; Returns: undefined };
+      mark_notification_read: { Args: { target_notification_id: string }; Returns: undefined };
+      set_notification_preference: { Args: { target_category: DatabaseNotificationCategory; target_in_app: boolean; target_browser: boolean; target_realtime: boolean }; Returns: undefined };
+      auth_rate_limit_allowed: { Args: { target_keys: string[] }; Returns: boolean };
+      record_auth_rate_limit: { Args: { target_keys: string[]; target_success: boolean }; Returns: undefined };
       set_account_status: {
         Args: {
           target_user_id: string;
@@ -456,6 +491,11 @@ export type Database = {
       recitation_appreciation: DatabaseRecitationAppreciation;
       workflow_status: DatabaseWorkflowStatus;
       teacher_request_kind: DatabaseTeacherRequestKind;
+      conversation_kind: DatabaseConversationKind;
+      service_request_kind: DatabaseServiceRequestKind;
+      service_request_status: DatabaseServiceRequestStatus;
+      request_priority: DatabaseRequestPriority;
+      notification_category: DatabaseNotificationCategory;
     };
     CompositeTypes: Record<string, never>;
   };

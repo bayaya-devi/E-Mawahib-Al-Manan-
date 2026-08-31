@@ -26,7 +26,20 @@ export async function refreshSession(request: NextRequest) {
   );
 
   // getUser validates the session with Supabase Auth; do not replace with getSession.
-  await supabase.auth.getUser();
+  const { data: auth } = await supabase.auth.getUser();
+  const path = request.nextUrl.pathname;
+  if (auth.user && (path.startsWith("/admin") || path.startsWith("/api/admin")) && !path.startsWith("/auth/mfa")) {
+    const roles = await supabase.from("user_roles").select("role").eq("user_id", auth.user.id);
+    const privileged = (roles.data ?? []).some(({ role }) => role === "admin" || role === "direction");
+    if (privileged) {
+      const assurance = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (assurance.data?.currentLevel !== "aal2") {
+        if (path.startsWith("/api/")) return NextResponse.json({ ok: false, code: "MFA_REQUIRED" }, { status: 403 });
+        const target = request.nextUrl.clone(); target.pathname = "/auth/mfa"; target.search = `?next=${encodeURIComponent(path + request.nextUrl.search)}`;
+        return NextResponse.redirect(target);
+      }
+    }
+  }
 
   return response;
 }

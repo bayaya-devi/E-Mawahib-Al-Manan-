@@ -16,6 +16,7 @@
     "test:e2e": "playwright test",
     "migration:v1:prepare": "node scripts/migration/prepare-v1-accounts.mjs",
     "migration:v1:learning": "node scripts/migration/prepare-v1-learning.mjs",
+    "migration:v1:complete": "node scripts/migration/prepare-v1-complete.mjs",
     "bootstrap:direction": "node scripts/bootstrap-direction.mjs",
     "quran:extract-v1": "node scripts/quran/extract-v1-quran.mjs",
     "check": "npm run lint && npm run typecheck && npm run test:run && npm run build"

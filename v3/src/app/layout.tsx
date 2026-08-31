@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     template: "%s | مواهب المنان",
   },
   description: "منصة مواهب المنان للتعلّم والمتابعة والإدارة",
+  manifest: "/manifest.webmanifest",
 };
 
 type RootLayoutProps = Readonly<{ children: ReactNode }>;

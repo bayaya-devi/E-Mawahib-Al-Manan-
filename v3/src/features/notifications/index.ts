@@ -1,1 +1,1 @@
-export const notificationsDomain = "notifications" as const;
+export { NotificationCenter } from "./notification-center";

@@ -115,13 +115,14 @@ installed stable Chrome channel and run separately with `npm run test:e2e`.
 - Student and family pages are server-rendered from RLS-filtered Supabase reads.
 - Sensitive progress, assignment, and recitation writes use narrow database RPCs.
 
-## 10. Decisions deferred on purpose
+## 10. Transverse systems
 
-- No production Supabase project is linked to V3.
-- V1 learning data has a reviewed preparation/import path but no production batch
-  has been executed.
-- Offline conflict rules will be designed per command, not guessed globally.
-- PWA caching starts only after authentication and data-sensitivity rules exist.
-- Observability vendor selection remains open; structured audit events are ready.
+- `features/messaging` owns scoped conversations and the separate service-request workflow.
+- `features/notifications` unifies database notifications, Realtime updates, preferences,
+  and active-browser PWA notifications.
+- `features/offline` owns the IndexedDB command queue, idempotent replay, visible pending
+  state, retry, conflict retention, Quran cache, and bounded audio cache.
+- Private message files pass through trusted server routes and Supabase Storage.
+- Admin/direction routes require Supabase MFA assurance level 2.
 
-These are migration tasks, not omissions hidden behind the current slice.
+Production remains deferred until the staging gates in `V3_RELEASE_CHECKLIST.md` pass.

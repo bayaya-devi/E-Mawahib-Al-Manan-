@@ -46,8 +46,10 @@ audit event. This is intentional deny-by-default behavior.
 - Parse route, form, webhook, and migration inputs with explicit schemas.
 - React escaping remains enabled; raw HTML requires sanitization and review.
 - Database queries use Supabase/PostgREST parameters, never SQL concatenation.
-- Future uploads require type and size allowlists, generated object names, private
-  buckets, malware strategy, signed URLs, and authorization on every download.
+- Message uploads use a MIME allowlist, a 10 MB limit, generated object names,
+  SHA-256 checksums, a private bucket, relationship checks, and 60-second signed
+  download URLs. A malware scanning service remains a production infrastructure
+  option for higher-risk document categories.
 
 ## 6. Secrets and environments
 
@@ -104,7 +106,9 @@ The learning schema enforces these boundaries through `can_access_student`:
 
 ## 11. Known gaps
 
-No production Supabase project is linked, MFA/rate limiting are not configured,
-and no real user data has been migrated. The browser ASR depends on browser and
-operating-system speech support; unsupported devices receive an explicit state,
-not a fabricated score. These remain blockers for a production cutover.
+MFA TOTP is enforced for admin/direction routes and login, message, and public
+interaction limits exist in the database. Production still requires a staging
+rehearsal, verified MFA recovery, real Storage/Realtime smoke tests, and a full V1
+migration reconciliation. Closed-app Web Push requires a VAPID delivery worker;
+the current browser notification path is Realtime-driven while the application is
+active. Browser ASR still depends on device support and never fabricates a score.

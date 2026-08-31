@@ -350,6 +350,7 @@ create function public.admin_review_teacher_request(
 returns void language plpgsql security definer set search_path = public, pg_temp as $$
 declare request public.teacher_requests%rowtype;
 begin
+  perform public.require_administration_aal2();
   select * into request from public.teacher_requests where id = target_request_id;
   if request.id is null or not public.can_manage_school(request.school_id) then raise exception 'request_not_accessible'; end if;
   if target_status not in ('seen', 'in_review', 'approved', 'rejected', 'resolved') then raise exception 'invalid_review_status'; end if;
