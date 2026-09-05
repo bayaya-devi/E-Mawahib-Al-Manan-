@@ -2,7 +2,6 @@
 
 import {
   BookOpenText,
-  Activity,
   ChartNoAxesCombined,
   CircleUserRound,
   ClipboardCheck,
@@ -15,11 +14,12 @@ import {
   Search,
   Gamepad2,
   Settings,
-  ShieldCheck,
   Newspaper,
-  Users,
+  UserCog,
+  HeartHandshake,
+  Landmark,
+  RadioTower,
   UsersRound,
-  WalletCards,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
@@ -65,14 +65,15 @@ const navigation: Record<ShellKind, NavItem[]> = {
     { label: "الإعدادات", href: "/teacher/settings", icon: Settings },
   ],
   admin: [
-    { label: "القيادة", href: "/admin", icon: LayoutDashboard },
-    { label: "الأشخاص", href: "/admin/people", icon: Users },
-    { label: "الدراسة", href: "/admin/operations", icon: GraduationCap },
-    { label: "الفريق", href: "/admin/workforce", icon: ClipboardCheck },
-    { label: "الموارد", href: "/admin/resources", icon: WalletCards },
-    { label: "التواصل", href: "/admin/communications", icon: Newspaper },
-    { label: "الرقابة", href: "/admin/governance", icon: ShieldCheck },
-    { label: "سلامة النظام", href: "/admin/system", icon: Activity },
+    { label: "الرئيسية", href: "/admin", icon: LayoutDashboard },
+    { label: "الأساتذة", href: "/admin/teachers", icon: UserCog },
+    { label: "الطلاب", href: "/admin/students", icon: GraduationCap },
+    { label: "الوالدان", href: "/admin/parents", icon: HeartHandshake },
+    { label: "المالية", href: "/admin/finance", icon: Landmark },
+    { label: "التواصل", href: "/admin/communications", icon: MessageSquareText },
+    { label: "المتابعة", href: "/admin/monitoring", icon: RadioTower },
+    { label: "إدارة الموقع", href: "/admin/site", icon: Newspaper },
+    { label: "الإعدادات", href: "/admin/settings", icon: Settings },
   ],
 };
 
@@ -80,7 +81,7 @@ const shellLabels: Record<ShellKind, { section: string; title: string }> = {
   student: { section: "", title: "" },
   family: { section: "مساحة الأسرة", title: "متابعة الأبناء" },
   teacher: { section: "مساحة المعلّم", title: "إدارة التعلّم" },
-  admin: { section: "مساحة الإدارة", title: "إدارة المؤسسة" },
+  admin: { section: "", title: "إدارة المؤسسة" },
 };
 
 export function AppShell({ kind, children }: { kind: ShellKind; children: ReactNode }) {
@@ -100,6 +101,9 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 
   useEffect(() => {
     applyAppearance();
+    const mobileNavigationTimer = window.setTimeout(() => {
+      if (window.matchMedia("(max-width: 720px)").matches) setNavigationOpen(false);
+    }, 0);
     void rememberAuthenticatedAccount();
     const listener = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
@@ -109,7 +113,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
     };
     window.addEventListener("keydown", listener);
     const stopAppearanceWatch = watchSystemAppearance();
-    return () => { window.removeEventListener("keydown", listener); stopAppearanceWatch(); };
+    return () => { window.clearTimeout(mobileNavigationTimer); window.removeEventListener("keydown", listener); stopAppearanceWatch(); };
   }, []);
 
   useEffect(() => {
@@ -137,6 +141,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
             <span aria-hidden="true">م</span>
             <strong>مواهب المنان</strong>
           </Link>
+          <button className="app-rail__collapse" type="button" aria-label={navigationOpen ? "طي قائمة التنقل" : "فتح قائمة التنقل"} aria-expanded={navigationOpen} onClick={() => setNavigationOpen((open) => !open)}><Menu aria-hidden="true" size={19} /></button>
           <nav className="app-rail__nav" aria-label="التنقل الرئيسي">
             {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
           </nav>
@@ -150,10 +155,10 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
           <header className="app-header">
             {kind === "teacher" ? <div className="teacher-shell-identity"><strong>أستاذ(ة) {teacherName}</strong></div> : kind === "student" ? <div className="student-shell-identity"><strong>{studentName || "حساب الطالب"}</strong></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
             <div className="app-header__actions">
-              <button className="navigation-toggle" type="button" aria-label={navigationOpen ? "إخفاء قائمة التنقل" : "إظهار قائمة التنقل"} aria-expanded={navigationOpen} aria-controls="application-navigation mobile-navigation" onClick={() => setNavigationOpen((open) => !open)}>
+              <button className="navigation-toggle navigation-toggle--mobile" type="button" aria-label={navigationOpen ? "إخفاء قائمة التنقل" : "إظهار قائمة التنقل"} aria-expanded={navigationOpen} aria-controls="application-navigation mobile-navigation" onClick={() => setNavigationOpen((open) => !open)}>
                 <Menu aria-hidden="true" size={20} />
               </button>
-              {kind !== "teacher" && kind !== "student" ? <button className="global-search-trigger" type="button" aria-label="فتح البحث العام" onClick={() => setCommandOpen(true)}>
+              {kind === "family" ? <button className="global-search-trigger" type="button" aria-label="فتح البحث العام" onClick={() => setCommandOpen(true)}>
                 <Search aria-hidden="true" size={18} />
                 <span>بحث</span><kbd>Ctrl K</kbd>
               </button> : <button className="teacher-signout" type="button" aria-label="تسجيل الخروج" disabled={signingOut} onClick={() => void signOut()}><LogOut aria-hidden="true" size={18} /><span>{signingOut ? "جار الخروج" : "تسجيل الخروج"}</span></button>}
@@ -169,7 +174,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
         <nav className="mobile-nav" id="mobile-navigation" aria-label="التنقل الرئيسي للهاتف">
           {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
         </nav>
-        {kind !== "teacher" && kind !== "student" ? <CommandPalette items={commands} open={commandOpen} onOpenChange={setCommandOpen} /> : null}
+        {kind === "family" ? <CommandPalette items={commands} open={commandOpen} onOpenChange={setCommandOpen} /> : null}
       </div>
     </OfflineProvider></ToastProvider>
   );

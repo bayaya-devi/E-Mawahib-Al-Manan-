@@ -147,6 +147,8 @@
 .brand-mark > span { width: 40px; height: 40px; display: grid; place-items: center; border-radius: var(--radius-md); color: white; background: var(--brand); font-size: 1.1rem; font-weight: 830; box-shadow: inset 0 -3px 0 rgb(0 0 0 / 14%); }
 .brand-mark strong { color: var(--brand-strong); font-size: 0.88rem; font-weight: 800; }
 .app-rail__nav { display: grid; gap: 3px; }
+.app-rail__collapse { position: absolute; inset-block-start: 22px; inset-inline-end: 10px; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--ink-soft); background: var(--surface); cursor: pointer; }
+.app-shell.is-navigation-collapsed .app-rail__collapse { position: static; order: -1; }
 .app-nav-link { min-height: 48px; display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--ink-soft); font-family: var(--font-display); font-size: 0.8rem; font-weight: 650; transition: color var(--motion-fast), background var(--motion-fast), translate var(--motion-fast); }
 .app-nav-link:hover { color: var(--brand); background: var(--brand-soft); translate: -2px 0; }
 .app-nav-link.is-active { color: white; background: var(--brand); }
@@ -196,6 +198,7 @@
 @media (max-width: 720px) {
   body { font-size: 16px; }
   .app-rail { display: none; }
+  .app-rail__collapse { display: none; }
   .app-frame { margin: 0; }
   .app-header { height: 64px; padding-inline: 16px; }
   .global-search-trigger { min-width: 44px; width: 44px; height: 44px; justify-content: center; padding: 0; }
@@ -219,6 +222,7 @@
   .public-menu { display: inline-flex; }
   .public-header .brand-mark > span { width: 36px; height: 36px; }
 }
+@media (min-width: 721px) { .navigation-toggle--mobile { display: none; } }
 @media (prefers-reduced-motion: reduce) { .app-rail, .app-frame, .mobile-nav { transition: none; } }
 
 @media (max-width: 380px) {

@@ -1,0 +1,1 @@
+import {AppShell} from "@/components/shell";import {AdminParentsWorkspace} from "@/features/admin/administration-workspaces";import {getAdminCommandData} from "@/features/admin/repository";export const dynamic="force-dynamic";export default async function Page(){return <AppShell kind="admin"><AdminParentsWorkspace data={await getAdminCommandData()}/></AppShell>}

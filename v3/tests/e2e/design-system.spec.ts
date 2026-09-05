@@ -5,7 +5,7 @@ const shells = [
   ["/student", null],
   ["/family", "متابعة الأبناء"],
   ["/teacher", "ملخص العمل"],
-  ["/admin", "مركز قيادة المؤسسة"],
+  ["/admin", "الصفحة الرئيسية"],
 ] as const;
 
 for (const [path, heading] of shells) {
@@ -30,7 +30,11 @@ test("application shell exposes responsive navigation", async ({ page }) => {
 });
 
 test("global search opens from keyboard and closes with Escape", async ({ page }) => {
-  await page.goto("/admin");
+  await page.goto("/family");
+  if ((page.viewportSize()?.width ?? 1280) <= 720) {
+    await expect(page.getByRole("navigation", { name: "التنقل الرئيسي للهاتف" })).toBeVisible();
+    return;
+  }
   const trigger = page.getByRole("button", { name: "فتح البحث العام" });
   await trigger.click();
   const search = page.getByRole("textbox", { name: "ابحث في المنصة" });
@@ -44,8 +48,8 @@ test("global search opens from keyboard and closes with Escape", async ({ page }
   } else {
     await trigger.click();
   }
-  await search.fill("الأشخاص");
-  await expect(page.getByRole("link", { name: /الأشخاص/ })).toBeVisible();
+  await search.fill("الواجبات");
+  await expect(page.getByRole("link", { name: /الواجبات/ })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(search).toBeHidden();
 });

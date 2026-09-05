@@ -290,6 +290,7 @@ describe("V3 migrations and RLS", () => {
       "academic_years",
       "admin_permission_grants",
       "admin_profiles",
+      "admin_school_settings",
       "admin_tasks",
       "app_schema_versions",
       "assignment_submissions",
@@ -363,6 +364,7 @@ describe("V3 migrations and RLS", () => {
       "staff_profiles",
       "student_digital_files",
       "student_learning_sessions",
+      "student_payments",
       "student_profiles",
       "student_surah_progress",
       "student_verse_progress",
@@ -420,6 +422,7 @@ describe("V3 migrations and RLS", () => {
       "academic_years_admin_read",
       "admin_permission_grants_read",
       "admin_profiles_select_self_or_direction",
+      "admin_school_settings_admin_read",
       "admin_tasks_admin_read",
       "announcements_read_scoped",
       "assignment_submissions_read_scoped",
@@ -498,6 +501,7 @@ describe("V3 migrations and RLS", () => {
       "student_digital_files_admin_read",
       "student_digital_files_student_read",
       "student_learning_sessions_own_read",
+      "student_payments_admin_read",
       "student_profiles_select_scoped",
       "surah_progress_read_scoped",
       "teacher_documents_read",
@@ -1112,5 +1116,28 @@ describe("V3 migrations and RLS", () => {
     const campaign = await asUser<{ id: string }>(users.direction, `select public.create_notification_campaign('${schools.first}', 'Direction notice', 'Important information', '', '{"type":"users","user_ids":["${users.studentA}"]}'::jsonb, '{in_app}'::public.notification_channel[], 'urgent') as id`);
     const recipients = await database.query<{ user_id: string }>(`select nr.user_id from public.notification_recipients nr join public.notification_events ne on ne.id = nr.event_id where ne.entity_id = '${campaign[0]?.id}'`);
     expect(recipients.rows).toEqual([{ user_id: users.studentA }]);
+  });
+
+  it("records student payments and teacher salaries once in the shared ledger", async () => {
+    await database.exec(`insert into public.student_digital_files(student_id,school_id,monthly_fee,updated_by) values('${users.studentA}','${schools.first}',80,'${users.adminA}')`);
+    await runAsUser(users.adminA, `select public.admin_record_student_payment('${users.studentA}','2026-09-01',80,'2026-09-05','September')`);
+    await runAsUser(users.adminA, `select public.admin_record_student_payment('${users.studentA}','2026-09-01',75,'2026-09-06','Corrected')`);
+    const studentLedger = await database.query<{ count: number; amount: number }>(`select count(*)::integer count,max(amount)::integer amount from public.finance_transactions where source_type='student_payment' and student_id='${users.studentA}'`);
+    expect(studentLedger.rows).toEqual([{ count: 1, amount: 75 }]);
+    const ownPayment = await asUser<{ status: string; received_amount: number }>(users.studentA,"select status,received_amount::integer received_amount from public.student_payments");
+    expect(ownPayment).toEqual([{ status: "partial", received_amount: 75 }]);
+    await runAsUser(users.adminA, `select public.admin_record_teacher_salary('${users.teacherA}','2026-09-01',1800,'2026-09-05','September')`);
+    await runAsUser(users.adminA, `select public.admin_record_teacher_salary('${users.teacherA}','2026-09-01',1750,'2026-09-06','Corrected')`);
+    const salaryLedger = await database.query<{ count: number; amount: number }>(`select count(*)::integer count,max(amount)::integer amount from public.finance_transactions where source_type='teacher_salary' and teacher_id='${users.teacherA}'`);
+    expect(salaryLedger.rows).toEqual([{ count: 1, amount: 1750 }]);
+  });
+
+  it("accepts a zero fee as an exemption without creating fake revenue", async () => {
+    await database.exec(`update public.student_digital_files set monthly_fee=0,payment_required=false where student_id='${users.studentA}'`);
+    await runAsUser(users.adminA, `select public.admin_record_student_payment('${users.studentA}','2026-10-01',0,'2026-10-01','Exempt')`);
+    const payment = await database.query<{ status: string }>(`select status from public.student_payments where student_id='${users.studentA}' and period_month='2026-10-01'`);
+    expect(payment.rows).toEqual([{ status: "exempt" }]);
+    const ledger = await database.query<{ count: number }>(`select count(*)::integer count from public.finance_transactions where student_id='${users.studentA}' and occurred_on='2026-10-01'`);
+    expect(ledger.rows).toEqual([{ count: 0 }]);
   });
 });

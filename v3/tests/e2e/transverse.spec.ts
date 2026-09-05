@@ -48,7 +48,7 @@ test("communication settings are reachable and mobile safe", async ({ page }) =>
 
 test("administration exposes the audited notification composer", async ({ page }) => {
   await page.goto("/admin/communications");
-  await expect(page.getByRole("heading", { name: "الإشعارات والإرسالات" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "التواصل", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "معاينة المستلمين" })).toBeVisible();
 });
 
