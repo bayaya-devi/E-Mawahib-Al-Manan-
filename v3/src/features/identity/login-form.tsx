@@ -5,24 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type AccountKind = "student" | "teacher";
-
-function cleanPart(value: string) {
-  return value
-    .trim()
-    .toLocaleLowerCase("fr")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/gu, "")
-    .replace(/[\u064B-\u065F\u0670]/gu, "")
-    .replace(/[\u200B-\u200D\uFEFF]/gu, "")
-    .replace(/['’`´]/gu, "")
-    .replace(/[^a-z0-9\u0600-\u06FF]+/gu, "_")
-    .replace(/^_+|_+$/gu, "");
-}
+import { buildCanonicalLoginAlias, type LoginAccountKind } from "./domain/legacy-login";
 
 export function LoginForm() {
   const router = useRouter();
-  const [kind, setKind] = useState<AccountKind>("student");
+  const [kind, setKind] = useState<LoginAccountKind>("student");
   const [firstName, setFirstName] = useState("");
   const [secondValue, setSecondValue] = useState("");
   const [password, setPassword] = useState("");
@@ -33,9 +20,8 @@ export function LoginForm() {
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
-    const prefix = kind === "student" ? "s" : "t";
-    const login = `${prefix}_${cleanPart(firstName)}.${cleanPart(secondValue)}`;
-    if (login.length < 3 || !password) {
+    const login = buildCanonicalLoginAlias(kind, firstName, secondValue);
+    if (!firstName.trim() || !secondValue.trim() || !password.trim() || login.length < 3) {
       setMessage("يرجى ملء جميع الحقول.");
       return;
     }
@@ -45,7 +31,7 @@ export function LoginForm() {
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ login, password }),
+        body: JSON.stringify({ login, password, kind, firstName, secondValue }),
       });
       const result = (await response.json()) as { ok?: boolean; roles?: string[]; message?: string };
       if (!response.ok || !result.ok) {

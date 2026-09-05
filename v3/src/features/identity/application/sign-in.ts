@@ -8,8 +8,9 @@ import { createClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/types";
 
 import { AUTH_MESSAGES } from "../domain/auth-messages";
+import { buildLoginAliasCandidates } from "../domain/legacy-login";
 import { loginInputSchema } from "./schemas";
-import { deriveLegacyAuthPassword, verifyLegacyPassword } from "./legacy-password";
+import { deriveLegacyAuthPassword } from "./legacy-password";
 
 type SignInResult =
   | { ok: true; roles: AppRole[] }
@@ -31,34 +32,38 @@ export async function signInWithAlias(input: unknown): Promise<SignInResult> {
 
   const environment = getPrivilegedServerEnvironment();
   const adminClient = createAdminClient();
-  const { data: resolvedEmail, error: resolutionError } = await adminClient.rpc(
+  const aliases = buildLoginAliasCandidates(parsed.data);
+  const resolutions = await Promise.all(aliases.map((alias) => adminClient.rpc(
     "resolve_login_alias",
-    { target_login_alias: parsed.data.login },
-  );
+    { target_login_alias: alias },
+  )));
+  const resolvedIndex = resolutions.findIndex(({ data }) => Boolean(data));
+  const resolvedEmail = resolvedIndex >= 0 ? resolutions[resolvedIndex]?.data ?? null : null;
+  const resolvedAlias = resolvedIndex >= 0 ? aliases[resolvedIndex] ?? parsed.data.login : parsed.data.login;
 
-  if (resolutionError) {
+  if (resolutions.every(({ error }) => Boolean(error))) {
     return { ok: false, code: "UNAVAILABLE", message: AUTH_MESSAGES.unavailable };
   }
 
   const email =
     resolvedEmail ?? `unknown-${randomUUID()}@${environment.AUTH_INTERNAL_EMAIL_DOMAIN}`;
   const client = await createClient();
-  let { data, error } = await client.auth.signInWithPassword({
-    email,
-    password: parsed.data.password,
-  });
+  const passwords = [parsed.data.password];
+  const trimmedPassword = parsed.data.password.trim();
+  if (trimmedPassword && trimmedPassword !== parsed.data.password) passwords.push(trimmedPassword);
+  const migratedPassword = deriveLegacyAuthPassword(resolvedAlias, trimmedPassword);
+  if (migratedPassword) passwords.push(migratedPassword);
 
-  if (error && resolvedEmail && await verifyLegacyPassword(parsed.data.login, parsed.data.password)) {
-    const migratedPassword = deriveLegacyAuthPassword(parsed.data.login, parsed.data.password);
-    if (migratedPassword) {
-      ({ data, error } = await client.auth.signInWithPassword({
-        email,
-        password: migratedPassword,
-      }));
+  let authenticatedUserId: string | null = null;
+  for (const password of [...new Set(passwords)]) {
+    const attempt = await client.auth.signInWithPassword({ email, password });
+    if (!attempt.error && attempt.data.user) {
+      authenticatedUserId = attempt.data.user.id;
+      break;
     }
   }
 
-  if (error || !data.user || !resolvedEmail) {
+  if (!authenticatedUserId || !resolvedEmail) {
     return {
       ok: false,
       code: "INVALID_CREDENTIALS",
@@ -69,7 +74,7 @@ export async function signInWithAlias(input: unknown): Promise<SignInResult> {
   const { data: profile, error: profileError } = await client
     .from("profiles")
     .select("status")
-    .eq("id", data.user.id)
+    .eq("id", authenticatedUserId)
     .maybeSingle();
 
   if (profileError || !profile) {
@@ -94,7 +99,7 @@ export async function signInWithAlias(input: unknown): Promise<SignInResult> {
   const { data: roleRows, error: roleError } = await client
     .from("user_roles")
     .select("role")
-    .eq("user_id", data.user.id);
+    .eq("user_id", authenticatedUserId);
 
   if (roleError || roleRows.length === 0) {
     await client.auth.signOut();

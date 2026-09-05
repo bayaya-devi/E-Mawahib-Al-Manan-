@@ -8,6 +8,14 @@ import { isValidLoginAlias, normalizeLoginAlias } from "../domain/login-alias";
 export const loginInputSchema = z.object({
   login: z.string().transform(normalizeLoginAlias).refine(isValidLoginAlias),
   password: z.string().min(1).max(128),
+  kind: z.enum(["student", "teacher"]).optional(),
+  firstName: z.string().max(80).optional(),
+  secondValue: z.string().max(80).optional(),
+}).superRefine(({ kind, firstName, secondValue }, context) => {
+  const identityParts = [kind, firstName, secondValue];
+  if (identityParts.some((value) => value !== undefined) && identityParts.some((value) => value === undefined)) {
+    context.addIssue({ code: "custom", message: "incomplete_login_identity" });
+  }
 });
 
 export const provisionAccountInputSchema = z.object({
