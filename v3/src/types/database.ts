@@ -468,6 +468,8 @@ export type Database = {
       teacher_add_student_note: { Args: { target_student_id: string; target_content: string }; Returns: string };
       teacher_assign_quran_work: { Args: { target_student_ids: string[]; target_surah_number: number; target_verse_from: number; target_verse_to: number; target_due_at: string; target_note?: string | null }; Returns: number };
       teacher_cancel_session: { Args: { target_run_id: string }; Returns: undefined };
+      teacher_start_class_session: { Args: { target_class_id: string }; Returns: string };
+      teacher_can_access_conversation: { Args: { target_conversation_id: string }; Returns: boolean };
       admin_review_teacher_request: { Args: { target_request_id: string; target_status: DatabaseWorkflowStatus; target_response?: string | null }; Returns: undefined };
       admin_resolve_task: { Args: { target_task_id: string; target_status: DatabaseAdminTaskStatus }; Returns: undefined };
       admin_create_incident: { Args: { target_student_id: string | null; target_teacher_id: string | null; target_category: string; target_severity: number; target_summary: string }; Returns: string };

@@ -22,13 +22,24 @@ export function SessionWizard({ data }: { data: TeacherSessionData }) {
   const [worked, setWorked] = useState(() => new Set(data.attendance.filter(({ processed }) => processed).map(({ studentId }) => studentId)));
   const initialAttendance = Object.fromEntries(data.students.map((student) => { const stored = data.attendance.find((item) => item.studentId === student.id); return [student.id, { status: stored?.status ?? "absent", minutesLate: stored?.minutesLate ?? 0 }]; }));
   const [attendance, setAttendance] = useState<AttendanceState>(initialAttendance);
-  const activeClassId = data.openRun?.classId ?? data.nextCourse?.classId ?? data.classes[0]?.id;
+  const [selectedClassId, setSelectedClassId] = useState(data.openRun?.classId ?? data.nextCourse?.classId ?? data.classes[0]?.id ?? "");
+  const activeClassId = data.openRun?.classId ?? selectedClassId;
   const students = data.students.filter(({ classId }) => classId === activeClassId);
   const [studentIndex, setStudentIndex] = useState(0); const student = students[studentIndex];
 
   useEffect(() => { if (!startedAt) return; const timer = window.setInterval(() => setSeconds((value) => value + 1), 1000); return () => window.clearInterval(timer); }, [startedAt]);
 
-  async function start() { if (!data.nextCourse) return; setBusy(true); setError(null); const result = await createClient().rpc("teacher_start_session", { target_course_session_id: data.nextCourse.id }); setBusy(false); if (result.error || !result.data) return setError("تعذر بدء الحصة. تحقق من الحصة والاتصال."); setRunId(result.data); setStartedAt(new Date().toISOString()); setStep(1); }
+  async function start() {
+    if (!activeClassId || students.length === 0) return;
+    setBusy(true); setError(null);
+    const scheduled = data.nextCourse?.classId === activeClassId ? data.nextCourse : null;
+    const result = scheduled
+      ? await createClient().rpc("teacher_start_session", { target_course_session_id: scheduled.id })
+      : await createClient().rpc("teacher_start_class_session", { target_class_id: activeClassId });
+    setBusy(false);
+    if (result.error || !result.data) return setError("تعذر بدء الحصة. تحقق من الاتصال ثم حاول مجددًا.");
+    setRunId(result.data); setStartedAt(new Date().toISOString()); setStep(1);
+  }
   async function saveAttendance() { if (!runId) return; setBusy(true); setError(null); const rows = students.map(({ id }) => ({ student_id: id, status: attendance[id]?.status ?? "absent", minutes_late: attendance[id]?.minutesLate ?? 0 })); const result = await createClient().rpc("teacher_save_attendance", { target_run_id: runId, attendance_rows: rows }); setBusy(false); if (result.error) return setError("تعذر حفظ الحضور. لم يتم الانتقال."); setStep(2); setStudentIndex(0); }
   async function openReport() { if (!runId) return; setBusy(true); setError(null); const result = await createClient().rpc("teacher_open_session_report", { target_run_id: runId }); setBusy(false); if (result.error || !result.data) return setError("تعذر فتح تقرير الحصة."); setReportId(result.data); setStep(3); }
   async function cancelSession() { if (!runId || !window.confirm("هل أنت متأكد(ة) من إلغاء هذه الحصة؟")) return; if (!window.confirm("سيتم إلغاء الحصة الجارية. أكد(ي) مرة ثانية.")) return; setBusy(true); const result = await createClient().rpc("teacher_cancel_session", { target_run_id: runId }); setBusy(false); if (result.error) return setError("تعذر إلغاء الحصة."); router.replace("/teacher"); router.refresh(); }
@@ -38,14 +49,20 @@ export function SessionWizard({ data }: { data: TeacherSessionData }) {
     <header className="session-top"><div><span>{formatDate(new Date())}</span><strong>{data.nextCourse?.className ?? data.classes.find(({ id }) => id === activeClassId)?.name ?? "الحصة"}</strong></div>{startedAt ? <div className="session-timer"><Clock3 size={17} /><span>البداية {formatTime(startedAt)}</span><strong>{formatDuration(seconds)}</strong></div> : null}<div className="session-top__actions">{runId ? <Button size="sm" variant="quiet" disabled={busy} onClick={() => void cancelSession()}>إلغاء الحصة</Button> : null}<Button size="sm" variant="quiet" onClick={leave}>خروج</Button></div></header>
     <div className="session-progress" aria-label={`الخطوة ${step + 1} من 4`}>{[0, 1, 2, 3].map((item) => <span key={item} className={item <= step ? "is-active" : undefined} />)}</div>
     {error ? <p className="session-error" role="alert"><AlertTriangle size={18} />{error}</p> : null}
-    {step === 0 ? <StartStep data={data} busy={busy} onStart={() => void start()} /> : null}
+    {step === 0 ? <StartStep data={data} classId={activeClassId} onClassChange={setSelectedClassId} busy={busy} onStart={() => void start()} /> : null}
     {step === 1 ? <AttendanceStep students={students} attendance={attendance} setAttendance={setAttendance} busy={busy} onContinue={() => void saveAttendance()} /> : null}
     {step === 2 && student ? <StudentStep key={student.id} runId={runId!} student={student} attendanceStatus={attendance[student.id]?.status ?? "absent"} position={studentIndex + 1} total={students.length} defaultDueDate={data.defaultDueDate} busy={busy} setBusy={setBusy} onError={setError} onMarkedLate={() => setAttendance((state) => ({ ...state, [student.id]: { status: "late", minutesLate: Math.max(1, state[student.id]?.minutesLate ?? 1) } }))} onWorked={() => setWorked((current) => new Set(current).add(student.id))} onBack={() => setStudentIndex((value) => Math.max(0, value - 1))} onNext={() => setStudentIndex((value) => Math.min(students.length - 1, value + 1))} onFinish={() => void openReport()} /> : null}
     {step === 3 && reportId ? <ReportStep reportId={reportId} students={students} attendance={attendance} worked={worked} busy={busy} setBusy={setBusy} onError={setError} onSubmitted={() => { showToast({ title: "تم إرسال تقرير الحصة", tone: "success" }); router.push("/teacher/professional?tab=reports"); router.refresh(); }} /> : null}
   </div>;
 }
 
-function StartStep({ data, busy, onStart }: { data: TeacherSessionData; busy: boolean; onStart: () => void }) { return <section className="session-step session-start"><Badge tone="brand">الاستعداد</Badge><h1>هل أنت مستعد(ة) لبدء الحصة؟</h1><div className="session-brief"><div><span>الحصة</span><strong>{data.nextCourse?.title ?? "لا توجد حصة مجدولة"}</strong></div><div><span>القسم</span><strong>{data.nextCourse?.className ?? "—"}</strong></div><div><span>الطلاب</span><strong>{data.students.filter(({ classId }) => classId === data.nextCourse?.classId).length}</strong></div></div><Button disabled={!data.nextCourse} loading={busy} onClick={onStart}><Play size={18} />بدء الحصة</Button></section>; }
+function StartStep({ data, classId, onClassChange, busy, onStart }: { data: TeacherSessionData; classId: string; onClassChange: (value: string) => void; busy: boolean; onStart: () => void }) {
+  const selectedClass = data.classes.find(({ id }) => id === classId);
+  const studentCount = data.students.filter((student) => student.classId === classId).length;
+  const canStart = Boolean(data.teacher && selectedClass && studentCount > 0);
+  const scheduled = data.nextCourse?.classId === classId ? data.nextCourse : null;
+  return <section className="session-step session-start"><Badge tone="brand">الاستعداد</Badge><h1>هل أنت مستعد(ة) لبدء الحصة؟</h1>{data.classes.length > 1 ? <label className="session-class-picker">القسم<select aria-label="القسم" value={classId} onChange={(event) => onClassChange(event.target.value)}>{data.classes.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label> : null}<div className="session-brief"><div><span>الحصة</span><strong>{scheduled?.title ?? "حصة مباشرة"}</strong></div><div><span>القسم</span><strong>{selectedClass?.name ?? "—"}</strong></div><div><span>الطلاب</span><strong>{studentCount}</strong></div></div>{!data.teacher ? <p className="session-blocked" role="alert">تعذر التحقق من حساب الأستاذ(ة). أعد تسجيل الدخول.</p> : !selectedClass ? <p className="session-blocked" role="alert">لا يوجد قسم مسند إلى حسابك حاليا. تواصل(ي) مع الإدارة.</p> : studentCount === 0 ? <p className="session-blocked" role="alert">لا يوجد طلاب مسجلون في هذا القسم حاليا. تواصل(ي) مع الإدارة.</p> : null}<Button disabled={!canStart || busy} loading={busy} onClick={onStart}><Play size={18} />بدء الحصة</Button></section>;
+}
 
 function AttendanceStep({ students, attendance, setAttendance, busy, onContinue }: { students: TeacherSessionData["students"]; attendance: AttendanceState; setAttendance: Dispatch<SetStateAction<AttendanceState>>; busy: boolean; onContinue: () => void }) {
   const count = (status: DatabaseAttendanceStatus) => students.filter(({ id }) => attendance[id]?.status === status).length;
