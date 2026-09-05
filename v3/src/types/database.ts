@@ -227,6 +227,7 @@ type TeacherStudentNoteRow = { id: string; student_id: string; teacher_id: strin
 type AcademicYearRow = { id: string; school_id: string; name: string; starts_on: string; ends_on: string; active: boolean; created_by: string; created_at: string };
 type SchoolRoomRow = { id: string; school_id: string; name: string; capacity: number | null; location_note: string | null; active: boolean; created_at: string };
 type StudentDigitalFileRow = { student_id: string; school_id: string; guardian_phone: string | null; payment_required: boolean; monthly_fee: number | null; identity_document_received: boolean; birth_certificate_received: boolean; guardian_identity_received: boolean; medical_or_accessibility_notes: string | null; administrative_notes: string | null; updated_by: string; updated_at: string };
+type ParentFeedbackRow = { id: string; student_id: string; scores: number[]; comment: string | null; created_at: string };
 type StaffProfileRow = { user_id: string; school_id: string; employee_number: string | null; job_title: string; phone: string | null; hired_on: string | null; employment_status: DatabaseMembershipStatus; updated_at: string };
 type SchoolIncidentRow = { id: string; school_id: string; student_id: string | null; teacher_id: string | null; session_report_id: string | null; category: string; severity: number; summary: string; status: "open" | "in_review" | "resolved" | "dismissed"; occurred_at: string; created_by: string; resolved_by: string | null; resolved_at: string | null; created_at: string; updated_at: string };
 type InventoryItemRow = { id: string; school_id: string; name: string; category: string; asset_code: string | null; quantity: number; minimum_quantity: number; status: "available" | "assigned" | "maintenance" | "retired"; room_id: string | null; purchase_date: string | null; purchase_amount: number | null; notes: string | null; updated_at: string };
@@ -331,6 +332,7 @@ export type Database = {
       academic_years: ReadonlyTable<AcademicYearRow>;
       school_rooms: ReadonlyTable<SchoolRoomRow>;
       student_digital_files: ReadonlyTable<StudentDigitalFileRow>;
+      parent_feedback: MutableTable<ParentFeedbackRow, { scores: number[]; comment?: string | null }>;
       staff_profiles: ReadonlyTable<StaffProfileRow>;
       school_incidents: ReadonlyTable<SchoolIncidentRow>;
       inventory_items: ReadonlyTable<InventoryItemRow>;
@@ -429,6 +431,14 @@ export type Database = {
       };
       record_quran_practice: {
         Args: { target_surah_number: number; target_verse_number: number; target_success: boolean };
+        Returns: undefined;
+      };
+      complete_quran_surah: {
+        Args: { target_surah_number: number };
+        Returns: undefined;
+      };
+      submit_parent_feedback: {
+        Args: { target_scores: number[]; target_comment?: string | null };
         Returns: undefined;
       };
       update_own_assignment: {

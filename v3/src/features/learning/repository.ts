@@ -146,3 +146,20 @@ export async function getStudentHistory(): Promise<StudentHistoryData> {
     return empty;
   }
 }
+
+export async function getStudentAccountProfile(): Promise<{ name: string; dateOfBirth: string | null; className: string | null; file: { birth: boolean; guardian: boolean; identity: boolean; paymentRequired: boolean; fee: number | null; months: string[] } | null }> {
+  const empty = { name: "حساب الطالب", dateOfBirth: null, className: null, file: null };
+  if (process.env.NEXT_PUBLIC_APP_ENV === "test") return empty;
+  try {
+    const client = await createClient(); const { data: auth } = await client.auth.getUser(); if (!auth.user) return empty;
+    const [profile, student, enrollment, file, payments] = await Promise.all([
+      client.from("profiles").select("display_name").eq("id", auth.user.id).maybeSingle(),
+      client.from("student_profiles").select("date_of_birth").eq("user_id", auth.user.id).maybeSingle(),
+      client.from("class_enrollments").select("class_id").eq("student_id", auth.user.id).eq("status", "active").maybeSingle(),
+      client.from("student_digital_files").select("birth_certificate_received,guardian_identity_received,identity_document_received,payment_required,monthly_fee").eq("student_id", auth.user.id).maybeSingle(),
+      client.from("finance_transactions").select("occurred_on").eq("student_id", auth.user.id).eq("direction", "income").order("occurred_on", { ascending: false }),
+    ]);
+    const classroom = enrollment.data?.class_id ? await client.from("classes").select("name").eq("id", enrollment.data.class_id).maybeSingle() : { data: null };
+    return { name: profile.data?.display_name ?? empty.name, dateOfBirth: student.data?.date_of_birth ?? null, className: classroom.data?.name ?? null, file: file.data ? { birth: file.data.birth_certificate_received, guardian: file.data.guardian_identity_received, identity: file.data.identity_document_received, paymentRequired: file.data.payment_required, fee: file.data.monthly_fee, months: (payments.data ?? []).map((payment) => new Intl.DateTimeFormat("ar-MA", { month: "long" }).format(new Date(payment.occurred_on))) } : null };
+  } catch (error) { logServerError("STUDENT_PROFILE_LOAD_FAILED", error); return empty; }
+}

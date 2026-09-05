@@ -12,6 +12,7 @@ import {
   LogOut,
   MessageSquareText,
   Search,
+  Gamepad2,
   Settings,
   ShieldCheck,
   Newspaper,
@@ -41,9 +42,10 @@ type NavItem = { label: string; href: string; icon: LucideIcon };
 const navigation: Record<ShellKind, NavItem[]> = {
   student: [
     { label: "الرئيسية", href: "/student", icon: Home },
-    { label: "مسار الحفظ", href: "/student/quran", icon: BookOpenText },
-    { label: "الواجبات", href: "/student/assignments", icon: ClipboardCheck },
-    { label: "الرسائل", href: "/student/messages", icon: MessageSquareText },
+    { label: "السور", href: "/student/quran", icon: BookOpenText },
+    { label: "الألعاب", href: "/student/games", icon: Gamepad2 },
+    { label: "الوالدان", href: "/student/parents", icon: ClipboardCheck },
+    { label: "ملفي", href: "/student/profile", icon: CircleUserRound },
     { label: "الإعدادات", href: "/student/settings", icon: Settings },
   ],
   family: [
@@ -74,7 +76,7 @@ const navigation: Record<ShellKind, NavItem[]> = {
 };
 
 const shellLabels: Record<ShellKind, { section: string; title: string }> = {
-  student: { section: "مساحة الطالب", title: "متابعة التعلّم" },
+  student: { section: "", title: "" },
   family: { section: "مساحة الأسرة", title: "متابعة الأبناء" },
   teacher: { section: "مساحة المعلّم", title: "إدارة التعلّم" },
   admin: { section: "مساحة الإدارة", title: "إدارة المؤسسة" },
@@ -85,6 +87,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   const router = useRouter();
   const [commandOpen, setCommandOpen] = useState(false);
   const [teacherName, setTeacherName] = useState("");
+  const [studentName, setStudentName] = useState("");
   const [signingOut, setSigningOut] = useState(false);
   const items = navigation[kind];
   const commands = useMemo<CommandItem[]>(() => items.map((item) => ({
@@ -107,11 +110,12 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   }, []);
 
   useEffect(() => {
-    if (kind !== "teacher") return;
+    if (kind !== "teacher" && kind !== "student") return;
     void createClient().auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const profile = await createClient().from("profiles").select("display_name").eq("id", data.user.id).maybeSingle();
-      setTeacherName(profile.data?.display_name ?? "");
+      if (kind === "teacher") setTeacherName(profile.data?.display_name ?? "");
+      else setStudentName(profile.data?.display_name ?? "");
     });
   }, [kind]);
 
@@ -133,7 +137,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
           <nav className="app-rail__nav" aria-label="التنقل الرئيسي">
             {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
           </nav>
-          <a className="app-rail__profile" href={kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`}>
+          <a className="app-rail__profile" href={kind === "student" ? "/student/profile" : kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`}>
             <Avatar name="حساب المستخدم" size="sm" />
             <span><strong>الحساب</strong><small>الملف الشخصي</small></span>
           </a>
@@ -141,14 +145,15 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 
         <div className="app-frame">
           <header className="app-header">
-            {kind === "teacher" ? <div className="teacher-shell-identity"><strong>أستاذ(ة) {teacherName}</strong></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
+            {kind === "teacher" ? <div className="teacher-shell-identity"><strong>أستاذ(ة) {teacherName}</strong></div> : kind === "student" ? <div className="student-shell-identity"><strong>{studentName || "حساب الطالب"}</strong></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
             <div className="app-header__actions">
-              {kind !== "teacher" ? <button className="global-search-trigger" type="button" aria-label="فتح البحث العام" onClick={() => setCommandOpen(true)}>
+              {kind !== "teacher" && kind !== "student" ? <button className="global-search-trigger" type="button" aria-label="فتح البحث العام" onClick={() => setCommandOpen(true)}>
                 <Search aria-hidden="true" size={18} />
                 <span>بحث</span><kbd>Ctrl K</kbd>
               </button> : <button className="teacher-signout" type="button" aria-label="تسجيل الخروج" disabled={signingOut} onClick={() => void signOut()}><LogOut aria-hidden="true" size={18} /><span>{signingOut ? "جار الخروج" : "تسجيل الخروج"}</span></button>}
               <NotificationCenter />
-              <a className="mobile-profile" href={kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`} aria-label="الملف الشخصي">
+              {kind === "student" ? <button className="teacher-signout" type="button" aria-label="تسجيل الخروج" disabled={signingOut} onClick={() => void signOut()}><LogOut aria-hidden="true" size={18} /></button> : null}
+              <a className="mobile-profile" href={kind === "student" ? "/student/profile" : kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`} aria-label="الملف الشخصي">
                 <CircleUserRound aria-hidden="true" size={24} />
               </a>
             </div>
@@ -159,7 +164,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
         <nav className="mobile-nav" aria-label="التنقل الرئيسي للهاتف">
           {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
         </nav>
-        {kind !== "teacher" ? <CommandPalette items={commands} open={commandOpen} onOpenChange={setCommandOpen} /> : null}
+        {kind !== "teacher" && kind !== "student" ? <CommandPalette items={commands} open={commandOpen} onOpenChange={setCommandOpen} /> : null}
       </div>
     </OfflineProvider></ToastProvider>
   );
