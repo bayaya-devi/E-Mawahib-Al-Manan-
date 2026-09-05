@@ -22,6 +22,7 @@
     "migration:v1:verify": "node scripts/migration/verify-v1-v3.mjs",
     "migration:v1:audit-accounts": "node scripts/migration/audit-historical-accounts.mjs",
     "migration:v1:production": "node scripts/migration/import-v1-production.mjs",
+    "migration:v1:history": "node scripts/migration/recover-v1-history.mjs",
     "bootstrap:direction": "node scripts/bootstrap-direction.mjs",
     "quran:extract-v1": "node scripts/quran/extract-v1-quran.mjs",
     "quran:import-warsh": "node scripts/quran/import-warsh-reference.mjs",

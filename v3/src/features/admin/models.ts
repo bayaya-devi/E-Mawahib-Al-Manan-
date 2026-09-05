@@ -81,6 +81,7 @@ export type AdminCommandData = {
     status: string;
     incident: boolean;
     submittedAt: string | null;
+    summary: string | null;
   }>;
   requests: Array<{
     id: string;

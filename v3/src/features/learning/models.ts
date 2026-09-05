@@ -22,7 +22,7 @@ export type FamilyChildData = {
   attendance: Array<{ id: string; status: DatabaseAttendanceStatus; minutesLate: number; recordedAt: string }>;
   exams: Array<{ id: string; title: string; score: number | null; appreciation: string | null; completedAt: string | null }>;
   announcements: StudentDashboardData["announcements"];
-  messages: Array<{ id: string; title: string; body: string; createdAt: string; read: boolean }>;
+  messages: Array<{ id: string; title: string; body: string; createdAt: string | null; dateLabel: string | null; read: boolean }>;
   documents: Array<{ id: string; title: string; storagePath: string; createdAt: string }>;
 };
 

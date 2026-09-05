@@ -76,6 +76,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       sessions,
       attendance,
       reports,
+      historicalStaffMessages,
       requests,
       incidents,
       tasks,
@@ -137,6 +138,13 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         .select(
           "id,teacher_id,class_id,status,incident,submitted_at,created_at",
         )
+        .order("created_at", { ascending: false })
+        .limit(100),
+      client
+        .from("staff_messages")
+        .select("id,sender_id,subject,body,created_at")
+        .eq("school_id", schoolId)
+        .eq("recipient_id", auth.user.id)
         .order("created_at", { ascending: false })
         .limit(100),
       client
@@ -225,7 +233,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         .limit(150),
       client
         .from("parent_feedback")
-        .select("id,student_id,scores,comment,created_at")
+        .select("id,student_id,scores,comment,created_at,q1_enseignement,q2_organisation,q3_communication,q4_plateforme,commentaires,date_soumission")
         .order("created_at", { ascending: false })
         .limit(100),
     ]);
@@ -460,7 +468,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       ...(parentFeedback.data ?? []).map((row) => ({
         id: `feedback-${row.id}`,
         kind: "parent_feedback",
-        title: `${names.get(row.student_id) ?? "أسرة"} · استبيان جديد`,
+        title: `${row.student_id ? names.get(row.student_id) ?? "أسرة" : "استبيان مجهول"} · استبيان جديد`,
         detail: "رأي أسرة",
         occurredAt: row.created_at,
       })),
@@ -519,14 +527,26 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       people,
       classes,
       timeline: timelineRows,
-      reports: reportRows.map((row) => ({
-        id: row.id,
-        teacherName: names.get(row.teacher_id) ?? "أستاذ",
-        className: classNames.get(row.class_id) ?? "قسم",
-        status: row.status,
-        incident: row.incident,
-        submittedAt: row.submitted_at,
-      })),
+      reports: [
+        ...reportRows.map((row) => ({
+          id: row.id,
+          teacherName: names.get(row.teacher_id) ?? "أستاذ",
+          className: classNames.get(row.class_id) ?? "قسم",
+          status: row.status,
+          incident: row.incident,
+          submittedAt: row.submitted_at,
+          summary: null,
+        })),
+        ...(historicalStaffMessages.data ?? []).map((row) => ({
+          id: row.id,
+          teacherName: names.get(row.sender_id) ?? "أستاذ",
+          className: (classIdsByTeacher.get(row.sender_id) ?? []).map((id) => classNames.get(id)).filter(Boolean).join("، ") || "قسم",
+          status: row.subject,
+          incident: false,
+          submittedAt: row.created_at,
+          summary: row.body,
+        })),
+      ].sort((a, b) => String(b.submittedAt ?? "").localeCompare(String(a.submittedAt ?? ""))),
       requests: (requests.data ?? []).map((row) => ({
         id: row.id,
         teacherName: names.get(row.teacher_id) ?? "أستاذ",
@@ -608,20 +628,27 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         })) ?? [],
       parentFeedback:
         parentFeedback.data?.map((row) => {
-          const scores = row.scores ?? [];
+          const historicalScores = [
+            row.q1_enseignement,
+            row.q2_organisation,
+            row.q3_communication,
+            row.q4_plateforme,
+          ].filter((value): value is number => typeof value === "number");
+          const scores = row.scores?.length ? row.scores : historicalScores;
+          const studentId = row.student_id ?? `historical-anonymous-${row.id}`;
           return {
-            id: row.id,
-            studentId: row.student_id,
-            studentName: names.get(row.student_id) ?? "طالب",
+            id: String(row.id),
+            studentId,
+            studentName: row.student_id ? names.get(row.student_id) ?? "طالب" : "استبيان مجهول",
             className:
-              classNames.get(enrollmentByStudent.get(row.student_id) ?? "") ??
+              classNames.get(enrollmentByStudent.get(row.student_id ?? "") ?? "") ??
               null,
             scores,
             average: scores.length
               ? scores.reduce((sum, value) => sum + value, 0) / scores.length
               : 0,
-            comment: row.comment,
-            createdAt: row.created_at,
+            comment: row.comment ?? row.commentaires,
+            createdAt: row.date_soumission ?? row.created_at,
           };
         }) ?? [],
     };

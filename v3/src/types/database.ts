@@ -734,11 +734,34 @@ type StudentDigitalFileRow = {
   updated_at: string;
 };
 type ParentFeedbackRow = {
-  id: string;
-  student_id: string;
-  scores: number[];
+  id: string | number;
+  student_id: string | null;
+  school_id: string | null;
+  scores: number[] | null;
   comment: string | null;
   created_at: string;
+  q1_enseignement: number | null;
+  q2_organisation: number | null;
+  q3_communication: number | null;
+  q4_plateforme: number | null;
+  commentaires: string | null;
+  date_soumission: string | null;
+};
+type LegacyHistoryRecordRow = {
+  id: string;
+  school_id: string;
+  source_name: string;
+  legacy_id: string;
+  category: string;
+  subject_id: string | null;
+  actor_id: string | null;
+  class_id: string | null;
+  occurred_at: string | null;
+  historical_date_label: string | null;
+  title: string;
+  body: string | null;
+  metadata: Json;
+  migrated_at: string;
 };
 type StaffProfileRow = {
   user_id: string;
@@ -1202,6 +1225,7 @@ export type Database = {
         ParentFeedbackRow,
         { scores: number[]; comment?: string | null }
       >;
+      legacy_history_records: ReadonlyTable<LegacyHistoryRecordRow>;
       staff_profiles: ReadonlyTable<StaffProfileRow>;
       school_incidents: ReadonlyTable<SchoolIncidentRow>;
       inventory_items: ReadonlyTable<InventoryItemRow>;

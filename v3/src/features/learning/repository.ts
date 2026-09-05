@@ -93,7 +93,7 @@ export async function getFamilyChild(studentId: string): Promise<FamilyChildData
     const assignmentQuery = enrollment.data?.class_id
       ? client.from("assignments").select("id,title,instructions,due_at,surah_number,verse_from,verse_to").or(`student_id.eq.${studentId},class_id.eq.${enrollment.data.class_id}`).order("due_at")
       : client.from("assignments").select("id,title,instructions,due_at,surah_number,verse_from,verse_to").eq("student_id", studentId).order("due_at");
-    const [progress, assignments, submissions, attendance, examResults, announcements, messages, documents] = await Promise.all([
+    const [progress, assignments, submissions, attendance, examResults, announcements, messages, legacyMessages, documents] = await Promise.all([
       client.from("student_surah_progress").select("surah_number,status,completion_percent,stars").eq("student_id", studentId).order("surah_number", { ascending: false }),
       assignmentQuery,
       client.from("assignment_submissions").select("assignment_id,status").eq("student_id", studentId),
@@ -101,6 +101,7 @@ export async function getFamilyChild(studentId: string): Promise<FamilyChildData
       client.from("exam_results").select("exam_id,score,appreciation,completed_at").eq("student_id", studentId).order("completed_at", { ascending: false }),
       client.from("school_announcements").select("id,title,body,published_at").order("published_at", { ascending: false }).limit(12),
       client.from("user_notifications").select("id,title,body,created_at,read_at").eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(20),
+      client.from("legacy_history_records").select("id,title,body,occurred_at,historical_date_label").eq("subject_id", studentId).eq("category", "student_message").order("legacy_id", { ascending: false }).limit(200),
       client.from("authorized_documents").select("id,title,storage_path,created_at").eq("student_id", studentId).eq("visible_to_family", true).order("created_at", { ascending: false }),
     ]);
     const examIds = (examResults.data ?? []).map(({ exam_id }) => exam_id);
@@ -114,7 +115,10 @@ export async function getFamilyChild(studentId: string): Promise<FamilyChildData
       attendance: (attendance.data ?? []).map((row) => ({ id: row.id, status: row.status, minutesLate: row.minutes_late, recordedAt: row.recorded_at })),
       exams: (examResults.data ?? []).map((row) => ({ id: row.exam_id, title: examTitles.get(row.exam_id) ?? "اختبار", score: row.score, appreciation: row.appreciation, completedAt: row.completed_at })),
       announcements: (announcements.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body, publishedAt: row.published_at })),
-      messages: (messages.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body, createdAt: row.created_at, read: Boolean(row.read_at) })),
+      messages: [
+        ...(messages.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body, createdAt: row.created_at, dateLabel: null, read: Boolean(row.read_at) })),
+        ...(legacyMessages.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body ?? "", createdAt: row.occurred_at, dateLabel: row.historical_date_label, read: true })),
+      ],
       documents: (documents.data ?? []).map((row) => ({ id: row.id, title: row.title, storagePath: row.storage_path, createdAt: row.created_at })),
     };
   } catch (error) {
@@ -131,9 +135,10 @@ export async function getStudentHistory(): Promise<StudentHistoryData> {
     const { data: auth } = await client.auth.getUser();
     if (!auth.user) return empty;
     const studentId = auth.user.id;
-    const [events, attempts, reviews] = await Promise.all([
+    const [events, attempts, teacherRecitations, reviews] = await Promise.all([
       client.from("learning_events").select("id,event_kind,surah_number,occurred_at").eq("student_id", studentId).order("occurred_at", { ascending: false }).limit(80),
       client.from("recitation_attempts").select("id,surah_number,verse_from,verse_to,status,started_at").eq("student_id", studentId).order("started_at", { ascending: false }).limit(40),
+      client.from("teacher_recitations").select("id,surah_number,verse_from,verse_to,appreciation,comment,recorded_at").eq("student_id", studentId).order("recorded_at", { ascending: false }).limit(100),
       client.from("review_passages").select("id,surah_number,verse_from,verse_to,reason,due_at").eq("student_id", studentId).is("resolved_at", null).order("due_at"),
     ]);
     const attemptRows = attempts.data ?? [];
@@ -141,7 +146,10 @@ export async function getStudentHistory(): Promise<StudentHistoryData> {
     const byAttempt = new Map((results.data ?? []).map((result) => [result.attempt_id, result]));
     return {
       events: (events.data ?? []).map((event) => ({ id: event.id, kind: event.event_kind, surahNumber: event.surah_number, occurredAt: event.occurred_at })),
-      recitations: attemptRows.map((attempt) => { const result = byAttempt.get(attempt.id); return { id: attempt.id, surahNumber: attempt.surah_number, verseFrom: attempt.verse_from, verseTo: attempt.verse_to, status: attempt.status, startedAt: attempt.started_at, score: result?.memorization_score ?? null, conclusive: result?.is_conclusive ?? false, recommendation: result?.recommendation ?? null }; }),
+      recitations: [
+        ...attemptRows.map((attempt) => { const result = byAttempt.get(attempt.id); return { id: attempt.id, surahNumber: attempt.surah_number, verseFrom: attempt.verse_from, verseTo: attempt.verse_to, status: attempt.status, startedAt: attempt.started_at, score: result?.memorization_score ?? null, conclusive: result?.is_conclusive ?? false, recommendation: result?.recommendation ?? null }; }),
+        ...(teacherRecitations.data ?? []).map((entry) => ({ id: entry.id, surahNumber: entry.surah_number, verseFrom: entry.verse_from, verseTo: entry.verse_to, status: entry.appreciation, startedAt: entry.recorded_at, score: null, conclusive: true, recommendation: entry.comment })),
+      ].sort((a, b) => b.startedAt.localeCompare(a.startedAt)),
       reviews: (reviews.data ?? []).map((review) => ({ id: review.id, surahNumber: review.surah_number, verseFrom: review.verse_from, verseTo: review.verse_to, reason: review.reason, dueAt: review.due_at })),
     };
   } catch (error) {
@@ -150,20 +158,21 @@ export async function getStudentHistory(): Promise<StudentHistoryData> {
   }
 }
 
-export async function getStudentAccountProfile(): Promise<{ name: string; dateOfBirth: string | null; className: string | null; documents: Array<{ id: string; title: string; category: string; path: string }>; file: { birth: boolean; guardian: boolean; identity: boolean; paymentRequired: boolean; fee: number | null; payments: Array<{ month: string; amount: number; date: string }> } | null }> {
+export async function getStudentAccountProfile(): Promise<{ name: string; dateOfBirth: string | null; className: string | null; documents: Array<{ id: string; title: string; category: string; path: string }>; file: { birth: boolean; guardian: boolean; identity: boolean; paymentRequired: boolean; fee: number | null; payments: Array<{ month: string; amount: number; date: string }>; legacyPayments?: Array<{ id: string; month: string; amount: number | null; status: string }> } | null }> {
   const empty = { name: "حساب الطالب", dateOfBirth: null, className: null, documents: [], file: null };
   if (process.env.NEXT_PUBLIC_APP_ENV === "test") return empty;
   try {
     const client = await createClient(); const { data: auth } = await client.auth.getUser(); if (!auth.user) return empty;
-    const [profile, student, enrollment, file, payments, documents] = await Promise.all([
+    const [profile, student, enrollment, file, payments, legacyPayments, documents] = await Promise.all([
       client.from("profiles").select("display_name").eq("id", auth.user.id).maybeSingle(),
       client.from("student_profiles").select("date_of_birth").eq("user_id", auth.user.id).maybeSingle(),
       client.from("class_enrollments").select("class_id").eq("student_id", auth.user.id).eq("status", "active").maybeSingle(),
       client.from("student_digital_files").select("birth_certificate_received,guardian_identity_received,identity_document_received,payment_required,monthly_fee").eq("student_id", auth.user.id).maybeSingle(),
       client.from("finance_transactions").select("amount,occurred_on").eq("student_id", auth.user.id).eq("direction", "income").order("occurred_on", { ascending: false }),
+      client.from("legacy_history_records").select("id,historical_date_label,metadata").eq("subject_id", auth.user.id).eq("category", "student_payment_snapshot").order("legacy_id", { ascending: false }),
       client.from("school_documents").select("id,title,category,storage_path").eq("related_user_id", auth.user.id).eq("visible_to_related_user", true).order("created_at", { ascending: false }),
     ]);
     const classroom = enrollment.data?.class_id ? await client.from("classes").select("name").eq("id", enrollment.data.class_id).maybeSingle() : { data: null };
-    return { name: profile.data?.display_name ?? empty.name, dateOfBirth: student.data?.date_of_birth ?? null, className: classroom.data?.name ?? null, documents: (documents.data ?? []).map((document) => ({ id: document.id, title: document.title, category: document.category, path: document.storage_path })), file: file.data ? { birth: file.data.birth_certificate_received, guardian: file.data.guardian_identity_received, identity: file.data.identity_document_received, paymentRequired: file.data.payment_required, fee: file.data.monthly_fee, payments: (payments.data ?? []).map((payment) => ({ month: payment.occurred_on.slice(0, 7), amount: Number(payment.amount), date: payment.occurred_on })) } : null };
+    return { name: profile.data?.display_name ?? empty.name, dateOfBirth: student.data?.date_of_birth ?? null, className: classroom.data?.name ?? null, documents: (documents.data ?? []).map((document) => ({ id: document.id, title: document.title, category: document.category, path: document.storage_path })), file: file.data ? { birth: file.data.birth_certificate_received, guardian: file.data.guardian_identity_received, identity: file.data.identity_document_received, paymentRequired: file.data.payment_required, fee: file.data.monthly_fee, payments: (payments.data ?? []).map((payment) => ({ month: payment.occurred_on.slice(0, 7), amount: Number(payment.amount), date: payment.occurred_on })), legacyPayments: (legacyPayments.data ?? []).map((payment) => { const metadata = payment.metadata && typeof payment.metadata === "object" && !Array.isArray(payment.metadata) ? payment.metadata : {}; return { id: payment.id, month: payment.historical_date_label ?? "شهر سابق", amount: typeof metadata.amount === "number" ? metadata.amount : null, status: typeof metadata.status === "string" ? metadata.status : "—" }; }) } : null };
   } catch (error) { logServerError("STUDENT_PROFILE_LOAD_FAILED", error); return empty; }
 }
