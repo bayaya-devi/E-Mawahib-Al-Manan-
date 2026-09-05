@@ -50,10 +50,10 @@ export function PublicShell({ locale, children }: { locale: PublicLocale; childr
           <button type="button" aria-haspopup="menu" aria-expanded={languageOpen} aria-controls="public-language-menu" onClick={() => setLanguageOpen((value) => !value)}>{localeLabels[locale]}<ChevronDown aria-hidden="true" size={16} /></button>
           {languageOpen && <div id="public-language-menu" aria-label={copy.language}>{locales.filter((item) => item !== locale).map((item) => <Link key={item} href={publicHref(item, page)} hrefLang={item === "amz" ? "zgh" : item} onClick={() => { saveLocale(item); setLanguageOpen(false); setOpen(false); }}>{localeLabels[item]}</Link>)}</div>}
         </div>
-        <Link className="public-v3__login" href="/login"><LogIn aria-hidden="true" size={17} />{copy.login}</Link>
+        <Link className="public-v3__login" href="/login" aria-label={copy.login} title={copy.login}><LogIn aria-hidden="true" size={17} /><span>{copy.login}</span></Link>
         <button className="public-v3__menu" type="button" aria-label={copy.menu} aria-expanded={open} onClick={() => setOpen((value) => !value)}>{open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>
       </div>
-      {open && <nav className="public-v3__mobile-nav" aria-label={copy.menu}>{publicPages.map((item) => <Link key={item} className={item === page ? "is-active" : undefined} href={publicHref(locale, item)} onClick={() => { setOpen(false); setLanguageOpen(false); }}>{copy.nav[item]}</Link>)}<Link className="public-v3__login public-v3__login--mobile" href="/login" onClick={() => { setOpen(false); setLanguageOpen(false); }}>{copy.login}</Link></nav>}
+      {open && <nav className="public-v3__mobile-nav" aria-label={copy.menu}>{publicPages.map((item) => <Link key={item} className={item === page ? "is-active" : undefined} href={publicHref(locale, item)} onClick={() => { setOpen(false); setLanguageOpen(false); }}>{copy.nav[item]}</Link>)}<Link className="public-v3__login public-v3__login--mobile" href="/login" onClick={() => { setOpen(false); setLanguageOpen(false); }}><LogIn aria-hidden="true" size={17} /><span>{copy.login}</span></Link></nav>}
     </header>
     <main id="main-content">{children}</main>
     <footer className="public-v3__footer"><Image src="/dar-al-hadith/logo.webp" alt="" width={55} height={54} /><strong>{copy.footer}</strong><nav aria-label={copy.menu}>{publicPages.slice(1, 6).map((item) => <Link key={item} href={publicHref(locale, item)}>{copy.nav[item]}</Link>)}</nav></footer>

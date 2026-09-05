@@ -10,14 +10,14 @@
 .public-v3__desktop-nav a::after { position: absolute; inset-inline: 8px; inset-block-end: 2px; height: 2px; background: #0d674c; content: ""; transform: scaleX(0); transition: transform 180ms ease; }
 .public-v3__desktop-nav a:hover::after, .public-v3__desktop-nav a.is-active::after { transform: scaleX(1); }
 .public-v3__desktop-nav a.is-active { color: #094a38; }
-.public-v3__actions { display: flex; align-items: center; gap: 8px; }
+.public-v3__actions { display: flex; flex-shrink: 0; align-items: center; gap: 8px; }
 .public-v3__language { position: relative; z-index: 4; min-width: 102px; height: 38px; border: 1px solid #cbc4b7; border-radius: 6px; background: #fffdf9; }
 .public-v3__language > button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 7px; height: 100%; padding-inline: 10px; border: 0; border-radius: inherit; color: #2d3b35; background: transparent; font: inherit; font-size: .75rem; font-weight: 700; cursor: pointer; }
 .public-v3__language > button[aria-expanded="true"] svg { rotate: 180deg; }
 .public-v3__language > div { position: absolute; z-index: 8; inset-inline-end: 0; inset-block-start: calc(100% + 7px); display: grid; min-width: 130px; padding: 6px; border: 1px solid #cbc4b7; border-radius: 6px; background: #fffdf9; box-shadow: 0 16px 36px rgb(18 38 30 / 18%); }
 .public-v3__language > div a { padding: 7px 9px; border-radius: 4px; font-size: .78rem; font-weight: 700; }
 .public-v3__language > div a:hover { background: #e3eee8; }
-.public-v3__login, .public-cta { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 15px; border: 1px solid #0d5a45; border-radius: 6px; background: #0d5a45; color: white; font-weight: 760; transition: translate 160ms ease, background 160ms ease; }
+.public-v3__login, .public-cta { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 15px; border: 1px solid #0d5a45; border-radius: 6px; background: #0d5a45; color: white; font-weight: 760; transition: translate 160ms ease, background 160ms ease; }
 .public-v3__login:hover, .public-cta:hover { translate: 0 -2px; background: #084332; }
 .public-v3__menu { display: none; width: 40px; height: 40px; border: 1px solid #cbc4b7; border-radius: 6px; background: #fffdf9; color: #17352b; }
 .public-v3__mobile-nav { display: none; }
@@ -155,13 +155,17 @@
   .public-v3__mobile-nav .public-v3__login { display: none; }
 }
 @media (max-width: 760px) {
-  .public-v3__header { min-height: 66px; padding: 7px 14px; }
+  .public-v3__header { min-height: 66px; gap: 10px; padding: 7px 14px; }
+  .public-v3__brand { min-width: 0; }
   .public-v3__brand img { width: 43px; height: 42px; }
   .public-v3__brand small { display: none; }
   .public-v3__brand strong { font-size: .76rem; }
-  .public-v3__actions > .public-v3__login { display: none; }
+  .public-v3__actions { gap: 5px; }
+  .public-v3__actions > .public-v3__login { width: 40px; padding-inline: 0; }
+  .public-v3__actions > .public-v3__login span { display: none; }
   .public-v3__mobile-nav .public-v3__login--mobile { display: flex; grid-column: 1 / -1; justify-content: center; }
-  .public-v3__language { min-width: 88px; }
+  .public-v3__language { min-width: 72px; }
+  .public-v3__language > button { padding-inline: 8px; font-size: .7rem; }
   .public-v3__language > div { min-width: 142px; }
   .public-home-hero { min-height: calc(100svh - 66px); }
   .public-home-hero__content { width: calc(100% - 30px); padding-block: 90px 54px; }
@@ -188,6 +192,10 @@
   .site-admin__form, .site-admin__records { padding: 17px; }
   .site-admin__record-list article { grid-template-columns: 1fr auto; }
   .site-admin__record-list article > div { grid-column: 1 / -1; flex-wrap: wrap; }
+}
+@media (max-width: 400px) {
+  .public-v3__brand strong { display: none; }
+  .public-v3__brand { gap: 0; }
 }
 
 .login-v3 { min-height: 100dvh; display: grid; grid-template-columns: minmax(320px, .9fr) minmax(480px, 1.1fr); padding: clamp(14px, 2.2vw, 28px); background: var(--brand-strong); }

@@ -39,6 +39,23 @@ test("mobile menu and language menu remain usable together", async ({ page }) =>
   await expect(page).toHaveURL(/\/fr$/);
 });
 
+test("mobile header keeps the site menu and login visible at narrow widths", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 720 });
+  await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
+  await page.goto("/ar");
+  const login = page.locator(".public-v3__actions > .public-v3__login");
+  const menu = page.getByRole("button", { name: "القائمة" });
+  await expect(login).toBeVisible();
+  await expect(menu).toBeVisible();
+  for (const control of [login, menu]) {
+    const box = await control.boundingBox();
+    expect(box).not.toBeNull();
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(320);
+  }
+  await menu.click();
+  await expect(page.locator(".public-v3__mobile-nav").getByRole("link", { name: "البرامج", exact: true })).toBeVisible();
+});
+
 test("contact presents the official phone and the verified map", async ({ page }) => {
   await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
   await page.goto("/ar/contact");
