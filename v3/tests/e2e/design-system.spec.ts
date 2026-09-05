@@ -4,7 +4,7 @@ const shells = [
   ["/ar", "دار الحديث والقرآن"],
   ["/student", "تابع حفظك بهدوء وثبات"],
   ["/family", "متابعة الأبناء"],
-  ["/teacher", "يومك الدراسي، خطوة بخطوة"],
+  ["/teacher", "ملخص العمل"],
   ["/admin", "مركز قيادة المؤسسة"],
 ] as const;
 
@@ -29,7 +29,7 @@ test("application shell exposes responsive navigation", async ({ page }) => {
 });
 
 test("global search opens from keyboard and closes with Escape", async ({ page }) => {
-  await page.goto("/teacher");
+  await page.goto("/student");
   const trigger = page.getByRole("button", { name: "فتح البحث العام" });
   await trigger.click();
   const search = page.getByRole("textbox", { name: "ابحث في المنصة" });
@@ -43,8 +43,8 @@ test("global search opens from keyboard and closes with Escape", async ({ page }
   } else {
     await trigger.click();
   }
-  await search.fill("الطلاب");
-  await expect(page.getByRole("link", { name: /الطلاب/ })).toBeVisible();
+  await search.fill("الواجبات");
+  await expect(page.getByRole("link", { name: /الواجبات/ })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(search).toBeHidden();
 });

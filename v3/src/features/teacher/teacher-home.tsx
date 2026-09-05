@@ -1,24 +1,28 @@
-import { AlertTriangle, ArrowLeft, Bell, CalendarDays, CheckCircle2, ClipboardList, Clock3, MessageSquareText, Play, UsersRound } from "lucide-react";
-import { Badge, ButtonLink } from "@/components/ui";
+import { BellRing, CalendarDays, Clock3, UsersRound } from "lucide-react";
+import { EmptyState } from "@/components/ui";
+import { getSurah } from "@/features/quran/canonical";
 import type { TeacherHomeData } from "./models";
 
 export function TeacherHome({ data }: { data: TeacherHomeData }) {
-  const urgent = data.alerts.filter(({ read }) => !read).length + data.requests.filter(({ status }) => status === "rejected").length;
-  return <div className="teacher-page">
-    <header className="teacher-hero"><div><span>مرحبا {data.teacher?.name ?? "بك"}</span><h1>يومك الدراسي، خطوة بخطوة</h1><p>الحصة والطلاب والمهام المهمة أمامك من دون تشتيت.</p></div><ButtonLink href="/teacher/session"><Play size={18} />{data.openRun ? "متابعة الحصة" : "بدء وضع الحصة"}</ButtonLink></header>
-    <section className="teacher-next" aria-label="الحصة القادمة"><div><Clock3 size={22} /><span>الحصة القادمة<strong>{data.nextCourse ? formatDateTime(data.nextCourse.startsAt) : "لا توجد حصة قريبة"}</strong></span></div><div><UsersRound size={22} /><span>القسم<strong>{data.nextCourse?.className ?? "غير محدد"}</strong></span></div><div><CalendarDays size={22} /><span>المكان<strong>{data.nextCourse?.location ?? "—"}</strong></span></div></section>
-    <section className="teacher-metrics" aria-label="ملخص اليوم"><Metric icon={UsersRound} label="الطلاب" value={data.students.length} /><Metric icon={ClipboardList} label="المهام" value={data.taskCount} /><Metric icon={MessageSquareText} label="الرسائل" value={data.messages.filter(({ read }) => !read).length} /><Metric icon={AlertTriangle} label="التنبيهات" value={urgent} {...(urgent ? { tone: "warning" } : {})} /></section>
-    <div className="teacher-home-grid">
-      <section className="teacher-section"><Heading eyebrow="المتابعة" title="طلاب يحتاجون الانتباه" action="/teacher/students" />{data.students.length ? <div className="teacher-student-lines">{data.students.filter((student) => student.absenceCount || student.pendingAssignments || student.lastProgressPercent < 60).slice(0, 6).map((student) => <article key={student.id}><span className="teacher-avatar">{student.name.slice(0, 1)}</span><div><strong>{student.name}</strong><small>{student.className} · {student.suggestion}</small></div><Badge tone={student.absenceCount >= 2 ? "danger" : "warning"}>{student.absenceCount ? `${student.absenceCount} غياب` : `${student.pendingAssignments} واجب`}</Badge></article>)}</div> : <SmallEmpty title="لا يوجد طلاب مرتبطون" />}</section>
-      <section className="teacher-section"><Heading eyebrow="التواصل" title="آخر الرسائل" action="/teacher/messages" />{data.messages.length ? <div className="teacher-list">{data.messages.slice(0, 5).map((item) => <article key={item.id}><MessageSquareText size={18} /><div><strong>{item.subject}</strong><small>{item.body}</small></div>{!item.read ? <Badge tone="brand">جديد</Badge> : null}</article>)}</div> : <SmallEmpty title="لا توجد رسائل" />}</section>
-      <section className="teacher-section"><Heading eyebrow="الجدول" title="الحصص القادمة" action="/teacher/professional" />{data.schedule.length ? <div className="teacher-list">{data.schedule.slice(0, 6).map((item) => <article key={item.id}><CalendarDays size={18} /><div><strong>{item.className}</strong><small>{formatDateTime(item.startsAt)} · {item.title}</small></div></article>)}</div> : <SmallEmpty title="لا توجد حصص في الجدول" />}</section>
-      <section className="teacher-section"><Heading eyebrow="الإدارة" title="الطلبات والتنبيهات" action="/teacher/professional#requests" />{data.requests.length || data.alerts.length ? <div className="teacher-list">{data.requests.slice(0, 3).map((item) => <article key={item.id}><CheckCircle2 size={18} /><div><strong>{item.title}</strong><small>{requestStatus(item.status)}</small></div></article>)}{data.alerts.slice(0, 2).map((item) => <article key={item.id}><Bell size={18} /><div><strong>{item.title}</strong><small>{item.body}</small></div></article>)}</div> : <SmallEmpty title="لا توجد طلبات أو تنبيهات" />}</section>
-    </div>
+  const formatter = new Intl.DateTimeFormat("ar-MA", { weekday: "long" });
+  const days = [...new Set(data.schedule.map((item) => formatter.format(new Date(item.startsAt))))];
+  const hours = [...new Set(data.schedule.map((item) => `${time(item.startsAt)} - ${time(item.endsAt)}`))];
+  return <div className="teacher-page teacher-dashboard">
+    <header className="teacher-page-head"><span>الرئيسية</span><h1>ملخص العمل</h1></header>
+    <section className="teacher-summary" aria-label="ملخص العمل">
+      <Summary icon={UsersRound} label="القسم" value={data.classes.map(({ name }) => name).join("، ") || "غير محدد"} />
+      <Summary icon={CalendarDays} label="أيام الدروس" value={days.join("، ") || "لا يوجد جدول"} />
+      <Summary icon={Clock3} label="الأوقات" value={hours.join("، ") || "غير محددة"} />
+      <Summary icon={UsersRound} label="عدد الطلاب" value={String(data.students.length)} />
+    </section>
+    <section className="teacher-reminders">
+      <div className="section-heading"><div><span>المواعيد القريبة</span><h2>تذكير الواجبات</h2></div></div>
+      {data.assignmentReminders.length ? <div className="teacher-record-list">{data.assignmentReminders.map((item) => <article key={item.id}><BellRing aria-hidden="true" size={19} /><div><strong>{item.studentName}</strong><small>{assignmentLabel(item.surahNumber, item.verseFrom, item.verseTo)} · {date(item.dueAt)}</small></div></article>)}</div> : <EmptyState title="لا توجد واجبات قريبة" description="ستظهر الواجبات المنتظرة هنا." />}
+    </section>
   </div>;
 }
 
-function Metric({ icon: Icon, label, value, tone }: { icon: typeof UsersRound; label: string; value: number; tone?: string }) { return <div className={tone ? `is-${tone}` : undefined}><Icon size={20} /><span>{label}<strong>{value}</strong></span></div>; }
-function Heading({ eyebrow, title, action }: { eyebrow: string; title: string; action: string }) { return <div className="section-heading"><div><span>{eyebrow}</span><h2>{title}</h2></div><ButtonLink variant="quiet" href={action}>عرض <ArrowLeft size={16} /></ButtonLink></div>; }
-function SmallEmpty({ title }: { title: string }) { return <p className="teacher-empty">{title}</p>; }
-function formatDateTime(value: string): string { return new Intl.DateTimeFormat("ar-MA", { weekday: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(value)); }
-function requestStatus(value: string): string { return ({ submitted: "تم الإرسال", seen: "اطلعت الإدارة", in_review: "قيد المراجعة", approved: "مقبول", rejected: "مرفوض", resolved: "تمت المعالجة", cancelled: "ملغى" } as Record<string, string>)[value] ?? value; }
+function Summary({ icon: Icon, label, value }: { icon: typeof UsersRound; label: string; value: string }) { return <article><Icon aria-hidden="true" size={21} /><span>{label}<strong>{value}</strong></span></article>; }
+function assignmentLabel(surah: number | null, from: number | null, to: number | null): string { if (!surah) return "واجب القرآن"; const name = getSurah(surah)?.nameArabic ?? "سورة"; return from && to ? `${name} · ${from} - ${to}` : name; }
+function time(value: string): string { return new Intl.DateTimeFormat("ar-MA", { hour: "2-digit", minute: "2-digit" }).format(new Date(value)); }
+function date(value: string): string { return new Intl.DateTimeFormat("ar-MA", { dateStyle: "medium" }).format(new Date(value)); }

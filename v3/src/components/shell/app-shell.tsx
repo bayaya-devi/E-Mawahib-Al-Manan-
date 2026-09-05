@@ -9,6 +9,7 @@ import {
   GraduationCap,
   Home,
   LayoutDashboard,
+  LogOut,
   MessageSquareText,
   Search,
   Settings,
@@ -21,14 +22,18 @@ import {
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
 import { Avatar, CommandPalette, ToastProvider } from "@/components/ui";
 import { NotificationCenter } from "@/features/notifications";
 import { OfflineProvider } from "@/features/offline";
+import { applyAppearance } from "@/features/settings/appearance";
+import { rememberAuthenticatedAccount } from "@/features/teacher/device-account-vault";
 import type { CommandItem } from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
+import { createClient } from "@/lib/supabase/client";
 
 export type ShellKind = "student" | "family" | "teacher" | "admin";
 type NavItem = { label: string; href: string; icon: LucideIcon };
@@ -50,10 +55,10 @@ const navigation: Record<ShellKind, NavItem[]> = {
   ],
   teacher: [
     { label: "الرئيسية", href: "/teacher", icon: Home },
-    { label: "وضع الحصة", href: "/teacher/session", icon: BookOpenText },
     { label: "الطلاب", href: "/teacher/students", icon: UsersRound },
-    { label: "المهني", href: "/teacher/professional", icon: ClipboardCheck },
+    { label: "بدء حصة", href: "/teacher/session", icon: BookOpenText },
     { label: "الرسائل", href: "/teacher/messages", icon: MessageSquareText },
+    { label: "ملفي", href: "/teacher/professional", icon: ClipboardCheck },
     { label: "الإعدادات", href: "/teacher/settings", icon: Settings },
   ],
   admin: [
@@ -77,7 +82,10 @@ const shellLabels: Record<ShellKind, { section: string; title: string }> = {
 
 export function AppShell({ kind, children }: { kind: ShellKind; children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [commandOpen, setCommandOpen] = useState(false);
+  const [teacherName, setTeacherName] = useState("");
+  const [signingOut, setSigningOut] = useState(false);
   const items = navigation[kind];
   const commands = useMemo<CommandItem[]>(() => items.map((item) => ({
     label: item.label,
@@ -86,6 +94,8 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   })), [items, kind]);
 
   useEffect(() => {
+    applyAppearance();
+    void rememberAuthenticatedAccount();
     const listener = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
@@ -95,6 +105,22 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
     window.addEventListener("keydown", listener);
     return () => window.removeEventListener("keydown", listener);
   }, []);
+
+  useEffect(() => {
+    if (kind !== "teacher") return;
+    void createClient().auth.getUser().then(async ({ data }) => {
+      if (!data.user) return;
+      const profile = await createClient().from("profiles").select("display_name").eq("id", data.user.id).maybeSingle();
+      setTeacherName(profile.data?.display_name ?? "");
+    });
+  }, [kind]);
+
+  async function signOut(): Promise<void> {
+    setSigningOut(true);
+    await createClient().auth.signOut({ scope: "local" });
+    router.replace("/login");
+    router.refresh();
+  }
 
   return (
     <ToastProvider><OfflineProvider>
@@ -107,7 +133,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
           <nav className="app-rail__nav" aria-label="التنقل الرئيسي">
             {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
           </nav>
-          <a className="app-rail__profile" href={`/${kind}#profile`}>
+          <a className="app-rail__profile" href={kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`}>
             <Avatar name="حساب المستخدم" size="sm" />
             <span><strong>الحساب</strong><small>الملف الشخصي</small></span>
           </a>
@@ -115,17 +141,14 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 
         <div className="app-frame">
           <header className="app-header">
-            <div>
-              <span>{shellLabels[kind].section}</span>
-              <strong>{shellLabels[kind].title}</strong>
-            </div>
+            {kind === "teacher" ? <div className="teacher-shell-identity"><strong>أستاذ(ة) {teacherName}</strong></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
             <div className="app-header__actions">
-              <button className="global-search-trigger" type="button" aria-label="فتح البحث العام" onClick={() => setCommandOpen(true)}>
+              {kind !== "teacher" ? <button className="global-search-trigger" type="button" aria-label="فتح البحث العام" onClick={() => setCommandOpen(true)}>
                 <Search aria-hidden="true" size={18} />
                 <span>بحث</span><kbd>Ctrl K</kbd>
-              </button>
+              </button> : <button className="teacher-signout" type="button" aria-label="تسجيل الخروج" disabled={signingOut} onClick={() => void signOut()}><LogOut aria-hidden="true" size={18} /><span>{signingOut ? "جار الخروج" : "تسجيل الخروج"}</span></button>}
               <NotificationCenter />
-              <a className="mobile-profile" href={`/${kind}#profile`} aria-label="الملف الشخصي">
+              <a className="mobile-profile" href={kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`} aria-label="الملف الشخصي">
                 <CircleUserRound aria-hidden="true" size={24} />
               </a>
             </div>
@@ -136,7 +159,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
         <nav className="mobile-nav" aria-label="التنقل الرئيسي للهاتف">
           {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
         </nav>
-        <CommandPalette items={commands} open={commandOpen} onOpenChange={setCommandOpen} />
+        {kind !== "teacher" ? <CommandPalette items={commands} open={commandOpen} onOpenChange={setCommandOpen} /> : null}
       </div>
     </OfflineProvider></ToastProvider>
   );
@@ -145,7 +168,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const Icon = item.icon;
   return (
-    <Link className={cn("app-nav-link", active && "is-active")} href={item.href} aria-current={active ? "page" : undefined}>
+    <Link className={cn("app-nav-link", active && "is-active")} href={item.href} aria-label={item.label} aria-current={active ? "page" : undefined}>
       <Icon aria-hidden="true" size={21} strokeWidth={active ? 2.4 : 1.8} />
       <span>{item.label}</span>
     </Link>
