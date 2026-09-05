@@ -8,10 +8,27 @@ for (const name of required) {
 }
 
 const repair = process.argv.includes("--repair");
+const nativeFetch = globalThis.fetch.bind(globalThis);
+async function resilientFetch(input, init) {
+  let lastError;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      const response = await nativeFetch(input, init);
+      if (response.status < 500 || attempt === 5) return response;
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 600 * (attempt + 1)));
+  }
+  throw lastError ?? new Error("Supabase request failed");
+}
 const client = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
-  { auth: { persistSession: false, autoRefreshToken: false } },
+  {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { fetch: resilientFetch },
+  },
 );
 
 function normalize(value) {
@@ -56,6 +73,21 @@ async function resolveId(alias) {
   return data ? String(data).split("@")[0] : null;
 }
 
+async function resolveAccounts(rows, prefix) {
+  const resolved = new Map();
+  for (let index = 0; index < rows.length; index += 20) {
+    await Promise.all(
+      rows.slice(index, index + 20).map(async (row) => {
+        resolved.set(
+          normalize(row.username),
+          await resolveId(`${prefix}_${row.username}`),
+        );
+      }),
+    );
+  }
+  return resolved;
+}
+
 async function loadSnapshot() {
   const [
     legacyStudents,
@@ -85,14 +117,10 @@ async function loadSnapshot() {
     readAll("class_teacher_assignments", "teacher_id,class_id,status"),
   ]);
 
-  const studentIds = new Map();
-  for (const student of legacyStudents) {
-    studentIds.set(normalize(student.username), await resolveId(`s_${student.username}`));
-  }
-  const teacherIds = new Map();
-  for (const teacher of legacyTeachers) {
-    teacherIds.set(normalize(teacher.username), await resolveId(`t_${teacher.username}`));
-  }
+  const [studentIds, teacherIds] = await Promise.all([
+    resolveAccounts(legacyStudents, "s"),
+    resolveAccounts(legacyTeachers, "t"),
+  ]);
 
   return {
     legacyStudents,
