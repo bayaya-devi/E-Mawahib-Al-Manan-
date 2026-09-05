@@ -31,7 +31,7 @@ export function PublicSiteAdminWorkspace() {
     });
   }, []);
   return <div className="site-admin">
-    <header className="site-admin__intro"><span>إدارة الموقع العام</span><h1>النشر والمواعيد</h1><p>المحتوى المنشور هنا يظهر مباشرة في موقع دار الحديث والقرآن.</p></header>
+    <header className="site-admin__intro"><span>إدارة الموقع العام</span><h1>النشر والمواعيد</h1><p>المحتوى المنشور هنا يظهر مباشرة في موقع دار القرآن والحديث.</p></header>
     <div className="site-admin__tabs" role="tablist" aria-label="أقسام الموقع">
       <button className={resource === "site" ? "is-active" : ""} onClick={() => { setResource("site"); setEditingId(undefined); }} type="button"><Building2 />بيانات الموقع</button>
       <button className={resource === "news" ? "is-active" : ""} onClick={() => { setResource("news"); setEditingId(undefined); }} type="button"><Newspaper />الأخبار</button>

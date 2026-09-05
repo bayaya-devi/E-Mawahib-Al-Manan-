@@ -20,7 +20,7 @@ const contentSecurityPolicy = [
   "font-src 'self' data:",
   "media-src 'self' blob: https:",
   `connect-src 'self' https://*.supabase.co wss://*.supabase.co${process.env.NODE_ENV === "development" ? " ws://127.0.0.1:* ws://localhost:*" : ""}`,
-  "frame-src 'self' https://meet.jit.si",
+  "frame-src 'self' https://meet.jit.si https://www.google.com",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
   "upgrade-insecure-requests",

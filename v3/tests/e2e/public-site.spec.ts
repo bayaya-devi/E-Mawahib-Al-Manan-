@@ -6,11 +6,49 @@ const replayId = "11111111-1111-4111-8111-111111111111";
 test("language switch preserves the current public page", async ({ page }) => {
   await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
   await page.goto("/ar/programs");
-  await page.locator(".public-v3__language summary").click();
+  await page.locator(".public-v3__language > button").click();
   await page.getByRole("link", { name: "Français", exact: true }).click();
   await expect(page).toHaveURL(/\/fr\/programs$/);
   await expect(page.locator(".public-v3")).toHaveAttribute("dir", "ltr");
   await expect(page.getByRole("heading", { level: 1, name: "Que peuvent apprendre les bénéficiaires ?" })).toBeVisible();
+});
+
+test("mobile menu and language menu remain usable together", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
+  await page.goto("/ar");
+  await page.getByRole("button", { name: "القائمة" }).click();
+  await page.locator(".public-v3__language > button").click();
+  await expect(page.getByRole("link", { name: "Français", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Français", exact: true }).click();
+  await expect(page).toHaveURL(/\/fr$/);
+});
+
+test("contact presents the official phone and the verified map", async ({ page }) => {
+  await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
+  await page.goto("/ar/contact");
+  await expect(page.locator('a[href="tel:+212639598936"]')).toHaveText(/0639-598936/);
+  await expect(page.getByTitle("دار القرآن والحديث - جمعية مواهب المنان")).toHaveAttribute("loading", "lazy");
+  await expect(page.getByRole("link", { name: "فتح الخريطة" })).toHaveAttribute("href", "https://maps.app.goo.gl/EfrBwvpKfKZmuCSd9");
+});
+
+test("language menu closes with Escape and an outside click", async ({ page }) => {
+  await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
+  await page.goto("/ar");
+  await page.locator(".public-v3__language > button").click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("link", { name: "Français", exact: true })).toHaveCount(0);
+  await page.locator(".public-v3__language > button").click();
+  await page.locator("main").click({ position: { x: 8, y: 8 } });
+  await expect(page.getByRole("link", { name: "Français", exact: true })).toHaveCount(0);
+});
+
+test("reduced motion leaves public content immediately accessible", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
+  await page.goto("/ar/programs");
+  await expect(page.getByRole("heading", { level: 1, name: "ماذا يتعلم المستفيدون؟" })).toBeVisible();
+  await expect(page.locator("[data-public-reveal]")).toHaveCount(0);
 });
 
 test("published schedule is rendered from the shared content endpoint", async ({ page }) => {
