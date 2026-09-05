@@ -3,10 +3,12 @@ import type { DatabaseAssignmentStatus, DatabaseAttendanceStatus, DatabaseLearni
 export type StudentDashboardData = {
   student: { id: string; name: string } | null;
   teacher: { id: string; name: string } | null;
+  classroom: { id: string; name: string } | null;
   nextCourse: { id: string; title: string; startsAt: string; endsAt: string; location: string | null } | null;
+  courseSchedule: Array<{ id: string; startsAt: string; endsAt: string }>;
   announcements: Array<{ id: string; title: string; body: string; publishedAt: string }>;
   events: Array<{ id: string; title: string; startsAt: string }>;
-  assignments: Array<{ id: string; title: string; instructions: string | null; dueAt: string | null; surahNumber: number | null; status: DatabaseAssignmentStatus }>;
+  assignments: Array<{ id: string; title: string; instructions: string | null; dueAt: string | null; surahNumber: number | null; verseFrom: number | null; verseTo: number | null; status: DatabaseAssignmentStatus }>;
   goal: { id: string; surahNumber: number; verseFrom: number; verseTo: number; targetDate: string | null } | null;
   progress: Array<{ surahNumber: number; status: DatabaseLearningProgressStatus; percent: number; stars: number }>;
   notifications: Array<{ id: string; title: string; body: string; href: string | null; read: boolean; createdAt: string }>;

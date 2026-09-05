@@ -476,6 +476,7 @@ describe("V3 migrations and RLS", () => {
       "role_permissions_active_read",
       "schema_versions_direction_read",
       "school_documents_admin_read",
+      "school_documents_related_user_read",
       "school_incidents_admin_read",
       "school_memberships_select_scoped",
       "school_rooms_admin_read",

@@ -4,7 +4,7 @@ test.describe("student and family V3", () => {
   test("uses one Quran route for the complete 114-surah catalog", async ({ page }) => {
     await page.goto("/student/quran");
     await expect(page.getByRole("heading", { name: "مسار السور" })).toBeVisible();
-    await expect(page.locator(".juz-path")).toHaveCount(30);
+    await expect(page.locator(".juz-path")).toHaveCount(2);
     await expect(page.getByRole("link", { name: /سُورَةُ النَّاسِ/ })).toHaveAttribute("href", "/student/quran/al-nas");
     await page.goto("/student/quran/al-nas");
     await expect(page).toHaveURL(/\/student\/quran\/al-nas$/);

@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 const shells = [
-  ["/ar", "دار الحديث والقرآن"],
-  ["/student", "تابع حفظك بهدوء وثبات"],
+  ["/ar", "دار القرآن والحديث"],
+  ["/student", null],
   ["/family", "متابعة الأبناء"],
   ["/teacher", "ملخص العمل"],
   ["/admin", "مركز قيادة المؤسسة"],
@@ -12,7 +12,8 @@ for (const [path, heading] of shells) {
   test(`${path} renders in RTL without horizontal overflow`, async ({ page }) => {
     await page.goto(path);
     await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
-    await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+    if (heading) await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
+    else await expect(page.getByLabel("معلومات الحصة")).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   });
@@ -29,7 +30,7 @@ test("application shell exposes responsive navigation", async ({ page }) => {
 });
 
 test("global search opens from keyboard and closes with Escape", async ({ page }) => {
-  await page.goto("/student");
+  await page.goto("/admin");
   const trigger = page.getByRole("button", { name: "فتح البحث العام" });
   await trigger.click();
   const search = page.getByRole("textbox", { name: "ابحث في المنصة" });
@@ -43,8 +44,8 @@ test("global search opens from keyboard and closes with Escape", async ({ page }
   } else {
     await trigger.click();
   }
-  await search.fill("الواجبات");
-  await expect(page.getByRole("link", { name: /الواجبات/ })).toBeVisible();
+  await search.fill("الأشخاص");
+  await expect(page.getByRole("link", { name: /الأشخاص/ })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(search).toBeHidden();
 });

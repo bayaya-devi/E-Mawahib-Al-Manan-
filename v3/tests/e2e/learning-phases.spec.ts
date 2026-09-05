@@ -20,9 +20,12 @@ test('long-surah resume, phase audio bounds, errors and global validation', asyn
   await expect(page.locator('.learning-phase-label')).toContainText('1 / 3');
   await expect(page.locator('.verse-reader button')).toHaveCount(5);
   async function solve() {
+    const continueButton=page.getByRole('button',{name:'متابعة',exact:true});
+    if(await continueButton.isVisible().catch(()=>false)) await continueButton.click();
     const plan=makeLearningPlan(key,state.attempt);const round=plan.rounds[state.cursor]!;
     if(round.kind==='verse_order') {
-      for(const word of round.answer.split(' ')) await page.locator('.learning-word-bank button:enabled').filter({hasText: new RegExp(`^${word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}$`)}).first().click();
+      const ordered=[...round.options].sort((a,b)=>round.answer.indexOf(a)-round.answer.indexOf(b));
+      for(const fragment of ordered) await page.locator('.learning-word-bank button:enabled').filter({hasText:fragment}).first().click();
       await page.getByRole('button',{name:'تحقق',exact:true}).click();
     } else await page.locator('.student-exercise__options button').filter({hasText:round.answer}).first().click();
     await expect(page.locator('.student-exercise')).toHaveAttribute('aria-busy','false');

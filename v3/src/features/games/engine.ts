@@ -70,8 +70,10 @@ export function isCorrect(round: QuranGameRound, response: string): boolean {
 }
 
 function verseOrderRound(surah: QuranSurah, verse: QuranVerse, seed: number): QuranGameRound {
-  const words = wordsOf(verse.text);
-  return round(surah, verse, "verse_order", "رتّب كلمات الآية", stableShuffle(words, seed), words.join(" "));
+  const start = Math.min(Math.max(0, surah.verses.findIndex(({ number }) => number === verse.number)), Math.max(0, surah.verses.length - 3));
+  const passage = surah.verses.slice(start, start + Math.min(3, surah.verses.length));
+  const fragments = passage.map(({ text }) => text);
+  return round(surah, verse, "verse_order", "رتّب آيات المقطع", stableShuffle(fragments, seed), fragments.join(" "));
 }
 
 function nextVerseRound(surah: QuranSurah, index: number, seed: number): QuranGameRound {
@@ -86,8 +88,9 @@ function missingWordRound(surah: QuranSurah, verse: QuranVerse, seed: number): Q
   const missingIndex = words.length > 1 ? Math.abs(seed) % words.length : 0;
   const answer = words[missingIndex] ?? verse.text;
   const promptWords = words.map((word, index) => index === missingIndex ? "_____" : word);
+  const context = nearbyVerses(surah, surah.verses.findIndex(({ number }) => number === verse.number)).slice(0, 2).map(({ text }) => text);
   const distractors = unique(surah.verses.flatMap(({ text }) => wordsOf(text))).filter((word) => word !== answer);
-  return round(surah, verse, "missing_word", promptWords.join(" "), stableShuffle([answer, ...distractors.slice(0, 3)], seed), answer);
+  return round(surah, verse, "missing_word", [...context, promptWords.join(" ")].join(" · "), stableShuffle([answer, ...distractors.slice(0, 3)], seed), answer);
 }
 
 function matchEdgesRound(surah: QuranSurah, verse: QuranVerse, seed: number): QuranGameRound {
@@ -142,4 +145,3 @@ function stableShuffle<T>(values: readonly T[], seed: number): T[] {
   }
   return result;
 }
-

@@ -10,6 +10,7 @@ import {
   Home,
   LayoutDashboard,
   LogOut,
+  Menu,
   MessageSquareText,
   Search,
   Gamepad2,
@@ -30,7 +31,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Avatar, CommandPalette, ToastProvider } from "@/components/ui";
 import { NotificationCenter } from "@/features/notifications";
 import { OfflineProvider } from "@/features/offline";
-import { applyAppearance } from "@/features/settings/appearance";
+import { applyAppearance, watchSystemAppearance } from "@/features/settings/appearance";
 import { rememberAuthenticatedAccount } from "@/features/teacher/device-account-vault";
 import type { CommandItem } from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
@@ -89,6 +90,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   const [teacherName, setTeacherName] = useState("");
   const [studentName, setStudentName] = useState("");
   const [signingOut, setSigningOut] = useState(false);
+  const [navigationOpen, setNavigationOpen] = useState(true);
   const items = navigation[kind];
   const commands = useMemo<CommandItem[]>(() => items.map((item) => ({
     label: item.label,
@@ -106,7 +108,8 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
       }
     };
     window.addEventListener("keydown", listener);
-    return () => window.removeEventListener("keydown", listener);
+    const stopAppearanceWatch = watchSystemAppearance();
+    return () => { window.removeEventListener("keydown", listener); stopAppearanceWatch(); };
   }, []);
 
   useEffect(() => {
@@ -128,8 +131,8 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 
   return (
     <ToastProvider><OfflineProvider>
-      <div className={cn("app-shell", `app-shell--${kind}`)}>
-        <aside className="app-rail" aria-label="التنقل الرئيسي">
+      <div className={cn("app-shell", `app-shell--${kind}`, !navigationOpen && "is-navigation-collapsed")}>
+        <aside className="app-rail" id="application-navigation" aria-label="التنقل الرئيسي">
           <Link className="brand-mark" href="/" aria-label="مواهب المنان">
             <span aria-hidden="true">م</span>
             <strong>مواهب المنان</strong>
@@ -147,12 +150,14 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
           <header className="app-header">
             {kind === "teacher" ? <div className="teacher-shell-identity"><strong>أستاذ(ة) {teacherName}</strong></div> : kind === "student" ? <div className="student-shell-identity"><strong>{studentName || "حساب الطالب"}</strong></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
             <div className="app-header__actions">
+              <button className="navigation-toggle" type="button" aria-label={navigationOpen ? "إخفاء قائمة التنقل" : "إظهار قائمة التنقل"} aria-expanded={navigationOpen} aria-controls="application-navigation mobile-navigation" onClick={() => setNavigationOpen((open) => !open)}>
+                <Menu aria-hidden="true" size={20} />
+              </button>
               {kind !== "teacher" && kind !== "student" ? <button className="global-search-trigger" type="button" aria-label="فتح البحث العام" onClick={() => setCommandOpen(true)}>
                 <Search aria-hidden="true" size={18} />
                 <span>بحث</span><kbd>Ctrl K</kbd>
               </button> : <button className="teacher-signout" type="button" aria-label="تسجيل الخروج" disabled={signingOut} onClick={() => void signOut()}><LogOut aria-hidden="true" size={18} /><span>{signingOut ? "جار الخروج" : "تسجيل الخروج"}</span></button>}
               <NotificationCenter />
-              {kind === "student" ? <button className="teacher-signout" type="button" aria-label="تسجيل الخروج" disabled={signingOut} onClick={() => void signOut()}><LogOut aria-hidden="true" size={18} /></button> : null}
               <a className="mobile-profile" href={kind === "student" ? "/student/profile" : kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`} aria-label="الملف الشخصي">
                 <CircleUserRound aria-hidden="true" size={24} />
               </a>
@@ -161,7 +166,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
           <main className="app-content" id="main-content">{children}</main>
         </div>
 
-        <nav className="mobile-nav" aria-label="التنقل الرئيسي للهاتف">
+        <nav className="mobile-nav" id="mobile-navigation" aria-label="التنقل الرئيسي للهاتف">
           {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
         </nav>
         {kind !== "teacher" && kind !== "student" ? <CommandPalette items={commands} open={commandOpen} onOpenChange={setCommandOpen} /> : null}

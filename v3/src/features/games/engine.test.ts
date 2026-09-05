@@ -26,5 +26,10 @@ describe("shared Quran games engine", () => {
     });
     expect(round.options).toContain("جواب مراجَع");
   });
-});
 
+  it("builds the ordering exercise from several Quran verses", () => {
+    const round = createQuranRound(surah, "verse_order", 1)!;
+    expect(round.options.length).toBeGreaterThanOrEqual(3);
+    expect(round.prompt).toContain("آيات");
+  });
+});
