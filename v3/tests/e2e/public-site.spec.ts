@@ -13,6 +13,21 @@ test("language switch preserves the current public page", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1, name: "Que peuvent apprendre les bénéficiaires ?" })).toBeVisible();
 });
 
+test("root selects a browser language once and preserves a manual choice", async ({ browser }) => {
+  const context = await browser.newContext({ locale: "fr-FR" });
+  const page = await context.newPage();
+  await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/fr$/);
+  await page.goto("/ar");
+  await page.locator(".public-v3__language > button").click();
+  await page.getByRole("link", { name: "English", exact: true }).click();
+  await expect(page).toHaveURL(/\/en$/);
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/en$/);
+  await context.close();
+});
+
 test("mobile menu and language menu remain usable together", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
@@ -56,6 +71,21 @@ test("published schedule is rendered from the shared content endpoint", async ({
   await page.goto("/ar/schedule");
   await expect(page.getByRole("heading", { name: "حصة القرآن" })).toBeVisible();
   await expect(page.getByText("17:30 – 19:00")).toBeVisible();
+});
+
+test("schedule keeps administration hours without an empty-state rectangle", async ({ page }) => {
+  await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
+  await page.goto("/fr/schedule");
+  await expect(page.getByText("Samedi : 11h00 – 13h00")).toBeVisible();
+  await expect(page.getByText("Dimanche : 11h00 – 13h00")).toBeVisible();
+  await expect(page.locator(".public-empty")).toHaveCount(0);
+});
+
+test("published back-to-school news is displayed in the active locale", async ({ page }) => {
+  await page.route("**/api/public/content**", (route) => route.fulfill({ json: { ...emptyContent, news: [{ id: replayId, title: "Rentrée des cours 2026-2027", excerpt: "La rentrée des cours à Dar Al-Qur’an wal-Hadith aura lieu le lundi 7 septembre 2026.", body: "", imageUrl: null, eventDate: "2026-09-07", publishedAt: "2026-09-05T09:00:00Z" }] } }));
+  await page.goto("/fr/news");
+  await expect(page.getByRole("heading", { name: "Rentrée des cours 2026-2027" })).toBeVisible();
+  await expect(page.locator(".public-content-grid time")).toHaveText("7 septembre 2026");
 });
 
 test("replay like updates through the protected interaction endpoint", async ({ page }) => {

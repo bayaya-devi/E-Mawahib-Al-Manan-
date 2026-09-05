@@ -5,9 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { locales, pageFromPath, publicCopy, publicHref, publicPages, type PublicLocale } from "@/features/public-site/content";
+import { publicLocaleCookie } from "@/features/public-site/locale-preference";
 import { PublicMotion } from "@/features/public-site/public-motion";
 
 const localeLabels: Record<PublicLocale, string> = { ar: "العربية", fr: "Français", en: "English", amz: "ⵜⴰⵛⵍⵃⵉⵜ" };
@@ -36,6 +37,7 @@ export function PublicShell({ locale, children }: { locale: PublicLocale; childr
       document.removeEventListener("keydown", closeOnEscape);
     };
   }, []);
+  const saveLocale = useCallback((nextLocale: PublicLocale) => { document.cookie = `${publicLocaleCookie}=${nextLocale}; Path=/; Max-Age=31536000; SameSite=Lax`; }, []);
   return <div className="public-v3" lang={locale === "amz" ? "zgh-Tfng" : locale} dir={locale === "ar" ? "rtl" : "ltr"}>
     <header className="public-v3__header">
       <Link className="public-v3__brand" href={publicHref(locale, "home")} aria-label={copy.brand}>
@@ -46,7 +48,7 @@ export function PublicShell({ locale, children }: { locale: PublicLocale; childr
       <div className="public-v3__actions">
         <div className="public-v3__language" ref={languageRef}>
           <button type="button" aria-haspopup="menu" aria-expanded={languageOpen} aria-controls="public-language-menu" onClick={() => setLanguageOpen((value) => !value)}>{localeLabels[locale]}<ChevronDown aria-hidden="true" size={16} /></button>
-          {languageOpen && <div id="public-language-menu" aria-label={copy.language}>{locales.filter((item) => item !== locale).map((item) => <Link key={item} href={publicHref(item, page)} hrefLang={item === "amz" ? "zgh" : item} onClick={() => { setLanguageOpen(false); setOpen(false); }}>{localeLabels[item]}</Link>)}</div>}
+          {languageOpen && <div id="public-language-menu" aria-label={copy.language}>{locales.filter((item) => item !== locale).map((item) => <Link key={item} href={publicHref(item, page)} hrefLang={item === "amz" ? "zgh" : item} onClick={() => { saveLocale(item); setLanguageOpen(false); setOpen(false); }}>{localeLabels[item]}</Link>)}</div>}
         </div>
         <Link className="public-v3__login" href="/login"><LogIn aria-hidden="true" size={17} />{copy.login}</Link>
         <button className="public-v3__menu" type="button" aria-label={copy.menu} aria-expanded={open} onClick={() => setOpen((value) => !value)}>{open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>

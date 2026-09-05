@@ -12,6 +12,7 @@ export default defineConfig({
       "src/**/*.test.{ts,tsx}",
       "tests/database/**/*.test.ts",
       "tests/migration/**/*.test.ts",
+      "tests/public-site/**/*.test.ts",
     ],
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
