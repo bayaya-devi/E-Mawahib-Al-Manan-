@@ -1,4 +1,4 @@
-import quranSnapshot from "./data/quran-v1.json";
+import quranSnapshot from "./data/quran-v1.json" with { type: "json" };
 
 export type QuranVerse = Readonly<{
   number: number;
@@ -54,4 +54,3 @@ export function getWarshFallbackAudioUrl(audioCode: string): string {
 function assertAudioCode(audioCode: string): void {
   if (!/^\d{6}$/.test(audioCode)) throw new Error("Invalid Quran audio code");
 }
-

@@ -16,7 +16,7 @@ test.describe("student and family V3", () => {
 
   test("keeps core student navigation visible and pages free of horizontal overflow", async ({ page }) => {
     await page.goto("/student");
-    await expect(page.getByRole("link", { name: "الألعاب" })).toBeVisible();
+    await expect(page.locator('.app-nav-link:visible').filter({ hasText: 'الألعاب' })).toBeVisible();
     const viewport = page.viewportSize();
     await expect(page.getByRole("navigation", { name: viewport && viewport.width <= 720 ? "التنقل الرئيسي للهاتف" : "التنقل الرئيسي" }).first()).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

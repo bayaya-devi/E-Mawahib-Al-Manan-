@@ -1,4 +1,11 @@
 .learning-page, .quran-workspace { display: grid; gap: 28px; }
+.review-checkpoint { padding: 10px 0 18px; }
+.review-checkpoint .ui-button { border-style: dashed; }
+.learning-phase-label { font-size: 16px; font-weight: 700; }
+.learning-word-answer, .learning-word-bank { display: flex; flex-wrap: wrap; gap: 8px; min-height: 48px; }
+.learning-word-answer { border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+.learning-word-answer button, .learning-word-bank button { min-height: 44px; padding: 8px 12px; max-width: 100%; overflow-wrap: anywhere; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; }
+.learning-word-bank button:disabled { opacity: .4; }
 .learning-hero { min-height: 230px; display: flex; align-items: center; justify-content: space-between; gap: 36px; padding: 38px 42px; border: 1px solid var(--border); border-inline-start: 5px solid var(--brand); border-radius: var(--radius-lg); background: var(--surface); box-shadow: var(--shadow-1); }
 .learning-hero > div { max-width: 650px; }
 .learning-hero span, .simple-page-head > span, .family-head > div > span { color: var(--gold); font-weight: 760; }

@@ -8,3 +8,5 @@ test-results
 .artifacts
 tests
 *.log
+.env.local
+.env.*.local

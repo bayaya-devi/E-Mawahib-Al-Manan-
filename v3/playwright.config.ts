@@ -17,7 +17,7 @@ export default defineConfig({
     { name: "mobile", use: { ...devices["Pixel 5"], channel: "chrome" } },
   ],
   webServer: {
-    command: "npm run dev -- --port 3001",
+    command: process.env.PLAYWRIGHT_USE_BUILD === '1' ? "npm run start -- --port 3001" : "npm run dev -- --port 3001",
     url: "http://127.0.0.1:3001",
     reuseExistingServer: !process.env.CI,
     env: {

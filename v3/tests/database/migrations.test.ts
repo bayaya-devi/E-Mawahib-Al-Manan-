@@ -194,6 +194,27 @@ async function runAsDatabaseRole(role: "anon" | "service_role", sql: string) {
 }
 
 describe("V3 migrations and RLS", () => {
+  it('persists learning per student, rejects direct completion, and awards only once', async () => {
+    const state = JSON.stringify({cursor:4,errors:0,attempt:0,failed:false,passed:false});
+    const saved = await runAsDatabaseRole('service_role', `select public.save_student_learning('${users.studentA}','surah-96',0,'${state}')`);
+    expect(saved.rows).toHaveLength(1);
+    const own = await asUser(users.studentA, "select version,state from public.student_learning_sessions where learning_key='surah-96'");
+    expect(own[0]?.version).toBe(1);
+    expect(await asUser(users.studentB, "select * from public.student_learning_sessions where learning_key='surah-96'")).toEqual([]);
+    await expect(asUser(users.studentA,"select public.complete_quran_surah(96::smallint)")).rejects.toThrow(/required_learning_incomplete/);
+    await expect(asUser(users.studentA,`select public.save_student_learning('${users.studentA}','surah-96',1,'${state}')`)).rejects.toThrow(/permission denied/);
+    await expect(runAsDatabaseRole('service_role',`select public.save_student_learning('${users.studentA}','surah-96',0,'${state}')`)).rejects.toThrow(/learning_version_conflict/);
+    const complete = JSON.stringify({cursor:15,errors:1,attempt:0,failed:false,passed:true});
+    await runAsDatabaseRole('service_role',`select public.save_student_learning('${users.studentA}','surah-96',1,'${complete}')`);
+    await runAsDatabaseRole('service_role',`select public.save_student_learning('${users.studentA}','surah-96',2,'${complete}')`);
+    const reward = await database.query<{stars:number;status:string}>(`select stars,status from public.student_surah_progress where student_id='${users.studentA}' and surah_number=96`);
+    expect(reward.rows[0]).toEqual({stars:5,status:'mastered'});
+    const events = await database.query(`select id from public.learning_events where student_id='${users.studentA}' and surah_number=96 and event_kind='surah_completed'`);
+    expect(events.rows).toHaveLength(1);
+    await runAsDatabaseRole('service_role',`select public.save_student_learning('${users.studentA}','review-0',0,'${complete}')`);
+    expect((await asUser(users.studentA,"select state from public.student_learning_sessions where learning_key='review-0'"))[0]?.state).toMatchObject({passed:true});
+    await database.exec(`delete from public.student_learning_sessions where student_id='${users.studentA}'; delete from public.learning_events where student_id='${users.studentA}' and surah_number=96; delete from public.student_surah_progress where student_id='${users.studentA}' and surah_number=96;`);
+  });
   beforeAll(async () => {
     database = new PGlite();
     await database.exec(supabasePrelude);
@@ -331,6 +352,7 @@ describe("V3 migrations and RLS", () => {
       "staff_messages",
       "staff_profiles",
       "student_digital_files",
+      "student_learning_sessions",
       "student_profiles",
       "student_surah_progress",
       "student_verse_progress",
@@ -464,6 +486,7 @@ describe("V3 migrations and RLS", () => {
       "staff_profiles_admin_read",
       "student_digital_files_admin_read",
       "student_digital_files_student_read",
+      "student_learning_sessions_own_read",
       "student_profiles_select_scoped",
       "surah_progress_read_scoped",
       "teacher_documents_read",

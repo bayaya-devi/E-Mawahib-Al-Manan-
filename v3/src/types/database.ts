@@ -271,6 +271,7 @@ type MutableTable<Row, Insert = Partial<Row>> = {
 export type Database = {
   public: {
     Tables: {
+      student_learning_sessions: ReadonlyTable<{ student_id: string; learning_key: string; state: Json; version: number; updated_at: string }>;
       profiles: ReadonlyTable<ProfileRow>;
       user_roles: ReadonlyTable<UserRoleRow>;
       schools: ReadonlyTable<SchoolRow>;
@@ -437,6 +438,7 @@ export type Database = {
         Args: { target_surah_number: number };
         Returns: undefined;
       };
+      save_student_learning: { Args: { target_student: string; target_key: string; expected_version: number; next_state: Json }; Returns: number };
       submit_parent_feedback: {
         Args: { target_scores: number[]; target_comment?: string | null };
         Returns: undefined;

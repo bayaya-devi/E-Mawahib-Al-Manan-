@@ -2,7 +2,9 @@
 
 import { BookOpenText, Check, ChevronDown, LockKeyhole, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
+import { reviewGroups } from './learning-plan';
+import { ReviewCheckpoint } from './review-checkpoint';
 import { getAllSurahs } from "./canonical";
 import type { StudentDashboardData } from "@/features/learning/models";
 
@@ -28,7 +30,7 @@ export function QuranCatalog({ progress }: { progress: StudentDashboardData["pro
         <span className="juz-path__marker">{complete ? <Check size={17} /> : future ? <LockKeyhole size={16} /> : <Sparkles size={17} />}</span><span><strong>{juz.name}</strong><small>من السورة {juz.to} إلى السورة {juz.from}</small></span><ChevronDown className={expanded ? "is-open" : undefined} size={19} />
       </button>
       <div className={expanded ? "juz-path__items" : "juz-path__items is-preview"}>
-        {(expanded ? surahs : surahs.slice(0, 2)).map((surah) => <SurahNode key={surah.number} surah={surah} item={bySurah.get(surah.number)} unlocked={surah.number >= next} />)}
+        {(expanded ? surahs : surahs.slice(0, 2)).map((surah) => { const groupIndex = reviewGroups.findIndex(group => group.at(-1) === surah.number); const group = reviewGroups[groupIndex]; return <Fragment key={surah.number}><SurahNode surah={surah} item={bySurah.get(surah.number)} unlocked={surah.number >= next} />{group && group.every(n => bySurah.get(n)?.status === 'mastered') ? <ReviewCheckpoint index={groupIndex} group={group} /> : null}</Fragment>; })}
         {!expanded ? <p>{complete ? "اضغط لعرض السور" : "أتم الجزء السابق أولاً"}</p> : null}
       </div>
     </section>;

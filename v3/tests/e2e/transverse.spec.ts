@@ -34,8 +34,8 @@ test("publishes a PWA manifest and notification entry point", async ({ page, req
 test("communication settings are reachable and mobile safe", async ({ page }) => {
   for (const path of ["/student/settings", "/family/settings"]) {
     await page.goto(path);
-    await expect(page.getByRole("heading", { name: "وسائل الاتصال" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "تفضيلات الإشعارات" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: path === '/student/settings' ? 'المظهر' : 'وسائل الاتصال' })).toBeVisible();
+    await expect(page.getByRole("heading", { name: path === '/student/settings' ? 'الحسابات على هذا الجهاز' : 'تفضيلات الإشعارات' })).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   }
