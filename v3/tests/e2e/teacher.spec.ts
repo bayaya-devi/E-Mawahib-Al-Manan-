@@ -11,10 +11,11 @@ test("teacher home keeps the essential mobile actions accessible", async ({ page
   await expect(page.locator("body")).not.toHaveCSS("overflow-x", "scroll");
 });
 
-test("session mode is progressive and does not invent a scheduled course", async ({ page }) => {
+test("session mode explains why a session cannot start without an assigned class", async ({ page }) => {
   await page.goto("/teacher/session");
   await expect(page.getByRole("heading", { name: "هل أنت مستعد(ة) لبدء الحصة؟" })).toBeVisible();
   await expect(page.getByRole("button", { name: /بدء الحصة/ })).toBeDisabled();
+  await expect(page.getByText(/تعذر التحقق|لا يوجد قسم مسند/)).toBeVisible();
   await expect(page.getByText("تسجيل الحضور")).not.toBeVisible();
 });
 
@@ -25,8 +26,13 @@ test("teacher navigation reaches every workspace", async ({ page }) => {
   await page.goto("/teacher/students");
   await expect(page.getByRole("heading", { name: "الطلاب" })).toBeVisible();
   await page.goto("/teacher/messages");
-  await expect(page.getByRole("heading", { name: "الرسائل" })).toBeVisible();
-  await expect(page.locator(".message-file")).toBeHidden();
+  await expect(page.getByRole("heading", { name: "المراسلات" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "الواردة" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "المرسلة" })).toBeVisible();
+  await page.getByRole("button", { name: "رسالة جديدة" }).click();
+  await expect(page.getByText("الإدارة", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("الموضوع")).toBeVisible();
+  await expect(page.getByLabel("الرسالة")).toBeVisible();
   await page.goto("/teacher/settings");
   await expect(page.getByRole("heading", { name: "الإعدادات" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "المظهر" })).toBeVisible();

@@ -957,11 +957,19 @@ describe("V3 migrations and RLS", () => {
     const repeated = await asUser<{ id: number }>(users.studentA, `select public.send_conversation_message('${conversationId}', 'Hello teacher', '${clientId}') as id`);
     expect(repeated).toEqual(first);
     const teacherMessages = await asUser<{ body: string }>(users.teacherA, "select body from public.conversation_messages");
-    expect(teacherMessages).toEqual([{ body: "Hello teacher" }]);
+    expect(teacherMessages).toEqual([]);
     const parentMessages = await asUser<{ body: string }>(users.parentA, "select body from public.conversation_messages");
     expect(parentMessages).toEqual([]);
     const otherSchoolMessages = await asUser<{ body: string }>(users.teacherB, "select body from public.conversation_messages");
     expect(otherSchoolMessages).toEqual([]);
+    const teacherCanContactDirection = await asUser<{ allowed: boolean }>(users.teacherA, `select public.can_message_user('${users.direction}') as allowed`);
+    expect(teacherCanContactDirection).toEqual([{ allowed: true }]);
+    const teacherCannotContactStudent = await asUser<{ allowed: boolean }>(users.teacherA, `select public.can_message_user('${users.studentA}') as allowed`);
+    expect(teacherCannotContactStudent).toEqual([{ allowed: false }]);
+    const adminConversation = await asUser<{ id: string }>(users.teacherA, `select public.create_direct_conversation('${users.direction}', 'Administration') as id`);
+    await asUser(users.teacherA, `select public.send_conversation_message('${adminConversation[0]?.id}', 'Administrative message', '80000000-0000-4000-8000-000000000002')`);
+    const directionMessages = await asUser<{ body: string }>(users.direction, `select body from public.conversation_messages where conversation_id = '${adminConversation[0]?.id}'`);
+    expect(directionMessages).toEqual([{ body: "Administrative message" }]);
     await expect(asUser(users.studentA, `select public.create_direct_conversation('${users.teacherB}', 'Denied')`)).rejects.toThrow(/messaging_relationship_denied/);
   });
 

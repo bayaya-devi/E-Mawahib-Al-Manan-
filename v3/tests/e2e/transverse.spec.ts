@@ -18,8 +18,8 @@ test("family and administration expose the unified communication workspace", asy
     await expect(page.getByRole("button", { name: "الطلبات" })).toBeVisible();
   }
   await page.goto("/teacher/messages");
-  await expect(page.getByRole("heading", { name: "الرسائل" })).toBeVisible();
-  await expect(page.getByText("محادثة جديدة", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "المراسلات" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "رسالة جديدة" })).toBeVisible();
   await expect(page.getByRole("button", { name: "الطلبات" })).toHaveCount(0);
 });
 
