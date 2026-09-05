@@ -947,6 +947,8 @@ describe("V3 migrations and RLS", () => {
     expect(allowed).toEqual([{ allowed: true }]);
     const denied = await asUser<{ allowed: boolean }>(users.studentA, `select public.can_message_user('${users.teacherB}') as allowed`);
     expect(denied).toEqual([{ allowed: false }]);
+    const administrationAllowed = await asUser<{ allowed: boolean }>(users.studentA, `select public.can_message_user('${users.direction}') as allowed`);
+    expect(administrationAllowed).toEqual([{ allowed: true }]);
     const parentAllowed = await asUser<{ allowed: boolean }>(users.parentA, `select public.can_message_user('${users.teacherA}') as allowed`);
     expect(parentAllowed).toEqual([{ allowed: true }]);
 
