@@ -20,12 +20,13 @@ describe("canonical Quran snapshot", () => {
     expect(getSurah(114)?.slug).toBe("al-nas");
     expect(getSurah("al-nas")?.number).toBe(114);
     expect(getSurah("unknown")).toBeUndefined();
-    expect(QURAN_SNAPSHOT_CHECKSUM).toMatch(/^[0-9a-f]{64}$/);
+    expect(QURAN_SNAPSHOT_CHECKSUM).toBe("cc66440db8d48423adbf96a483d71855e2732eb816cf8e506264504b3f99dc7d");
+    expect(getSurah(114)?.verses[0]?.text.startsWith("قُلَ اَعُوذُ")).toBe(true);
+    expect(getSurah(112)?.verses[0]?.text).not.toContain("بِسْمِ");
   });
 
   it("builds the reviewed Warsh audio source", () => {
-    expect(getWarshAudioUrl("114001")).toContain("/warsh/warsh_ibrahim_aldosary_128kbps/114001.mp3");
+    expect(getWarshAudioUrl("114001")).toBe("/api/quran/audio/114001");
     expect(() => getWarshAudioUrl("../bad")).toThrow("Invalid Quran audio code");
   });
 });
-

@@ -24,6 +24,11 @@
     "migration:v1:production": "node scripts/migration/import-v1-production.mjs",
     "bootstrap:direction": "node scripts/bootstrap-direction.mjs",
     "quran:extract-v1": "node scripts/quran/extract-v1-quran.mjs",
+    "quran:import-warsh": "node scripts/quran/import-warsh-reference.mjs",
+    "quran:verify": "node scripts/quran/verify-warsh-corpus.mjs",
+    "quran:verify-audio": "node scripts/quran/verify-warsh-audio.mjs",
+    "quran:migration": "node scripts/quran/generate-warsh-migration.mjs",
+    "quran:verify-production": "node scripts/quran/verify-production-quran.mjs",
     "notifications:vapid": "web-push generate-vapid-keys --json",
     "check": "npm run security:secrets && npm run lint && npm run typecheck && npm run test:run && npm run build"
   },

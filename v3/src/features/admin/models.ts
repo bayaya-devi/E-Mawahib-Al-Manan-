@@ -26,4 +26,5 @@ export type AdminCommandData = {
   events: Array<{ id: string; title: string; startsAt: string }>;
   announcements: Array<{ id: string; title: string; audience: string; publishedAt: string }>;
   audit: Array<{ id: number; action: string; entityType: string; occurredAt: string }>;
+  parentFeedback: Array<{ id: string; studentName: string; scores: number[]; comment: string | null; createdAt: string }>;
 };

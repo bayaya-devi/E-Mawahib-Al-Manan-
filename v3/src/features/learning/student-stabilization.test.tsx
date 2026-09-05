@@ -45,7 +45,8 @@ describe("student stabilization", () => {
 
   it("keeps one score per parent criterion and submits the backend mutation", async () => {
     render(<ToastProvider><ParentSurvey /></ToastProvider>);
-    const sevens = screen.getAllByRole("button", { name: "7" }); const nines = screen.getAllByRole("button", { name: "9" });
+    expect(screen.getByText(/تعني 1 «ضعيف» وتعني 10 «ممتاز»/)).toBeVisible();
+    const sevens = screen.getAllByRole("button", { name: /: 7$/ }); const nines = screen.getAllByRole("button", { name: /: 9$/ });
     fireEvent.click(sevens[0]!); fireEvent.click(nines[0]!);
     expect(sevens[0]).toHaveAttribute("aria-pressed", "false"); expect(nines[0]).toHaveAttribute("aria-pressed", "true");
     for (let index = 1; index < nines.length; index += 1) fireEvent.click(nines[index]!);

@@ -7,7 +7,7 @@ import { getSurah } from './canonical';
 afterEach(()=>{cleanup();vi.unstubAllGlobals();});
 it('only shows the reached review and leaves the following surah accessible', async()=>{
   const plan=makeLearningPlan('review-0');
-  vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:true,json:async()=>({state:{...initialLearningState,passed:true,cursor:4},version:4,round:null,finalStart:0,total:plan.rounds.length})}));
+  vi.stubGlobal('fetch',vi.fn().mockResolvedValue({ok:true,json:async()=>({state:{...initialLearningState,passed:true,cursor:4},version:4,round:null,finalStart:plan.finalStart,total:plan.exercises.length,questionTotal:0})}));
   render(<QuranCatalog progress={[114,113,112,111].map(surahNumber=>({surahNumber,status:'mastered',percent:100,stars:4}))}/>);
   expect(screen.getAllByRole('button',{name:'مراجعة اختيارية · 4 سور'})).toHaveLength(1);
   expect(screen.getByRole('link',{name:name=>name.includes(getSurah(110)!.nameArabic)})).toHaveAttribute('href','/student/quran/al-nasr');

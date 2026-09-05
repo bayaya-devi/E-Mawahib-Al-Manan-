@@ -2,10 +2,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import { advanceLearning, initialLearningState, makeLearningPlan, learningOrder, type LearningState } from '@/features/quran/learning-plan';
+import { advanceLearning, currentRound, initialLearningState, makeLearningPlan, learningOrder, upgradeLearningState, type LearningState } from '@/features/quran/learning-plan';
 import { isCorrect } from '@/features/games/engine';
 
-const stateSchema = z.object({ cursor: z.number().int().nonnegative(), errors: z.number().int().nonnegative(), attempt: z.number().int().nonnegative(), failed: z.boolean(), passed: z.boolean() });
 const inputSchema = z.object({ key: z.string().regex(/^(surah|review)-\d+$/), version: z.number().int().nonnegative(), answer: z.string().max(20000).optional(), retry: z.boolean().optional() });
 async function context(key: string) {
   const client = await createClient();
@@ -19,15 +18,16 @@ async function context(key: string) {
   ]);
   if (profile.error || roles.error || progress.error || session.error) throw new Error('storage_unavailable');
   if (profile.data.status !== 'active' || !roles.data.some(r => r.role === 'student')) throw new Error('unauthorized');
-  const state: LearningState = session.data ? stateSchema.parse(session.data.state) : { ...initialLearningState };
+  const state: LearningState = session.data ? upgradeLearningState(session.data.state) : { ...initialLearningState };
   const plan = makeLearningPlan(key, state.attempt);
   const mastered = new Set(progress.data.filter(p => p.status === 'mastered').map(p => p.surah_number));
   if (plan.surah === null ? !plan.group.every(n => mastered.has(n)) : !mastered.has(plan.surah) && learningOrder.find(n => !mastered.has(n)) !== plan.surah) throw new Error('locked');
   return { student: auth.user.id, state, plan, version: session.data?.version ?? 0 };
 }
 function view(value: Awaited<ReturnType<typeof context>>) {
-  const round = value.plan.rounds[value.state.cursor];
-  return { state: value.state, version: value.version, round: round ? { kind: round.kind, prompt: round.prompt, options: round.options, verseNumber: round.verseNumber } : null, finalStart: value.plan.finalStart, total: value.plan.rounds.length };
+  const round = currentRound(value.plan, value.state);
+  const exercise = value.plan.exercises[value.state.cursor];
+  return { state: value.state, version: value.version, round: round ? { kind: round.kind, prompt: round.prompt, options: round.options, verseNumber: round.verseNumber } : null, finalStart: value.plan.finalStart, total: value.plan.exercises.length, questionTotal: exercise?.rounds.length ?? 0 };
 }
 export async function GET(request: Request) {
   try { return NextResponse.json(view(await context(new URL(request.url).searchParams.get('key') ?? '')), { headers: { 'Cache-Control': 'no-store' } }); }
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     const input = inputSchema.parse(await request.json());
     const value = await context(input.key);
     if (input.version !== value.version) return NextResponse.json({ error: 'conflict' }, { status: 409 });
-    const current = value.plan.rounds[value.state.cursor];
+    const current = currentRound(value.plan, value.state);
     const next = advanceLearning(value.plan, value.state, Boolean(current && isCorrect(current, input.answer ?? '')), input.retry);
     const saved = await createAdminClient().rpc('save_student_learning', { target_student: value.student, target_key: input.key, expected_version: input.version, next_state: next });
     if (saved.error) throw new Error(saved.error.message.includes('learning_version_conflict') ? 'conflict' : 'storage_unavailable');

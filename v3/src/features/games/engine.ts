@@ -69,6 +69,11 @@ export function isCorrect(round: QuranGameRound, response: string): boolean {
   return normalize(response) === normalize(round.answer);
 }
 
+export function gameAnswerPoints(correct: boolean, priorMistakes: number, streak: number): number {
+  if (!correct) return 0;
+  return Math.max(40, 100 - priorMistakes * 40) + Math.min(30, Math.max(0, streak) * 5);
+}
+
 function verseOrderRound(surah: QuranSurah, verse: QuranVerse, seed: number): QuranGameRound {
   const start = Math.min(Math.max(0, surah.verses.findIndex(({ number }) => number === verse.number)), Math.max(0, surah.verses.length - 3));
   const passage = surah.verses.slice(start, start + Math.min(3, surah.verses.length));

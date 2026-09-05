@@ -43,12 +43,12 @@ export function getSurah(reference: string | number): QuranSurah | undefined {
 
 export function getWarshAudioUrl(audioCode: string): string {
   assertAudioCode(audioCode);
-  return `https://everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps/${audioCode}.mp3`;
+  return `/api/quran/audio/${audioCode}`;
 }
 
 export function getWarshFallbackAudioUrl(audioCode: string): string {
   assertAudioCode(audioCode);
-  return `https://everyayah.com/data/warsh/warsh_yassin_al_jazaery_64kbps/${audioCode}.mp3`;
+  return `/api/quran/audio/${audioCode}?source=fallback`;
 }
 
 function assertAudioCode(audioCode: string): void {

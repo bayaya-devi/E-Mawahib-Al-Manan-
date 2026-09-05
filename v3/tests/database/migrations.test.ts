@@ -194,6 +194,16 @@ async function runAsDatabaseRole(role: "anon" | "service_role", sql: string) {
 }
 
 describe("V3 migrations and RLS", () => {
+  it("persists a complete parent survey and exposes it only to the scoped administration", async () => {
+    await runAsUser(users.studentA, "select public.submit_parent_feedback(array[9,8,10,7,9]::smallint[], 'متابعة جيدة')");
+    const own = await asUser<{ scores: number[]; comment: string }>(users.studentA, "select scores,comment from public.parent_feedback order by created_at desc limit 1");
+    expect(own[0]).toMatchObject({ scores: [9, 8, 10, 7, 9], comment: "متابعة جيدة" });
+    expect(await asUser(users.studentB, `select * from public.parent_feedback where student_id='${users.studentA}'`)).toEqual([]);
+    const admin = await asUser<{ scores: number[] }>(users.adminA, `select scores from public.parent_feedback where student_id='${users.studentA}'`);
+    expect(admin.at(-1)?.scores).toEqual([9, 8, 10, 7, 9]);
+    await database.exec(`delete from public.parent_feedback where student_id='${users.studentA}'`);
+  });
+
   it('persists learning per student, rejects direct completion, and awards only once', async () => {
     const state = JSON.stringify({cursor:4,errors:0,attempt:0,failed:false,passed:false});
     const saved = await runAsDatabaseRole('service_role', `select public.save_student_learning('${users.studentA}','surah-96',0,'${state}')`);

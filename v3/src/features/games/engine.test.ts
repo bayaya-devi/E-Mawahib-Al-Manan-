@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getSurah } from "@/features/quran/canonical";
-import { createQuranRound, createValidatedRound, isCorrect } from "./engine";
+import { createQuranRound, createValidatedRound, gameAnswerPoints, isCorrect } from "./engine";
 
 describe("shared Quran games engine", () => {
   const surah = getSurah(114)!;
@@ -31,5 +31,12 @@ describe("shared Quran games engine", () => {
     const round = createQuranRound(surah, "verse_order", 1)!;
     expect(round.options.length).toBeGreaterThanOrEqual(3);
     expect(round.prompt).toContain("آيات");
+  });
+
+  it("calculates score only from actual correct answers", () => {
+    expect(gameAnswerPoints(false, 0, 4)).toBe(0);
+    expect(gameAnswerPoints(true, 0, 0)).toBe(100);
+    expect(gameAnswerPoints(true, 1, 0)).toBe(60);
+    expect(gameAnswerPoints(true, 0, 3)).toBe(115);
   });
 });

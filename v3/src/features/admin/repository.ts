@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logServerError } from "@/lib/observability/logger";
 import type { AdminCommandData, CommandPerson, CommandTask, DirectionInsight } from "./models";
 
-const empty: AdminCommandData = { school: null, metrics: [], tasks: [], insights: [], people: [], classes: [], timeline: [], reports: [], requests: [], incidents: [], inventory: [], finance: [], salaries: [], years: [], rooms: [], events: [], announcements: [], audit: [] };
+const empty: AdminCommandData = { school: null, metrics: [], tasks: [], insights: [], people: [], classes: [], timeline: [], reports: [], requests: [], incidents: [], inventory: [], finance: [], salaries: [], years: [], rooms: [], events: [], announcements: [], audit: [], parentFeedback: [] };
 
 export async function getAdminCommandData(): Promise<AdminCommandData> {
   if (process.env.NEXT_PUBLIC_APP_ENV === "test") return empty;
@@ -14,7 +14,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
     const schoolResult = await client.from("schools").select("id,name").eq("id", schoolId).maybeSingle();
     const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0); const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
     const monthStart = new Date(dayStart.getFullYear(), dayStart.getMonth(), 1).toISOString().slice(0, 10);
-    const [profiles, roles, schoolMembers, studentProfiles, teacherProfiles, enrollments, assignments, classRows, sessions, attendance, runs, reports, requests, incidents, tasks, inventory, finance, salaries, years, rooms, events, announcements, progress, learningEvents, audit] = await Promise.all([
+    const [profiles, roles, schoolMembers, studentProfiles, teacherProfiles, enrollments, assignments, classRows, sessions, attendance, runs, reports, requests, incidents, tasks, inventory, finance, salaries, years, rooms, events, announcements, progress, learningEvents, audit, parentFeedback] = await Promise.all([
       client.from("profiles").select("id,display_name,status").order("display_name"),
       client.from("user_roles").select("user_id,role"), client.from("school_memberships").select("user_id").eq("school_id", schoolId).eq("status", "active"),
       client.from("student_profiles").select("user_id,date_of_birth"), client.from("teacher_profiles").select("user_id"),
@@ -36,6 +36,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       client.from("school_announcements").select("id,title,audience,published_at").eq("school_id", schoolId).order("published_at", { ascending: false }).limit(100),
       client.from("student_surah_progress").select("student_id,status,last_activity_at"), client.from("learning_events").select("id,student_id,event_kind,surah_number,occurred_at").order("occurred_at", { ascending: false }).limit(150),
       client.from("audit_logs").select("id,action,entity_type,occurred_at").eq("school_id", schoolId).order("occurred_at", { ascending: false }).limit(150),
+      client.from("parent_feedback").select("id,student_id,scores,comment,created_at").order("created_at", { ascending: false }).limit(100),
     ]);
     const memberIds = new Set((schoolMembers.data ?? []).map(({ user_id }) => user_id)); const names = new Map((profiles.data ?? []).map((row) => [row.id, row.display_name]));
     const roleMap = new Map((roles.data ?? []).filter(({ user_id }) => memberIds.has(user_id)).map((row) => [row.user_id, row.role]));
@@ -75,7 +76,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       inventory: (inventory.data ?? []).map((row) => ({ id: row.id, name: row.name, category: row.category, quantity: row.quantity, minimum: row.minimum_quantity, status: row.status })),
       finance: (finance.data ?? []).map((row) => ({ id: row.id, direction: row.direction, category: row.category, amount: Number(row.amount), currency: row.currency, occurredOn: row.occurred_on })),
       salaries: (salaries.data ?? []).map((row) => ({ id: row.id, teacherName: names.get(row.teacher_id) ?? "أستاذ", month: row.period_month, net: Number(row.net_amount), status: row.status })),
-      years: years.data?.map((row) => ({ id: row.id, name: row.name, startsOn: row.starts_on, endsOn: row.ends_on, active: row.active })) ?? [], rooms: rooms.data ?? [], events: events.data?.map((row) => ({ id: row.id, title: row.title, startsAt: row.starts_at })) ?? [], announcements: announcements.data?.map((row) => ({ id: row.id, title: row.title, audience: row.audience, publishedAt: row.published_at })) ?? [], audit: audit.data?.map((row) => ({ id: row.id, action: row.action, entityType: row.entity_type, occurredAt: row.occurred_at })) ?? [] };
+      years: years.data?.map((row) => ({ id: row.id, name: row.name, startsOn: row.starts_on, endsOn: row.ends_on, active: row.active })) ?? [], rooms: rooms.data ?? [], events: events.data?.map((row) => ({ id: row.id, title: row.title, startsAt: row.starts_at })) ?? [], announcements: announcements.data?.map((row) => ({ id: row.id, title: row.title, audience: row.audience, publishedAt: row.published_at })) ?? [], audit: audit.data?.map((row) => ({ id: row.id, action: row.action, entityType: row.entity_type, occurredAt: row.occurred_at })) ?? [], parentFeedback: parentFeedback.data?.map((row) => ({ id: row.id, studentName: names.get(row.student_id) ?? "طالب", scores: row.scores ?? [], comment: row.comment, createdAt: row.created_at })) ?? [] };
   } catch (error) { logServerError("ADMIN_COMMAND_LOAD_FAILED", error); return empty; }
 }
 
