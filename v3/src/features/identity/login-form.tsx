@@ -1,10 +1,11 @@
 "use client";
 
-import { Eye, EyeOff, LogIn, UserRound } from "lucide-react";
+import { Eye, EyeOff, Home, LogIn, UserRound } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-type AccountKind = "student" | "family" | "teacher";
+type AccountKind = "student" | "teacher";
 
 function cleanPart(value: string) {
   return value
@@ -32,7 +33,7 @@ export function LoginForm() {
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (busy) return;
-    const prefix = kind === "student" ? "s" : kind === "family" ? "f" : "t";
+    const prefix = kind === "student" ? "s" : "t";
     const login = `${prefix}_${cleanPart(firstName)}.${cleanPart(secondValue)}`;
     if (login.length < 3 || !password) {
       setMessage("يرجى ملء جميع الحقول.");
@@ -56,9 +57,7 @@ export function LoginForm() {
         ? "/admin"
         : roles.includes("teacher")
           ? "/teacher"
-          : roles.includes("parent")
-            ? "/family"
-            : "/student";
+        : "/student";
       router.replace(destination);
       router.refresh();
     } catch {
@@ -72,14 +71,16 @@ export function LoginForm() {
     <fieldset className="login-v3__roles">
       <legend>نوع الحساب</legend>
       <button type="button" className={kind === "student" ? "is-active" : undefined} onClick={() => { setKind("student"); setMessage(""); }}>تلميذ</button>
-      <button type="button" className={kind === "family" ? "is-active" : undefined} onClick={() => { setKind("family"); setMessage(""); }}>ولي الأمر</button>
       <button type="button" className={kind === "teacher" ? "is-active" : undefined} onClick={() => { setKind("teacher"); setMessage(""); }}>أستاذ</button>
     </fieldset>
     <label><span>الاسم</span><span className="login-v3__control"><UserRound aria-hidden="true" size={20} /><input value={firstName} onChange={(event) => setFirstName(event.target.value)} autoComplete="given-name" required /></span></label>
     <label><span>{kind === "teacher" ? "القسم" : "الاسم العائلي"}</span><span className="login-v3__control"><UserRound aria-hidden="true" size={20} /><input value={secondValue} onChange={(event) => setSecondValue(event.target.value)} autoComplete={kind === "teacher" ? "organization" : "family-name"} required /></span></label>
     <label><span>كلمة المرور</span><span className="login-v3__control"><input dir="ltr" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /><button type="button" aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}</button></span></label>
     {message && <p className="login-v3__message" role="alert">{message}</p>}
-    <button className="login-v3__submit" type="submit" disabled={busy}><LogIn aria-hidden="true" size={20} />{busy ? "جار التحقق..." : "دخول"}</button>
+    <div className="login-v3__actions">
+      <Link className="login-v3__visit login-v3__visit--mobile" href="/ar"><Home aria-hidden="true" size={18} />زيارة الموقع</Link>
+      <button className="login-v3__submit" type="submit" disabled={busy}><LogIn aria-hidden="true" size={20} />{busy ? "جار التحقق..." : "دخول"}</button>
+    </div>
     <p className="login-v3__help">إذا لم تكن لديك معلومات الدخول، تواصل مع الإدارة.</p>
   </form>;
 }
