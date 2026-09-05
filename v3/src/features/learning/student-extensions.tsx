@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getAllSurahs } from "@/features/quran/canonical";
 import { applyAppearance, readAccent, readAppearance, saveAppearance } from "@/features/settings/appearance";
 import type { AppearanceAccent, AppearanceMode } from "@/features/settings/appearance";
-import { readDeviceAccounts, rememberAuthenticatedAccount, removeDeviceAccount } from "@/features/teacher/device-account-vault";
+import { deviceAccountHome, readDeviceAccounts, rememberAuthenticatedAccount, removeDeviceAccount } from "@/features/teacher/device-account-vault";
 import type { SavedDeviceAccount } from "@/features/teacher/device-account-vault";
 
 export function StudentGames({ unlocked }: { unlocked: number[] }) {
@@ -29,7 +29,7 @@ export function StudentSettings() {
   const router = useRouter(); const { showToast } = useToast(); const [appearance, setAppearance] = useState<AppearanceMode>(readAppearance); const [accent, setAccent] = useState<AppearanceAccent>(readAccent); const [accounts, setAccounts] = useState<SavedDeviceAccount[]>([]); const [active, setActive] = useState<string | null>(null);
   useEffect(() => { void rememberAuthenticatedAccount().then(({ items, active: id }) => { setAccounts(items); setActive(id); }); }, []);
   function change(mode: AppearanceMode, color = accent) { setAppearance(mode); setAccent(color); saveAppearance(mode, color); applyAppearance(mode, color); }
-  async function switchTo(account: SavedDeviceAccount) { const { error } = await createClient().auth.setSession({ access_token: account.accessToken, refresh_token: account.refreshToken }); if (error) return showToast({ title: "إعادة الاتصال مطلوبة" }); router.replace(account.kind === "student" ? "/student" : account.kind === "parent" ? "/family" : "/teacher"); router.refresh(); }
+  async function switchTo(account: SavedDeviceAccount) { const { error } = await createClient().auth.setSession({ access_token: account.accessToken, refresh_token: account.refreshToken }); if (error) return showToast({ title: "إعادة الاتصال مطلوبة" }); router.replace(deviceAccountHome(account.kind)); router.refresh(); }
   async function signOut() { await createClient().auth.signOut({ scope: "local" }); router.replace("/login"); router.refresh(); }
   return <div className="student-settings"><header className="student-page-head"><h1>الإعدادات</h1></header><section><h2>المظهر</h2><div className="student-setting-row">{(["light", "dark", "system"] as AppearanceMode[]).map((mode) => <button className={appearance === mode ? "is-active" : ""} key={mode} onClick={() => change(mode)}>{({ light: "فاتح", dark: "داكن", system: "حسب الجهاز" })[mode]}</button>)}</div><div className="student-color-row">{(["green", "blue", "plum", "gold"] as AppearanceAccent[]).map((color) => <button key={color} className={`is-${color} ${accent === color ? "is-active" : ""}`} aria-label={color} onClick={() => change(appearance, color)} />)}</div></section><section><h2>الحسابات على هذا الجهاز</h2>{accounts.map((account) => <article className="student-account" key={account.id}><span>{account.name}</span>{account.id === active ? <small>الحساب الحالي</small> : <Button size="sm" variant="secondary" onClick={() => void switchTo(account)}>تبديل</Button>}<button aria-label="إزالة الحساب من هذا الجهاز" onClick={() => { removeDeviceAccount(account.id); setAccounts(readDeviceAccounts()); }}><Trash2 size={17} /></button></article>)}</section><Button variant="quiet" onClick={() => void signOut()}><LogOut size={18} />تسجيل الخروج</Button></div>;
 }

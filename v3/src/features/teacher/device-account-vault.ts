@@ -13,6 +13,12 @@ export function readDeviceAccounts(): SavedDeviceAccount[] {
 
 export function saveDeviceAccounts(items: SavedDeviceAccount[]): void { localStorage.setItem(KEY, JSON.stringify(items.slice(0, 8))); }
 export function removeDeviceAccount(id: string): void { saveDeviceAccounts(readDeviceAccounts().filter((item) => item.id !== id)); }
+export function deviceAccountHome(kind: DatabaseAppRole): string {
+  if (kind === "teacher") return "/teacher";
+  if (kind === "parent") return "/family";
+  if (kind === "admin" || kind === "direction") return "/admin";
+  return "/student";
+}
 
 export async function rememberAuthenticatedAccount(): Promise<{ items: SavedDeviceAccount[]; active: string | null }> {
   const client = createClient();
