@@ -1,8 +1,6 @@
-import type { Metadata } from "next";
 import { AppShell } from "@/components/shell";
-import { Badge, EmptyState } from "@/components/ui";
-import { getSurah } from "@/features/quran/canonical";
 import { getTeacherHome } from "@/features/teacher/repository";
-export const metadata: Metadata = { title: "طلاب الأستاذ" };
+import { TeacherStudentsWorkspace } from "@/features/teacher/students-workspace";
+
 export const dynamic = "force-dynamic";
-export default async function StudentsPage() { const data = await getTeacherHome(); return <AppShell kind="teacher"><div className="teacher-workspace"><header className="teacher-hero"><div><span>المتابعة الصفية</span><h1>الطلاب</h1><p>مؤشرات مختصرة تساعدك على ترتيب المتابعة داخل الحصة.</p></div></header>{data.students.length ? <section className="teacher-students-grid">{data.students.map((student) => <article className="teacher-student-card" key={student.id}><div className="teacher-student-card__head"><span className="teacher-avatar">{student.name.slice(0, 1)}</span><div><strong>{student.name}</strong><small>{student.className}</small></div></div><dl><div><dt>آخر سورة</dt><dd>{student.lastSurahNumber ? getSurah(student.lastSurahNumber)?.nameArabic : "—"}</dd></div><div><dt>الغياب</dt><dd>{student.absenceCount}</dd></div><div><dt>الواجبات</dt><dd>{student.pendingAssignments}</dd></div></dl><p>{student.suggestion}</p><Badge tone={student.absenceCount >= 2 || student.pendingAssignments > 1 ? "warning" : "success"}>{student.absenceCount >= 2 || student.pendingAssignments > 1 ? "يحتاج متابعة" : "متابعة عادية"}</Badge></article>)}</section> : <EmptyState title="لا يوجد طلاب" description="اربط الأستاذ بقسم نشط لتظهر قائمة الطلاب." />}</div></AppShell>; }
+export default async function StudentsPage() { const data = await getTeacherHome(); return <AppShell kind="teacher"><TeacherStudentsWorkspace students={data.students} /></AppShell>; }

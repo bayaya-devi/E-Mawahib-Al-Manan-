@@ -11,12 +11,16 @@ test("messaging and administrative requests stay distinct and mobile safe", asyn
   expect(overflow).toBeLessThanOrEqual(1);
 });
 
-test("family, teacher and administration expose the unified communication workspace", async ({ page }) => {
-  for (const path of ["/family/messages", "/teacher/messages", "/admin/communications"]) {
+test("family and administration expose the unified communication workspace", async ({ page }) => {
+  for (const path of ["/family/messages", "/admin/communications"]) {
     await page.goto(path);
     await expect(page.getByText("التواصل الموحّد")).toBeVisible();
     await expect(page.getByRole("button", { name: "الطلبات" })).toBeVisible();
   }
+  await page.goto("/teacher/messages");
+  await expect(page.getByRole("heading", { name: "الرسائل" })).toBeVisible();
+  await expect(page.getByText("محادثة جديدة", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "الطلبات" })).toHaveCount(0);
 });
 
 test("publishes a PWA manifest and notification entry point", async ({ page, request }) => {
@@ -28,13 +32,18 @@ test("publishes a PWA manifest and notification entry point", async ({ page, req
 });
 
 test("communication settings are reachable and mobile safe", async ({ page }) => {
-  for (const path of ["/student/settings", "/family/settings", "/teacher/settings"]) {
+  for (const path of ["/student/settings", "/family/settings"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { name: "وسائل الاتصال" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "تفضيلات الإشعارات" })).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   }
+  await page.goto("/teacher/settings");
+  await expect(page.getByRole("heading", { name: "المظهر" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "الحسابات" })).toBeVisible();
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
 });
 
 test("administration exposes the audited notification composer", async ({ page }) => {

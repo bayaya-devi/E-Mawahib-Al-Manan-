@@ -14,8 +14,9 @@ const requestKinds: Array<[DatabaseServiceRequestKind, string]> = [
   ["administrative_question", "سؤال إداري"], ["complaint", "شكوى"], ["class_change", "تغيير قسم"], ["technical_problem", "مشكلة تقنية"], ["other", "أخرى"],
 ];
 
-export function MessagingWorkspace({ data }: { data: MessagingWorkspaceData }) {
+export function MessagingWorkspace({ data, teacherMode = false }: { data: MessagingWorkspaceData; teacherMode?: boolean }) {
   const [tab, setTab] = useState<WorkspaceTab>("messages");
+  if (teacherMode) return <div className="communication-workspace teacher-text-messages"><header className="teacher-page-head"><span>التواصل</span><h1>الرسائل</h1></header><Messages data={data} /></div>;
   return <div className="communication-workspace"><header className="communication-hero"><span>التواصل الموحّد</span><h1>الرسائل والطلبات</h1><p>المحادثات للتواصل اليومي، والطلبات لمسار إداري موثّق.</p></header><nav className="communication-tabs" aria-label="أقسام التواصل"><button className={tab === "messages" ? "is-active" : undefined} type="button" onClick={() => setTab("messages")}><MessageSquareText size={18} />الرسائل</button><button className={tab === "requests" ? "is-active" : undefined} type="button" onClick={() => setTab("requests")}><Inbox size={18} />الطلبات</button></nav>{tab === "messages" ? <Messages data={data} /> : <Requests data={data} />}</div>;
 }
 

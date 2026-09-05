@@ -15,9 +15,9 @@ export type DatabaseLearningProgressStatus = "not_started" | "in_progress" | "ma
 export type DatabaseAssignmentStatus = "todo" | "in_progress" | "submitted" | "corrected";
 export type DatabaseAttendanceStatus = "present" | "absent" | "late" | "excused";
 export type DatabaseTeacherSessionStatus = "in_progress" | "report_pending" | "completed" | "cancelled";
-export type DatabaseRecitationAppreciation = "excellent" | "very_good" | "good" | "needs_review" | "insufficient";
+export type DatabaseRecitationAppreciation = "excellent" | "very_good" | "good" | "acceptable" | "needs_review" | "weak" | "insufficient";
 export type DatabaseWorkflowStatus = "draft" | "submitted" | "seen" | "in_review" | "approved" | "rejected" | "resolved" | "cancelled";
-export type DatabaseTeacherRequestKind = "absence" | "leave" | "salary_problem" | "equipment" | "schedule" | "general";
+export type DatabaseTeacherRequestKind = "absence" | "late" | "leave" | "salary_problem" | "equipment" | "schedule" | "general";
 export type DatabaseAdminTaskStatus = "open" | "in_progress" | "done" | "dismissed";
 export type DatabaseConversationKind = "direct" | "group" | "support";
 export type DatabaseServiceRequestKind = "leave" | "absence" | "equipment" | "incident" | "salary_problem" | "administrative_question" | "complaint" | "class_change" | "technical_problem" | "other";
@@ -223,6 +223,7 @@ type StaffMessageRow = { id: string; school_id: string; sender_id: string; recip
 type TeacherRequestRow = { id: string; school_id: string; teacher_id: string; kind: DatabaseTeacherRequestKind; status: DatabaseWorkflowStatus; title: string; details: string | null; starts_on: string | null; ends_on: string | null; admin_response: string | null; resolved_by: string | null; submitted_at: string; updated_at: string; resolved_at: string | null };
 type TeacherSalaryRecordRow = { id: string; school_id: string; teacher_id: string; period_month: string; gross_amount: number; deductions: number; net_amount: number; currency: string; status: "pending" | "paid" | "issue_reported" | "resolved"; paid_at: string | null; note: string | null; created_at: string; updated_at: string };
 type TeacherDocumentRow = { id: string; teacher_id: string; title: string; category: "contract" | "payslip" | "certificate" | "policy" | "other"; storage_path: string; visible_from: string; expires_at: string | null; uploaded_by: string; created_at: string };
+type TeacherStudentNoteRow = { id: string; student_id: string; teacher_id: string; content: string; created_at: string };
 type AcademicYearRow = { id: string; school_id: string; name: string; starts_on: string; ends_on: string; active: boolean; created_by: string; created_at: string };
 type SchoolRoomRow = { id: string; school_id: string; name: string; capacity: number | null; location_note: string | null; active: boolean; created_at: string };
 type StudentDigitalFileRow = { student_id: string; school_id: string; guardian_phone: string | null; payment_required: boolean; monthly_fee: number | null; identity_document_received: boolean; birth_certificate_received: boolean; guardian_identity_received: boolean; medical_or_accessibility_notes: string | null; administrative_notes: string | null; updated_by: string; updated_at: string };
@@ -326,6 +327,7 @@ export type Database = {
       teacher_requests: ReadonlyTable<TeacherRequestRow>;
       teacher_salary_records: ReadonlyTable<TeacherSalaryRecordRow>;
       teacher_documents: ReadonlyTable<TeacherDocumentRow>;
+      teacher_student_notes: ReadonlyTable<TeacherStudentNoteRow>;
       academic_years: ReadonlyTable<AcademicYearRow>;
       school_rooms: ReadonlyTable<SchoolRoomRow>;
       student_digital_files: ReadonlyTable<StudentDigitalFileRow>;
@@ -463,6 +465,9 @@ export type Database = {
         Returns: string;
       };
       teacher_cancel_request: { Args: { target_request_id: string }; Returns: undefined };
+      teacher_add_student_note: { Args: { target_student_id: string; target_content: string }; Returns: string };
+      teacher_assign_quran_work: { Args: { target_student_ids: string[]; target_surah_number: number; target_verse_from: number; target_verse_to: number; target_due_at: string; target_note?: string | null }; Returns: number };
+      teacher_cancel_session: { Args: { target_run_id: string }; Returns: undefined };
       admin_review_teacher_request: { Args: { target_request_id: string; target_status: DatabaseWorkflowStatus; target_response?: string | null }; Returns: undefined };
       admin_resolve_task: { Args: { target_task_id: string; target_status: DatabaseAdminTaskStatus }; Returns: undefined };
       admin_create_incident: { Args: { target_student_id: string | null; target_teacher_id: string | null; target_category: string; target_severity: number; target_summary: string }; Returns: string };
