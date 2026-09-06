@@ -207,3 +207,45 @@
 @media (max-width: 720px) { .app-shell--student .mobile-nav { grid-template-columns: repeat(6, minmax(0, 1fr)); }.app-shell--student .mobile-nav .app-nav-link { padding-inline: 1px; }.app-shell--student .mobile-nav .app-nav-link span { font-size: .58rem; }.student-class-strip { grid-template-columns: 1fr; }.student-class-strip .today-info + .today-info { border-inline-start: 0; border-block-start: 1px solid var(--border); }.student-progress { grid-template-columns: 1fr auto; }.student-progress .progress-band__track { grid-column: 1 / -1; }.student-home-grid { grid-template-columns: 1fr; }.student-surah-head { align-items: start; flex-direction: column; }.student-surah-head h1 { font-size: 1.8rem; }.student-audio-console { padding: 15px; }.student-exercise { padding: 19px 14px; }.student-profile-lines, .student-months { grid-template-columns: 1fr; } }
 @media (max-width: 720px) { .student-game-portal { grid-template-columns: 1fr; }.parent-score-grid { grid-template-columns: repeat(5, 1fr); } }
 @media (prefers-reduced-motion: reduce) { .student-stars, .student-exercise.is-error, .student-game-board.is-error { animation: none; }.surah-node__card, .juz-path__head svg:last-child, .student-game-portal button { transition: none; } }
+
+/* Focused Quran learning interactions */
+.student-exercise__options button { min-height: 54px; padding: 11px 15px; font-weight: 650; transition: transform .16s ease, border-color .16s ease, background .16s ease; }
+.student-exercise__options button:hover:not(:disabled), .student-exercise__options button:focus-visible { transform: translateY(-1px); }
+.student-game-portal button { min-height: 178px; background: linear-gradient(150deg, var(--surface), color-mix(in srgb, var(--brand-soft) 45%, var(--surface))); transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.student-game-portal button:hover { box-shadow: var(--shadow-2); }
+.student-game-portal svg { width: 34px; height: 34px; padding: 7px; border-radius: 11px; color: white; background: var(--brand); }
+.student-game-portal small { color: var(--brand); font-weight: 800; }
+.exercise-result-backdrop { position: fixed; z-index: 80; inset: 0; display: grid; place-items: center; padding: 18px; background: rgb(11 35 28 / .42); backdrop-filter: blur(5px); }
+.exercise-result { position: relative; inset: auto; width: min(390px, 100%); min-width: 0; display: grid; justify-items: center; gap: 8px; overflow: hidden; padding: 30px 24px 23px; border-radius: 20px; box-shadow: 0 28px 70px rgb(13 56 43 / .25); transform: none; animation: result-arrive .3s cubic-bezier(.2,.9,.25,1.15); }
+.exercise-result > svg, .game-summary > svg { width: 34px; height: 34px; color: #d99a18; }
+.exercise-result h2, .game-summary h2 { margin: 0; }
+.exercise-result > span { color: var(--ink-soft); }
+.exercise-result .button { margin-block-start: 8px; }
+.exercise-complete, .exercise-retry { display: grid; justify-items: center; gap: 9px; padding-block: 24px; }
+.exercise-complete > svg { width: 44px; height: 44px; padding: 10px; border-radius: 50%; color: white; background: var(--success); }
+.exercise-retry > svg { color: #bc7a17; }
+.exercise-stars { color: #d49314; font-size: 1.45rem; letter-spacing: 0; }
+.exercise-prompt { font-size: clamp(1.05rem, 3vw, 1.3rem); line-height: 2; }
+.exercise-error-count { color: #9a6412; }
+.learning-word-answer, .learning-word-bank { min-height: 76px; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 8px; padding: 12px; border-radius: 15px; }
+.learning-word-answer { border: 2px dashed color-mix(in srgb, var(--brand) 30%, var(--border)); background: var(--brand-soft); }
+.learning-word-bank { background: var(--surface-muted); }
+.learning-word-answer p { color: var(--ink-soft); }
+.learning-word-answer button, .learning-word-bank button { min-height: 48px; padding: 9px 13px; border: 1px solid var(--border); border-radius: 12px; color: var(--ink); background: var(--surface); font: inherit; cursor: pointer; }
+.learning-word-answer button span { display: inline-grid; width: 21px; height: 21px; margin-inline-end: 7px; place-items: center; border-radius: 50%; color: white; background: var(--brand); font-size: .68rem; }
+.celebration-burst { position: absolute; inset: 0; pointer-events: none; }
+.celebration-burst i { position: absolute; width: 7px; height: 13px; border-radius: 3px; background: #e5a51e; animation: confetti-drop .85s ease-out both; }
+.celebration-burst i:nth-child(2n) { background: var(--brand); }.celebration-burst i:nth-child(3n) { background: #258da0; }
+.celebration-burst i:nth-child(1) { inset: 8% auto auto 10%; }.celebration-burst i:nth-child(2) { inset: 18% auto auto 21%; animation-delay: .08s; }.celebration-burst i:nth-child(3) { inset: 7% 12% auto auto; animation-delay: .14s; }.celebration-burst i:nth-child(4) { inset: 25% 23% auto auto; animation-delay: .04s; }.celebration-burst i:nth-child(5) { inset: auto auto 18% 8%; }.celebration-burst i:nth-child(6) { inset: auto 9% 15% auto; animation-delay: .12s; }.celebration-burst i:nth-child(7) { inset: 48% auto auto 4%; }.celebration-burst i:nth-child(8) { inset: 52% 5% auto auto; }.celebration-burst i:nth-child(9) { inset: 5% auto auto 48%; }.celebration-burst i:nth-child(10) { inset: auto 44% 4% auto; }
+.game-flow { display: grid !important; grid-template-columns: 28px 1fr 28px 1fr 28px; align-items: center; width: min(320px, 100%); margin-inline: auto; }
+.game-flow i { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: var(--ink-faint); background: var(--surface-muted); font-style: normal; font-weight: 800; }
+.game-flow i.is-active, .game-flow i.is-done { color: white; background: var(--brand); }.game-flow span { height: 2px; background: var(--border); }
+.student-game-picker > p { margin: 0; color: var(--ink-soft); }
+.game-round-track { height: 6px; overflow: hidden; border-radius: 99px; background: var(--surface-muted); }.game-round-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--brand), #d9a020); transition: width .25s ease; }
+.game-scoreline { align-items: center; }.game-scoreline b { padding: 4px 8px; border-radius: 99px; color: #80530a; background: #fff0be; font-size: .72rem; }
+.score-pop { position: absolute; inset: 64px 50% auto auto; color: #d78b0c; font-size: 1.25rem; font-weight: 850; animation: score-rise .5s ease both; }.student-game-board { position: relative; }.game-feedback { min-height: 23px; color: var(--brand); font-weight: 800; }
+@keyframes result-arrive { from { opacity: 0; transform: translateY(14px) scale(.96); } }
+@keyframes confetti-drop { from { opacity: 0; transform: translateY(-18px) rotate(0); } to { opacity: 1; transform: translateY(18px) rotate(160deg); } }
+@keyframes score-rise { to { opacity: 0; transform: translateY(-22px) scale(1.15); } }
+@media (max-width: 720px) { .student-game-portal button { min-height: 135px; }.student-game-board, .student-game-picker { padding: 18px 13px; }.game-scoreline { display: grid; grid-template-columns: 1fr auto; }.game-scoreline b { grid-column: 1 / -1; justify-self: center; }.learning-word-answer, .learning-word-bank { padding: 9px; }.learning-word-answer button, .learning-word-bank button { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .exercise-result, .celebration-burst i, .score-pop { animation: none; }.student-exercise__options button, .game-round-track i { transition: none; } }

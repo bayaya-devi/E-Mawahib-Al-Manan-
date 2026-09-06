@@ -33,6 +33,20 @@ describe("shared Quran games engine", () => {
     expect(round.prompt).toContain("آيات");
   });
 
+  it("keeps every generated answer inside unique canonical options", () => {
+    for (const surah of [getSurah(2)!, getSurah(67)!, getSurah(96)!, getSurah(114)!]) {
+      for (const kind of ["verse_order", "next_verse", "missing_word", "match_edges"] as const) {
+        for (let seed = 0; seed < 12; seed += 1) {
+          const round = createQuranRound(surah, kind, seed)!;
+          if (kind === "verse_order") expect(round.answer.split(" ").length).toBeGreaterThan(2);
+          else expect(round.options).toContain(round.answer);
+          expect(new Set(round.options).size).toBe(round.options.length);
+          expect(round.options.every(Boolean)).toBe(true);
+        }
+      }
+    }
+  });
+
   it("calculates score only from actual correct answers", () => {
     expect(gameAnswerPoints(false, 0, 4)).toBe(0);
     expect(gameAnswerPoints(true, 0, 0)).toBe(100);

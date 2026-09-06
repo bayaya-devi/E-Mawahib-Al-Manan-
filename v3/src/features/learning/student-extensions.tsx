@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Gamepad2, Plus, Puzzle, RotateCcw, Trash2 } from "lucide-react";
+import { Check, Gamepad2, Layers3, Plus, Puzzle, RotateCcw, Search, Sparkles, Trash2, Zap } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, useToast } from "@/components/ui";
@@ -14,10 +14,10 @@ import { emitLearningFeedback, readFeedbackPreferences, saveFeedbackPreferences,
 import { deviceAccountHome, readDeviceAccounts, rememberAuthenticatedAccount, removeDeviceAccount } from "@/features/teacher/device-account-vault";
 import type { SavedDeviceAccount } from "@/features/teacher/device-account-vault";
 
-const gameDefinitions: Array<{ kind: QuranGameKind; title: string; text: string }> = [
-  { kind: "verse_order", title: "رتّب الآيات", text: "أعد بناء المقطع بالترتيب" },
-  { kind: "match_edges", title: "لغز المقطع", text: "صل البداية بالنهاية الصحيحة" },
-  { kind: "missing_word", title: "أكمل المقطع", text: "استرجع الكلمات الناقصة" },
+const gameDefinitions: Array<{ kind: QuranGameKind; title: string; text: string; icon: typeof Puzzle }> = [
+  { kind: "verse_order", title: "الترتيب السريع", text: "رتّب الآيات في جولات متتابعة", icon: Zap },
+  { kind: "match_edges", title: "ألغاز القرآن", text: "صل كل بداية بنهايتها", icon: Layers3 },
+  { kind: "missing_word", title: "المقطع الغامض", text: "اكتشف الكلمات الناقصة", icon: Search },
 ];
 
 export function StudentGames({ unlocked }: { unlocked: number[] }) {
@@ -34,45 +34,49 @@ export function StudentGames({ unlocked }: { unlocked: number[] }) {
   const [mistakesOnRound, setMistakesOnRound] = useState(0);
   const [feedback, setFeedback] = useState<"correct" | "error" | null>(null);
   const [locked, setLocked] = useState(false);
+  const [earned, setEarned] = useState(0);
+  const [bestScore, setBestScore] = useState(0);
   const choices = getAllSurahs().filter((surah) => unlocked.includes(surah.number)).reverse();
   const totalRounds = Math.max(5, Math.min(8, selected.reduce((total, number) => total + (choices.find((item) => item.number === number)?.verseCount ?? 0), 0)));
-  if (!choices.length) return <section className="student-empty"><Gamepad2 size={30} /><strong>أتم سورة واحدة لفتح الألعاب</strong></section>;
   const accessibleJuz = JUZ.filter((juz) => choices.some((surah) => surah.number >= juz.from && surah.number <= juz.to));
   const selectedJuz = JUZ.find((juz) => juz.number === juzNumber);
   const juzSurahs = choices.filter((surah) => selectedJuz && surah.number >= selectedJuz.from && surah.number <= selectedJuz.to);
+  const bestKey = kind && selected.length ? `emawahib.game.best.v1:${kind}:${[...selected].sort((a, b) => a - b).join("-")}` : null;
+  if (!choices.length) return <section className="student-empty"><Gamepad2 size={30} /><strong>أتم سورة واحدة لفتح الألعاب</strong></section>;
   function makeRound(index: number): QuranGameRound | null {
     const surah = choices.find((item) => item.number === selected[index % selected.length]);
     return surah && kind ? createQuranRound(surah, kind, index * 7 + selected.length) : null;
   }
   function begin() {
-    setRoundIndex(0); setScore(0); setCorrectCount(0); setErrorCount(0); setStreak(0); setMistakesOnRound(0); setOrdered([]); setFeedback(null); setRound(makeRound(0));
+    setRoundIndex(0); setScore(0); setCorrectCount(0); setErrorCount(0); setStreak(0); setMistakesOnRound(0); setOrdered([]); setFeedback(null); setEarned(0); setBestScore(bestKey ? Number(localStorage.getItem(bestKey) ?? 0) : 0); setRound(makeRound(0));
   }
-  function advance() {
+  function advance(finalScore = score) {
     const next = roundIndex + 1;
-    setOrdered([]); setMistakesOnRound(0); setFeedback(null); setLocked(false);
-    if (next >= totalRounds) { setRound(null); setRoundIndex(-1); emitLearningFeedback("complete"); return; }
+    setOrdered([]); setMistakesOnRound(0); setFeedback(null); setLocked(false); setEarned(0);
+    if (next >= totalRounds) { if (bestKey) { const best = Math.max(Number(localStorage.getItem(bestKey) ?? 0), finalScore); localStorage.setItem(bestKey, String(best)); setBestScore(best); } setRound(null); setRoundIndex(-1); emitLearningFeedback("complete"); return; }
     setRoundIndex(next); setRound(makeRound(next));
   }
   function answer(value: string) {
     if (!round || locked) return;
     const correct = isCorrect(round, value); setLocked(true); setFeedback(correct ? "correct" : "error"); emitLearningFeedback(correct ? "correct" : "error");
     if (correct) {
-      setScore((current) => current + gameAnswerPoints(true, mistakesOnRound, streak));
+      const points = gameAnswerPoints(true, mistakesOnRound, streak); setEarned(points);
+      setScore((current) => current + points);
       setCorrectCount((current) => current + 1); setStreak((current) => current + 1);
-      window.setTimeout(advance, 500);
+      window.setTimeout(() => advance(score + points), 500);
     } else {
       setErrorCount((current) => current + 1); setStreak(0);
       if (mistakesOnRound === 0) { setMistakesOnRound(1); window.setTimeout(() => { setFeedback(null); setLocked(false); setOrdered([]); }, 600); }
-      else { setMistakesOnRound(2); window.setTimeout(advance, 650); }
+      else { setMistakesOnRound(2); window.setTimeout(() => advance(score), 650); }
     }
   }
   function resetPortal() { setKind(null); setJuzNumber(null); setSelected([]); setRoundIndex(0); setRound(null); setScore(0); }
-  return <div className="student-games"><header className="student-page-head"><h1>ألعاب القرآن</h1></header>
-    {!kind ? <section className="student-game-portal">{gameDefinitions.map((game) => <button key={game.kind} onClick={() => setKind(game.kind)}><Puzzle aria-hidden="true" /><strong>{game.title}</strong><span>{game.text}</span></button>)}</section>
-      : !juzNumber ? <section className="student-game-picker"><h2>اختر الجزء</h2><div>{accessibleJuz.map((juz) => <button key={juz.number} onClick={() => setJuzNumber(juz.number)}>{juz.name}</button>)}</div></section>
-      : !round && roundIndex >= 0 ? <section className="student-game-picker"><h2>اختر سورة أو أكثر</h2><div>{juzSurahs.map((surah) => <button key={surah.number} className={selected.includes(surah.number) ? "is-selected" : ""} onClick={() => setSelected((value) => value.includes(surah.number) ? value.filter((id) => id !== surah.number) : [...value, surah.number])}><span>{surah.nameArabic}</span>{selected.includes(surah.number) ? <Check size={16} /> : null}</button>)}</div><Button disabled={!selected.length} onClick={begin}>ابدأ اللعبة</Button></section>
-      : round ? <section className={`student-game-board ${feedback ? `is-${feedback}` : ""}`} aria-live="polite"><div className="game-scoreline"><span>السؤال {roundIndex + 1}/{totalRounds}</span><strong>النقاط: {score}</strong></div><p>{round.prompt}</p>{feedback ? <small>{feedback === "correct" ? "أحسنت" : mistakesOnRound === 1 ? "حاول مرة أخرى" : "ننتقل للسؤال التالي"}</small> : null}{round.kind === "verse_order" ? <><div className="learning-word-answer">{ordered.map((index, position) => <button key={position} disabled={locked} onClick={() => setOrdered((value) => value.filter((_, item) => item !== position))}>{round.options[index]}</button>)}</div><div className="learning-word-bank">{round.options.map((option, index) => <button key={index} disabled={locked || ordered.includes(index)} onClick={() => setOrdered((value) => [...value, index])}>{option}</button>)}</div><Button disabled={locked || ordered.length !== round.options.length} onClick={() => answer(ordered.map((index) => round.options[index]).join(" "))}>تحقق</Button></> : <div className="student-exercise__options">{round.options.map((option) => <button key={option} disabled={locked} onClick={() => answer(option)}>{option}</button>)}</div>}</section>
-      : <section className="student-game-board game-summary"><h2>انتهت اللعبة</h2><strong>النقاط: {score}</strong><div><span>{correctCount} صحيحة</span><span>{errorCount} أخطاء</span><span>{Math.round(correctCount / totalRounds * 100)}%</span></div><Button onClick={begin}><RotateCcw size={17} />إعادة اللعب</Button><Button variant="quiet" onClick={resetPortal}>الألعاب</Button></section>}
+  return <div className="student-games"><header className="student-page-head"><div><span>مراجعة حرة</span><h1>ألعاب القرآن</h1></div></header>
+    {!kind ? <section className="student-game-portal">{gameDefinitions.map((game) => { const Icon = game.icon; return <button key={game.kind} onClick={() => setKind(game.kind)}><Icon aria-hidden="true" /><strong>{game.title}</strong><span>{game.text}</span><small>ابدأ</small></button>; })}</section>
+      : !juzNumber ? <section className="student-game-picker"><div className="game-flow"><i className="is-active">1</i><span /><i>2</i><span /><i>3</i></div><h2>اختر الجزء الذي راجعته</h2><div>{accessibleJuz.map((juz) => <button key={juz.number} onClick={() => setJuzNumber(juz.number)}>{juz.name}</button>)}</div><Button variant="quiet" onClick={resetPortal}>رجوع</Button></section>
+      : !round && roundIndex >= 0 ? <section className="student-game-picker"><div className="game-flow"><i className="is-done">✓</i><span /><i className="is-active">2</i><span /><i>3</i></div><h2>اختر سورة أو أكثر</h2><p>ستأتي كل الجولات من اختيارك فقط.</p><div>{juzSurahs.map((surah) => <button key={surah.number} aria-pressed={selected.includes(surah.number)} className={selected.includes(surah.number) ? "is-selected" : ""} onClick={() => setSelected((value) => value.includes(surah.number) ? value.filter((id) => id !== surah.number) : [...value, surah.number])}><span>{surah.nameArabic}</span>{selected.includes(surah.number) ? <Check size={16} /> : null}</button>)}</div><Button disabled={!selected.length} onClick={begin}>ابدأ اللعبة</Button><Button variant="quiet" onClick={() => { setJuzNumber(null); setSelected([]); }}>رجوع</Button></section>
+      : round ? <section className={`student-game-board ${feedback ? `is-${feedback}` : ""}`} aria-live="polite"><div className="game-scoreline"><span>الجولة {roundIndex + 1}/{totalRounds}</span><strong>النقاط {score}</strong>{streak >= 3 ? <b>×2 سلسلة</b> : null}</div><div className="game-round-track"><i style={{ width: `${(roundIndex / totalRounds) * 100}%` }} /></div>{earned && feedback === "correct" ? <output className="score-pop">+{earned}</output> : null}<p>{round.prompt}</p>{feedback ? <small className="game-feedback">{feedback === "correct" ? "أحسنت" : mistakesOnRound === 1 ? "حاول مرة أخرى" : "ننتقل للجولة التالية"}</small> : null}{round.kind === "verse_order" ? <><div className="learning-word-answer">{ordered.length ? ordered.map((index, position) => <button key={position} disabled={locked} onClick={() => setOrdered((value) => value.filter((_, item) => item !== position))}><span>{position + 1}</span>{round.options[index]}</button>) : <p>اختر الآيات بالترتيب</p>}</div><div className="learning-word-bank">{round.options.map((option, index) => <button key={index} disabled={locked || ordered.includes(index)} onClick={() => setOrdered((value) => [...value, index])}>{option}</button>)}</div><Button disabled={locked || ordered.length !== round.options.length} onClick={() => answer(ordered.map((index) => round.options[index]).join(" "))}>تحقق</Button></> : <div className="student-exercise__options">{round.options.map((option) => <button key={option} disabled={locked} onClick={() => answer(option)}>{option}</button>)}</div>}</section>
+      : <section className="student-game-board game-summary"><div className="celebration-burst" aria-hidden="true">{Array.from({ length: 8 }, (_, index) => <i key={index} />)}</div><Sparkles aria-hidden="true" /><h2>{correctCount >= Math.ceil(totalRounds * .7) ? "جولة رائعة" : "جولة مفيدة"}</h2><strong>{score} نقطة</strong>{score >= bestScore && score > 0 ? <p>أفضل نتيجة شخصية</p> : bestScore ? <p>أفضل نتيجة: {bestScore}</p> : null}<div><span>{correctCount} صحيحة</span><span>{errorCount} أخطاء</span><span>{Math.round(correctCount / totalRounds * 100)}%</span></div><Button onClick={begin}><RotateCcw size={17} />إعادة اللعب</Button><Button variant="quiet" onClick={resetPortal}>العودة إلى الألعاب</Button></section>}
   </div>;
 }
 

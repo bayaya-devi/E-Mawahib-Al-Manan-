@@ -56,8 +56,8 @@ describe("student stabilization", () => {
 
   it("opens three real games through juz and surah selection", () => {
     render(<StudentGames unlocked={[114]} />);
-    expect(screen.getByRole("button", { name: /رتّب الآيات/ })).toBeVisible(); expect(screen.getByRole("button", { name: /لغز المقطع/ })).toBeVisible(); expect(screen.getByRole("button", { name: /أكمل المقطع/ })).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: /رتّب الآيات/ })); fireEvent.click(screen.getByRole("button", { name: "جزء عمّ" })); fireEvent.click(screen.getByRole("button", { name: /سُورَةُ النَّاسِ/ })); fireEvent.click(screen.getByRole("button", { name: "ابدأ اللعبة" }));
+    expect(screen.getByRole("button", { name: /الترتيب السريع/ })).toBeVisible(); expect(screen.getByRole("button", { name: /ألغاز القرآن/ })).toBeVisible(); expect(screen.getByRole("button", { name: /المقطع الغامض/ })).toBeVisible();
+    fireEvent.click(screen.getByRole("button", { name: /الترتيب السريع/ })); fireEvent.click(screen.getByRole("button", { name: "جزء عمّ" })); fireEvent.click(screen.getByRole("button", { name: /سُورَةُ النَّاسِ/ })); fireEvent.click(screen.getByRole("button", { name: "ابدأ اللعبة" }));
     expect(screen.getByText("رتّب آيات المقطع")).toBeVisible();
   });
 

@@ -40,10 +40,11 @@ export async function POST(request: Request) {
     const value = await context(input.key);
     if (input.version !== value.version) return NextResponse.json({ error: 'conflict' }, { status: 409 });
     const current = currentRound(value.plan, value.state);
-    const next = advanceLearning(value.plan, value.state, Boolean(current && isCorrect(current, input.answer ?? '')), input.retry);
+    const answerCorrect = Boolean(current && isCorrect(current, input.answer ?? ''));
+    const next = advanceLearning(value.plan, value.state, answerCorrect, input.retry);
     const saved = await createAdminClient().rpc('save_student_learning', { target_student: value.student, target_key: input.key, expected_version: input.version, next_state: next });
     if (saved.error) throw new Error(saved.error.message.includes('learning_version_conflict') ? 'conflict' : 'storage_unavailable');
-    return NextResponse.json(view({ ...value, state: next, version: saved.data, plan: makeLearningPlan(input.key, next.attempt) }), { headers: { 'Cache-Control': 'no-store' } });
+    return NextResponse.json({ ...view({ ...value, state: next, version: saved.data, plan: makeLearningPlan(input.key, next.attempt) }), answerCorrect: input.retry ? null : answerCorrect }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) { return failure(error); }
 }
 function failure(error: unknown) { const message = error instanceof Error ? error.message : ''; const status = message === 'unauthorized' ? 401 : message === 'locked' ? 403 : message === 'conflict' ? 409 : message === 'storage_unavailable' ? 503 : 400; return NextResponse.json({ error: status === 503 ? 'unavailable' : 'request_failed' }, { status }); }

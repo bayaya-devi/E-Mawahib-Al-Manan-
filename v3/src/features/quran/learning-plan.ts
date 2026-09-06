@@ -17,8 +17,8 @@ export function passage(surah: QuranSurah, phase: Phase): QuranSurah {
 export const learningOrder = [...getAllSurahs()].reverse().map((surah) => surah.number);
 export const reviewGroups = Array.from({ length: Math.floor(learningOrder.length / 4) }, (_, index) => learningOrder.slice(index * 4, index * 4 + 4));
 export type ExerciseResult = { exercise: number; total: number; correct: number; errors: number; passed: boolean };
-export type LearningState = { schema: 2; cursor: number; question: number; errors: number; correct: number; attempt: number; failed: boolean; passed: boolean; lastResult: ExerciseResult | null };
-export const initialLearningState: LearningState = { schema: 2, cursor: 0, question: 0, errors: 0, correct: 0, attempt: 0, failed: false, passed: false, lastResult: null };
+export type LearningState = { schema: 3; cursor: number; question: number; questionMistake: boolean; errors: number; correct: number; attempt: number; failed: boolean; passed: boolean; lastResult: ExerciseResult | null };
+export const initialLearningState: LearningState = { schema: 3, cursor: 0, question: 0, questionMistake: false, errors: 0, correct: 0, attempt: 0, failed: false, passed: false, lastResult: null };
 export type LearningExercisePlan = { kind: QuranGameKind | "mixed"; rounds: readonly QuranGameRound[] };
 export type LearningPlan = { key: string; surah: number | null; group: readonly number[]; exercises: readonly LearningExercisePlan[]; phases: Phase[]; finalStart: number };
 
@@ -29,7 +29,10 @@ function roundFor(surah: QuranSurah, kind: QuranGameKind, seed: number): QuranGa
 }
 function questionCount(surah: QuranSurah): number { return Math.max(4, Math.min(8, surah.verseCount)); }
 function makeRounds(surah: QuranSurah, kind: QuranGameKind, count: number, seed: number): QuranGameRound[] {
-  return Array.from({ length: count }, (_, index) => roundFor(surah, kind, seed + index));
+  return Array.from({ length: count }, (_, index) => {
+    const spread = Math.floor(index * surah.verseCount / count);
+    return roundFor(surah, kind, seed + spread);
+  });
 }
 
 export function makeLearningPlan(key: string, attempt = 0): LearningPlan {
@@ -44,7 +47,12 @@ export function makeLearningPlan(key: string, attempt = 0): LearningPlan {
   }
   const surah = getSurah(id); if (!surah) throw new Error("invalid_surah");
   const count = questionCount(surah);
-  const kinds: QuranGameKind[] = ["missing_word", "next_verse", "match_edges", "verse_order"];
+  const rotations: QuranGameKind[][] = [
+    ["missing_word", "next_verse", "match_edges", "verse_order"],
+    ["verse_order", "match_edges", "missing_word", "next_verse"],
+    ["match_edges", "missing_word", "verse_order", "next_verse"],
+  ];
+  const kinds = rotations[id % rotations.length]!;
   const exercises: LearningExercisePlan[] = kinds.map((kind, index) => ({ kind, rounds: makeRounds(surah, kind, count, attempt * 37 + index * 11) }));
   const finalKinds: QuranGameKind[] = ["missing_word", "next_verse", "match_edges", "verse_order", "missing_word"];
   exercises.push({ kind: "mixed", rounds: finalKinds.map((kind, index) => roundFor(surah, kind, attempt * 41 + Math.floor(index * Math.max(1, surah.verseCount - 1) / 4))) });
@@ -57,22 +65,28 @@ export function advanceLearning(plan: LearningPlan, state: LearningState, answer
   if (state.passed) return state;
   if (retry) {
     if (!state.failed) return state;
-    return { ...state, question: 0, errors: 0, correct: 0, failed: false, attempt: state.attempt + 1, lastResult: null };
+    return { ...state, question: 0, questionMistake: false, errors: 0, correct: 0, failed: false, attempt: state.attempt + 1, lastResult: null };
   }
   if (state.failed) return state;
   const exercise = plan.exercises[state.cursor];
   if (!exercise) return { ...state, passed: true };
-  const errors = state.errors + (answerCorrect ? 0 : 1);
-  const correct = state.correct + (answerCorrect ? 1 : 0);
-  if (errors >= 2) return { ...state, errors, correct, failed: true, lastResult: { exercise: state.cursor, total: exercise.rounds.length, correct, errors, passed: false } };
+  if (!answerCorrect) {
+    if (state.questionMistake) return state;
+    const errors = state.errors + 1;
+    if (errors >= 2) return { ...state, questionMistake: true, errors, failed: true, lastResult: { exercise: state.cursor, total: exercise.rounds.length, correct: state.correct, errors, passed: false } };
+    return { ...state, questionMistake: true, errors, lastResult: null };
+  }
+  const errors = state.errors;
+  const correct = state.correct + (state.questionMistake ? 0 : 1);
   const question = state.question + 1;
-  if (question < exercise.rounds.length) return { ...state, question, errors, correct, lastResult: null };
+  if (question < exercise.rounds.length) return { ...state, question, questionMistake: false, errors, correct, lastResult: null };
   const result = { exercise: state.cursor, total: exercise.rounds.length, correct, errors, passed: true };
   const cursor = state.cursor + 1;
-  return { ...state, cursor, question: 0, errors: 0, correct: 0, failed: false, passed: cursor === plan.exercises.length, lastResult: result };
+  return { ...state, cursor, question: 0, questionMistake: false, errors: 0, correct: 0, failed: false, passed: cursor === plan.exercises.length, lastResult: result };
 }
 export function upgradeLearningState(value: unknown): LearningState {
   const state = value && typeof value === "object" ? value as Record<string, unknown> : {};
-  if (state.schema === 2) return { ...initialLearningState, ...state } as LearningState;
+  if (state.schema === 3) return { ...initialLearningState, ...state } as LearningState;
+  if (state.schema === 2) return { ...initialLearningState, ...state, schema: 3, questionMistake: false } as LearningState;
   return { ...initialLearningState, cursor: Math.max(0, Math.min(5, Number(state.cursor) || 0)), attempt: Math.max(0, Number(state.attempt) || 0), passed: state.passed === true };
 }
