@@ -5,8 +5,9 @@ import type { TeacherHomeData } from "./models";
 
 export function TeacherHome({ data }: { data: TeacherHomeData }) {
   const formatter = new Intl.DateTimeFormat("ar-MA", { weekday: "long" });
-  const days = [...new Set(data.schedule.map((item) => formatter.format(new Date(item.startsAt))))];
-  const hours = [...new Set(data.schedule.map((item) => `${time(item.startsAt)} - ${time(item.endsAt)}`))];
+  const dayNames = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+  const days = data.recurringSchedule?.length ? [...new Set(data.recurringSchedule.map((item) => dayNames[item.dayOfWeek]))] : [...new Set(data.schedule.map((item) => formatter.format(new Date(item.startsAt))))];
+  const hours = data.recurringSchedule?.length ? [...new Set(data.recurringSchedule.map((item) => `${item.startsAt.slice(0,5)} - ${item.endsAt.slice(0,5)}`))] : [...new Set(data.schedule.map((item) => `${time(item.startsAt)} - ${time(item.endsAt)}`))];
   return <div className="teacher-page teacher-dashboard">
     <header className="teacher-page-head"><span>الرئيسية</span><h1>ملخص العمل</h1></header>
     <section className="teacher-summary" aria-label="ملخص العمل">

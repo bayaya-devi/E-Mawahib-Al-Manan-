@@ -24,6 +24,7 @@ export type TeacherHomeData = {
   classes: TeacherClass[];
   students: TeacherStudent[];
   schedule: TeacherCourse[];
+  recurringSchedule?: Array<{ id: string; classId: string; className: string; dayOfWeek: number; startsAt: string; endsAt: string; room: string | null }>;
   nextCourse: TeacherCourse | null;
   openRun: TeacherOpenRun | null;
   messages: TeacherMessage[];

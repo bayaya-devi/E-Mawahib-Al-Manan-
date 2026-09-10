@@ -101,5 +101,18 @@ export async function provisionAccount(
     return { ok: false, code: "FAILED", message: AUTH_MESSAGES.accountCreateFailed };
   }
 
-  return { ok: true, userId, message: AUTH_MESSAGES.accountCreated };
+  const { error: activationError } = await adminClient.rpc("set_account_status", {
+    target_user_id: userId,
+    target_status: "active",
+    target_suspension_reason: null,
+    actor_user_id: authentication.user.id,
+    target_school_id: parsed.data.schoolId,
+  });
+  if (activationError) {
+    const { error: cleanupError } = await adminClient.auth.admin.deleteUser(userId);
+    if (cleanupError) console.error("account_activation_cleanup_failed", { userId, code: cleanupError.code });
+    return { ok: false, code: "FAILED", message: AUTH_MESSAGES.accountCreateFailed };
+  }
+
+  return { ok: true, userId, message: "تم إنشاء الحساب وتفعيله." };
 }

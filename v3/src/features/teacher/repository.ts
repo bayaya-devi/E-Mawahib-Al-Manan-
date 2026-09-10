@@ -26,10 +26,11 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
     if (!profile.data || profile.data.status !== "active" || !role.data) return emptyHome;
     const teacherName = profile.data.display_name;
     const classIds = (assignments.data ?? []).map(({ class_id }) => class_id);
-    const [classRows, enrollmentRows] = classIds.length ? await Promise.all([
+    const [classRows, enrollmentRows, classSchedules] = classIds.length ? await Promise.all([
       client.from("classes").select("id,name,level").in("id", classIds),
       client.from("class_enrollments").select("class_id,student_id").in("class_id", classIds).eq("status", "active"),
-    ]) : [{ data: [] }, { data: [] }];
+      client.from("class_schedule_slots").select("id,class_id,day_of_week,starts_at,ends_at,room").in("class_id", classIds).order("day_of_week").order("starts_at"),
+    ]) : [{ data: [] }, { data: [] }, { data: [] }];
     const enrollments = enrollmentRows.data ?? [];
     const studentIds = enrollments.map(({ student_id }) => student_id);
     const [studentProfiles, progressRows, attendanceRows, assignmentRows, submissionRows, recitationRows, noteRows] = studentIds.length ? await Promise.all([
@@ -78,6 +79,7 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
     }).slice(0, 8);
     return {
       teacher: { id: profile.data.id, name: profile.data.display_name }, classes, students, schedule,
+      recurringSchedule: (classSchedules.data ?? []).map((slot) => ({ id: slot.id, classId: slot.class_id, className: classNames.get(slot.class_id) ?? "القسم", dayOfWeek: slot.day_of_week, startsAt: slot.starts_at, endsAt: slot.ends_at, room: slot.room })),
       nextCourse: schedule.find((course) => course.status === "scheduled" && new Date(course.endsAt).getTime() >= now) ?? null,
       openRun: openRun.data ? { id: openRun.data.id, courseSessionId: openRun.data.course_session_id, classId: openRun.data.class_id, status: openRun.data.status, startedAt: openRun.data.started_at } : null,
       messages: (messages.data ?? []).map((row) => ({ id: row.id, subject: row.subject, body: row.body, senderId: row.sender_id, read: Boolean(row.read_at), createdAt: row.created_at })),

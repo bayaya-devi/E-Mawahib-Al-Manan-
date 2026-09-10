@@ -65,12 +65,21 @@
 }
 
 :root[data-appearance="dark"] { color-scheme: dark; --canvas: #14201c; --canvas-raised: #1b2a24; --surface: #21322b; --surface-muted: #2a3c34; --ink: #f4f1e9; --ink-soft: #c4ccc7; --ink-faint: #9caaa3; --border: #3d5148; --border-strong: #53685e; --brand-soft: #294b3f; }
-:root[data-accent="blue"] { --brand: #246285; --brand-strong: #16445f; --brand-soft: #dceaf2; --focus: #246285; }
-:root[data-accent="plum"] { --brand: #7b4054; --brand-strong: #552a39; --brand-soft: #f0dfe5; --focus: #7b4054; }
-:root[data-accent="gold"] { --brand: #9a6a22; --brand-strong: #684613; --brand-soft: #f2e5cf; --focus: #9a6a22; }
+:root[data-accent="mawahib"] { --brand: #168b88; --brand-strong: #0c5e5c; --brand-soft: #d9f1ef; --gold: #d49a23; --gold-soft: #f8ebc7; --plum: #b34b78; --danger: #b75d4b; --focus: #168b88; }
+:root[data-accent="ocean"] { --brand: #2879a8; --brand-strong: #18526f; --brand-soft: #dceef5; --gold: #c79d58; --gold-soft: #f4ead8; --plum: #d26962; --danger: #b75450; --focus: #2879a8; }
+:root[data-accent="forest"] { --brand: #28775a; --brand-strong: #15513c; --brand-soft: #dcece4; --gold: #c69a35; --gold-soft: #f3e8ca; --plum: #758d69; --danger: #9a5a45; --focus: #28775a; }
+:root[data-accent="night"] { --brand: #5454a8; --brand-strong: #37346f; --brand-soft: #e5e4f5; --gold: #d6a638; --gold-soft: #f5e9c5; --plum: #8154a0; --danger: #a84c68; --focus: #5454a8; }
+:root[data-accent="pastel"] { --brand: #4c9b86; --brand-strong: #2d6859; --brand-soft: #dff2eb; --gold: #d99470; --gold-soft: #fae7dc; --plum: #9a6fa8; --danger: #bd637d; --focus: #4c9b86; }
+:root[data-accent="blue"] { --brand: #2879a8; --brand-strong: #18526f; --brand-soft: #dceef5; --focus: #2879a8; }
+:root[data-accent="plum"] { --brand: #5454a8; --brand-strong: #37346f; --brand-soft: #e5e4f5; --focus: #5454a8; }
+:root[data-accent="gold"] { --brand: #168b88; --brand-strong: #0c5e5c; --brand-soft: #d9f1ef; --focus: #168b88; }
 :root[data-appearance="dark"][data-accent="blue"] { --brand-soft: #263f4d; }
 :root[data-appearance="dark"][data-accent="plum"] { --brand-soft: #4c303a; }
-:root[data-appearance="dark"][data-accent="gold"] { --brand-soft: #493b25; }
+:root[data-appearance="dark"][data-accent="gold"], :root[data-appearance="dark"][data-accent="mawahib"] { --brand-soft: #214442; }
+:root[data-appearance="dark"][data-accent="ocean"] { --brand-soft: #233f4c; }
+:root[data-appearance="dark"][data-accent="forest"] { --brand-soft: #29463a; }
+:root[data-appearance="dark"][data-accent="night"] { --brand-soft: #3a3653; }
+:root[data-appearance="dark"][data-accent="pastel"] { --brand-soft: #314b44; }
 
 * { box-sizing: border-box; }
 

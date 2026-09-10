@@ -25,4 +25,4 @@ export function TeacherSettings() {
 
 function roleLabel(role: SavedDeviceAccount["kind"]) { return ({ teacher: "أستاذ(ة)", student: "طالب(ة)", parent: "ولي(ة)", admin: "إدارة", direction: "إدارة" })[role]; }
 function appearanceLabel(value: Appearance) { return ({ light: "فاتح", dark: "داكن", system: "حسب الجهاز" })[value]; }
-function accentLabel(value: Accent) { return ({ green: "أخضر", blue: "أزرق", plum: "خمري", gold: "ذهبي" })[value]; }
+function accentLabel(value: Accent) { return ({ green: "أخضر", blue: "أزرق", plum: "خمري", gold: "ذهبي", mawahib: "مواهب", ocean: "المحيط", forest: "الغابة", night: "الليل", pastel: "الباستيل" })[value]; }

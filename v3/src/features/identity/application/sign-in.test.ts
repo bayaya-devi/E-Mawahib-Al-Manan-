@@ -96,4 +96,13 @@ describe("legacy-compatible sign in", () => {
       .resolves.toMatchObject({ ok: false, code: "UNAVAILABLE" });
     expect(mocks.signOut).toHaveBeenCalledOnce();
   });
+
+  it("ends a suspended session and returns the explicit Arabic suspension message", async () => {
+    mocks.signIn.mockResolvedValue({ data: { user: { id: "student-id" } }, error: null });
+    mocks.profile.mockResolvedValue({ data: { status: "suspended" }, error: null });
+    const result = await signInWithAlias({ login: "s_elise_ben_ali", password: "valid" });
+    expect(result).toMatchObject({ ok: false, code: "SUSPENDED" });
+    expect(result.ok ? "" : result.message).toContain("هذا الحساب موقوف حاليًا");
+    expect(mocks.signOut).toHaveBeenCalledOnce();
+  });
 });

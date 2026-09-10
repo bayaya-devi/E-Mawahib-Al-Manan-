@@ -201,6 +201,17 @@ type ClassTeacherAssignmentRow = {
   created_by: string | null;
 };
 
+type ClassScheduleSlotRow = {
+  id: string;
+  class_id: string;
+  day_of_week: number;
+  starts_at: string;
+  ends_at: string;
+  room: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type AuditLogRow = {
   id: number;
   actor_id: string | null;
@@ -1170,6 +1181,7 @@ export type Database = {
       admin_profiles: ReadonlyTable<AdminProfileRow>;
       family_relationships: ReadonlyTable<FamilyRelationshipRow>;
       classes: ReadonlyTable<ClassRow>;
+      class_schedule_slots: ReadonlyTable<ClassScheduleSlotRow>;
       class_enrollments: ReadonlyTable<ClassEnrollmentRow>;
       class_teacher_assignments: ReadonlyTable<ClassTeacherAssignmentRow>;
       audit_logs: ReadonlyTable<AuditLogRow>;
@@ -1543,6 +1555,18 @@ export type Database = {
           target_password_reset?: boolean;
         };
         Returns: undefined;
+      };
+      admin_save_class: {
+        Args: { payload: Json };
+        Returns: string;
+      };
+      admin_send_class_schedule: {
+        Args: { target_class_id: string };
+        Returns: string;
+      };
+      list_message_targets: {
+        Args: Record<PropertyKey, never>;
+        Returns: Array<{ user_id: string; display_name: string }>;
       };
       can_message_user: { Args: { target_user_id: string }; Returns: boolean };
       require_administration_aal2: {

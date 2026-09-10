@@ -3,7 +3,7 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { logServerError } from "@/lib/observability/logger";
 import type { DatabaseAssignmentStatus } from "@/types/database";
-import type { FamilyChildData, FamilyChildSummary, StudentDashboardData, StudentHistoryData } from "./models";
+import type { FamilyChildData, FamilyChildSummary, StudentDashboardData, StudentHistoryData, TeacherFollowUpEntry } from "./models";
 
 const emptyStudent: StudentDashboardData = {
   student: null, teacher: null, classroom: null, nextCourse: null, courseSchedule: [], announcements: [], events: [],
@@ -30,8 +30,9 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
     const classId = enrollmentResult.data?.class_id;
     const schoolId = membershipResult.data?.school_id;
     const now = new Date().toISOString();
-    const [sessionsResult, teacherAssignmentResult, classroomResult, announcementResult, eventResult, assignmentResult] = await Promise.all([
+    const [sessionsResult, scheduleResult, teacherAssignmentResult, classroomResult, announcementResult, eventResult, assignmentResult] = await Promise.all([
       classId ? client.from("course_sessions").select("id,title,starts_at,ends_at,location").eq("class_id", classId).gte("starts_at", now).eq("status", "scheduled").order("starts_at").limit(6) : Promise.resolve({ data: [] }),
+      classId ? client.from("class_schedule_slots").select("id,day_of_week,starts_at,ends_at").eq("class_id", classId).order("day_of_week").order("starts_at") : Promise.resolve({ data: [] }),
       classId ? client.from("class_teacher_assignments").select("teacher_id").eq("class_id", classId).eq("status", "active").order("assigned_at").limit(1).maybeSingle() : Promise.resolve({ data: null }),
       classId ? client.from("classes").select("id,name").eq("id", classId).maybeSingle() : Promise.resolve({ data: null }),
       schoolId ? client.from("school_announcements").select("id,title,body,published_at").eq("school_id", schoolId).order("published_at", { ascending: false }).limit(6) : Promise.resolve({ data: [] }),
@@ -50,7 +51,9 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
       teacher: teacherResult.data ? { id: teacherResult.data.id, name: teacherResult.data.display_name } : null,
       classroom: classroomResult.data ? { id: classroomResult.data.id, name: classroomResult.data.name } : null,
       nextCourse: sessionsResult.data?.[0] ? { id: sessionsResult.data[0].id, title: sessionsResult.data[0].title, startsAt: sessionsResult.data[0].starts_at, endsAt: sessionsResult.data[0].ends_at, location: sessionsResult.data[0].location } : null,
-      courseSchedule: (sessionsResult.data ?? []).map((session) => ({ id: session.id, startsAt: session.starts_at, endsAt: session.ends_at })),
+      courseSchedule: (scheduleResult.data ?? []).length
+        ? (scheduleResult.data ?? []).map((slot) => ({ id: slot.id, startsAt: slot.starts_at, endsAt: slot.ends_at, dayOfWeek: slot.day_of_week }))
+        : (sessionsResult.data ?? []).map((session) => ({ id: session.id, startsAt: session.starts_at, endsAt: session.ends_at })),
       announcements: (announcementResult.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body, publishedAt: row.published_at })),
       events: (eventResult.data ?? []).map((row) => ({ id: row.id, title: row.title, startsAt: row.starts_at })),
       assignments,
@@ -155,6 +158,49 @@ export async function getStudentHistory(): Promise<StudentHistoryData> {
   } catch (error) {
     logServerError("STUDENT_HISTORY_LOAD_FAILED", error);
     return empty;
+  }
+}
+
+export async function getTeacherFollowUp(): Promise<TeacherFollowUpEntry[]> {
+  if (process.env.NEXT_PUBLIC_APP_ENV === "test") return [];
+  try {
+    const client = await createClient();
+    const { data: auth } = await client.auth.getUser();
+    if (!auth.user) return [];
+    const recitations = await client.from("teacher_recitations")
+      .select("id,run_id,surah_number,verse_from,verse_to,appreciation,comment,recorded_by,recorded_at")
+      .eq("student_id", auth.user.id)
+      .order("recorded_at", { ascending: false })
+      .limit(500);
+    const rows = recitations.data ?? [];
+    if (!rows.length) return [];
+    const teacherIds = [...new Set(rows.map((row) => row.recorded_by))];
+    const runIds = [...new Set(rows.map((row) => row.run_id))];
+    const [profiles, runs] = await Promise.all([
+      client.from("profiles").select("id,display_name").in("id", teacherIds),
+      client.from("teacher_session_runs").select("id,class_id").in("id", runIds),
+    ]);
+    const classIds = [...new Set((runs.data ?? []).map((row) => row.class_id))];
+    const classes = classIds.length
+      ? await client.from("classes").select("id,name").in("id", classIds)
+      : { data: [] };
+    const names = new Map((profiles.data ?? []).map((row) => [row.id, row.display_name]));
+    const runClasses = new Map((runs.data ?? []).map((row) => [row.id, row.class_id]));
+    const classNames = new Map((classes.data ?? []).map((row) => [row.id, row.name]));
+    return rows.map((row) => ({
+      id: row.id,
+      recordedAt: row.recorded_at,
+      teacherName: names.get(row.recorded_by) ?? "الأستاذ(ة)",
+      className: classNames.get(runClasses.get(row.run_id) ?? "") ?? null,
+      surahNumber: row.surah_number,
+      verseFrom: row.verse_from,
+      verseTo: row.verse_to,
+      appreciation: row.appreciation,
+      comment: row.comment,
+    }));
+  } catch (error) {
+    logServerError("STUDENT_TEACHER_FOLLOW_UP_LOAD_FAILED", error);
+    return [];
   }
 }
 

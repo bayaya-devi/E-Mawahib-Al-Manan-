@@ -39,12 +39,12 @@ export function PublicSiteAdminWorkspace() {
       <button className={resource === "schedule" ? "is-active" : ""} onClick={() => { setResource("schedule"); setEditingId(undefined); }} type="button"><CalendarPlus />المواعيد</button>
     </div>
     {message && <p className="site-admin__message" role="status">{message}</p>}
-    <ContentForm key={`${resource}-${editingId ?? listing.profiles?.[0]?.id ?? "new"}`} resource={resource} editingId={editingId} listing={listing} onCancel={() => setEditingId(undefined)} onSaved={() => { setEditingId(undefined); setMessage("تم الحفظ بنجاح."); void refresh(); }} />
-    {resource !== "site" && <section className="site-admin__records"><h2>المحتوى الحالي</h2>{loading ? <p>جار التحميل…</p> : <RecordList resource={resource} listing={listing} onEdit={setEditingId} onChanged={() => void refresh()} />}</section>}
+    <ContentForm key={`${resource}-${editingId ?? listing.profiles?.[0]?.id ?? "new"}`} resource={resource} editingId={editingId} listing={listing} onCancel={() => setEditingId(undefined)} onError={setMessage} onSaved={() => { setEditingId(undefined); setMessage("تم الحفظ بنجاح."); void refresh(); }} />
+    {resource !== "site" && <section className="site-admin__records"><h2>المحتوى الحالي</h2>{loading ? <p>جار التحميل…</p> : <RecordList resource={resource} listing={listing} onEdit={setEditingId} onError={setMessage} onChanged={() => void refresh()} />}</section>}
   </div>;
 }
 
-function ContentForm({ resource, editingId, listing, onCancel, onSaved }: { resource: Resource; editingId: string | undefined; listing: Listing; onCancel: () => void; onSaved: () => void }) {
+function ContentForm({ resource, editingId, listing, onCancel, onSaved, onError }: { resource: Resource; editingId: string | undefined; listing: Listing; onCancel: () => void; onSaved: () => void; onError: (message: string) => void }) {
   const [busy, setBusy] = useState(false);
   const existing = getExisting(resource, editingId, listing);
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -53,11 +53,11 @@ function ContentForm({ resource, editingId, listing, onCancel, onSaved }: { reso
     const data = new FormData(form);
     const translations = Object.keys(localeNames).map((locale) => ({ locale, title: String(data.get(`${locale}-title`) ?? ""), summary: String(data.get(`${locale}-summary`) ?? "") }));
     async function upload(name:string){const file=data.get(name);if(!(file instanceof File)||file.size===0)return "";const upload=new FormData();upload.set("file",file);const response=await fetch("/api/admin/public-media",{method:"POST",body:upload});if(!response.ok)throw new Error("upload_failed");return ((await response.json()) as {url:string}).url;}
-    let uploaded="";try{uploaded=resource==="replay"?await upload("videoFile"):resource==="news"?await upload("imageFile"):"";}catch{setBusy(false);return;}
+    let uploaded="";try{uploaded=resource==="replay"?await upload("videoFile"):resource==="news"?await upload("imageFile"):"";}catch{setBusy(false);onError("تعذر رفع الملف. تحقق من النوع والحجم ثم أعد المحاولة.");return;}
     const base = { resource, id: editingId, translations };
     const payload = resource === "site" ? { ...base, phone: data.get("phone"), email: data.get("email"), mapUrl: data.get("mapUrl"), minimumAge: Number(data.get("minimumAge")), monthlyFee: Number(data.get("monthlyFee")), registrationOpen: data.get("registrationOpen") === "on" } : resource === "news" ? { ...base, status: data.get("status"), imageUrl: uploaded||data.get("imageUrl"), eventDate: data.get("eventDate") } : resource === "replay" ? { ...base, status: data.get("status"), videoUrl: uploaded||data.get("videoUrl"), thumbnailUrl: data.get("thumbnailUrl"), speaker: data.get("speaker"), eventDate: data.get("eventDate"), featured: data.get("featured") === "on" } : { ...base, active: data.get("active") === "on", audience: data.get("audience"), dayOfWeek: Number(data.get("dayOfWeek")), startsAt: data.get("startsAt"), endsAt: data.get("endsAt"), location: data.get("location") };
     const response = await fetch("/api/admin/public-content", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
-    setBusy(false); if (response.ok) { form.reset(); onSaved(); }
+    setBusy(false); if (response.ok) { form.reset(); onSaved(); } else { const result = await response.json().catch(() => null) as { issues?: Array<{ message?: string }> } | null; onError(result?.issues?.[0]?.message ? `تعذر الحفظ: ${result.issues[0].message}` : "تعذر الحفظ. لم يُنشر أي محتوى."); }
   }
   return <form className="site-admin__form" onSubmit={submit}><div className="site-admin__form-heading"><div><span>{editingId ? "تعديل المحتوى" : "إضافة جديدة"}</span><h2>{resource === "site" ? "بيانات الموقع" : resource === "news" ? "خبر" : resource === "replay" ? "محاضرة أو إعادة" : "موعد"}</h2></div><Plus aria-hidden="true" /></div>
     {resource !== "schedule" && resource !== "site" && <div className="site-admin__row"><label>حالة النشر<select name="status" defaultValue={existing.status ?? "draft"}><option value="draft">مسودة</option><option value="published">منشور</option><option value="archived">مؤرشف</option></select></label><label>التاريخ<input name="eventDate" type="date" defaultValue={existing.eventDate} /></label></div>}
@@ -70,10 +70,10 @@ function ContentForm({ resource, editingId, listing, onCancel, onSaved }: { reso
   </form>;
 }
 
-function RecordList({ resource, listing, onEdit, onChanged }: { resource: Exclude<Resource, "site">; listing: Listing; onEdit: (id: string) => void; onChanged: () => void }) {
+function RecordList({ resource, listing, onEdit, onChanged, onError }: { resource: Exclude<Resource, "site">; listing: Listing; onEdit: (id: string) => void; onChanged: () => void; onError: (message: string) => void }) {
   const records = resource === "news" ? listing.news : resource === "replay" ? listing.replays : listing.schedules;
   if (!records?.length) return <p>لا يوجد محتوى في هذا القسم.</p>;
-  async function change(id: string, state: string | boolean) { const response = await fetch("/api/admin/public-content", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ resource, id, state }) }); if (response.ok) onChanged(); }
+  async function change(id: string, state: string | boolean) { const response = await fetch("/api/admin/public-content", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ resource, id, state }) }); if (response.ok) onChanged(); else onError("تعذر تغيير حالة المحتوى. لم تُحفظ العملية."); }
   return <div className="site-admin__record-list">{records.map((record) => <article key={record.id}><code>{record.id.slice(0, 8)}</code><strong>{"status" in record ? record.status : record.audience}</strong>{"starts_at" in record && <span>{record.starts_at.slice(0, 5)} – {record.ends_at.slice(0, 5)}</span>}<div><button type="button" onClick={() => onEdit(record.id)}>تعديل</button>{resource === "schedule" ? <button type="button" onClick={() => void change(record.id, !("active" in record && record.active))}>{"active" in record && record.active ? "إخفاء" : "إظهار"}</button> : <><button type="button" onClick={() => void change(record.id, "published")}>نشر</button><button type="button" onClick={() => void change(record.id, "draft")}>مسودة</button><button type="button" onClick={() => void change(record.id, "archived")}>أرشفة</button></>}</div></article>)}</div>;
 }
 

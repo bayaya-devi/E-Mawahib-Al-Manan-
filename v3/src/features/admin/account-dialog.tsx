@@ -95,19 +95,20 @@ export function AccountDialog({
       target_user_id: result.userId,
       payload,
     });
+    let relationError = null;
     if (!profile.error && role === "student" && form.classId)
-      await createClient().rpc("admin_set_student_relations", {
+      relationError = (await createClient().rpc("admin_set_student_relations", {
         target_student_id: result.userId,
         target_class_id: form.classId,
         target_teacher_ids: form.teacherIds ? form.teacherIds.split(",") : [],
-      });
+      })).error;
     if (!profile.error && role === "teacher")
-      await createClient().rpc("admin_set_teacher_classes", {
+      relationError = (await createClient().rpc("admin_set_teacher_classes", {
         target_teacher_id: result.userId,
         target_class_ids: form.classIds ? form.classIds.split(",") : [],
-      });
+      })).error;
     setBusy(false);
-    if (profile.error) {
+    if (profile.error || relationError) {
       showToast({ title: "أُنشئ الحساب وتعذر إكمال الملف", tone: "info" });
       return;
     }

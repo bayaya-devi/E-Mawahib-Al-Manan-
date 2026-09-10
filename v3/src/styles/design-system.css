@@ -208,7 +208,8 @@
   .page-intro { display: grid; gap: var(--space-5); }
   .page-intro h1 { font-size: 1.75rem; }
   .page-intro .ui-button { width: 100%; }
-  .mobile-nav { position: fixed; inset-inline: 10px; inset-block-end: max(10px, env(safe-area-inset-bottom)); z-index: 50; min-height: 66px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 5px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: var(--shadow-2); backdrop-filter: blur(18px); }
+  .mobile-nav { position: fixed; inset-inline: 10px; inset-block-end: max(10px, env(safe-area-inset-bottom)); z-index: 50; min-height: 66px; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(68px, 1fr); overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; padding: 5px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--surface) 94%, transparent); box-shadow: var(--shadow-2); backdrop-filter: blur(18px); }
+  .mobile-nav::-webkit-scrollbar { display: none; }
   .app-shell.is-navigation-collapsed .mobile-nav { opacity: 0; pointer-events: none; transform: translateY(calc(100% + 24px)); }
   .mobile-nav .app-nav-link { min-width: 0; min-height: 54px; display: grid; place-items: center; align-content: center; gap: 2px; padding: 2px; border-radius: var(--radius-md); font-size: 0.64rem; }
   .mobile-nav .app-nav-link:hover { translate: 0; }

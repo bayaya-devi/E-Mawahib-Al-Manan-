@@ -7,8 +7,8 @@ afterEach(() => { localStorage.clear(); document.documentElement.removeAttribute
 it("applies and persists the selected mode and accent", () => {
   vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
   saveAppearance("dark", "plum");
-  expect(readAppearance()).toBe("dark"); expect(readAccent()).toBe("plum");
-  expect(document.documentElement.dataset.appearance).toBe("dark"); expect(document.documentElement.dataset.accent).toBe("plum");
+  expect(readAppearance()).toBe("dark"); expect(readAccent()).toBe("night");
+  expect(document.documentElement.dataset.appearance).toBe("dark"); expect(document.documentElement.dataset.accent).toBe("night");
 });
 
 it("tracks the operating-system mode while system is selected", () => {

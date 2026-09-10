@@ -73,6 +73,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       enrollments,
       assignments,
       classRows,
+      classSchedules,
       sessions,
       attendance,
       reports,
@@ -91,6 +92,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       announcements,
       progress,
       learningEvents,
+      teacherRecitations,
       audit,
       parentFeedback,
     ] = await Promise.all([
@@ -101,9 +103,8 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       client.from("user_roles").select("user_id,role"),
       client
         .from("school_memberships")
-        .select("user_id")
-        .eq("school_id", schoolId)
-        .eq("status", "active"),
+        .select("user_id,status")
+        .eq("school_id", schoolId),
       client.from("student_profiles").select("user_id,date_of_birth,gender"),
       client
         .from("teacher_profiles")
@@ -124,6 +125,11 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         .select("id,name,level,capacity,status")
         .eq("school_id", schoolId),
       client
+        .from("class_schedule_slots")
+        .select("id,class_id,day_of_week,starts_at,ends_at,room")
+        .order("day_of_week")
+        .order("starts_at"),
+      client
         .from("course_sessions")
         .select("id,class_id,teacher_id,starts_at,ends_at,status")
         .gte("starts_at", dayStart.toISOString())
@@ -131,8 +137,8 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       client
         .from("attendance_records")
         .select("session_id,student_id,status,minutes_late,recorded_at")
-        .gte("recorded_at", dayStart.toISOString())
-        .lt("recorded_at", dayEnd.toISOString()),
+        .order("recorded_at", { ascending: false })
+        .limit(5000),
       client
         .from("teacher_session_reports")
         .select(
@@ -226,6 +232,11 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         .order("occurred_at", { ascending: false })
         .limit(150),
       client
+        .from("teacher_recitations")
+        .select("id,student_id,recorded_by,run_id,surah_number,verse_from,verse_to,appreciation,recorded_at")
+        .order("recorded_at", { ascending: false })
+        .limit(500),
+      client
         .from("audit_logs")
         .select("id,action,entity_type,occurred_at")
         .eq("school_id", schoolId)
@@ -237,9 +248,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         .order("created_at", { ascending: false })
         .limit(100),
     ]);
-    const memberIds = new Set(
-      (schoolMembers.data ?? []).map(({ user_id }) => user_id),
-    );
+    const memberIds = new Set((schoolMembers.data ?? []).map(({ user_id }) => user_id));
     const names = new Map(
       (profiles.data ?? []).map((row) => [row.id, row.display_name]),
     );
@@ -357,8 +366,12 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       name: row.name,
       level: row.level,
       capacity: row.capacity,
+      status: row.status,
       students: classStudentCounts.get(row.id) ?? 0,
       teachers: classTeacherCounts.get(row.id) ?? 0,
+      teacherId: (assignments.data ?? []).find((item) => item.class_id === row.id)?.teacher_id ?? null,
+      studentIds: (enrollments.data ?? []).filter((item) => item.class_id === row.id).map((item) => item.student_id),
+      schedule: (classSchedules.data ?? []).filter((item) => item.class_id === row.id).map((item) => ({ id: item.id, dayOfWeek: item.day_of_week, startsAt: item.starts_at, endsAt: item.ends_at, room: item.room })),
     }));
     const sessionRows = sessions.data ?? [];
     const reportRows = reports.data ?? [];
@@ -458,6 +471,13 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       missingReports,
     );
     const timelineRows = [
+      ...(teacherRecitations.data ?? []).map((row) => ({
+        id: `teacher-recitation-${row.id}`,
+        kind: "teacher_recitation",
+        title: `${names.get(row.student_id) ?? "طالب"} · متابعة الحفظ`,
+        detail: `السورة ${row.surah_number} · الآيات ${row.verse_from}–${row.verse_to} · ${row.appreciation}`,
+        occurredAt: row.recorded_at,
+      })),
       ...(learningEvents.data ?? []).map((row) => ({
         id: `learning-${row.id}`,
         kind: "learning",

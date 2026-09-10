@@ -28,4 +28,15 @@ test.describe("student and family V3", () => {
     await expect(page.getByRole("heading", { name: "لا يوجد حساب طفل مرتبط" })).toBeVisible();
     await expect(page.getByText("تظهر الحسابات هنا بعد أن تربطها الإدارة بحساب الأسرة.")).toBeVisible();
   });
+
+  test("keeps the pedagogical follow-up and four-color theme packs reachable", async ({ page }) => {
+    await page.goto("/student/follow-up");
+    await expect(page.getByRole("heading", { name: "متابعة الحفظ" })).toBeVisible();
+    await expect(page.getByText("لا توجد متابعة مسجلة")).toBeVisible();
+    await page.goto("/student/settings");
+    await page.getByRole("button", { name: "المحيط" }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-accent", "ocean");
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("data-accent", "ocean");
+  });
 });

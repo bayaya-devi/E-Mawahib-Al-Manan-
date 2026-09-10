@@ -55,8 +55,12 @@ export type CommandClass = {
   name: string;
   level: string | null;
   capacity: number | null;
+  status: DatabaseAccountStatus;
   students: number;
   teachers: number;
+  teacherId: string | null;
+  studentIds: string[];
+  schedule: Array<{ id: string; dayOfWeek: number; startsAt: string; endsAt: string; room: string | null }>;
 };
 export type CommandTimelineItem = {
   id: string;

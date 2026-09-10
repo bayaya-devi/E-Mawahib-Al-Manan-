@@ -5,7 +5,7 @@ export type StudentDashboardData = {
   teacher: { id: string; name: string } | null;
   classroom: { id: string; name: string } | null;
   nextCourse: { id: string; title: string; startsAt: string; endsAt: string; location: string | null } | null;
-  courseSchedule: Array<{ id: string; startsAt: string; endsAt: string }>;
+  courseSchedule: Array<{ id: string; startsAt: string; endsAt: string; dayOfWeek?: number }>;
   announcements: Array<{ id: string; title: string; body: string; publishedAt: string }>;
   events: Array<{ id: string; title: string; startsAt: string }>;
   assignments: Array<{ id: string; title: string; instructions: string | null; dueAt: string | null; surahNumber: number | null; verseFrom: number | null; verseTo: number | null; status: DatabaseAssignmentStatus }>;
@@ -30,4 +30,16 @@ export type StudentHistoryData = {
   events: Array<{ id: number; kind: string; surahNumber: number | null; occurredAt: string }>;
   recitations: Array<{ id: string; surahNumber: number; verseFrom: number; verseTo: number; status: string; startedAt: string; score: number | null; conclusive: boolean; recommendation: string | null }>;
   reviews: Array<{ id: string; surahNumber: number; verseFrom: number; verseTo: number; reason: string | null; dueAt: string | null }>;
+};
+
+export type TeacherFollowUpEntry = {
+  id: string;
+  recordedAt: string;
+  teacherName: string;
+  className: string | null;
+  surahNumber: number;
+  verseFrom: number;
+  verseTo: number;
+  appreciation: string;
+  comment: string | null;
 };

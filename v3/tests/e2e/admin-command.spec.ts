@@ -29,7 +29,7 @@ test("student and teacher directories expose real creation workflows", async ({
   }
 });
 
-test("all nine admin destinations are reachable on mobile", async ({
+test("all ten admin destinations are reachable on mobile", async ({
   page,
 }) => {
   test.setTimeout(90_000);
@@ -37,6 +37,7 @@ test("all nine admin destinations are reachable on mobile", async ({
     ["", "الصفحة الرئيسية"],
     ["teachers", "الأساتذة"],
     ["students", "الطلاب"],
+    ["classes", "الأقسام"],
     ["parents", "الوالدان"],
     ["finance", "المالية"],
     ["communications", "التواصل"],
@@ -57,13 +58,12 @@ test("admin navigation folds and global search is absent", async ({ page }) => {
     page.getByRole("button", { name: "فتح البحث العام" }),
   ).toHaveCount(0);
   if ((page.viewportSize()?.width ?? 1280) < 760) {
-    const toggle = page.getByRole("button", { name: "إظهار قائمة التنقل" });
-    await toggle.click();
-    await expect(page.locator(".app-shell")).not.toHaveClass(
-      /is-navigation-collapsed/,
-    );
     await page.getByRole("button", { name: "إخفاء قائمة التنقل" }).click();
     await expect(page.locator(".app-shell")).toHaveClass(
+      /is-navigation-collapsed/,
+    );
+    await page.getByRole("button", { name: "إظهار قائمة التنقل" }).click();
+    await expect(page.locator(".app-shell")).not.toHaveClass(
       /is-navigation-collapsed/,
     );
     return;

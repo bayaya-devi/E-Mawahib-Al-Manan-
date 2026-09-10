@@ -31,7 +31,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Avatar, CommandPalette, ToastProvider } from "@/components/ui";
 import { NotificationCenter } from "@/features/notifications";
 import { OfflineProvider } from "@/features/offline";
-import { applyAppearance, watchSystemAppearance } from "@/features/settings/appearance";
+import { applyAppearance, readAppearance, watchSystemAppearance } from "@/features/settings/appearance";
 import { rememberAuthenticatedAccount } from "@/features/teacher/device-account-vault";
 import type { CommandItem } from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
@@ -44,6 +44,7 @@ const navigation: Record<ShellKind, NavItem[]> = {
   student: [
     { label: "الرئيسية", href: "/student", icon: Home },
     { label: "السور", href: "/student/quran", icon: BookOpenText },
+    { label: "متابعة الحفظ", href: "/student/follow-up", icon: ChartNoAxesCombined },
     { label: "الألعاب", href: "/student/games", icon: Gamepad2 },
     { label: "الوالدان", href: "/student/parents", icon: ClipboardCheck },
     { label: "ملفي", href: "/student/profile", icon: CircleUserRound },
@@ -68,6 +69,7 @@ const navigation: Record<ShellKind, NavItem[]> = {
     { label: "الرئيسية", href: "/admin", icon: LayoutDashboard },
     { label: "الأساتذة", href: "/admin/teachers", icon: UserCog },
     { label: "الطلاب", href: "/admin/students", icon: GraduationCap },
+    { label: "الأقسام", href: "/admin/classes", icon: UsersRound },
     { label: "الوالدان", href: "/admin/parents", icon: HeartHandshake },
     { label: "المالية", href: "/admin/finance", icon: Landmark },
     { label: "التواصل", href: "/admin/communications", icon: MessageSquareText },
@@ -100,10 +102,21 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   })), [items, kind]);
 
   useEffect(() => {
-    applyAppearance();
-    const mobileNavigationTimer = window.setTimeout(() => {
-      if (window.matchMedia("(max-width: 720px)").matches) setNavigationOpen(false);
-    }, 0);
+    if (kind === "admin") applyAppearance(readAppearance(), "forest");
+    else applyAppearance();
+    let lastScrollY = window.scrollY;
+    let frame = 0;
+    const handleScroll = () => {
+      if (!window.matchMedia("(max-width: 720px)").matches) return;
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        const current = window.scrollY;
+        if (current < 48 || current < lastScrollY - 8) setNavigationOpen(true);
+        else if (current > lastScrollY + 8 && current > 96) setNavigationOpen(false);
+        lastScrollY = current;
+        frame = 0;
+      });
+    };
     void rememberAuthenticatedAccount();
     const listener = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
@@ -112,9 +125,10 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
       }
     };
     window.addEventListener("keydown", listener);
-    const stopAppearanceWatch = watchSystemAppearance();
-    return () => { window.clearTimeout(mobileNavigationTimer); window.removeEventListener("keydown", listener); stopAppearanceWatch(); };
-  }, []);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    const stopAppearanceWatch = kind === "admin" ? () => undefined : watchSystemAppearance();
+    return () => { if (frame) window.cancelAnimationFrame(frame); window.removeEventListener("keydown", listener); window.removeEventListener("scroll", handleScroll); stopAppearanceWatch(); };
+  }, [kind]);
 
   useEffect(() => {
     if (kind !== "teacher" && kind !== "student") return;
