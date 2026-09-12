@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { CalendarClock, Pencil, Plus, Send, UsersRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Button, Drawer, EmptyState, useToast } from "@/components/ui";
-import { createClient } from "@/lib/supabase/client";
 import type { Json } from "@/types/database";
 import type { AdminCommandData, CommandClass } from "./models";
 
@@ -50,10 +49,15 @@ export function AdminClassWorkspace({ data }: { data: AdminCommandData }) {
       status: nextStatus,
       schedule: form.schedule.map((row) => ({ day_of_week: row.dayOfWeek, starts_at: row.startsAt, ends_at: row.endsAt, room: row.room.trim() || null })),
     };
-    const { error } = await createClient().rpc("admin_save_class", { payload });
+    const response = await fetch("/api/admin/classes", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "save", payload }),
+    });
+    const result = (await response.json().catch(() => null)) as { message?: string } | null;
     setBusy(false);
-    if (error) {
-      showToast({ title: "تعذر حفظ القسم", description: error.message, tone: "info" });
+    if (!response.ok) {
+      showToast({ title: "تعذر حفظ القسم", description: result?.message ?? "تحقق من البيانات ثم أعد المحاولة.", tone: "info" });
       return;
     }
     setOpen(false);
@@ -64,10 +68,15 @@ export function AdminClassWorkspace({ data }: { data: AdminCommandData }) {
   async function sendSchedule(classId: string) {
     if (sendingId) return;
     setSendingId(classId);
-    const { error } = await createClient().rpc("admin_send_class_schedule", { target_class_id: classId });
+    const response = await fetch("/api/admin/classes", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "send_schedule", classId }),
+    });
+    const result = (await response.json().catch(() => null)) as { message?: string } | null;
     setSendingId(null);
-    if (error) {
-      showToast({ title: "تعذر إرسال جدول الحصص", description: error.message, tone: "info" });
+    if (!response.ok) {
+      showToast({ title: "تعذر إرسال جدول الحصص", description: result?.message ?? "حاول مرة أخرى.", tone: "info" });
       return;
     }
     showToast({ title: "تم إرسال جدول الحصص", tone: "success" });
@@ -87,7 +96,7 @@ export function AdminClassWorkspace({ data }: { data: AdminCommandData }) {
         <div className="form-pair"><label>الأستاذ<select value={form.teacherId} onChange={(event) => setForm({...form,teacherId:event.target.value})}><option value="">اختر الأستاذ</option>{teachers.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label><label>السعة<input type="number" min="1" value={form.capacity} onChange={(event) => setForm({...form,capacity:event.target.value})}/></label></div>
         <fieldset className="admin-checks"><legend>طلاب القسم</legend>{students.map((student) => <label key={student.id}><input type="checkbox" checked={form.studentIds.includes(student.id)} onChange={(event) => setForm({...form,studentIds:event.target.checked?[...form.studentIds,student.id]:form.studentIds.filter((id)=>id!==student.id)})}/>{student.name}</label>)}</fieldset>
         <div className="admin-schedule-editor"><div className="command-heading"><h2>مواعيد الحصص</h2><Button size="sm" variant="secondary" onClick={() => setForm({...form,schedule:[...form.schedule,{dayOfWeek:2,startsAt:"18:00",endsAt:"20:00",room:""}]})}><Plus size={16}/>موعد</Button></div>{form.schedule.map((slot,index) => <div className="admin-schedule-row" key={`${index}-${slot.dayOfWeek}`}><select aria-label="اليوم" value={slot.dayOfWeek} onChange={(event) => replaceSchedule(index,{...slot,dayOfWeek:Number(event.target.value)})}>{dayNames.map((name,day) => <option key={name} value={day}>{name}</option>)}</select><input aria-label="البداية" type="time" value={slot.startsAt} onChange={(event)=>replaceSchedule(index,{...slot,startsAt:event.target.value})}/><input aria-label="النهاية" type="time" value={slot.endsAt} onChange={(event)=>replaceSchedule(index,{...slot,endsAt:event.target.value})}/><input aria-label="القاعة" placeholder="القاعة" value={slot.room} onChange={(event)=>replaceSchedule(index,{...slot,room:event.target.value})}/><Button size="sm" variant="quiet" onClick={()=>setForm({...form,schedule:form.schedule.filter((_,position)=>position!==index)})}>حذف</Button></div>)}</div>
-        <div className="admin-class-save"><Button loading={busy} disabled={!form.name.trim() || busy} onClick={() => void save()}>حفظ</Button>{form.id ? <Button variant="danger" loading={busy} disabled={busy} onClick={() => { if (window.confirm("هل تريد أرشفة هذا القسم مع حفظ تاريخه؟")) void save("archived"); }}>أرشفة</Button> : null}</div>
+        <div className="admin-class-save"><Button loading={busy} disabled={!form.name.trim() || !form.teacherId || busy} onClick={() => void save()}>حفظ</Button>{form.id ? <Button variant="danger" loading={busy} disabled={busy} onClick={() => { if (window.confirm("هل تريد أرشفة هذا القسم مع حفظ تاريخه؟")) void save("archived"); }}>أرشفة</Button> : null}</div>
       </div>
     </Drawer>
   </div>;

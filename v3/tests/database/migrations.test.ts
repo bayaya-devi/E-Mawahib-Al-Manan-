@@ -968,6 +968,32 @@ describe("V3 migrations and RLS", () => {
     expect(state.rows).toEqual([{ status: "done" }]);
   });
 
+  it("keeps one primary teacher per class and derives students from the class", async () => {
+    await database.exec(`
+      insert into public.school_memberships (school_id,user_id,status)
+      values ('${schools.first}','${users.teacherB}','active')
+      on conflict (school_id,user_id) do update set status='active';
+    `);
+    await runAsUser(users.adminA, `select public.admin_set_teacher_classes('${users.teacherB}', array['${classes.first}'::uuid])`);
+    const teachers = await database.query<{ teacher_id: string; assignment_kind: string }>(`
+      select teacher_id,assignment_kind from public.class_teacher_assignments
+      where class_id='${classes.first}' and status='active' order by teacher_id
+    `);
+    expect(teachers.rows.filter((row) => row.assignment_kind === "primary")).toHaveLength(1);
+    expect(teachers.rows).toContainEqual({ teacher_id: users.teacherB, assignment_kind: "assistant" });
+    await runAsUser(users.adminA, `select public.admin_set_student_relations('${users.studentA}','${classes.first}',array['${users.teacherB}'::uuid])`);
+    const studentClass = await database.query<{ class_id: string }>(`
+      select class_id from public.class_enrollments where student_id='${users.studentA}' and status='active'
+    `);
+    expect(studentClass.rows).toEqual([{ class_id: classes.first }]);
+    await database.exec(`
+      delete from public.class_teacher_assignments where class_id='${classes.first}' and teacher_id='${users.teacherB}';
+      update public.class_teacher_assignments set status='active', ended_at=null, assignment_kind='primary'
+      where class_id='${classes.second}' and teacher_id='${users.teacherB}';
+      delete from public.school_memberships where school_id='${schools.first}' and user_id='${users.teacherB}';
+    `);
+  });
+
   it("enforces permissions, feature flags, and diagnostics without exposing them to suspended users", async () => {
     const teacherPermission = await asUser<{ allowed: boolean }>(users.teacherA, "select public.has_permission('teacher.write.attendance') as allowed");
     expect(teacherPermission).toEqual([{ allowed: true }]);

@@ -174,7 +174,7 @@ function PersonDialog({
         accessibilityNotes: form.accessibility_notes,
         classId: form.class_id || undefined,
         classIds: form.class_ids,
-        teacherIds: form.teacher_ids,
+        teacherIds: [],
         }),
       });
       const result = (await response.json().catch(() => null)) as { message?: string } | null;
@@ -327,30 +327,6 @@ function PersonDialog({
                 ))}
               </select>
             </label>
-            <fieldset className="admin-checks">
-              <legend>الأساتذة</legend>
-              {data.people
-                .filter((p) => p.role === "teacher")
-                .map((teacher) => (
-                  <label key={teacher.id}>
-                    <input
-                      type="checkbox"
-                      checked={form.teacher_ids.includes(teacher.id)}
-                      onChange={(e) =>
-                        setForm({
-                          ...form,
-                          teacher_ids: e.target.checked
-                            ? [...form.teacher_ids, teacher.id]
-                            : form.teacher_ids.filter(
-                                (id) => id !== teacher.id,
-                              ),
-                        })
-                      }
-                    />
-                    {teacher.name}
-                  </label>
-                ))}
-            </fieldset>
             <label>
               الولي
               <input
@@ -517,26 +493,22 @@ function PaymentDialog({ person }: { person: CommandPerson }) {
   const { showToast } = useToast();
   async function submit() {
     setBusy(true);
-    const client = createClient();
-    const result =
-      person.role === "student"
-        ? await client.rpc("admin_record_student_payment", {
-            target_student_id: person.id,
-            target_period_month: `${month}-01`,
-            target_amount: Number(amount),
-            target_paid_on: date,
-            target_note: note || null,
-          })
-        : await client.rpc("admin_record_teacher_salary", {
-            target_teacher_id: person.id,
-            target_period_month: `${month}-01`,
-            target_amount: Number(amount),
-            target_paid_on: date,
-            target_note: note || null,
-          });
+    const response = await fetch("/api/admin/finance", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        kind: person.role === "student" ? "student_payment" : "teacher_salary",
+        ...(person.role === "student" ? { studentId: person.id } : { teacherId: person.id }),
+        month,
+        amount: Number(amount),
+        paidOn: date,
+        note: note || null,
+      }),
+    });
+    const result = (await response.json().catch(() => null)) as { message?: string } | null;
     setBusy(false);
-    if (result.error)
-      return showToast({ title: "تعذر تسجيل العملية", tone: "info" });
+    if (!response.ok)
+      return showToast({ title: result?.message ?? "تعذر تسجيل العملية", tone: "info" });
     showToast({ title: "تم التسجيل وربط المالية", tone: "success" });
     window.location.reload();
   }

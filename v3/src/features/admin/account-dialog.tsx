@@ -22,7 +22,6 @@ export function AccountDialog({
     temporaryPassword: string;
     gender: string;
     monthlyAmount: string;
-    teacherIds: string;
     classIds: string;
     classId: string;
   } & Record<string, string>;
@@ -34,7 +33,6 @@ export function AccountDialog({
     temporaryPassword: "",
     gender: "unspecified",
     monthlyAmount: "0",
-    teacherIds: "",
     classIds: "",
     classId: "",
   });
@@ -42,13 +40,7 @@ export function AccountDialog({
   const { showToast } = useToast();
   const set = (key: string, value: string) =>
     setForm((row) => ({ ...row, [key]: value }));
-  const selectedTeacherIds = form.teacherIds.split(",").filter(Boolean);
-  const selectedTeachers = teachersFor(data, selectedTeacherIds);
-  const availableClasses = (() => {
-    if (!selectedTeachers.length) return data?.classes ?? [];
-    const ids = new Set(selectedTeachers.flatMap((teacher) => teacher.classIds));
-    return (data?.classes ?? []).filter((item) => ids.has(item.id));
-  })();
+  const availableClasses = data?.classes.filter((item) => item.status === "active") ?? [];
   const setName = (key: "firstName" | "lastName", value: string) => {
     setForm((current) => {
       const next = { ...current, [key]: value };
@@ -58,20 +50,7 @@ export function AccountDialog({
       return next;
     });
   };
-  const toggleTeacher = (teacherId: string, checked: boolean) => {
-    const nextIds = checked
-      ? [...selectedTeacherIds, teacherId]
-      : selectedTeacherIds.filter((id) => id !== teacherId);
-    const nextClasses = teachersFor(data, nextIds).flatMap((item) => item.classIds);
-    setForm((current) => ({
-      ...current,
-      teacherIds: nextIds.join(","),
-      classId: nextIds.length && !nextClasses.includes(current.classId)
-        ? (nextClasses[0] ?? "")
-        : current.classId,
-    }));
-  };
-  const missing = accountMissingFields({ role, schoolId, form, selectedTeacherIds });
+  const missing = accountMissingFields({ role, schoolId, form });
   async function submit() {
     if (!schoolId) return;
     setBusy(true);
@@ -113,7 +92,7 @@ export function AccountDialog({
           accessibilityNotes: form.notes ?? "",
           classId: form.classId || undefined,
           classIds: form.classIds ? form.classIds.split(",") : [],
-          teacherIds: form.teacherIds ? form.teacherIds.split(",") : [],
+          teacherIds: [],
         },
         }),
       });
@@ -133,9 +112,6 @@ export function AccountDialog({
       setBusy(false);
     }
   }
-  const teachers =
-    data?.people.filter((p) => p.role === "teacher" && p.status === "active") ??
-    [];
   return (
     <Dialog
       trigger={
@@ -294,21 +270,6 @@ export function AccountDialog({
               />
             </label>
             <fieldset className="admin-checks">
-              <legend>الأساتذة المكلفون</legend>
-              {teachers.map((teacher) => (
-                <label key={teacher.id}>
-                  <input
-                    type="checkbox"
-                    checked={(form.teacherIds ?? "")
-                      .split(",")
-                      .includes(teacher.id)}
-                    onChange={(e) => toggleTeacher(teacher.id, e.target.checked)}
-                  />
-                  {teacher.name}
-                </label>
-              ))}
-            </fieldset>
-            <fieldset className="admin-checks">
               <legend>وثائق التسجيل</legend>
               {(
                 [
@@ -358,7 +319,7 @@ export function AccountDialog({
             />
           </label>
         </div>
-        {missing.length ? <p className="command-form__hint" role="status">{missing.join(" · ")}</p> : <p className="command-form__hint">سيتم إنشاء الحساب وربطه بالقسم والأستاذ المختار.</p>}
+        {missing.length ? <p className="command-form__hint" role="status">{missing.join(" · ")}</p> : <p className="command-form__hint">يُربط الطالب تلقائيا بأستاذ القسم المختار.</p>}
         <Button
           loading={busy}
           disabled={busy || missing.length > 0}
@@ -371,20 +332,14 @@ export function AccountDialog({
   );
 }
 
-function teachersFor(data: AdminCommandData | undefined, ids: string[]) {
-  return (data?.people ?? []).filter((person) => person.role === "teacher" && ids.includes(person.id));
-}
-
 function accountMissingFields({
   role,
   schoolId,
   form,
-  selectedTeacherIds,
 }: {
   role: DatabaseAppRole;
   schoolId: string | null;
   form: { firstName: string; lastName: string; login: string; temporaryPassword: string; classId: string };
-  selectedTeacherIds: string[];
 }) {
   const missing: string[] = [];
   if (!schoolId) missing.push("تعذر تحديد المؤسسة");
@@ -392,6 +347,6 @@ function accountMissingFields({
   if (!form.lastName.trim()) missing.push("أدخل النسب");
   if (role !== "student" && form.login.trim().length < 2) missing.push("أدخل اسم الدخول");
   if (form.temporaryPassword.length < 10) missing.push("كلمة المرور 10 أحرف على الأقل");
-  if (role === "student" && selectedTeacherIds.length && !form.classId) missing.push("اختر قسم الأستاذ");
+  if (role === "student" && !form.classId) missing.push("اختر القسم");
   return missing;
 }

@@ -28,6 +28,9 @@ export async function savePersonFromAdmin(
   role: "student" | "teacher",
   input: PersonFormPayload,
 ) {
+  if (role === "student" && !input.classId) {
+    return { ok: false as const, message: "يجب اختيار قسم للطالب." };
+  }
   const client = await createClient();
   const payload: Json = {
     first_name: input.firstName,
@@ -66,7 +69,7 @@ export async function savePersonFromAdmin(
     const relations = await client.rpc("admin_set_student_relations", {
       target_student_id: targetUserId,
       target_class_id: input.classId,
-      target_teacher_ids: input.teacherIds ?? [],
+      target_teacher_ids: [],
     });
     if (relations.error) return { ok: false as const, message: "تم إنشاء الملف، وتعذر ربط القسم أو الأستاذ." };
   }
