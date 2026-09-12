@@ -30,7 +30,8 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   }, [syncing]);
 
   useEffect(() => {
-    if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js").then((registration) => {
+    if ("serviceWorker" in navigator) void navigator.serviceWorker.register(`/sw.js?v=${process.env.NEXT_PUBLIC_BUILD_SHA ?? "current"}`).then((registration) => {
+      void registration.update();
       if (registration.waiting) setUpdateAvailable(true);
       registration.addEventListener("updatefound", () => registration.installing?.addEventListener("statechange", () => {
         if (registration.waiting && navigator.serviceWorker.controller) setUpdateAvailable(true);
