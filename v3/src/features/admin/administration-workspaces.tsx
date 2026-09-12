@@ -181,7 +181,7 @@ function PersonDialog({
         accessibilityNotes: form.accessibility_notes,
         classId: form.class_id || undefined,
         classIds: form.class_ids,
-        teacherIds: [],
+        teacherIds: form.teacher_ids,
         }),
       });
       const result = (await response.json().catch(() => null)) as { message?: string } | null;
@@ -332,6 +332,20 @@ function PersonDialog({
                     {c.name}
                   </option>
                 ))}
+              </select>
+            </label>
+            <label>
+              الأستاذ المسؤول
+              <select
+                value={form.teacher_ids[0] ?? ""}
+                onChange={(e) => setForm({ ...form, teacher_ids: e.target.value ? [e.target.value] : [] })}
+              >
+                <option value="">اختر الأستاذ</option>
+                {data.people
+                  .filter((item) => item.role === "teacher" && item.status === "active")
+                  .map((teacher) => (
+                    <option key={teacher.id} value={teacher.id}>{teacher.name}</option>
+                  ))}
               </select>
             </label>
             <label>

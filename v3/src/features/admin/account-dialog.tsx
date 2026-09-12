@@ -25,6 +25,7 @@ export function AccountDialog({
     monthlyAmount: string;
     classIds: string;
     classId: string;
+    teacherId: string;
   } & Record<string, string>;
   const [role, setRole] = useState<DatabaseAppRole>(defaultRole ?? "student");
   const [form, setForm] = useState<AccountForm>({
@@ -36,6 +37,7 @@ export function AccountDialog({
     monthlyAmount: "0",
     classIds: "",
     classId: "",
+    teacherId: "",
   });
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
@@ -44,6 +46,9 @@ export function AccountDialog({
   const set = (key: string, value: string) =>
     setForm((row) => ({ ...row, [key]: value }));
   const availableClasses = data?.classes.filter((item) => item.status === "active") ?? [];
+  const availableTeachers = data?.people.filter(
+    (item) => item.role === "teacher" && item.status === "active",
+  ) ?? [];
   const setName = (key: "firstName" | "lastName", value: string) => {
     setForm((current) => {
       const next = { ...current, [key]: value };
@@ -99,7 +104,7 @@ export function AccountDialog({
           accessibilityNotes: form.notes ?? "",
           classId: form.classId || undefined,
           classIds: form.classIds ? form.classIds.split(",") : [],
-          teacherIds: [],
+          teacherIds: form.teacherId ? [form.teacherId] : [],
         },
         }),
       });
@@ -113,7 +118,7 @@ export function AccountDialog({
       }
       showToast({ title: "تم إنشاء الحساب والملف", tone: "success" });
       setOpen(false);
-      setForm({ firstName: "", lastName: "", login: "", temporaryPassword: "", gender: "unspecified", monthlyAmount: "0", classIds: "", classId: "" });
+      setForm({ firstName: "", lastName: "", login: "", temporaryPassword: "", gender: "unspecified", monthlyAmount: "0", classIds: "", classId: "", teacherId: "" });
       router.refresh();
     } catch {
       showToast({ title: "تعذر الاتصال بالخدمة. حاول مرة أخرى.", tone: "info" });
@@ -254,7 +259,15 @@ export function AccountDialog({
                 القسم
                 <select
                   value={form.classId ?? ""}
-                  onChange={(e) => set("classId", e.target.value)}
+                  onChange={(e) => {
+                    const classId = e.target.value;
+                    const selectedClass = availableClasses.find((item) => item.id === classId);
+                    setForm((current) => ({
+                      ...current,
+                      classId,
+                      teacherId: selectedClass?.teacherId ?? "",
+                    }));
+                  }}
                 >
                   <option value="">اختر القسم</option>
                   {availableClasses.map((c) => (
@@ -265,6 +278,20 @@ export function AccountDialog({
                 </select>
               </label>
             </div>
+            <label>
+              الأستاذ المسؤول
+              <select
+                value={form.teacherId ?? ""}
+                onChange={(e) => set("teacherId", e.target.value)}
+              >
+                <option value="">اختر الأستاذ</option>
+                {availableTeachers.map((teacher) => (
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.name}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className="form-pair">
               <label>
                 اسم الولي
@@ -359,7 +386,7 @@ function accountMissingFields({
 }: {
   role: DatabaseAppRole;
   schoolId: string | null;
-  form: { firstName: string; lastName: string; login: string; temporaryPassword: string; classId: string };
+  form: { firstName: string; lastName: string; login: string; temporaryPassword: string; classId: string; teacherId: string };
 }) {
   const missing: string[] = [];
   if (!schoolId) missing.push("تعذر تحديد المؤسسة");
@@ -368,5 +395,6 @@ function accountMissingFields({
   if (role !== "student" && form.login.trim().length < 2) missing.push("أدخل اسم الدخول");
   if (form.temporaryPassword.length < 6) missing.push("كلمة المرور 6 أحرف على الأقل");
   if (role === "student" && !form.classId) missing.push("اختر القسم");
+  if (role === "student" && !form.teacherId) missing.push("اختر الأستاذ");
   return missing;
 }
