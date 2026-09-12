@@ -394,7 +394,6 @@ function accountMissingFields({
   if (!form.lastName.trim()) missing.push("أدخل النسب");
   if (role !== "student" && form.login.trim().length < 2) missing.push("أدخل اسم الدخول");
   if (form.temporaryPassword.length < 6) missing.push("كلمة المرور 6 أحرف على الأقل");
-  if (role === "student" && !form.classId) missing.push("اختر القسم");
-  if (role === "student" && !form.teacherId) missing.push("اختر الأستاذ");
+  if (role === "student" && form.classId && !form.teacherId) missing.push("اختر الأستاذ");
   return missing;
 }

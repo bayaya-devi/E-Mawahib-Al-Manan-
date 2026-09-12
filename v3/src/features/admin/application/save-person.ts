@@ -32,9 +32,6 @@ export async function savePersonFromAdmin(
   role: "student" | "teacher",
   input: PersonFormPayload,
 ) {
-  if (role === "student" && !input.classId) {
-    return { ok: false as const, message: "يجب اختيار قسم للطالب." };
-  }
   const client = await createClient();
   const payload: Json = {
     first_name: input.firstName,

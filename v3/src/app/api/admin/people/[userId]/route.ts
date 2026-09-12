@@ -39,10 +39,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ us
   const { data: roles } = await access.admin.from("user_roles").select("role").eq("user_id", userId);
   const role = roles?.some((item) => item.role === "student") ? "student" : roles?.some((item) => item.role === "teacher") ? "teacher" : null;
   if (!role) return NextResponse.json({ ok: false, message: "نوع الحساب غير قابل للتعديل هنا." }, { status: 400 });
-  if (role === "student" && !input.data.classId) {
-    return NextResponse.json({ ok: false, message: "يجب اختيار قسم للطالب." }, { status: 400 });
-  }
-
   const result = await savePersonFromAdmin(userId, role, input.data);
   return NextResponse.json(result, { status: result.ok ? 200 : 400 });
 }
