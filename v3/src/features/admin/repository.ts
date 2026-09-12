@@ -111,7 +111,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         .select("user_id,gender,phone,email,monthly_salary"),
       client
         .from("student_digital_files")
-        .select("student_id,guardian_name,guardian_phone,monthly_fee,identity_document_received,birth_certificate_received,guardian_identity_received,medical_or_accessibility_notes"),
+        .select("student_id,guardian_name,guardian_phone,guardian_secondary_phone,can_leave_alone,monthly_fee,identity_document_received,birth_certificate_received,guardian_identity_received,medical_or_accessibility_notes"),
       client
         .from("class_enrollments")
         .select("class_id,student_id,status")
@@ -348,6 +348,8 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
                 : null,
           guardianName: file?.guardian_name ?? null,
           guardianPhone: file?.guardian_phone ?? null,
+          guardianSecondaryPhone: file?.guardian_secondary_phone ?? null,
+          canLeaveAlone: file?.can_leave_alone ?? false,
           dateOfBirth: student?.date_of_birth ?? null,
           identityDocumentReceived: file?.identity_document_received ?? false,
           birthCertificateReceived: file?.birth_certificate_received ?? false,

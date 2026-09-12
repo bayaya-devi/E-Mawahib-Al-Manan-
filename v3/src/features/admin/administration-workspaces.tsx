@@ -142,6 +142,8 @@ function PersonDialog({
     monthly_amount: String(person.monthlyAmount ?? 0),
     guardian_name: person.guardianName ?? "",
     guardian_phone: person.guardianPhone ?? "",
+    guardian_secondary_phone: person.guardianSecondaryPhone ?? "",
+    can_leave_alone: person.canLeaveAlone,
     date_of_birth: person.dateOfBirth ?? "",
     identity_document_received: person.identityDocumentReceived,
     birth_certificate_received: person.birthCertificateReceived,
@@ -168,7 +170,10 @@ function PersonDialog({
         email: form.email,
         monthlyAmount: form.monthly_amount,
         guardianName: form.guardian_name,
+        guardianFirstName: form.guardian_name,
         guardianPhone: form.guardian_phone,
+        guardianSecondaryPhone: form.guardian_secondary_phone,
+        canLeaveAlone: form.can_leave_alone,
         dateOfBirth: form.date_of_birth || undefined,
         identityDocumentReceived: form.identity_document_received,
         birthCertificateReceived: form.birth_certificate_received,
@@ -338,15 +343,19 @@ function PersonDialog({
                 }
               />
             </label>
-            <label>
-              هاتف الولي
-              <input
-                dir="ltr"
-                value={form.guardian_phone}
-                onChange={(e) =>
-                  setForm({ ...form, guardian_phone: e.target.value })
-                }
-              />
+            <div className="form-pair">
+              <label>
+                هاتف الولي
+                <input dir="ltr" value={form.guardian_phone} onChange={(e) => setForm({ ...form, guardian_phone: e.target.value })} />
+              </label>
+              <label>
+                هاتف ثانٍ
+                <input dir="ltr" value={form.guardian_secondary_phone} onChange={(e) => setForm({ ...form, guardian_secondary_phone: e.target.value })} />
+              </label>
+            </div>
+            <label className="toggle-line">
+              <input type="checkbox" checked={form.can_leave_alone} onChange={(e) => setForm({ ...form, can_leave_alone: e.target.checked })} />
+              يسمح له بالعودة وحده بعد الحصة
             </label>
             <label>
               الواجب الشهري
@@ -468,14 +477,14 @@ function CredentialsDialog({ person }: { person: CommandPerson }) {
           <input
             dir="ltr"
             type="password"
-            minLength={10}
+            minLength={6}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </label>
         <Button
           loading={busy}
-          disabled={(!login && !password) || password.length > 0 && password.length < 10}
+          disabled={(!login && !password) || password.length > 0 && password.length < 6}
           onClick={() => void save()}
         >
           تحديث آمن

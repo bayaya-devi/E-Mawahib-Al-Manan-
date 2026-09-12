@@ -12,7 +12,11 @@ export type PersonFormPayload = {
   email?: string | undefined;
   monthlyAmount?: string | undefined;
   guardianName?: string | undefined;
+  guardianFirstName?: string | undefined;
+  guardianLastName?: string | undefined;
   guardianPhone?: string | undefined;
+  guardianSecondaryPhone?: string | undefined;
+  canLeaveAlone?: boolean | undefined;
   dateOfBirth?: string | undefined;
   identityDocumentReceived?: boolean | undefined;
   birthCertificateReceived?: boolean | undefined;
@@ -40,8 +44,11 @@ export async function savePersonFromAdmin(
     email: input.email ?? "",
     monthly_salary: input.monthlyAmount ?? "0",
     monthly_fee: input.monthlyAmount ?? "0",
-    guardian_name: input.guardianName ?? "",
+    guardian_first_name: input.guardianFirstName ?? input.guardianName ?? "",
+    guardian_last_name: input.guardianLastName ?? "",
     guardian_phone: input.guardianPhone ?? "",
+    guardian_secondary_phone: input.guardianSecondaryPhone ?? "",
+    can_leave_alone: input.canLeaveAlone ?? false,
     date_of_birth: input.dateOfBirth ?? "",
     identity_document_received: input.identityDocumentReceived ?? false,
     birth_certificate_received: input.birthCertificateReceived ?? false,

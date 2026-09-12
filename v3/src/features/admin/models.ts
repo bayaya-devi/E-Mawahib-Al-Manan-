@@ -44,6 +44,8 @@ export type CommandPerson = {
   monthlyAmount: number | null;
   guardianName: string | null;
   guardianPhone: string | null;
+  guardianSecondaryPhone: string | null;
+  canLeaveAlone: boolean;
   dateOfBirth: string | null;
   identityDocumentReceived: boolean;
   birthCertificateReceived: boolean;

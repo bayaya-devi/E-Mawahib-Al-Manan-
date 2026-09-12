@@ -38,6 +38,7 @@ export function AccountDialog({
     classId: "",
   });
   const [busy, setBusy] = useState(false);
+  const [open, setOpen] = useState(false);
   const { showToast } = useToast();
   const router = useRouter();
   const set = (key: string, value: string) =>
@@ -86,7 +87,11 @@ export function AccountDialog({
           email: form.email ?? "",
           monthlyAmount: form.monthlyAmount || "0",
           guardianName: form.guardianName ?? "",
+          guardianFirstName: form.guardianFirstName ?? "",
+          guardianLastName: form.guardianLastName ?? "",
           guardianPhone: form.guardianPhone ?? "",
+          guardianSecondaryPhone: form.guardianSecondaryPhone ?? "",
+          canLeaveAlone: form.canLeaveAlone === "true",
           dateOfBirth: form.dateOfBirth ?? "",
           identityDocumentReceived: form.identity === "true",
           birthCertificateReceived: form.birth === "true",
@@ -107,6 +112,8 @@ export function AccountDialog({
         return;
       }
       showToast({ title: "تم إنشاء الحساب والملف", tone: "success" });
+      setOpen(false);
+      setForm({ firstName: "", lastName: "", login: "", temporaryPassword: "", gender: "unspecified", monthlyAmount: "0", classIds: "", classId: "" });
       router.refresh();
     } catch {
       showToast({ title: "تعذر الاتصال بالخدمة. حاول مرة أخرى.", tone: "info" });
@@ -124,6 +131,8 @@ export function AccountDialog({
       }
       title={role === "teacher" ? "إضافة أستاذ" : "إضافة طالب"}
       description="الهوية والملف وحساب الدخول في مسار واحد."
+      open={open}
+      onOpenChange={setOpen}
     >
       <div className="command-form">
         {!defaultRole ? (
@@ -256,20 +265,29 @@ export function AccountDialog({
                 </select>
               </label>
             </div>
-            <label>
-              المسؤول أو الولي
-              <input
-                value={form.guardianName ?? ""}
-                onChange={(e) => set("guardianName", e.target.value)}
-              />
-            </label>
-            <label>
-              هاتف المسؤول
-              <input
-                dir="ltr"
-                value={form.guardianPhone ?? ""}
-                onChange={(e) => set("guardianPhone", e.target.value)}
-              />
+            <div className="form-pair">
+              <label>
+                اسم الولي
+                <input value={form.guardianFirstName ?? ""} onChange={(e) => set("guardianFirstName", e.target.value)} />
+              </label>
+              <label>
+                نسب الولي
+                <input value={form.guardianLastName ?? ""} onChange={(e) => set("guardianLastName", e.target.value)} />
+              </label>
+            </div>
+            <div className="form-pair">
+              <label>
+                هاتف الولي
+                <input dir="ltr" value={form.guardianPhone ?? ""} onChange={(e) => set("guardianPhone", e.target.value)} />
+              </label>
+              <label>
+                هاتف ثانٍ
+                <input dir="ltr" value={form.guardianSecondaryPhone ?? ""} onChange={(e) => set("guardianSecondaryPhone", e.target.value)} />
+              </label>
+            </div>
+            <label className="toggle-line">
+              <input type="checkbox" checked={form.canLeaveAlone === "true"} onChange={(e) => set("canLeaveAlone", String(e.target.checked))} />
+              يسمح له بالعودة وحده بعد الحصة
             </label>
             <fieldset className="admin-checks">
               <legend>وثائق التسجيل</legend>
@@ -315,7 +333,7 @@ export function AccountDialog({
             <input
               dir="ltr"
               type="password"
-              minLength={10}
+              minLength={6}
               value={form.temporaryPassword}
               onChange={(e) => set("temporaryPassword", e.target.value)}
             />
@@ -348,7 +366,7 @@ function accountMissingFields({
   if (!form.firstName.trim()) missing.push("أدخل الاسم");
   if (!form.lastName.trim()) missing.push("أدخل النسب");
   if (role !== "student" && form.login.trim().length < 2) missing.push("أدخل اسم الدخول");
-  if (form.temporaryPassword.length < 10) missing.push("كلمة المرور 10 أحرف على الأقل");
+  if (form.temporaryPassword.length < 6) missing.push("كلمة المرور 6 أحرف على الأقل");
   if (role === "student" && !form.classId) missing.push("اختر القسم");
   return missing;
 }

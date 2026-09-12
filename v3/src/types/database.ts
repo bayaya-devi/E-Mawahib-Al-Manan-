@@ -730,10 +730,14 @@ type StudentDigitalFileRow = {
   student_id: string;
   school_id: string;
   guardian_name: string | null;
+  guardian_first_name: string | null;
+  guardian_last_name: string | null;
   guardian_phone: string | null;
+  guardian_secondary_phone: string | null;
   guardian_email: string | null;
   guardian_identity_number: string | null;
   secondary_contact: string | null;
+  can_leave_alone: boolean;
   payment_required: boolean;
   monthly_fee: number | null;
   identity_document_received: boolean;
@@ -1554,6 +1558,10 @@ export type Database = {
           target_login_alias: string;
           target_password_reset?: boolean;
         };
+        Returns: undefined;
+      };
+      cleanup_provisioned_account_data: {
+        Args: { target_user_id: string };
         Returns: undefined;
       };
       admin_save_class: {
