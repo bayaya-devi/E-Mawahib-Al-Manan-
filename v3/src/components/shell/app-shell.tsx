@@ -159,10 +159,10 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
           <nav className="app-rail__nav" aria-label="التنقل الرئيسي">
             {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
           </nav>
-          <a className="app-rail__profile" href={kind === "student" ? "/student/profile" : kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`}>
+          <Link className="app-rail__profile" prefetch={false} href={kind === "student" ? "/student/profile" : kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`}>
             <Avatar name="حساب المستخدم" size="sm" />
             <span><strong>الحساب</strong><small>الملف الشخصي</small></span>
-          </a>
+          </Link>
         </aside>
 
         <div className="app-frame">
@@ -177,9 +177,9 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
                 <span>بحث</span><kbd>Ctrl K</kbd>
               </button> : <button className="teacher-signout" type="button" aria-label="تسجيل الخروج" disabled={signingOut} onClick={() => void signOut()}><LogOut aria-hidden="true" size={18} /><span>{signingOut ? "جار الخروج" : "تسجيل الخروج"}</span></button>}
               <NotificationCenter />
-              <a className="mobile-profile" href={kind === "student" ? "/student/profile" : kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`} aria-label="الملف الشخصي">
+              <Link className="mobile-profile" prefetch={false} href={kind === "student" ? "/student/profile" : kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`} aria-label="الملف الشخصي">
                 <CircleUserRound aria-hidden="true" size={24} />
-              </a>
+              </Link>
             </div>
           </header>
           <main className="app-content" id="main-content">{children}</main>
@@ -197,7 +197,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 function NavLink({ item, active }: { item: NavItem; active: boolean }) {
   const Icon = item.icon;
   return (
-    <Link className={cn("app-nav-link", active && "is-active")} href={item.href} aria-label={item.label} aria-current={active ? "page" : undefined}>
+    <Link className={cn("app-nav-link", active && "is-active")} href={item.href} prefetch={false} aria-label={item.label} aria-current={active ? "page" : undefined}>
       <Icon aria-hidden="true" size={21} strokeWidth={active ? 2.4 : 1.8} />
       <span>{item.label}</span>
     </Link>

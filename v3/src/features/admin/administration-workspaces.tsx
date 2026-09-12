@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowDown,
   ArrowUp,
@@ -152,6 +153,7 @@ function PersonDialog({
   });
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
+  const router = useRouter();
   async function save() {
     setBusy(true);
     try {
@@ -181,7 +183,7 @@ function PersonDialog({
       if (!response.ok)
         return showToast({ title: result?.message ?? "تعذر حفظ الملف", tone: "info" });
       showToast({ title: "تم حفظ الملف", tone: "success" });
-      window.location.reload();
+      router.refresh();
     } catch {
       showToast({ title: "تعذر الاتصال بالخدمة. حاول مرة أخرى.", tone: "info" });
     } finally {
@@ -491,6 +493,7 @@ function PaymentDialog({ person }: { person: CommandPerson }) {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
+  const router = useRouter();
   async function submit() {
     setBusy(true);
     const response = await fetch("/api/admin/finance", {
@@ -510,7 +513,7 @@ function PaymentDialog({ person }: { person: CommandPerson }) {
     if (!response.ok)
       return showToast({ title: result?.message ?? "تعذر تسجيل العملية", tone: "info" });
     showToast({ title: "تم التسجيل وربط المالية", tone: "success" });
-    window.location.reload();
+    router.refresh();
   }
   return (
     <Dialog
@@ -782,6 +785,7 @@ function ManualFinance() {
   const [description, setDescription] = useState("");
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
+  const router = useRouter();
   async function save() {
     setBusy(true);
     const result = await createClient().rpc("admin_create_command_record", {
@@ -798,7 +802,7 @@ function ManualFinance() {
     if (result.error)
       return showToast({ title: "تعذر حفظ العملية", tone: "info" });
     showToast({ title: "تم حفظ العملية", tone: "success" });
-    window.location.reload();
+    router.refresh();
   }
   return (
     <Dialog

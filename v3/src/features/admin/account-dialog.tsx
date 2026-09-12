@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { UserPlus } from "lucide-react";
 import { Button, Dialog, useToast } from "@/components/ui";
 import { buildCanonicalLoginAlias } from "@/features/identity/domain/legacy-login";
@@ -38,6 +39,7 @@ export function AccountDialog({
   });
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
+  const router = useRouter();
   const set = (key: string, value: string) =>
     setForm((row) => ({ ...row, [key]: value }));
   const availableClasses = data?.classes.filter((item) => item.status === "active") ?? [];
@@ -105,7 +107,7 @@ export function AccountDialog({
         return;
       }
       showToast({ title: "تم إنشاء الحساب والملف", tone: "success" });
-      window.location.reload();
+      router.refresh();
     } catch {
       showToast({ title: "تعذر الاتصال بالخدمة. حاول مرة أخرى.", tone: "info" });
     } finally {

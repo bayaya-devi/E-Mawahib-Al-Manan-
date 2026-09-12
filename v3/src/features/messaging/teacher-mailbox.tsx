@@ -2,6 +2,7 @@
 
 import { Mail, MailOpen, PenLine, Reply, Send } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button, EmptyState, Input, useToast } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
 import type { ConversationEntry, MessagingWorkspaceData } from "./models";
@@ -16,6 +17,7 @@ export function TeacherMailbox({ data }: { data: MessagingWorkspaceData }) {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
+  const router = useRouter();
   const received = useMemo(() => newestFirst(data.messages.filter((item) => item.senderId !== data.currentUserId)), [data]);
   const sent = useMemo(() => newestFirst(data.messages.filter((item) => item.senderId === data.currentUserId)), [data]);
   const visible = tab === "received" ? received : sent;
@@ -54,7 +56,7 @@ export function TeacherMailbox({ data }: { data: MessagingWorkspaceData }) {
     setBusy(false);
     if (result.error) return showToast({ title: "تعذر إرسال الرسالة", description: "تحقق من الاتصال ثم حاول مجددًا.", tone: "info" });
     showToast({ title: "تم إرسال الرسالة إلى الإدارة", tone: "success" });
-    window.location.reload();
+    router.refresh();
   }
 
   return <div className="teacher-mailbox">
