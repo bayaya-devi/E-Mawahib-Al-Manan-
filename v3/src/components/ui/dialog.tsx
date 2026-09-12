@@ -21,8 +21,13 @@ export function Dialog({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
+  const rootProps = {
+    ...(open === undefined ? {} : { open }),
+    ...(onOpenChange === undefined ? {} : { onOpenChange }),
+  };
+
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+    <DialogPrimitive.Root {...rootProps}>
       <DialogPrimitive.Trigger asChild>{trigger}</DialogPrimitive.Trigger>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="ui-dialog-overlay" />

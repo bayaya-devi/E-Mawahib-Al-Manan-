@@ -17,6 +17,29 @@ type ProvisionAccountResult =
   | { ok: true; userId: string; message: string }
   | { ok: false; code: "INVALID" | "FORBIDDEN" | "FAILED"; message: string };
 
+async function discardIncompleteAccount(userId: string) {
+  const adminClient = createAdminClient();
+  const { error: dataCleanupError } = await adminClient.rpc(
+    "cleanup_provisioned_account_data",
+    { target_user_id: userId },
+  );
+
+  if (dataCleanupError) {
+    console.error("account_data_cleanup_failed", {
+      userId,
+      code: dataCleanupError.code,
+    });
+  }
+
+  const { error: authCleanupError } = await adminClient.auth.admin.deleteUser(userId);
+  if (authCleanupError) {
+    console.error("account_auth_cleanup_failed", {
+      userId,
+      code: authCleanupError.code,
+    });
+  }
+}
+
 export async function provisionAccount(
   input: unknown,
 ): Promise<ProvisionAccountResult> {
@@ -91,13 +114,7 @@ export async function provisionAccount(
   );
 
   if (profileCreationError) {
-    const { error: cleanupError } = await adminClient.auth.admin.deleteUser(userId);
-    if (cleanupError) {
-      console.error("account_provision_cleanup_failed", {
-        userId,
-        code: cleanupError.code,
-      });
-    }
+    await discardIncompleteAccount(userId);
     return { ok: false, code: "FAILED", message: AUTH_MESSAGES.accountCreateFailed };
   }
 
@@ -109,8 +126,7 @@ export async function provisionAccount(
     target_school_id: parsed.data.schoolId,
   });
   if (activationError) {
-    const { error: cleanupError } = await adminClient.auth.admin.deleteUser(userId);
-    if (cleanupError) console.error("account_activation_cleanup_failed", { userId, code: cleanupError.code });
+    await discardIncompleteAccount(userId);
     return { ok: false, code: "FAILED", message: AUTH_MESSAGES.accountCreateFailed };
   }
 
