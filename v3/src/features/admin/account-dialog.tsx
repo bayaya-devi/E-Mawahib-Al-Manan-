@@ -2,9 +2,8 @@
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
 import { Button, Dialog, useToast } from "@/components/ui";
-import { createClient } from "@/lib/supabase/client";
 import { buildCanonicalLoginAlias } from "@/features/identity/domain/legacy-login";
-import type { DatabaseAppRole, Json } from "@/types/database";
+import type { DatabaseAppRole } from "@/types/database";
 import type { AdminCommandData } from "./models";
 
 export function AccountDialog({
@@ -39,7 +38,6 @@ export function AccountDialog({
     classIds: "",
     classId: "",
   });
-  const [loginEdited, setLoginEdited] = useState(false);
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
   const set = (key: string, value: string) =>
@@ -54,7 +52,7 @@ export function AccountDialog({
   const setName = (key: "firstName" | "lastName", value: string) => {
     setForm((current) => {
       const next = { ...current, [key]: value };
-      if (role === "student" && !loginEdited && next.firstName.trim() && next.lastName.trim()) {
+      if (role === "student" && next.firstName.trim() && next.lastName.trim()) {
         next.login = buildCanonicalLoginAlias("student", next.firstName, next.lastName);
       }
       return next;
@@ -77,21 +75,21 @@ export function AccountDialog({
   async function submit() {
     if (!schoolId) return;
     setBusy(true);
-    const prefix =
-      role === "student"
-        ? "s"
-        : role === "parent"
+    const prefix = role === "parent"
           ? "f"
           : role === "teacher"
             ? "t"
             : "a";
-    const login = form.login.startsWith(`${prefix}_`)
+    const login = role === "student"
+      ? buildCanonicalLoginAlias("student", form.firstName, form.lastName)
+      : form.login.startsWith(`${prefix}_`)
       ? form.login
       : `${prefix}_${form.login}`;
-    const response = await fetch("/api/admin/accounts", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
+    try {
+      const response = await fetch("/api/admin/accounts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
         login,
         temporaryPassword: form.temporaryPassword,
         firstName: form.firstName,
@@ -99,56 +97,41 @@ export function AccountDialog({
         roles: [role],
         schoolId,
         locale: "ar",
-      }),
-    });
-    const result = (await response.json().catch(() => null)) as {
-      userId?: string;
-      message?: string;
-    } | null;
-    if (!response.ok || !result?.userId) {
+        dossier: {
+          firstName: form.firstName,
+          lastName: form.lastName,
+          gender: form.gender,
+          phone: form.phone ?? "",
+          email: form.email ?? "",
+          monthlyAmount: form.monthlyAmount || "0",
+          guardianName: form.guardianName ?? "",
+          guardianPhone: form.guardianPhone ?? "",
+          dateOfBirth: form.dateOfBirth ?? "",
+          identityDocumentReceived: form.identity === "true",
+          birthCertificateReceived: form.birth === "true",
+          guardianIdentityReceived: form.guardianIdentity === "true",
+          accessibilityNotes: form.notes ?? "",
+          classId: form.classId || undefined,
+          classIds: form.classIds ? form.classIds.split(",") : [],
+          teacherIds: form.teacherIds ? form.teacherIds.split(",") : [],
+        },
+        }),
+      });
+      const result = (await response.json().catch(() => null)) as {
+        userId?: string;
+        message?: string;
+      } | null;
+      if (!response.ok || !result?.userId) {
+        showToast({ title: result?.message ?? "تعذر إنشاء الحساب", tone: "info" });
+        return;
+      }
+      showToast({ title: "تم إنشاء الحساب والملف", tone: "success" });
+      window.location.reload();
+    } catch {
+      showToast({ title: "تعذر الاتصال بالخدمة. حاول مرة أخرى.", tone: "info" });
+    } finally {
       setBusy(false);
-      showToast({ title: result?.message ?? "تعذر إنشاء الحساب", tone: "info" });
-      return;
     }
-    const payload: Json = {
-      first_name: form.firstName,
-      last_name: form.lastName,
-      gender: form.gender,
-      phone: form.phone ?? "",
-      email: form.email ?? "",
-      monthly_salary: form.monthlyAmount || "0",
-      monthly_fee: form.monthlyAmount || "0",
-      guardian_name: form.guardianName ?? "",
-      guardian_phone: form.guardianPhone ?? "",
-      date_of_birth: form.dateOfBirth ?? "",
-      identity_document_received: form.identity === "true",
-      birth_certificate_received: form.birth === "true",
-      guardian_identity_received: form.guardianIdentity === "true",
-      accessibility_notes: form.notes ?? "",
-    };
-    const profile = await createClient().rpc("admin_update_person", {
-      target_user_id: result.userId,
-      payload,
-    });
-    let relationError = null;
-    if (!profile.error && role === "student" && form.classId)
-      relationError = (await createClient().rpc("admin_set_student_relations", {
-        target_student_id: result.userId,
-        target_class_id: form.classId,
-        target_teacher_ids: form.teacherIds ? form.teacherIds.split(",") : [],
-      })).error;
-    if (!profile.error && role === "teacher")
-      relationError = (await createClient().rpc("admin_set_teacher_classes", {
-        target_teacher_id: result.userId,
-        target_class_ids: form.classIds ? form.classIds.split(",") : [],
-      })).error;
-    setBusy(false);
-    if (profile.error || relationError) {
-      showToast({ title: "أُنشئ الحساب وتعذر إكمال الملف", tone: "info" });
-      return;
-    }
-    showToast({ title: "تم إنشاء الحساب والملف", tone: "success" });
-    window.location.reload();
   }
   const teachers =
     data?.people.filter((p) => p.role === "teacher" && p.status === "active") ??
@@ -355,15 +338,13 @@ export function AccountDialog({
         ) : null}
         <div className="form-pair">
           <label>
-            اسم الدخول
+            {role === "student" ? "اسم الدخول (الاسم والنسب)" : "اسم الدخول"}
             <input
               dir="ltr"
               autoCapitalize="none"
               value={form.login}
-              onChange={(e) => {
-                setLoginEdited(true);
-                set("login", e.target.value);
-              }}
+              readOnly={role === "student"}
+              onChange={(e) => set("login", e.target.value)}
             />
           </label>
           <label>
@@ -409,7 +390,7 @@ function accountMissingFields({
   if (!schoolId) missing.push("تعذر تحديد المؤسسة");
   if (!form.firstName.trim()) missing.push("أدخل الاسم");
   if (!form.lastName.trim()) missing.push("أدخل النسب");
-  if (form.login.trim().length < 2) missing.push("أدخل اسم الدخول");
+  if (role !== "student" && form.login.trim().length < 2) missing.push("أدخل اسم الدخول");
   if (form.temporaryPassword.length < 10) missing.push("كلمة المرور 10 أحرف على الأقل");
   if (role === "student" && selectedTeacherIds.length && !form.classId) missing.push("اختر قسم الأستاذ");
   return missing;

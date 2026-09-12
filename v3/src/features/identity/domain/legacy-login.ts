@@ -34,6 +34,8 @@ export function buildLoginAliasCandidates(input: {
     `${cleanFirst}-${cleanSecond}`,
     `${rawFirst}.${rawSecond}`,
     `${rawFirst}_${rawSecond}`,
+    cleanSecond,
+    rawSecond,
   ];
 
   for (const username of historicalUsernames) {

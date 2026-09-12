@@ -30,6 +30,7 @@ describe("login aliases", () => {
       "s_eliseben_ali",
       "s_elise_ben_ali",
       "s_elise-ben_ali",
+      "s_ben_ali",
     ]));
   });
 

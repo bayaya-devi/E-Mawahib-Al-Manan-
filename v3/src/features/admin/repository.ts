@@ -105,13 +105,13 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         .from("school_memberships")
         .select("user_id,status")
         .eq("school_id", schoolId),
-      client.from("student_profiles").select("user_id,date_of_birth,gender"),
+      client.from("student_profiles").select("user_id,date_of_birth,gender,accessibility_notes"),
       client
         .from("teacher_profiles")
         .select("user_id,gender,phone,email,monthly_salary"),
       client
         .from("student_digital_files")
-        .select("student_id,guardian_name,guardian_phone,monthly_fee"),
+        .select("student_id,guardian_name,guardian_phone,monthly_fee,identity_document_received,birth_certificate_received,guardian_identity_received,medical_or_accessibility_notes"),
       client
         .from("class_enrollments")
         .select("class_id,student_id,status")
@@ -348,6 +348,11 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
                 : null,
           guardianName: file?.guardian_name ?? null,
           guardianPhone: file?.guardian_phone ?? null,
+          dateOfBirth: student?.date_of_birth ?? null,
+          identityDocumentReceived: file?.identity_document_received ?? false,
+          birthCertificateReceived: file?.birth_certificate_received ?? false,
+          guardianIdentityReceived: file?.guardian_identity_received ?? false,
+          accessibilityNotes: student?.accessibility_notes ?? file?.medical_or_accessibility_notes ?? null,
           teacherIds: classId ? (teacherIdsByClass.get(classId) ?? []) : [],
           absences: absences.get(row.id) ?? 0,
           late: late.get(row.id) ?? 0,

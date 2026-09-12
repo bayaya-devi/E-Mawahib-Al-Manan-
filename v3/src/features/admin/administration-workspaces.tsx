@@ -17,9 +17,9 @@ import {
   useToast,
 } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
-import type { Json } from "@/types/database";
 import type { AdminCommandData, CommandPerson } from "./models";
 import { AccountDialog } from "./account-dialog";
+import { AccountStatusControls } from "./account-status-controls";
 
 export function AdminPeopleWorkspace({
   kind,
@@ -141,6 +141,11 @@ function PersonDialog({
     monthly_amount: String(person.monthlyAmount ?? 0),
     guardian_name: person.guardianName ?? "",
     guardian_phone: person.guardianPhone ?? "",
+    date_of_birth: person.dateOfBirth ?? "",
+    identity_document_received: person.identityDocumentReceived,
+    birth_certificate_received: person.birthCertificateReceived,
+    guardian_identity_received: person.guardianIdentityReceived,
+    accessibility_notes: person.accessibilityNotes ?? "",
     class_id: person.classId ?? "",
     class_ids: person.classIds,
     teacher_ids: person.teacherIds,
@@ -149,43 +154,39 @@ function PersonDialog({
   const { showToast } = useToast();
   async function save() {
     setBusy(true);
-    const payload: Json = {
-      first_name: form.first_name,
-      last_name: form.last_name,
-      gender: form.gender,
-      phone: form.phone,
-      email: form.email,
-      monthly_salary: form.monthly_amount,
-      monthly_fee: form.monthly_amount,
-      guardian_name: form.guardian_name,
-      guardian_phone: form.guardian_phone,
-    };
-    const client = createClient();
-    const updated = await client.rpc("admin_update_person", {
-      target_user_id: person.id,
-      payload,
-    });
-    let relationError = null;
-    if (!updated.error && person.role === "student" && form.class_id)
-      relationError = (
-        await client.rpc("admin_set_student_relations", {
-          target_student_id: person.id,
-          target_class_id: form.class_id,
-          target_teacher_ids: form.teacher_ids,
-        })
-      ).error;
-    if (!updated.error && person.role === "teacher")
-      relationError = (
-        await client.rpc("admin_set_teacher_classes", {
-          target_teacher_id: person.id,
-          target_class_ids: form.class_ids,
-        })
-      ).error;
-    setBusy(false);
-    if (updated.error || relationError)
-      return showToast({ title: "تعذر حفظ الملف", tone: "info" });
-    showToast({ title: "تم حفظ الملف", tone: "success" });
-    window.location.reload();
+    try {
+      const response = await fetch(`/api/admin/people/${person.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+        firstName: form.first_name,
+        lastName: form.last_name,
+        gender: form.gender,
+        phone: form.phone,
+        email: form.email,
+        monthlyAmount: form.monthly_amount,
+        guardianName: form.guardian_name,
+        guardianPhone: form.guardian_phone,
+        dateOfBirth: form.date_of_birth || undefined,
+        identityDocumentReceived: form.identity_document_received,
+        birthCertificateReceived: form.birth_certificate_received,
+        guardianIdentityReceived: form.guardian_identity_received,
+        accessibilityNotes: form.accessibility_notes,
+        classId: form.class_id || undefined,
+        classIds: form.class_ids,
+        teacherIds: form.teacher_ids,
+        }),
+      });
+      const result = (await response.json().catch(() => null)) as { message?: string } | null;
+      if (!response.ok)
+        return showToast({ title: result?.message ?? "تعذر حفظ الملف", tone: "info" });
+      showToast({ title: "تم حفظ الملف", tone: "success" });
+      window.location.reload();
+    } catch {
+      showToast({ title: "تعذر الاتصال بالخدمة. حاول مرة أخرى.", tone: "info" });
+    } finally {
+      setBusy(false);
+    }
   }
   const related =
     person.role === "student"
@@ -305,6 +306,14 @@ function PersonDialog({
         ) : (
           <>
             <label>
+              تاريخ الميلاد
+              <input
+                type="date"
+                value={form.date_of_birth}
+                onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
+              />
+            </label>
+            <label>
               القسم
               <select
                 value={form.class_id}
@@ -372,6 +381,36 @@ function PersonDialog({
                 }
               />
             </label>
+            <fieldset className="admin-checks">
+              <legend>وثائق التسجيل</legend>
+              {(
+                [
+                  ["identity_document_received", "وثيقة الهوية"],
+                  ["birth_certificate_received", "عقد الازدياد"],
+                  ["guardian_identity_received", "بطاقة هوية الولي"],
+                ] as const
+              ).map(([key, label]) => (
+                <label key={key}>
+                  <input
+                    type="checkbox"
+                    checked={form[key]}
+                    onChange={(event) =>
+                      setForm({ ...form, [key]: event.target.checked })
+                    }
+                  />
+                  {label}
+                </label>
+              ))}
+            </fieldset>
+            <label>
+              خصوصية أو تيسير مطلوب
+              <textarea
+                value={form.accessibility_notes}
+                onChange={(e) =>
+                  setForm({ ...form, accessibility_notes: e.target.value })
+                }
+              />
+            </label>
           </>
         )}
         <Button loading={busy} onClick={() => void save()}>
@@ -379,6 +418,11 @@ function PersonDialog({
         </Button>
         <PaymentDialog person={person} />
         <CredentialsDialog person={person} />
+        <AccountStatusControls
+          userId={person.id}
+          schoolId={data.school?.id ?? null}
+          status={person.status}
+        />
         <details>
           <summary>سجل الأداءات</summary>
           {related.length ? (
@@ -427,14 +471,20 @@ function CredentialsDialog({ person }: { person: CommandPerson }) {
       description="لا يمكن عرض كلمة المرور الحالية. يمكن فقط تعيين كلمة مؤقتة جديدة."
     >
       <div className="command-form">
-        <label>
-          اسم دخول جديد
-          <input
-            dir="ltr"
-            value={login}
-            onChange={(e) => setLogin(e.target.value)}
-          />
-        </label>
+        {person.role === "teacher" ? (
+          <label>
+            اسم دخول جديد
+            <input
+              dir="ltr"
+              value={login}
+              onChange={(e) => setLogin(e.target.value)}
+            />
+          </label>
+        ) : (
+          <p className="command-form__hint">
+            اسم دخول الطالب يُنشأ تلقائيا من الاسم والنسب عند حفظ الملف.
+          </p>
+        )}
         <label>
           كلمة مؤقتة جديدة
           <input
@@ -447,7 +497,7 @@ function CredentialsDialog({ person }: { person: CommandPerson }) {
         </label>
         <Button
           loading={busy}
-          disabled={!login && !password}
+          disabled={(!login && !password) || password.length > 0 && password.length < 10}
           onClick={() => void save()}
         >
           تحديث آمن

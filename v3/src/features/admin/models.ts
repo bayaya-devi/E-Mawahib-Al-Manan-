@@ -44,6 +44,11 @@ export type CommandPerson = {
   monthlyAmount: number | null;
   guardianName: string | null;
   guardianPhone: string | null;
+  dateOfBirth: string | null;
+  identityDocumentReceived: boolean;
+  birthCertificateReceived: boolean;
+  guardianIdentityReceived: boolean;
+  accessibilityNotes: string | null;
   teacherIds: string[];
   absences: number;
   late: number;
