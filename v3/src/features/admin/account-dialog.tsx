@@ -3,6 +3,7 @@ import { useState } from "react";
 import { UserPlus } from "lucide-react";
 import { Button, Dialog, useToast } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
+import { buildCanonicalLoginAlias } from "@/features/identity/domain/legacy-login";
 import type { DatabaseAppRole, Json } from "@/types/database";
 import type { AdminCommandData } from "./models";
 
@@ -24,6 +25,7 @@ export function AccountDialog({
     monthlyAmount: string;
     teacherIds: string;
     classIds: string;
+    classId: string;
   } & Record<string, string>;
   const [role, setRole] = useState<DatabaseAppRole>(defaultRole ?? "student");
   const [form, setForm] = useState<AccountForm>({
@@ -35,11 +37,43 @@ export function AccountDialog({
     monthlyAmount: "0",
     teacherIds: "",
     classIds: "",
+    classId: "",
   });
+  const [loginEdited, setLoginEdited] = useState(false);
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
   const set = (key: string, value: string) =>
     setForm((row) => ({ ...row, [key]: value }));
+  const selectedTeacherIds = form.teacherIds.split(",").filter(Boolean);
+  const selectedTeachers = teachersFor(data, selectedTeacherIds);
+  const availableClasses = (() => {
+    if (!selectedTeachers.length) return data?.classes ?? [];
+    const ids = new Set(selectedTeachers.flatMap((teacher) => teacher.classIds));
+    return (data?.classes ?? []).filter((item) => ids.has(item.id));
+  })();
+  const setName = (key: "firstName" | "lastName", value: string) => {
+    setForm((current) => {
+      const next = { ...current, [key]: value };
+      if (role === "student" && !loginEdited && next.firstName.trim() && next.lastName.trim()) {
+        next.login = buildCanonicalLoginAlias("student", next.firstName, next.lastName);
+      }
+      return next;
+    });
+  };
+  const toggleTeacher = (teacherId: string, checked: boolean) => {
+    const nextIds = checked
+      ? [...selectedTeacherIds, teacherId]
+      : selectedTeacherIds.filter((id) => id !== teacherId);
+    const nextClasses = teachersFor(data, nextIds).flatMap((item) => item.classIds);
+    setForm((current) => ({
+      ...current,
+      teacherIds: nextIds.join(","),
+      classId: nextIds.length && !nextClasses.includes(current.classId)
+        ? (nextClasses[0] ?? "")
+        : current.classId,
+    }));
+  };
+  const missing = accountMissingFields({ role, schoolId, form, selectedTeacherIds });
   async function submit() {
     if (!schoolId) return;
     setBusy(true);
@@ -69,10 +103,11 @@ export function AccountDialog({
     });
     const result = (await response.json().catch(() => null)) as {
       userId?: string;
+      message?: string;
     } | null;
     if (!response.ok || !result?.userId) {
       setBusy(false);
-      showToast({ title: "تعذر إنشاء الحساب", tone: "info" });
+      showToast({ title: result?.message ?? "تعذر إنشاء الحساب", tone: "info" });
       return;
     }
     const payload: Json = {
@@ -149,14 +184,14 @@ export function AccountDialog({
             الاسم
             <input
               value={form.firstName}
-              onChange={(e) => set("firstName", e.target.value)}
+              onChange={(e) => setName("firstName", e.target.value)}
             />
           </label>
           <label>
             النسب
             <input
               value={form.lastName}
-              onChange={(e) => set("lastName", e.target.value)}
+              onChange={(e) => setName("lastName", e.target.value)}
             />
           </label>
         </div>
@@ -252,7 +287,7 @@ export function AccountDialog({
                   onChange={(e) => set("classId", e.target.value)}
                 >
                   <option value="">اختر القسم</option>
-                  {data?.classes.map((c) => (
+                  {availableClasses.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>
@@ -284,18 +319,7 @@ export function AccountDialog({
                     checked={(form.teacherIds ?? "")
                       .split(",")
                       .includes(teacher.id)}
-                    onChange={(e) => {
-                      const ids = (form.teacherIds ?? "")
-                        .split(",")
-                        .filter(Boolean);
-                      set(
-                        "teacherIds",
-                        (e.target.checked
-                          ? [...ids, teacher.id]
-                          : ids.filter((id) => id !== teacher.id)
-                        ).join(","),
-                      );
-                    }}
+                    onChange={(e) => toggleTeacher(teacher.id, e.target.checked)}
                   />
                   {teacher.name}
                 </label>
@@ -336,7 +360,10 @@ export function AccountDialog({
               dir="ltr"
               autoCapitalize="none"
               value={form.login}
-              onChange={(e) => set("login", e.target.value)}
+              onChange={(e) => {
+                setLoginEdited(true);
+                set("login", e.target.value);
+              }}
             />
           </label>
           <label>
@@ -344,20 +371,16 @@ export function AccountDialog({
             <input
               dir="ltr"
               type="password"
+              minLength={10}
               value={form.temporaryPassword}
               onChange={(e) => set("temporaryPassword", e.target.value)}
             />
           </label>
         </div>
+        {missing.length ? <p className="command-form__hint" role="status">{missing.join(" · ")}</p> : <p className="command-form__hint">سيتم إنشاء الحساب وربطه بالقسم والأستاذ المختار.</p>}
         <Button
           loading={busy}
-          disabled={
-            !schoolId ||
-            form.firstName.trim().length < 1 ||
-            form.lastName.trim().length < 1 ||
-            form.login.trim().length < 2 ||
-            form.temporaryPassword.length < 10
-          }
+          disabled={busy || missing.length > 0}
           onClick={() => void submit()}
         >
           إنشاء الحساب والملف
@@ -365,4 +388,29 @@ export function AccountDialog({
       </div>
     </Dialog>
   );
+}
+
+function teachersFor(data: AdminCommandData | undefined, ids: string[]) {
+  return (data?.people ?? []).filter((person) => person.role === "teacher" && ids.includes(person.id));
+}
+
+function accountMissingFields({
+  role,
+  schoolId,
+  form,
+  selectedTeacherIds,
+}: {
+  role: DatabaseAppRole;
+  schoolId: string | null;
+  form: { firstName: string; lastName: string; login: string; temporaryPassword: string; classId: string };
+  selectedTeacherIds: string[];
+}) {
+  const missing: string[] = [];
+  if (!schoolId) missing.push("تعذر تحديد المؤسسة");
+  if (!form.firstName.trim()) missing.push("أدخل الاسم");
+  if (!form.lastName.trim()) missing.push("أدخل النسب");
+  if (form.login.trim().length < 2) missing.push("أدخل اسم الدخول");
+  if (form.temporaryPassword.length < 10) missing.push("كلمة المرور 10 أحرف على الأقل");
+  if (role === "student" && selectedTeacherIds.length && !form.classId) missing.push("اختر قسم الأستاذ");
+  return missing;
 }
