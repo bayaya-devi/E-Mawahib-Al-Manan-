@@ -1296,6 +1296,16 @@ export type Database = {
         Args: Record<string, never>;
         Returns: string | null;
       };
+      get_own_class_dashboard_details: {
+        Args: Record<string, never>;
+        Returns: Array<{
+          class_id: string;
+          class_name: string;
+          teacher_id: string | null;
+          teacher_name: string | null;
+          schedule_text: string | null;
+        }>;
+      };
       teacher_has_student: {
         Args: { target_student_id: string };
         Returns: boolean;

@@ -30,16 +30,18 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
     const classId = enrollmentResult.data?.class_id;
     const schoolId = membershipResult.data?.school_id;
     const now = new Date().toISOString();
-    const [sessionsResult, scheduleResult, teacherAssignmentResult, classroomResult, announcementResult, eventResult, assignmentResult] = await Promise.all([
+    const [sessionsResult, scheduleResult, teacherAssignmentResult, classroomResult, dashboardClassResult, announcementResult, eventResult, assignmentResult] = await Promise.all([
       classId ? client.from("course_sessions").select("id,title,starts_at,ends_at,location").eq("class_id", classId).gte("starts_at", now).eq("status", "scheduled").order("starts_at").limit(6) : Promise.resolve({ data: [] }),
       classId ? client.from("class_schedule_slots").select("id,day_of_week,starts_at,ends_at").eq("class_id", classId).order("day_of_week").order("starts_at") : Promise.resolve({ data: [] }),
       classId ? client.from("class_teacher_assignments").select("teacher_id").eq("class_id", classId).eq("status", "active").order("assigned_at").limit(1).maybeSingle() : Promise.resolve({ data: null }),
       classId ? client.from("classes").select("id,name,schedule_text").eq("id", classId).maybeSingle() : Promise.resolve({ data: null }),
+      client.rpc("get_own_class_dashboard_details").maybeSingle(),
       schoolId ? client.from("school_announcements").select("id,title,body,published_at").eq("school_id", schoolId).order("published_at", { ascending: false }).limit(6) : Promise.resolve({ data: [] }),
       schoolId ? client.from("school_events").select("id,title,starts_at").eq("school_id", schoolId).gte("starts_at", now).order("starts_at").limit(6) : Promise.resolve({ data: [] }),
       schoolId ? client.from("assignments").select("id,title,instructions,due_at,surah_number,verse_from,verse_to,class_id,student_id").eq("school_id", schoolId).order("due_at").limit(40) : Promise.resolve({ data: [] }),
     ]);
-    const teacherId = teacherAssignmentResult.data?.teacher_id;
+    const dashboardClass = dashboardClassResult.data;
+    const teacherId = dashboardClass?.teacher_id ?? teacherAssignmentResult.data?.teacher_id;
     const teacherResult = teacherId ? await client.from("profiles").select("id,display_name").eq("id", teacherId).maybeSingle() : { data: null };
     const submissionStatus = new Map((submissionResult.data ?? []).map((row) => [row.assignment_id, row.status]));
     const assignments = (assignmentResult.data ?? [])
@@ -48,9 +50,9 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
 
     return {
       student: profileResult.data ? { id: profileResult.data.id, name: profileResult.data.display_name } : null,
-      teacher: teacherResult.data ? { id: teacherResult.data.id, name: teacherResult.data.display_name } : null,
-      classroom: classroomResult.data ? { id: classroomResult.data.id, name: classroomResult.data.name } : null,
-      classScheduleText: classroomResult.data?.schedule_text ?? null,
+      teacher: dashboardClass?.teacher_name ? { id: dashboardClass.teacher_id ?? "", name: dashboardClass.teacher_name } : teacherResult.data ? { id: teacherResult.data.id, name: teacherResult.data.display_name } : null,
+      classroom: dashboardClass ? { id: dashboardClass.class_id, name: dashboardClass.class_name } : classroomResult.data ? { id: classroomResult.data.id, name: classroomResult.data.name } : null,
+      classScheduleText: dashboardClass?.schedule_text ?? classroomResult.data?.schedule_text ?? null,
       nextCourse: sessionsResult.data?.[0] ? { id: sessionsResult.data[0].id, title: sessionsResult.data[0].title, startsAt: sessionsResult.data[0].starts_at, endsAt: sessionsResult.data[0].ends_at, location: sessionsResult.data[0].location } : null,
       courseSchedule: (scheduleResult.data ?? []).length
         ? (scheduleResult.data ?? []).map((slot) => ({ id: slot.id, startsAt: slot.starts_at, endsAt: slot.ends_at, dayOfWeek: slot.day_of_week }))
