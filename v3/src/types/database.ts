@@ -759,6 +759,7 @@ type ParentFeedbackRow = {
   q2_organisation: number | null;
   q3_communication: number | null;
   q4_plateforme: number | null;
+  q5_horaires: number | null;
   commentaires: string | null;
   date_soumission: string | null;
 };

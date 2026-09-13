@@ -244,7 +244,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         .limit(150),
       client
         .from("parent_feedback")
-        .select("id,student_id,scores,comment,created_at,q1_enseignement,q2_organisation,q3_communication,q4_plateforme,commentaires,date_soumission")
+        .select("id,student_id,scores,comment,created_at,q1_enseignement,q2_organisation,q3_communication,q4_plateforme,q5_horaires,commentaires,date_soumission")
         .order("created_at", { ascending: false })
         .limit(100),
     ]);
@@ -660,6 +660,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
             row.q2_organisation,
             row.q3_communication,
             row.q4_plateforme,
+            row.q5_horaires,
           ].filter((value): value is number => typeof value === "number");
           const scores = row.scores?.length ? row.scores : historicalScores;
           const studentId = row.student_id ?? `historical-anonymous-${row.id}`;
