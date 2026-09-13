@@ -1291,6 +1291,10 @@ export type Database = {
         Args: { target_student_id: string };
         Returns: boolean;
       };
+      get_own_class_teacher_name: {
+        Args: Record<string, never>;
+        Returns: string | null;
+      };
       teacher_has_student: {
         Args: { target_student_id: string };
         Returns: boolean;
