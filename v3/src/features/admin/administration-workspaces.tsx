@@ -509,7 +509,7 @@ function CredentialsDialog({ person }: { person: CommandPerson }) {
 }
 
 function PaymentDialog({ person }: { person: CommandPerson }) {
-  const now = new Date().toISOString().slice(0, 10);
+  const now = localDateInputValue();
   const [month, setMonth] = useState(now.slice(0, 7));
   const [amount, setAmount] = useState(String(person.monthlyAmount ?? 0));
   const [date, setDate] = useState(now);
@@ -592,6 +592,13 @@ function PaymentDialog({ person }: { person: CommandPerson }) {
       </div>
     </Dialog>
   );
+}
+
+function localDateInputValue(date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function AdminParentsWorkspace({ data }: { data: AdminCommandData }) {
