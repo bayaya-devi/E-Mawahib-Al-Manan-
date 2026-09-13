@@ -17,6 +17,13 @@
 .today-info > svg { color: var(--brand); }
 .today-info > span { min-width: 0; display: grid; color: var(--ink-faint); font-size: .78rem; }
 .today-info strong { overflow: hidden; color: var(--ink); font-size: .91rem; text-overflow: ellipsis; white-space: nowrap; }
+.today-info--schedule details { margin-top: 3px; }
+.today-info--schedule summary { align-items: center; cursor: pointer; display: flex; gap: 7px; list-style: none; }
+.today-info--schedule summary::-webkit-details-marker { display: none; }
+.today-info--schedule summary strong { flex: 1; }
+.today-info--schedule summary small { color: var(--brand); flex: none; font-size: .74rem; font-weight: 700; white-space: nowrap; }
+.today-info--schedule details[open] summary strong { overflow: visible; text-overflow: clip; white-space: normal; }
+.today-info--schedule details p { color: var(--ink); font-size: .9rem; line-height: 1.75; margin: 8px 0 0; overflow-wrap: anywhere; white-space: pre-line; }
 .progress-band { display: grid; grid-template-columns: auto minmax(140px, 1fr) auto; align-items: center; gap: 24px; padding: 20px 26px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--canvas-raised); }
 .progress-band > div:first-child { display: grid; }
 .progress-band > div:first-child span { color: var(--ink-soft); font-size: .76rem; }

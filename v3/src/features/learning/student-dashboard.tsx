@@ -12,7 +12,7 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
       <section className="student-class-strip" aria-label="معلومات الحصة">
         <Info icon={UserRound} label="المعلّم" value={data.teacher?.name ?? "—"} />
         <Info icon={UsersRound} label="القسم" value={data.classroom?.name ?? "—"} />
-        <Info icon={CalendarDays} label="أوقات الحصص" value={data.classScheduleText || scheduleLabel(data.courseSchedule)} />
+        <ScheduleInfo value={data.classScheduleText || scheduleLabel(data.courseSchedule)} />
       </section>
       {assignment ? <section className="student-assignment" aria-label="الواجب الحالي"><CheckCircle2 size={20} /><div><strong>{assignment.surahNumber ? getSurah(assignment.surahNumber)?.nameArabic : assignment.title}</strong><span>{assignmentRange(assignment)}{assignment.dueAt ? ` · ${formatDate(assignment.dueAt)}` : ""}{assignment.instructions ? ` · ${assignment.instructions}` : ""}</span></div></section> : null}
       <section className="student-progress" aria-label="تقدم الحفظ">
@@ -27,6 +27,11 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
 
 function Info({ icon: Icon, label, value }: { icon: typeof Clock3; label: string; value: string }) {
   return <div className="today-info"><Icon aria-hidden="true" size={20} /><span>{label}<strong>{value}</strong></span></div>;
+}
+
+function ScheduleInfo({ value }: { value: string }) {
+  const long = value.length > 52;
+  return <div className="today-info today-info--schedule"><CalendarDays aria-hidden="true" size={20} /><span>أوقات الحصص{long ? <details><summary><strong>{`${value.slice(0, 52).trim()}…`}</strong><small>عرض الكل</small></summary><p>{value}</p></details> : <strong>{value}</strong>}</span></div>;
 }
 
 function assignmentRange(assignment: StudentDashboardData["assignments"][number]): string {
