@@ -4,6 +4,7 @@ export type StudentDashboardData = {
   student: { id: string; name: string } | null;
   teacher: { id: string; name: string } | null;
   classroom: { id: string; name: string } | null;
+  classScheduleText: string | null;
   nextCourse: { id: string; title: string; startsAt: string; endsAt: string; location: string | null } | null;
   courseSchedule: Array<{ id: string; startsAt: string; endsAt: string; dayOfWeek?: number }>;
   announcements: Array<{ id: string; title: string; body: string; publishedAt: string }>;

@@ -19,6 +19,7 @@ const classPayloadSchema = z.object({
   teacher_id: z.string().uuid().nullable(),
   student_ids: z.array(z.string().uuid()).max(500),
   status: z.enum(["active", "archived"]),
+  schedule_text: z.string().trim().max(2000),
   schedule: z.array(slotSchema).max(14),
 });
 const requestSchema = z.discriminatedUnion("action", [

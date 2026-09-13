@@ -178,6 +178,7 @@ type ClassRow = {
   created_at: string;
   updated_at: string;
   academic_year_id: string | null;
+  schedule_text: string | null;
 };
 
 type ClassEnrollmentRow = {

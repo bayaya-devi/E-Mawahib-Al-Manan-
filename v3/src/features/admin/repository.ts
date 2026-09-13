@@ -122,7 +122,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         .eq("status", "active"),
       client
         .from("classes")
-        .select("id,name,level,capacity,status")
+        .select("id,name,level,capacity,status,schedule_text")
         .eq("school_id", schoolId),
       client
         .from("class_schedule_slots")
@@ -378,6 +378,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       teachers: classTeacherCounts.get(row.id) ?? 0,
       teacherId: (assignments.data ?? []).find((item) => item.class_id === row.id)?.teacher_id ?? null,
       studentIds: (enrollments.data ?? []).filter((item) => item.class_id === row.id).map((item) => item.student_id),
+      scheduleText: row.schedule_text,
       schedule: (classSchedules.data ?? []).filter((item) => item.class_id === row.id).map((item) => ({ id: item.id, dayOfWeek: item.day_of_week, startsAt: item.starts_at, endsAt: item.ends_at, room: item.room })),
     }));
     const sessionRows = sessions.data ?? [];

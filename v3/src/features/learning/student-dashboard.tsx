@@ -12,7 +12,7 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
       <section className="student-class-strip" aria-label="معلومات الحصة">
         <Info icon={UserRound} label="المعلّم" value={data.teacher?.name ?? "—"} />
         <Info icon={UsersRound} label="القسم" value={data.classroom?.name ?? "—"} />
-        <Info icon={CalendarDays} label="أوقات الحصص" value={scheduleLabel(data.courseSchedule)} />
+        <Info icon={CalendarDays} label="أوقات الحصص" value={data.classScheduleText || scheduleLabel(data.courseSchedule)} />
       </section>
       {assignment ? <section className="student-assignment" aria-label="الواجب الحالي"><CheckCircle2 size={20} /><div><strong>{assignment.surahNumber ? getSurah(assignment.surahNumber)?.nameArabic : assignment.title}</strong><span>{assignmentRange(assignment)}{assignment.dueAt ? ` · ${formatDate(assignment.dueAt)}` : ""}{assignment.instructions ? ` · ${assignment.instructions}` : ""}</span></div></section> : null}
       <section className="student-progress" aria-label="تقدم الحفظ">

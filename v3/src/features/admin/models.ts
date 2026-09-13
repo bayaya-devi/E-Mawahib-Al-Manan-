@@ -67,6 +67,7 @@ export type CommandClass = {
   teachers: number;
   teacherId: string | null;
   studentIds: string[];
+  scheduleText: string | null;
   schedule: Array<{ id: string; dayOfWeek: number; startsAt: string; endsAt: string; room: string | null }>;
 };
 export type CommandTimelineItem = {

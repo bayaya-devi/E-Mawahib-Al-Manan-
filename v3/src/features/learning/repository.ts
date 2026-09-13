@@ -6,7 +6,7 @@ import type { DatabaseAssignmentStatus } from "@/types/database";
 import type { FamilyChildData, FamilyChildSummary, StudentDashboardData, StudentHistoryData, TeacherFollowUpEntry } from "./models";
 
 const emptyStudent: StudentDashboardData = {
-  student: null, teacher: null, classroom: null, nextCourse: null, courseSchedule: [], announcements: [], events: [],
+  student: null, teacher: null, classroom: null, classScheduleText: null, nextCourse: null, courseSchedule: [], announcements: [], events: [],
   assignments: [], goal: null, progress: [], notifications: [],
 };
 
@@ -34,7 +34,7 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
       classId ? client.from("course_sessions").select("id,title,starts_at,ends_at,location").eq("class_id", classId).gte("starts_at", now).eq("status", "scheduled").order("starts_at").limit(6) : Promise.resolve({ data: [] }),
       classId ? client.from("class_schedule_slots").select("id,day_of_week,starts_at,ends_at").eq("class_id", classId).order("day_of_week").order("starts_at") : Promise.resolve({ data: [] }),
       classId ? client.from("class_teacher_assignments").select("teacher_id").eq("class_id", classId).eq("status", "active").order("assigned_at").limit(1).maybeSingle() : Promise.resolve({ data: null }),
-      classId ? client.from("classes").select("id,name").eq("id", classId).maybeSingle() : Promise.resolve({ data: null }),
+      classId ? client.from("classes").select("id,name,schedule_text").eq("id", classId).maybeSingle() : Promise.resolve({ data: null }),
       schoolId ? client.from("school_announcements").select("id,title,body,published_at").eq("school_id", schoolId).order("published_at", { ascending: false }).limit(6) : Promise.resolve({ data: [] }),
       schoolId ? client.from("school_events").select("id,title,starts_at").eq("school_id", schoolId).gte("starts_at", now).order("starts_at").limit(6) : Promise.resolve({ data: [] }),
       schoolId ? client.from("assignments").select("id,title,instructions,due_at,surah_number,verse_from,verse_to,class_id,student_id").eq("school_id", schoolId).order("due_at").limit(40) : Promise.resolve({ data: [] }),
@@ -50,6 +50,7 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
       student: profileResult.data ? { id: profileResult.data.id, name: profileResult.data.display_name } : null,
       teacher: teacherResult.data ? { id: teacherResult.data.id, name: teacherResult.data.display_name } : null,
       classroom: classroomResult.data ? { id: classroomResult.data.id, name: classroomResult.data.name } : null,
+      classScheduleText: classroomResult.data?.schedule_text ?? null,
       nextCourse: sessionsResult.data?.[0] ? { id: sessionsResult.data[0].id, title: sessionsResult.data[0].title, startsAt: sessionsResult.data[0].starts_at, endsAt: sessionsResult.data[0].ends_at, location: sessionsResult.data[0].location } : null,
       courseSchedule: (scheduleResult.data ?? []).length
         ? (scheduleResult.data ?? []).map((slot) => ({ id: slot.id, startsAt: slot.starts_at, endsAt: slot.ends_at, dayOfWeek: slot.day_of_week }))
@@ -204,8 +205,8 @@ export async function getTeacherFollowUp(): Promise<TeacherFollowUpEntry[]> {
   }
 }
 
-export async function getStudentAccountProfile(): Promise<{ name: string; dateOfBirth: string | null; className: string | null; teacherName: string | null; documents: Array<{ id: string; title: string; category: string; path: string }>; file: { birth: boolean; guardian: boolean; identity: boolean; paymentRequired: boolean; fee: number | null; payments: Array<{ month: string; amount: number; date: string }>; legacyPayments?: Array<{ id: string; month: string; amount: number | null; status: string }> } | null }> {
-  const empty = { name: "حساب الطالب", dateOfBirth: null, className: null, teacherName: null, documents: [], file: null };
+export async function getStudentAccountProfile(): Promise<{ name: string; dateOfBirth: string | null; className: string | null; teacherName: string | null; scheduleText: string | null; documents: Array<{ id: string; title: string; category: string; path: string }>; file: { birth: boolean; guardian: boolean; identity: boolean; paymentRequired: boolean; fee: number | null; payments: Array<{ month: string; amount: number; date: string }>; legacyPayments?: Array<{ id: string; month: string; amount: number | null; status: string }> } | null }> {
+  const empty = { name: "حساب الطالب", dateOfBirth: null, className: null, teacherName: null, scheduleText: null, documents: [], file: null };
   if (process.env.NEXT_PUBLIC_APP_ENV === "test") return empty;
   try {
     const client = await createClient(); const { data: auth } = await client.auth.getUser(); if (!auth.user) return empty;
@@ -218,8 +219,8 @@ export async function getStudentAccountProfile(): Promise<{ name: string; dateOf
       client.from("legacy_history_records").select("id,historical_date_label,metadata").eq("subject_id", auth.user.id).eq("category", "student_payment_snapshot").order("legacy_id", { ascending: false }),
       client.from("school_documents").select("id,title,category,storage_path").eq("related_user_id", auth.user.id).eq("visible_to_related_user", true).order("created_at", { ascending: false }),
     ]);
-    const classroom = enrollment.data?.class_id ? await client.from("classes").select("name").eq("id", enrollment.data.class_id).maybeSingle() : { data: null };
+    const classroom = enrollment.data?.class_id ? await client.from("classes").select("name,schedule_text").eq("id", enrollment.data.class_id).maybeSingle() : { data: null };
     const teacher = await client.rpc("get_own_class_teacher_name");
-    return { name: profile.data?.display_name ?? empty.name, dateOfBirth: student.data?.date_of_birth ?? null, className: classroom.data?.name ?? null, teacherName: teacher.data ?? null, documents: (documents.data ?? []).map((document) => ({ id: document.id, title: document.title, category: document.category, path: document.storage_path })), file: file.data ? { birth: file.data.birth_certificate_received, guardian: file.data.guardian_identity_received, identity: file.data.identity_document_received, paymentRequired: file.data.payment_required, fee: file.data.monthly_fee, payments: (payments.data ?? []).map((payment) => ({ month: payment.period_month.slice(0, 7), amount: Number(payment.received_amount), date: payment.paid_on })), legacyPayments: (legacyPayments.data ?? []).map((payment) => { const metadata = payment.metadata && typeof payment.metadata === "object" && !Array.isArray(payment.metadata) ? payment.metadata : {}; return { id: payment.id, month: payment.historical_date_label ?? "شهر سابق", amount: typeof metadata.amount === "number" ? metadata.amount : null, status: typeof metadata.status === "string" ? metadata.status : "—" }; }) } : null };
+    return { name: profile.data?.display_name ?? empty.name, dateOfBirth: student.data?.date_of_birth ?? null, className: classroom.data?.name ?? null, teacherName: teacher.data ?? null, scheduleText: classroom.data?.schedule_text ?? null, documents: (documents.data ?? []).map((document) => ({ id: document.id, title: document.title, category: document.category, path: document.storage_path })), file: file.data ? { birth: file.data.birth_certificate_received, guardian: file.data.guardian_identity_received, identity: file.data.identity_document_received, paymentRequired: file.data.payment_required, fee: file.data.monthly_fee, payments: (payments.data ?? []).map((payment) => ({ month: payment.period_month.slice(0, 7), amount: Number(payment.received_amount), date: payment.paid_on })), legacyPayments: (legacyPayments.data ?? []).map((payment) => { const metadata = payment.metadata && typeof payment.metadata === "object" && !Array.isArray(payment.metadata) ? payment.metadata : {}; return { id: payment.id, month: payment.historical_date_label ?? "شهر سابق", amount: typeof metadata.amount === "number" ? metadata.amount : null, status: typeof metadata.status === "string" ? metadata.status : "—" }; }) } : null };
   } catch (error) { logServerError("STUDENT_PROFILE_LOAD_FAILED", error); return empty; }
 }

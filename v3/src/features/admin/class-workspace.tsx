@@ -8,7 +8,7 @@ import type { Json } from "@/types/database";
 import type { AdminCommandData, CommandClass } from "./models";
 
 type ScheduleRow = { dayOfWeek: number; startsAt: string; endsAt: string; room: string };
-type ClassForm = { id: string; name: string; level: string; capacity: string; teacherId: string; studentIds: string[]; schedule: ScheduleRow[]; status: "active" | "archived" };
+type ClassForm = { id: string; name: string; level: string; capacity: string; teacherId: string; studentIds: string[]; scheduleText: string; schedule: ScheduleRow[]; status: "active" | "archived" };
 const dayNames = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
 export function AdminClassWorkspace({ data }: { data: AdminCommandData }) {
@@ -30,6 +30,7 @@ export function AdminClassWorkspace({ data }: { data: AdminCommandData }) {
       capacity: row.capacity ? String(row.capacity) : "",
       teacherId: row.teacherId ?? "",
       studentIds: row.studentIds,
+      scheduleText: row.scheduleText ?? "",
       schedule: row.schedule.map((slot) => ({ dayOfWeek: slot.dayOfWeek, startsAt: slot.startsAt.slice(0, 5), endsAt: slot.endsAt.slice(0, 5), room: slot.room ?? "" })),
       status: "active",
     } : blankForm());
@@ -47,6 +48,7 @@ export function AdminClassWorkspace({ data }: { data: AdminCommandData }) {
       teacher_id: form.teacherId || null,
       student_ids: form.studentIds,
       status: nextStatus,
+      schedule_text: form.scheduleText.trim(),
       schedule: form.schedule.map((row) => ({ day_of_week: row.dayOfWeek, starts_at: row.startsAt, ends_at: row.endsAt, room: row.room.trim() || null })),
     };
     const response = await fetch("/api/admin/classes", {
@@ -87,13 +89,14 @@ export function AdminClassWorkspace({ data }: { data: AdminCommandData }) {
     {classes.length ? <div className="admin-class-grid">{classes.map((row) => <article key={row.id}>
       <div className="admin-class-title"><span><UsersRound size={20}/></span><div><strong>{row.name}</strong><small>{row.level || "دون مستوى محدد"}</small></div></div>
       <dl><div><dt>الأستاذ</dt><dd>{data.people.find((person) => person.id === row.teacherId)?.name ?? "غير محدد"}</dd></div><div><dt>الطلاب</dt><dd>{row.students}</dd></div></dl>
-      <div className="admin-class-schedule">{row.schedule.length ? row.schedule.map((slot) => <p key={slot.id}><CalendarClock size={16}/><span>{dayNames[slot.dayOfWeek]} · {slot.startsAt.slice(0,5)}–{slot.endsAt.slice(0,5)}</span></p>) : <small>لم تسجل مواعيد بعد.</small>}</div>
-      <div className="admin-class-actions"><Button size="sm" variant="secondary" onClick={() => edit(row)}><Pencil size={16}/>تعديل</Button><Button size="sm" variant="quiet" loading={sendingId === row.id} disabled={!row.schedule.length || Boolean(sendingId)} onClick={() => void sendSchedule(row.id)}><Send size={16}/>إرسال الجدول</Button></div>
+      <div className="admin-class-schedule">{row.scheduleText ? <p><CalendarClock size={16}/><span>{row.scheduleText}</span></p> : row.schedule.length ? row.schedule.map((slot) => <p key={slot.id}><CalendarClock size={16}/><span>{dayNames[slot.dayOfWeek]} · {slot.startsAt.slice(0,5)}–{slot.endsAt.slice(0,5)}</span></p>) : <small>لم تسجل مواعيد بعد.</small>}</div>
+      <div className="admin-class-actions"><Button size="sm" variant="secondary" onClick={() => edit(row)}><Pencil size={16}/>تعديل</Button><Button size="sm" variant="quiet" loading={sendingId === row.id} disabled={(!row.schedule.length && !row.scheduleText) || Boolean(sendingId)} onClick={() => void sendSchedule(row.id)}><Send size={16}/>إرسال الجدول</Button></div>
     </article>)}</div> : <EmptyState title="لا توجد أقسام" description="أنشئ أول قسم واربط به الأستاذ والطلاب والمواعيد."/>}
     <Drawer open={open} onOpenChange={setOpen} title={form.id ? "تعديل القسم" : "إضافة قسم"}>
       <div className="command-form admin-class-form">
         <div className="form-pair"><label>اسم القسم<input value={form.name} onChange={(event) => setForm({...form,name:event.target.value})}/></label><label>المستوى<input value={form.level} onChange={(event) => setForm({...form,level:event.target.value})}/></label></div>
         <div className="form-pair"><label>الأستاذ<select value={form.teacherId} onChange={(event) => setForm({...form,teacherId:event.target.value})}><option value="">اختر الأستاذ</option>{teachers.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label><label>السعة<input type="number" min="1" value={form.capacity} onChange={(event) => setForm({...form,capacity:event.target.value})}/></label></div>
+        <label>مواعيد الحصص<textarea rows={3} value={form.scheduleText} placeholder="مثال: الثلاثاء والخميس: 18:00–20:00" onChange={(event) => setForm({...form,scheduleText:event.target.value})}/></label>
         <fieldset className="admin-checks"><legend>طلاب القسم</legend>{students.map((student) => <label key={student.id}><input type="checkbox" checked={form.studentIds.includes(student.id)} onChange={(event) => setForm({...form,studentIds:event.target.checked?[...form.studentIds,student.id]:form.studentIds.filter((id)=>id!==student.id)})}/>{student.name}</label>)}</fieldset>
         <div className="admin-schedule-editor"><div className="command-heading"><h2>مواعيد الحصص</h2><Button size="sm" variant="secondary" onClick={() => setForm({...form,schedule:[...form.schedule,{dayOfWeek:2,startsAt:"18:00",endsAt:"20:00",room:""}]})}><Plus size={16}/>موعد</Button></div>{form.schedule.map((slot,index) => <div className="admin-schedule-row" key={`${index}-${slot.dayOfWeek}`}><select aria-label="اليوم" value={slot.dayOfWeek} onChange={(event) => replaceSchedule(index,{...slot,dayOfWeek:Number(event.target.value)})}>{dayNames.map((name,day) => <option key={name} value={day}>{name}</option>)}</select><input aria-label="البداية" type="time" value={slot.startsAt} onChange={(event)=>replaceSchedule(index,{...slot,startsAt:event.target.value})}/><input aria-label="النهاية" type="time" value={slot.endsAt} onChange={(event)=>replaceSchedule(index,{...slot,endsAt:event.target.value})}/><input aria-label="القاعة" placeholder="القاعة" value={slot.room} onChange={(event)=>replaceSchedule(index,{...slot,room:event.target.value})}/><Button size="sm" variant="quiet" onClick={()=>setForm({...form,schedule:form.schedule.filter((_,position)=>position!==index)})}>حذف</Button></div>)}</div>
         <div className="admin-class-save"><Button loading={busy} disabled={!form.name.trim() || !form.teacherId || busy} onClick={() => void save()}>حفظ</Button>{form.id ? <Button variant="danger" loading={busy} disabled={busy} onClick={() => { if (window.confirm("هل تريد أرشفة هذا القسم مع حفظ تاريخه؟")) void save("archived"); }}>أرشفة</Button> : null}</div>
@@ -106,4 +109,4 @@ export function AdminClassWorkspace({ data }: { data: AdminCommandData }) {
   }
 }
 
-function blankForm(): ClassForm { return { id: "", name: "", level: "", capacity: "30", teacherId: "", studentIds: [], schedule: [], status: "active" }; }
+function blankForm(): ClassForm { return { id: "", name: "", level: "", capacity: "30", teacherId: "", studentIds: [], scheduleText: "", schedule: [], status: "active" }; }

@@ -30,9 +30,9 @@ describe("student stabilization", () => {
   });
 
   it("shows only teacher, class, schedule, active assignment and progress", () => {
-    const data: StudentDashboardData = { student: { id: "s", name: "سليم" }, teacher: { id: "t", name: "محمد" }, classroom: { id: "c", name: "القسم الأول" }, nextCourse: { id: "x", title: "حصة", startsAt: "2026-09-07T18:00:00Z", endsAt: "2026-09-07T20:00:00Z", location: null }, courseSchedule: [{ id: "x", startsAt: "2026-09-07T18:00:00Z", endsAt: "2026-09-07T20:00:00Z" }], assignments: [{ id: "a", title: "واجب", instructions: "راجع جيداً", dueAt: "2026-09-08T00:00:00Z", surahNumber: 114, verseFrom: 1, verseTo: 6, status: "todo" }], announcements: [], events: [], goal: null, progress: [], notifications: [] };
+    const data: StudentDashboardData = { student: { id: "s", name: "سليم" }, teacher: { id: "t", name: "محمد" }, classroom: { id: "c", name: "القسم الأول" }, classScheduleText: "الثلاثاء والخميس: 18:00–20:00", nextCourse: { id: "x", title: "حصة", startsAt: "2026-09-07T18:00:00Z", endsAt: "2026-09-07T20:00:00Z", location: null }, courseSchedule: [{ id: "x", startsAt: "2026-09-07T18:00:00Z", endsAt: "2026-09-07T20:00:00Z" }], assignments: [{ id: "a", title: "واجب", instructions: "راجع جيداً", dueAt: "2026-09-08T00:00:00Z", surahNumber: 114, verseFrom: 1, verseTo: 6, status: "todo" }], announcements: [], events: [], goal: null, progress: [], notifications: [] };
     render(<StudentDashboard data={data} />);
-    expect(screen.getByText("محمد")).toBeVisible(); expect(screen.getByText("القسم الأول")).toBeVisible(); expect(screen.getByText("أوقات الحصص")).toBeVisible(); expect(screen.getAllByText("سُورَةُ النَّاسِ").length).toBeGreaterThan(0);
+    expect(screen.getByText("محمد")).toBeVisible(); expect(screen.getByText("القسم الأول")).toBeVisible(); expect(screen.getByText("الثلاثاء والخميس: 18:00–20:00")).toBeVisible(); expect(screen.getByText("أوقات الحصص")).toBeVisible(); expect(screen.getAllByText("سُورَةُ النَّاسِ").length).toBeGreaterThan(0);
     expect(screen.queryByText("التنبيهات")).not.toBeInTheDocument(); expect(screen.queryByText("السورة التالية")).not.toBeInTheDocument();
   });
 
