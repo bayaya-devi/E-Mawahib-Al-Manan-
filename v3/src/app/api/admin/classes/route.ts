@@ -27,6 +27,15 @@ const requestSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("send_schedule"), classId: z.string().uuid() }),
 ]);
 
+function classErrorMessage(message: string) {
+  return ({
+    student_scope_denied: "تعذر التحقق من طلاب القسم. أعد فتح القسم ثم حاول الحفظ.",
+    teacher_scope_denied: "تعذر التحقق من الأستاذ المختار.",
+    primary_teacher_required: "اختر أستاذ القسم أولاً.",
+    invalid_schedule_text: "نص مواعيد الحصص طويل جداً.",
+  } as Record<string, string>)[message] ?? message;
+}
+
 export async function POST(request: Request) {
   if (!hasTrustedOrigin(request)) {
     return NextResponse.json({ ok: false, message: "تعذر التحقق من الطلب." }, { status: 403 });
@@ -49,6 +58,6 @@ export async function POST(request: Request) {
   const { data, error } = await client.rpc("admin_save_class", {
     payload: input.data.payload,
   });
-  if (error) return NextResponse.json({ ok: false, message: error.message }, { status: 400 });
+  if (error) return NextResponse.json({ ok: false, message: classErrorMessage(error.message) }, { status: 400 });
   return NextResponse.json({ ok: true, id: data });
 }
