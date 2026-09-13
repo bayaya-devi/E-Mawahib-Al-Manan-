@@ -909,6 +909,11 @@ describe("V3 migrations and RLS", () => {
       "select surah_number from public.teacher_recitations",
     );
     expect(ownRecitations).toEqual([{ surah_number: 114 }]);
+    const followUp = await asUser<{ surah_number: number; teacher_name: string; class_name: string }>(
+      users.studentA,
+      "select surah_number,teacher_name,class_name from public.get_own_teacher_follow_up()",
+    );
+    expect(followUp).toEqual([{ surah_number: 114, teacher_name: "Teacher A", class_name: "Class A" }]);
     const foreignReports = await asUser<{ id: string }>(users.teacherB, "select id from public.teacher_session_reports");
     expect(foreignReports).toEqual([]);
     const adminReports = await asUser<{ status: string }>(users.adminA, `select status from public.teacher_session_reports where id = '${reportId}'`);

@@ -1306,6 +1306,20 @@ export type Database = {
           schedule_text: string | null;
         }>;
       };
+      get_own_teacher_follow_up: {
+        Args: Record<string, never>;
+        Returns: Array<{
+          id: string;
+          recorded_at: string;
+          teacher_name: string;
+          class_name: string | null;
+          surah_number: number;
+          verse_from: number;
+          verse_to: number;
+          appreciation: string;
+          comment: string | null;
+        }>;
+      };
       teacher_has_student: {
         Args: { target_student_id: string };
         Returns: boolean;

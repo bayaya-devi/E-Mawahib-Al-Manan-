@@ -170,31 +170,13 @@ export async function getTeacherFollowUp(): Promise<TeacherFollowUpEntry[]> {
     const client = await createClient();
     const { data: auth } = await client.auth.getUser();
     if (!auth.user) return [];
-    const recitations = await client.from("teacher_recitations")
-      .select("id,run_id,surah_number,verse_from,verse_to,appreciation,comment,recorded_by,recorded_at")
-      .eq("student_id", auth.user.id)
-      .order("recorded_at", { ascending: false })
-      .limit(500);
-    const rows = recitations.data ?? [];
-    if (!rows.length) return [];
-    const teacherIds = [...new Set(rows.map((row) => row.recorded_by))];
-    const runIds = [...new Set(rows.map((row) => row.run_id))];
-    const [profiles, runs] = await Promise.all([
-      client.from("profiles").select("id,display_name").in("id", teacherIds),
-      client.from("teacher_session_runs").select("id,class_id").in("id", runIds),
-    ]);
-    const classIds = [...new Set((runs.data ?? []).map((row) => row.class_id))];
-    const classes = classIds.length
-      ? await client.from("classes").select("id,name").in("id", classIds)
-      : { data: [] };
-    const names = new Map((profiles.data ?? []).map((row) => [row.id, row.display_name]));
-    const runClasses = new Map((runs.data ?? []).map((row) => [row.id, row.class_id]));
-    const classNames = new Map((classes.data ?? []).map((row) => [row.id, row.name]));
-    return rows.map((row) => ({
+    const followUp = await client.rpc("get_own_teacher_follow_up");
+    if (followUp.error) throw followUp.error;
+    return (followUp.data ?? []).map((row) => ({
       id: row.id,
       recordedAt: row.recorded_at,
-      teacherName: names.get(row.recorded_by) ?? "الأستاذ(ة)",
-      className: classNames.get(runClasses.get(row.run_id) ?? "") ?? null,
+      teacherName: row.teacher_name,
+      className: row.class_name,
       surahNumber: row.surah_number,
       verseFrom: row.verse_from,
       verseTo: row.verse_to,
