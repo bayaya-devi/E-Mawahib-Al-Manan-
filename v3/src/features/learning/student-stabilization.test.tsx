@@ -15,7 +15,7 @@ vi.mock("@/features/notifications", () => ({ NotificationCenter: () => null }));
 vi.mock("@/features/offline", () => ({ OfflineProvider: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({ auth: { getUser: vi.fn().mockResolvedValue({ data: { user: null } }), getSession: vi.fn().mockResolvedValue({ data: { session: null } }), signOut: vi.fn().mockResolvedValue({}) }, rpc }) }));
 
-afterEach(() => { cleanup(); localStorage.clear(); vi.clearAllMocks(); });
+afterEach(() => { cleanup(); localStorage.clear(); vi.useRealTimers(); vi.clearAllMocks(); });
 
 describe("student stabilization", () => {
   it("collapses and restores the six-item navigation with one logout", () => {
@@ -64,5 +64,13 @@ describe("student stabilization", () => {
   it("shows unpaid months until a real payment is supplied", () => {
     render(<StudentProfile name="سليم" dateOfBirth={null} className="القسم الأول" documents={[]} file={{ birth: true, guardian: true, identity: false, paymentRequired: true, fee: 100, payments: [] }} />);
     expect(screen.getByRole("heading", { name: "الواجبات" })).toBeVisible(); expect(screen.getAllByText("غير مؤدى")).toHaveLength(10);
+  });
+
+  it("keeps a September payment on September regardless of the device timezone", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 13, 12, 0, 0));
+    render(<StudentProfile name="سليم" dateOfBirth={null} className="القسم الأول" documents={[]} file={{ birth: true, guardian: true, identity: false, paymentRequired: true, fee: 100, payments: [{ month: "2026-09", amount: 100, date: "2026-09-13" }] }} />);
+    const september = screen.getByText("شتنبر").closest("details");
+    expect(september).toHaveClass("is-paid");
   });
 });
