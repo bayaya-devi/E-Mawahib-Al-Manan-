@@ -4,16 +4,13 @@ import { getSurah } from "@/features/quran/canonical";
 import type { TeacherHomeData } from "./models";
 
 export function TeacherHome({ data }: { data: TeacherHomeData }) {
-  const formatter = new Intl.DateTimeFormat("ar-MA", { weekday: "long" });
-  const dayNames = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-  const days = data.recurringSchedule?.length ? [...new Set(data.recurringSchedule.map((item) => dayNames[item.dayOfWeek]))] : [...new Set(data.schedule.map((item) => formatter.format(new Date(item.startsAt))))];
-  const hours = data.recurringSchedule?.length ? [...new Set(data.recurringSchedule.map((item) => `${item.startsAt.slice(0,5)} - ${item.endsAt.slice(0,5)}`))] : [...new Set(data.schedule.map((item) => `${time(item.startsAt)} - ${time(item.endsAt)}`))];
+  const classSchedule = scheduleForClasses(data);
   return <div className="teacher-page teacher-dashboard">
     <header className="teacher-page-head"><span>الرئيسية</span><h1>ملخص العمل</h1></header>
     <section className="teacher-summary" aria-label="ملخص العمل">
       <Summary icon={UsersRound} label="القسم" value={data.classes.map(({ name }) => name).join("، ") || "غير محدد"} />
-      <Summary icon={CalendarDays} label="أيام الدروس" value={days.join("، ") || "لا يوجد جدول"} />
-      <Summary icon={Clock3} label="الأوقات" value={hours.join("، ") || "غير محددة"} />
+      <Summary icon={CalendarDays} label="مواعيد الحصص" value={classSchedule || "لا يوجد جدول"} />
+      <Summary icon={Clock3} label="الحصة القادمة" value={data.nextCourse ? date(data.nextCourse.startsAt) : "لا توجد حصة مجدولة"} />
       <Summary icon={UsersRound} label="عدد الطلاب" value={String(data.students.length)} />
     </section>
     <section className="teacher-reminders">
@@ -24,6 +21,13 @@ export function TeacherHome({ data }: { data: TeacherHomeData }) {
 }
 
 function Summary({ icon: Icon, label, value }: { icon: typeof UsersRound; label: string; value: string }) { return <article><Icon aria-hidden="true" size={21} /><span>{label}<strong>{value}</strong></span></article>; }
+function scheduleForClasses(data: TeacherHomeData): string {
+  const days = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+  return data.classes.map((classroom) => {
+    if (classroom.scheduleText?.trim()) return `${classroom.name}: ${classroom.scheduleText.trim()}`;
+    const slots = (data.recurringSchedule ?? []).filter((slot) => slot.classId === classroom.id);
+    return slots.length ? `${classroom.name}: ${slots.map((slot) => `${days[slot.dayOfWeek]} ${slot.startsAt.slice(0, 5)}–${slot.endsAt.slice(0, 5)}`).join("، ")}` : null;
+  }).filter((value): value is string => Boolean(value)).join(" · ");
+}
 function assignmentLabel(surah: number | null, from: number | null, to: number | null): string { if (!surah) return "واجب القرآن"; const name = getSurah(surah)?.nameArabic ?? "سورة"; return from && to ? `${name} · ${from} - ${to}` : name; }
-function time(value: string): string { return new Intl.DateTimeFormat("ar-MA", { hour: "2-digit", minute: "2-digit" }).format(new Date(value)); }
 function date(value: string): string { return new Intl.DateTimeFormat("ar-MA", { dateStyle: "medium" }).format(new Date(value)); }

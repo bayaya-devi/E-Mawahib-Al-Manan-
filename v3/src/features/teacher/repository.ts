@@ -27,7 +27,7 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
     const teacherName = profile.data.display_name;
     const classIds = (assignments.data ?? []).map(({ class_id }) => class_id);
     const [classRows, enrollmentRows, classSchedules] = classIds.length ? await Promise.all([
-      client.from("classes").select("id,name,level").in("id", classIds),
+      client.from("classes").select("id,name,level,schedule_text").in("id", classIds),
       client.from("class_enrollments").select("class_id,student_id").in("class_id", classIds).eq("status", "active"),
       client.from("class_schedule_slots").select("id,class_id,day_of_week,starts_at,ends_at,room").in("class_id", classIds).order("day_of_week").order("starts_at"),
     ]) : [{ data: [] }, { data: [] }, { data: [] }];
@@ -69,7 +69,7 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
       };
     });
     const classStudentCounts = countBy(enrollments.map(({ class_id }) => class_id));
-    const classes = (classRows.data ?? []).map((row) => ({ id: row.id, name: row.name, level: row.level, studentCount: classStudentCounts.get(row.id) ?? 0 }));
+    const classes = (classRows.data ?? []).map((row) => ({ id: row.id, name: row.name, level: row.level, studentCount: classStudentCounts.get(row.id) ?? 0, scheduleText: row.schedule_text }));
     const schedule = (courses.data ?? []).map((course) => ({ id: course.id, classId: course.class_id, className: classNames.get(course.class_id) ?? "القسم", title: course.title, startsAt: course.starts_at, endsAt: course.ends_at, location: course.location, status: course.status }));
     const now = Date.now();
     const reminders = (assignmentRows.data ?? []).flatMap((item) => {
@@ -116,12 +116,12 @@ export async function getTeacherProfessional(): Promise<TeacherProfessionalData>
       client.from("teacher_documents").select("id,title,category,storage_path,visible_from").eq("teacher_id", home.teacher.id).order("visible_from", { ascending: false }),
       client.from("teacher_session_reports").select("id,run_id,status,submitted_at,present_count,absent_count,late_count").eq("teacher_id", home.teacher.id).order("created_at", { ascending: false }).limit(30),
     ]);
-    return { teacher: home.teacher, schedule: home.schedule, requests: home.requests,
+    return { teacher: home.teacher, classes: home.classes, recurringSchedule: home.recurringSchedule, schedule: home.schedule, requests: home.requests,
       salaries: (salaries.data ?? []).map((row) => ({ id: row.id, month: row.period_month, gross: Number(row.gross_amount), deductions: Number(row.deductions), net: Number(row.net_amount), currency: row.currency, status: row.status, paidAt: row.paid_at })),
       documents: (documents.data ?? []).map((row) => ({ id: row.id, title: row.title, category: row.category, storagePath: row.storage_path, visibleFrom: row.visible_from })),
       reports: (reports.data ?? []).map((row) => ({ id: row.id, runId: row.run_id, status: row.status, submittedAt: row.submitted_at, present: row.present_count, absent: row.absent_count, late: row.late_count })),
     };
-  } catch (error) { logServerError("TEACHER_PROFESSIONAL_LOAD_FAILED", error); return { teacher: home.teacher, schedule: home.schedule, requests: home.requests, salaries: [], documents: [], reports: [] }; }
+  } catch (error) { logServerError("TEACHER_PROFESSIONAL_LOAD_FAILED", error); return { teacher: home.teacher, classes: home.classes, recurringSchedule: home.recurringSchedule, schedule: home.schedule, requests: home.requests, salaries: [], documents: [], reports: [] }; }
 }
 
 function countBy(values: readonly string[]): Map<string, number> { const counts = new Map<string, number>(); for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1); return counts; }

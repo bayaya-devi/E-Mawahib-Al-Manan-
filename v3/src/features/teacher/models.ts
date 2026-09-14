@@ -1,6 +1,6 @@
 import type { DatabaseAttendanceStatus, DatabaseRecitationAppreciation, DatabaseTeacherRequestKind, DatabaseTeacherSessionStatus, DatabaseWorkflowStatus } from "@/types/database";
 
-export type TeacherClass = { id: string; name: string; level: string | null; studentCount: number };
+export type TeacherClass = { id: string; name: string; level: string | null; studentCount: number; scheduleText?: string | null };
 export type TeacherCourse = { id: string; classId: string; className: string; title: string; startsAt: string; endsAt: string; location: string | null; status: string };
 export type TeacherStudent = {
   id: string; name: string; classId: string; className: string;
@@ -39,6 +39,8 @@ export type TeacherSessionData = TeacherHomeData & { attendance: SessionAttendan
 
 export type TeacherProfessionalData = {
   teacher: { id: string; name: string } | null;
+  classes?: TeacherClass[];
+  recurringSchedule?: TeacherHomeData["recurringSchedule"];
   schedule: TeacherCourse[];
   requests: TeacherRequest[];
   salaries: Array<{ id: string; month: string; gross: number; deductions: number; net: number; currency: string; status: string; paidAt: string | null }>;
