@@ -843,6 +843,54 @@ describe("V3 migrations and RLS", () => {
     await expect(runAsUser(users.studentB, `select public.update_own_assignment('${assignment}', 'submitted', null)`)).rejects.toThrow();
   });
 
+  it("keeps teacher absence and student-list controls scoped to the assigned class", async () => {
+    await runAsUser(
+      users.teacherA,
+      `select public.teacher_record_student_absence('${users.studentA}', '${classes.first}', current_date)`,
+    );
+
+    const absences = await asUser<{ student_id: string; class_id: string }>(
+      users.teacherA,
+      "select student_id, class_id from public.teacher_quick_absences",
+    );
+    expect(absences).toEqual([{ student_id: users.studentA, class_id: classes.first }]);
+
+    await runAsUser(
+      users.teacherA,
+      `select public.teacher_set_student_list_visibility('${users.studentA}', true)`,
+    );
+    const preferences = await asUser<{ student_id: string }>(
+      users.teacherA,
+      "select student_id from public.teacher_student_list_preferences",
+    );
+    expect(preferences).toEqual([{ student_id: users.studentA }]);
+
+    await expect(
+      runAsUser(
+        users.teacherB,
+        `select public.teacher_record_student_absence('${users.studentA}', '${classes.first}', current_date)`,
+      ),
+    ).rejects.toThrow(/student_not_accessible/);
+
+    expect(
+      await asUser<{ student_id: string }>(
+        users.teacherB,
+        "select student_id from public.teacher_student_list_preferences",
+      ),
+    ).toEqual([]);
+
+    await runAsUser(
+      users.teacherA,
+      `select public.teacher_set_student_list_visibility('${users.studentA}', false)`,
+    );
+    expect(
+      await asUser<{ student_id: string }>(
+        users.teacherA,
+        "select student_id from public.teacher_student_list_preferences",
+      ),
+    ).toEqual([]);
+  });
+
   it("runs the complete teacher session workflow without crossing class boundaries", async () => {
     const course = "60000000-0000-4000-8000-000000000001";
     await database.exec(`
