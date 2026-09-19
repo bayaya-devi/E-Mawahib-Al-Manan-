@@ -397,6 +397,20 @@ type AttendanceRecordRow = {
   recorded_by: string;
   recorded_at: string;
 };
+type TeacherStudentListPreferenceRow = {
+  teacher_id: string;
+  student_id: string;
+  hidden_at: string;
+  updated_at: string;
+};
+type TeacherQuickAbsenceRow = {
+  id: string;
+  teacher_id: string;
+  student_id: string;
+  class_id: string;
+  absent_on: string;
+  created_at: string;
+};
 type SchoolAnnouncementRow = {
   id: string;
   school_id: string;
@@ -1209,6 +1223,8 @@ export type Database = {
       quran_audio_tracks: ReadonlyTable<QuranAudioTrackRow>;
       course_sessions: ReadonlyTable<CourseSessionRow>;
       attendance_records: ReadonlyTable<AttendanceRecordRow>;
+      teacher_student_list_preferences: ReadonlyTable<TeacherStudentListPreferenceRow>;
+      teacher_quick_absences: ReadonlyTable<TeacherQuickAbsenceRow>;
       school_announcements: ReadonlyTable<SchoolAnnouncementRow>;
       school_events: ReadonlyTable<SchoolEventRow>;
       learning_goals: ReadonlyTable<LearningGoalRow>;
@@ -1488,6 +1504,14 @@ export type Database = {
       };
       teacher_add_student_note: {
         Args: { target_student_id: string; target_content: string };
+        Returns: string;
+      };
+      teacher_set_student_list_visibility: {
+        Args: { target_student_id: string; target_hidden: boolean };
+        Returns: undefined;
+      };
+      teacher_record_student_absence: {
+        Args: { target_student_id: string; target_class_id: string; target_absent_on?: string };
         Returns: string;
       };
       teacher_assign_quran_work: {

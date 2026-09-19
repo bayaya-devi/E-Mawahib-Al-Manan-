@@ -33,24 +33,32 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
     ]) : [{ data: [] }, { data: [] }, { data: [] }];
     const enrollments = enrollmentRows.data ?? [];
     const studentIds = enrollments.map(({ student_id }) => student_id);
-    const [studentProfiles, progressRows, attendanceRows, assignmentRows, submissionRows, recitationRows, noteRows] = studentIds.length ? await Promise.all([
+    const [studentProfiles, progressRows, attendanceRows, quickAbsenceRows, listPreferences, assignmentRows, submissionRows, recitationRows, noteRows] = studentIds.length ? await Promise.all([
       client.from("profiles").select("id,display_name").in("id", studentIds),
       client.from("student_surah_progress").select("student_id,surah_number,status,completion_percent,mastered_at,last_activity_at").in("student_id", studentIds).order("last_activity_at", { ascending: false }),
       client.from("attendance_records").select("id,student_id,status,minutes_late,recorded_at").in("student_id", studentIds).order("recorded_at", { ascending: false }),
+      client.from("teacher_quick_absences").select("id,student_id,class_id,absent_on,created_at").eq("teacher_id", teacherId).in("student_id", studentIds).order("absent_on", { ascending: false }),
+      client.from("teacher_student_list_preferences").select("student_id").eq("teacher_id", teacherId).in("student_id", studentIds),
       client.from("assignments").select("id,class_id,student_id,surah_number,verse_from,verse_to,due_at").eq("teacher_id", teacherId).order("due_at", { ascending: true }),
       client.from("assignment_submissions").select("assignment_id,student_id,status").in("student_id", studentIds),
       client.from("teacher_recitations").select("id,student_id,surah_number,verse_from,verse_to,appreciation,comment,recorded_at").eq("recorded_by", teacherId).in("student_id", studentIds).order("recorded_at", { ascending: false }).limit(500),
       client.from("teacher_student_notes").select("id,student_id,content,created_at").eq("teacher_id", teacherId).in("student_id", studentIds).order("created_at", { ascending: false }).limit(500),
-    ]) : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
+    ]) : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
     const classNames = new Map((classRows.data ?? []).map((row) => [row.id, row.name]));
     const names = new Map((studentProfiles.data ?? []).map((row) => [row.id, row.display_name]));
     const latestProgress = new Map<string, { surah_number: number; completion_percent: number }>();
     for (const row of progressRows.data ?? []) if (!latestProgress.has(row.student_id)) latestProgress.set(row.student_id, row);
-    const absenceCounts = countBy((attendanceRows.data ?? []).filter(({ status }) => status === "absent").map(({ student_id }) => student_id));
+    const attendanceAbsenceDays = new Set((attendanceRows.data ?? []).filter(({ status }) => status === "absent").map((row) => `${row.student_id}:${row.recorded_at.slice(0, 10)}`));
+    const quickAbsences = (quickAbsenceRows.data ?? []).filter((row) => !attendanceAbsenceDays.has(`${row.student_id}:${row.absent_on}`));
+    const absenceCounts = countBy([
+      ...(attendanceRows.data ?? []).filter(({ status }) => status === "absent").map(({ student_id }) => student_id),
+      ...quickAbsences.map(({ student_id }) => student_id),
+    ]);
     const lateCounts = countBy((attendanceRows.data ?? []).filter(({ status }) => status === "late").map(({ student_id }) => student_id));
     const pendingRows = (submissionRows.data ?? []).filter(({ status }) => status === "todo" || status === "in_progress");
     const pendingCounts = countBy(pendingRows.map(({ student_id }) => student_id));
     const submissionStatus = new Map((submissionRows.data ?? []).map((row) => [`${row.assignment_id}:${row.student_id}`, row.status]));
+    const hiddenStudentIds = new Set((listPreferences.data ?? []).map(({ student_id }) => student_id));
     const students = enrollments.map((entry) => {
       const progress = latestProgress.get(entry.student_id);
       const absences = absenceCounts.get(entry.student_id) ?? 0;
@@ -59,10 +67,13 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
       return {
         id: entry.student_id, name: names.get(entry.student_id) ?? "طالب", classId: entry.class_id, className: classNames.get(entry.class_id) ?? "القسم",
         lastSurahNumber: progress?.surah_number ?? null, lastProgressPercent: progress?.completion_percent ?? 0,
-        absenceCount: absences, lateCount: lateCounts.get(entry.student_id) ?? 0, pendingAssignments: pending,
+        absenceCount: absences, lateCount: lateCounts.get(entry.student_id) ?? 0, pendingAssignments: pending, hiddenByTeacher: hiddenStudentIds.has(entry.student_id),
         suggestion: suggestionFor(absences, pending, progress?.completion_percent ?? 0),
         masteredSurahs: (progressRows.data ?? []).filter((item) => item.student_id === entry.student_id && item.status === "mastered").map((item) => ({ surahNumber: item.surah_number, masteredAt: item.mastered_at })),
-        attendanceHistory: (attendanceRows.data ?? []).filter((item) => item.student_id === entry.student_id).map((item) => ({ id: item.id, status: item.status, minutesLate: item.minutes_late, recordedAt: item.recorded_at })),
+        attendanceHistory: [
+          ...(attendanceRows.data ?? []).filter((item) => item.student_id === entry.student_id).map((item) => ({ id: item.id, status: item.status, minutesLate: item.minutes_late, recordedAt: item.recorded_at })),
+          ...quickAbsences.filter((item) => item.student_id === entry.student_id && item.class_id === entry.class_id).map((item) => ({ id: `quick-${item.id}`, status: "absent" as const, minutesLate: 0, recordedAt: `${item.absent_on}T12:00:00.000Z` })),
+        ].sort((a, b) => b.recordedAt.localeCompare(a.recordedAt)),
         recitations: (recitationRows.data ?? []).filter((item) => item.student_id === entry.student_id).map((item) => ({ id: item.id, surahNumber: item.surah_number, verseFrom: item.verse_from, verseTo: item.verse_to, appreciation: item.appreciation, comment: item.comment, recordedAt: item.recorded_at })),
         notes: (noteRows.data ?? []).filter((item) => item.student_id === entry.student_id).map((item) => ({ id: item.id, content: item.content, teacherName, createdAt: item.created_at })),
         assignments: studentAssignments.map((item) => ({ id: item.id, surahNumber: item.surah_number, verseFrom: item.verse_from, verseTo: item.verse_to, dueAt: item.due_at, status: submissionStatus.get(`${item.id}:${entry.student_id}`) ?? "todo" })),

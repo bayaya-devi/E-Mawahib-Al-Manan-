@@ -6,6 +6,7 @@ export type TeacherStudent = {
   id: string; name: string; classId: string; className: string;
   lastSurahNumber: number | null; lastProgressPercent: number;
   absenceCount: number; lateCount: number; pendingAssignments: number;
+  hiddenByTeacher: boolean;
   suggestion: string;
   masteredSurahs: Array<{ surahNumber: number; masteredAt: string | null }>;
   attendanceHistory: Array<{ id: string; status: DatabaseAttendanceStatus; minutesLate: number; recordedAt: string }>;
