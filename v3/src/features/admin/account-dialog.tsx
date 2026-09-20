@@ -360,7 +360,7 @@ export function AccountDialog({
             <input
               dir="ltr"
               type="password"
-              minLength={6}
+              minLength={4}
               value={form.temporaryPassword}
               onChange={(e) => set("temporaryPassword", e.target.value)}
             />
@@ -393,7 +393,7 @@ function accountMissingFields({
   if (!form.firstName.trim()) missing.push("أدخل الاسم");
   if (!form.lastName.trim()) missing.push("أدخل النسب");
   if (role !== "student" && form.login.trim().length < 2) missing.push("أدخل اسم الدخول");
-  if (form.temporaryPassword.length < 6) missing.push("كلمة المرور 6 أحرف على الأقل");
+  if (form.temporaryPassword.length < 4) missing.push("كلمة المرور 4 أحرف على الأقل");
   if (role === "student" && form.classId && !form.teacherId) missing.push("اختر الأستاذ");
   return missing;
 }

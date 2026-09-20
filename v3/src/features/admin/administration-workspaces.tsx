@@ -491,14 +491,14 @@ function CredentialsDialog({ person }: { person: CommandPerson }) {
           <input
             dir="ltr"
             type="password"
-            minLength={6}
+            minLength={4}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </label>
         <Button
           loading={busy}
-          disabled={(!login && !password) || password.length > 0 && password.length < 6}
+          disabled={(!login && !password) || password.length > 0 && password.length < 4}
           onClick={() => void save()}
         >
           تحديث آمن
