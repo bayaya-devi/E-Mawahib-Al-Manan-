@@ -19,12 +19,11 @@ describe("teacher session start", () => {
     expect(start).not.toBeDisabled();
     fireEvent.click(start);
     await waitFor(() => expect(rpc).toHaveBeenCalledWith("teacher_start_class_session", { target_class_id: "class-1" }));
-    expect(await screen.findByRole("heading", { name: "اختر الطلاب الحاضرين" })).toBeTruthy();
+    expect(await screen.findByRole("combobox", { name: "الطالب" })).toBeTruthy();
   });
 
-  it("keeps every class student freely selectable after attendance and after recording", async () => {
+  it("keeps every class student freely selectable without an attendance step", async () => {
     render(<ToastProvider><SessionWizard data={multiStudentSessionData} /></ToastProvider>);
-    fireEvent.click(screen.getByRole("button", { name: /تأكيد الحضور/ }));
     const studentSelect = await screen.findByLabelText("الطالب") as HTMLSelectElement;
     const options = [...studentSelect.options];
     expect(options.map(({ value }) => value)).toEqual(["present", "absent", "late", "worked", "new"]);
