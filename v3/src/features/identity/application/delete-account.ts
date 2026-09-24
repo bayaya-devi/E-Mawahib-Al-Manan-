@@ -9,7 +9,7 @@ import type { AppRole } from "@/types";
 
 type DeleteResult =
   | { ok: true; message: string }
-  | { ok: false; code: "FORBIDDEN" | "INVALID" | "HAS_HISTORY" | "FAILED"; message: string };
+  | { ok: false; code: "FORBIDDEN" | "INVALID" | "FAILED"; message: string };
 
 export async function permanentlyDeleteAccount(targetUserId: string): Promise<DeleteResult> {
   if (!z.string().uuid().safeParse(targetUserId).success) {
@@ -37,13 +37,10 @@ export async function permanentlyDeleteAccount(targetUserId: string): Promise<De
     target_user_id: targetUserId,
   });
   if (dataError) {
-    const code = "HAS_HISTORY";
     return {
       ok: false,
-      code,
-      message: code === "HAS_HISTORY"
-        ? "لا يمكن الحذف النهائي لحساب له سجل تعلم أو مالي. استخدم الأرشفة للحفاظ على التاريخ."
-        : "تعذر حذف الحساب نهائيا.",
+      code: "FAILED",
+      message: "تعذر حذف بيانات الحساب نهائيا. لم يتم حذف بيانات الدخول.",
     };
   }
 

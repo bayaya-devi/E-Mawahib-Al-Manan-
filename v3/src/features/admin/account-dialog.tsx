@@ -279,7 +279,7 @@ export function AccountDialog({
               </label>
             </div>
             <label>
-              الأستاذ المسؤول
+              الأستاذ المسؤول (اختياري)
               <select
                 value={form.teacherId ?? ""}
                 onChange={(e) => set("teacherId", e.target.value)}
@@ -366,7 +366,7 @@ export function AccountDialog({
             />
           </label>
         </div>
-        {missing.length ? <p className="command-form__hint" role="status">{missing.join(" · ")}</p> : <p className="command-form__hint">يُربط الطالب تلقائيا بأستاذ القسم المختار.</p>}
+        {missing.length ? <p className="command-form__hint" role="status">{missing.join(" · ")}</p> : <p className="command-form__hint">يُربط الطالب بالقسم، وبالأستاذ المختار عند تحديده.</p>}
         <Button
           loading={busy}
           disabled={busy || missing.length > 0}
@@ -394,6 +394,5 @@ function accountMissingFields({
   if (!form.lastName.trim()) missing.push("أدخل النسب");
   if (role !== "student" && form.login.trim().length < 2) missing.push("أدخل اسم الدخول");
   if (form.temporaryPassword.length < 4) missing.push("كلمة المرور 4 أحرف على الأقل");
-  if (role === "student" && form.classId && !form.teacherId) missing.push("اختر الأستاذ");
   return missing;
 }

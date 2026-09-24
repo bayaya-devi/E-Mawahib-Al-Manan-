@@ -84,17 +84,14 @@ async function verifyProvisionedAccount(
     ]);
     return profile?.status === "active" && Boolean(teacher);
   }
-  const [{ data: profile }, { data: student }, { data: file }, { data: enrollment }, { data: primaryTeacher }] = await Promise.all([
+  const [{ data: profile }, { data: student }, { data: file }, { data: enrollment }] = await Promise.all([
     admin.from("profiles").select("id,status").eq("id", userId).maybeSingle(),
     admin.from("student_profiles").select("user_id").eq("user_id", userId).maybeSingle(),
     admin.from("student_digital_files").select("student_id").eq("student_id", userId).maybeSingle(),
     classId
       ? admin.from("class_enrollments").select("student_id").eq("student_id", userId).eq("class_id", classId).eq("status", "active").maybeSingle()
       : Promise.resolve({ data: null }),
-    classId
-      ? admin.from("class_teacher_assignments").select("teacher_id").eq("class_id", classId).eq("status", "active").eq("assignment_kind", "primary").maybeSingle()
-      : Promise.resolve({ data: null }),
   ]);
   return profile?.status === "active" && Boolean(student) && Boolean(file)
-    && (!classId || (Boolean(enrollment) && Boolean(primaryTeacher)));
+    && (!classId || Boolean(enrollment));
 }
