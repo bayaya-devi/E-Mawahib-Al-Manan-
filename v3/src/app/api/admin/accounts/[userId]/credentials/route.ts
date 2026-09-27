@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAdministrationAccess } from "@/lib/auth/administration-access";
-import { hasTrustedOrigin } from "@/lib/http/same-origin";
+import { requireAdministrationMutation } from "@/lib/api/administration-guard";
 import {
   normalizeLoginAlias,
   isValidLoginAlias,
@@ -17,10 +16,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ userId: string }> },
 ) {
-  if (!hasTrustedOrigin(request))
-    return NextResponse.json({ ok: false }, { status: 403 });
-  const access = await getAdministrationAccess();
-  if (!access) return NextResponse.json({ ok: false }, { status: 403 });
+  const guard = await requireAdministrationMutation(request);
+  if (!guard.ok) return guard.response;
+  const { access } = guard;
   const parsed = schema.safeParse(await request.json().catch(() => null));
   const { userId } = await params;
   if (!parsed.success || !z.string().uuid().safeParse(userId).success)

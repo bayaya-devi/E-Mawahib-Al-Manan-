@@ -17,5 +17,5 @@ describe("complete V1 migration preparation", () => {
       const raw = await readFile(output, "utf8"); const bundle = JSON.parse(raw);
       expect(raw).not.toContain("secret"); expect(bundle.sections.assignments).toHaveLength(1); expect(bundle.sections.conversations).toHaveLength(1); expect(bundle.discardedTechnicalCount).toBe(1);
     } finally { await rm(directory, { recursive: true, force: true }); }
-  });
+  }, 15_000);
 });

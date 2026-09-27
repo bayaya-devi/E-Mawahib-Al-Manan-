@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { savePersonFromAdmin } from "@/features/admin/application/save-person";
-import { getAdministrationAccess } from "@/lib/auth/administration-access";
-import { hasTrustedOrigin } from "@/lib/http/same-origin";
+import { requireAdministrationMutation } from "@/lib/api/administration-guard";
 
 const payloadSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
@@ -29,8 +28,9 @@ const payloadSchema = z.object({
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ userId: string }> }) {
-  if (!hasTrustedOrigin(request)) return NextResponse.json({ ok: false, message: "تعذر التحقق من الطلب." }, { status: 403 });
-  const access = await getAdministrationAccess();
+  const guard = await requireAdministrationMutation(request);
+  if (!guard.ok) return guard.response;
+  const { access } = guard;
   const { userId } = await params;
   if (!access || !z.string().uuid().safeParse(userId).success) return NextResponse.json({ ok: false, message: "غير مسموح." }, { status: 403 });
   const input = payloadSchema.safeParse(await request.json().catch(() => null));

@@ -7,7 +7,10 @@ async function sourceFiles(directory: string): Promise<string[]> {
   const nested = await Promise.all(
     entries.map(async (entry) => {
       const fullPath = path.join(directory, entry.name);
-      if (entry.isDirectory()) return sourceFiles(fullPath);
+      if (entry.isDirectory()) {
+        if ([".git", ".next", "node_modules", "coverage"].includes(entry.name)) return [];
+        return sourceFiles(fullPath);
+      }
       if (/\.(?:ts|tsx)$/.test(entry.name) && !entry.name.includes(".test.")) {
         return [fullPath];
       }

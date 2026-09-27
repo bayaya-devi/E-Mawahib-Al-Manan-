@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { getAdministrationAccess } from "@/lib/auth/administration-access";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
 import { logServerError } from "@/lib/observability/logger";
 import { getPrivilegedServerEnvironment } from "@/lib/env/server";
 
@@ -10,11 +10,10 @@ const timeoutMs = 4_000;
 export async function GET() {
   const startedAt = Date.now();
   try {
-    const client = await createClient();
-    const { data: auth } = await withTimeout(client.auth.getUser(), timeoutMs);
-    if (!auth.user) return NextResponse.json({ ok: false, code: "AUTH_REQUIRED" }, { status: 401 });
+    const access = await getAdministrationAccess();
+    if (!access) return NextResponse.json({ ok: false, code: "NOT_AUTHORIZED" }, { status: 403 });
 
-    const diagnostics = await withTimeout(client.rpc("system_diagnostics"), timeoutMs);
+    const diagnostics = await withTimeout(access.admin.rpc("system_diagnostics"), timeoutMs);
     if (diagnostics.error) return NextResponse.json({ ok: false, code: "NOT_AUTHORIZED" }, { status: 403 });
 
     const storage = await withTimeout(createAdminClient().storage.listBuckets(), timeoutMs).catch(() => null);

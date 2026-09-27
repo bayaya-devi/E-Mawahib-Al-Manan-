@@ -1,3 +1,38 @@
-import {NextResponse} from "next/server";import {randomUUID} from "node:crypto";import {getAdministrationAccess} from "@/lib/auth/administration-access";import {hasTrustedOrigin} from "@/lib/http/same-origin";
-const allowed=new Set(["video/mp4","video/webm","image/jpeg","image/png","image/webp","image/avif"]);const extensions:Record<string,string>={"video/mp4":"mp4","video/webm":"webm","image/jpeg":"jpg","image/png":"png","image/webp":"webp","image/avif":"avif"};
-export async function POST(request:Request){if(!hasTrustedOrigin(request))return NextResponse.json({ok:false},{status:403});const access=await getAdministrationAccess();if(!access)return NextResponse.json({ok:false},{status:403});const body=await request.formData().catch(()=>null);const file=body?.get("file");if(!(file instanceof File)||!allowed.has(file.type)||file.size<1||file.size>104857600)return NextResponse.json({ok:false,message:"invalid_file"},{status:400});const path=`${access.schoolId}/${new Date().getUTCFullYear()}/${randomUUID()}.${extensions[file.type]}`;const saved=await access.admin.storage.from("public-media").upload(path,file,{contentType:file.type,upsert:false});if(saved.error)return NextResponse.json({ok:false},{status:400});const {data}=access.admin.storage.from("public-media").getPublicUrl(path);return NextResponse.json({ok:true,url:data.publicUrl,path});}
+import { randomUUID } from "node:crypto";
+
+import { NextResponse } from "next/server";
+
+import { requireAdministrationMutation } from "@/lib/api/administration-guard";
+
+const mediaExtensions: Record<string, string> = {
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/avif": "avif",
+};
+const maximumMediaSize = 100 * 1024 * 1024;
+
+export async function POST(request: Request) {
+  const guard = await requireAdministrationMutation(request);
+  if (!guard.ok) return guard.response;
+
+  const body = await request.formData().catch(() => null);
+  const file = body?.get("file");
+  const extension = file instanceof File ? mediaExtensions[file.type] : undefined;
+  if (!(file instanceof File) || !extension || file.size < 1 || file.size > maximumMediaSize) {
+    return NextResponse.json({ ok: false, message: "ملف الوسائط غير صالح." }, { status: 400 });
+  }
+
+  const path = `${guard.access.schoolId}/${new Date().getUTCFullYear()}/${randomUUID()}.${extension}`;
+  const saved = await guard.access.admin.storage
+    .from("public-media")
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (saved.error) {
+    return NextResponse.json({ ok: false, message: "تعذر رفع ملف الوسائط." }, { status: 400 });
+  }
+
+  const { data } = guard.access.admin.storage.from("public-media").getPublicUrl(path);
+  return NextResponse.json({ ok: true, url: data.publicUrl, path });
+}

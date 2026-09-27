@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { Button, Dialog, useToast } from "@/components/ui";
 import type { DatabaseAccountStatus } from "@/types/database";
@@ -12,11 +12,18 @@ export function AccountStatusControls({ userId, schoolId, status }: { userId: st
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
   const router = useRouter();
+  const pathname = usePathname();
 
   async function change(target: DatabaseAccountStatus): Promise<void> {
     if (!schoolId || busy) return;
     setBusy(true);
-    const response = await fetch(`/api/admin/accounts/${userId}/status`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: target, suspensionReason: target === "suspended" ? reason : null, schoolId }) });
+    let response: Response;
+    try {
+      response = await fetch(`/api/admin/accounts/${userId}/status`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ status: target, suspensionReason: target === "suspended" ? reason : null, schoolId }) });
+    } catch {
+      setBusy(false);
+      return showToast({ title: "تعذر الاتصال بالخدمة. حاول مرة أخرى.", tone: "info" });
+    }
     setBusy(false);
     if (!response.ok) return showToast({ title: "تعذر تحديث الحساب", tone: "info" });
     showToast({ title: "تم تحديث حالة الحساب", tone: "success" });
@@ -26,12 +33,23 @@ export function AccountStatusControls({ userId, schoolId, status }: { userId: st
   async function permanentlyDelete(): Promise<void> {
     if (busy || confirmation.trim() !== "حذف") return;
     setBusy(true);
-    const response = await fetch(`/api/admin/accounts/${userId}`, { method: "DELETE" });
+    let response: Response;
+    try {
+      response = await fetch(`/api/admin/accounts/${userId}`, { method: "DELETE" });
+    } catch {
+      setBusy(false);
+      return showToast({ title: "تعذر الاتصال بالخدمة. حاول مرة أخرى.", tone: "info" });
+    }
     const result = await response.json().catch(() => null) as { message?: string } | null;
     setBusy(false);
     if (!response.ok) return showToast({ title: result?.message ?? "تعذر حذف الحساب", tone: "info" });
     showToast({ title: "تم حذف الحساب نهائيا", tone: "success" });
-    router.push("/admin/people");
+    // Keep the administrator in the current list after a deletion. A detail page
+    // has no remaining resource, so it falls back to the neutral people list.
+    if (/^\/admin\/people\/[^/]+$/.test(pathname)) {
+      router.replace("/admin/people");
+      return;
+    }
     router.refresh();
   }
 

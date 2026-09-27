@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getAdministrationAccess } from "@/lib/auth/administration-access";
-import { hasTrustedOrigin } from "@/lib/http/same-origin";
+import { requireAdministrationMutation } from "@/lib/api/administration-guard";
 
 const status = z.enum(["draft", "published", "archived"]);
 const translations = z.array(z.object({ locale: z.enum(["ar", "fr", "en", "amz"]), title: z.string().min(2).max(180), summary: z.string().min(2).max(10000) })).length(4);
@@ -30,9 +30,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!hasTrustedOrigin(request)) return NextResponse.json({ ok: false }, { status: 403 });
-  const access = await getAdministrationAccess();
-  if (!access) return NextResponse.json({ ok: false }, { status: 403 });
+  const guard = await requireAdministrationMutation(request);
+  if (!guard.ok) return guard.response;
+  const { access } = guard;
   const parsed = mutation.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false, issues: parsed.error.issues }, { status: 400 });
   const input = parsed.data;
@@ -70,9 +70,9 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (!hasTrustedOrigin(request)) return NextResponse.json({ ok: false }, { status: 403 });
-  const access = await getAdministrationAccess();
-  if (!access) return NextResponse.json({ ok: false }, { status: 403 });
+  const guard = await requireAdministrationMutation(request);
+  if (!guard.ok) return guard.response;
+  const { access } = guard;
   const parsed = z.object({ resource: z.enum(["news", "replay", "schedule"]), id: z.string().uuid(), state: z.union([status, z.boolean()]) }).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false }, { status: 400 });
   const { resource, id, state } = parsed.data;

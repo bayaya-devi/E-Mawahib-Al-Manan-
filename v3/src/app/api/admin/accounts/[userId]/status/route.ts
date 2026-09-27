@@ -2,17 +2,13 @@ import { NextResponse } from "next/server";
 
 import { changeAccountStatus } from "@/features/identity/application/change-account-status";
 import { AUTH_MESSAGES } from "@/features/identity/domain/auth-messages";
-import { hasTrustedOrigin } from "@/lib/http/same-origin";
+import { requireAdministrationMutation } from "@/lib/api/administration-guard";
 
 type RouteContext = { params: Promise<{ userId: string }> };
 
 export async function PATCH(request: Request, context: RouteContext) {
-  if (!hasTrustedOrigin(request)) {
-    return NextResponse.json(
-      { ok: false, message: AUTH_MESSAGES.forbidden },
-      { status: 403 },
-    );
-  }
+  const guard = await requireAdministrationMutation(request);
+  if (!guard.ok) return guard.response;
 
   let input: unknown;
   try {
