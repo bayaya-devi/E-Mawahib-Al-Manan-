@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { getSiteManager } from "@/features/public-site/admin-access";
-import { hasTrustedOrigin } from "@/lib/http/same-origin";
+import { requireAdministrationMutation } from "@/lib/api/administration-guard";
 import { createClient } from "@/lib/supabase/server";
 
 const requestSchema = z.discriminatedUnion("kind", [
@@ -25,8 +24,8 @@ const requestSchema = z.discriminatedUnion("kind", [
 ]);
 
 export async function POST(request: Request) {
-  if (!hasTrustedOrigin(request)) return NextResponse.json({ ok: false, message: "تعذر التحقق من الطلب." }, { status: 403 });
-  if (!(await getSiteManager())) return NextResponse.json({ ok: false, message: "غير مسموح." }, { status: 403 });
+  const guard = await requireAdministrationMutation(request);
+  if (!guard.ok) return guard.response;
   const input = requestSchema.safeParse(await request.json().catch(() => null));
   if (!input.success) return NextResponse.json({ ok: false, message: "تحقق من بيانات الأداء." }, { status: 400 });
   const client = await createClient();

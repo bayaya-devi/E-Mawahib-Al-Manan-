@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { getSiteManager } from "@/features/public-site/admin-access";
+import { getAdministrationAccess } from "@/lib/auth/administration-access";
 import { hasTrustedOrigin } from "@/lib/http/same-origin";
 
 const status = z.enum(["draft", "published", "archived"]);
@@ -14,7 +14,7 @@ const mutation = z.discriminatedUnion("resource", [
 ]);
 
 export async function GET() {
-  const access = await getSiteManager();
+  const access = await getAdministrationAccess();
   if (!access) return NextResponse.json({ ok: false }, { status: 403 });
   const [profiles, profileT, news, newsT, replays, replayT, schedules, scheduleT] = await Promise.all([
     access.admin.from("public_site_profiles").select("*").eq("school_id", access.schoolId).limit(1),
@@ -31,7 +31,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   if (!hasTrustedOrigin(request)) return NextResponse.json({ ok: false }, { status: 403 });
-  const access = await getSiteManager();
+  const access = await getAdministrationAccess();
   if (!access) return NextResponse.json({ ok: false }, { status: 403 });
   const parsed = mutation.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false, issues: parsed.error.issues }, { status: 400 });
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   if (!hasTrustedOrigin(request)) return NextResponse.json({ ok: false }, { status: 403 });
-  const access = await getSiteManager();
+  const access = await getAdministrationAccess();
   if (!access) return NextResponse.json({ ok: false }, { status: 403 });
   const parsed = z.object({ resource: z.enum(["news", "replay", "schedule"]), id: z.string().uuid(), state: z.union([status, z.boolean()]) }).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ ok: false }, { status: 400 });

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getSiteManager } from "@/features/public-site/admin-access";
+import { getAdministrationAccess } from "@/lib/auth/administration-access";
 import { hasTrustedOrigin } from "@/lib/http/same-origin";
 import {
   normalizeLoginAlias,
@@ -19,7 +19,7 @@ export async function PATCH(
 ) {
   if (!hasTrustedOrigin(request))
     return NextResponse.json({ ok: false }, { status: 403 });
-  const access = await getSiteManager();
+  const access = await getAdministrationAccess();
   if (!access) return NextResponse.json({ ok: false }, { status: 403 });
   const parsed = schema.safeParse(await request.json().catch(() => null));
   const { userId } = await params;

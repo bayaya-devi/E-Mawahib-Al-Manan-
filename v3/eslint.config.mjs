@@ -14,6 +14,26 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    files: ["src/**/*.tsx"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@/lib/supabase/admin",
+              message: "La clé service Supabase est réservée au backend serveur.",
+            },
+            {
+              name: "@/lib/env/server",
+              message: "Les variables serveur ne peuvent pas être importées par l’interface.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;
