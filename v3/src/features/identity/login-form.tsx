@@ -3,6 +3,7 @@
 import { Eye, EyeOff, Home, LogIn, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Script from "next/script";
 import { useState } from "react";
 
 import { buildCanonicalLoginAlias, type LoginAccountKind } from "./domain/legacy-login";
@@ -16,6 +17,7 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,10 +30,11 @@ export function LoginForm() {
     setBusy(true);
     setMessage("");
     try {
+      const turnstileToken = new FormData(event.currentTarget).get("cf-turnstile-response");
       const response = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ login, password, kind, firstName, secondValue }),
+        body: JSON.stringify({ login, password, kind, firstName, secondValue, turnstileToken }),
       });
       const result = (await response.json()) as { ok?: boolean; roles?: string[]; message?: string };
       if (!response.ok || !result.ok) {
@@ -62,6 +65,7 @@ export function LoginForm() {
     <label><span>الاسم</span><span className="login-v3__control"><UserRound aria-hidden="true" size={20} /><input value={firstName} onChange={(event) => setFirstName(event.target.value)} autoComplete="given-name" required /></span></label>
     <label><span>{kind === "teacher" ? "القسم" : "الاسم العائلي"}</span><span className="login-v3__control"><UserRound aria-hidden="true" size={20} /><input value={secondValue} onChange={(event) => setSecondValue(event.target.value)} autoComplete={kind === "teacher" ? "organization" : "family-name"} required /></span></label>
     <label><span>كلمة المرور</span><span className="login-v3__control"><input dir="ltr" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /><button type="button" aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}</button></span></label>
+    {siteKey ? <><Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" /><div className="cf-turnstile" data-sitekey={siteKey} data-theme="auto" data-size="flexible" /></> : null}
     {message && <p className="login-v3__message" role="alert">{message}</p>}
     <div className="login-v3__actions">
       <Link className="login-v3__visit login-v3__visit--mobile" href="/ar"><Home aria-hidden="true" size={18} />زيارة الموقع</Link>

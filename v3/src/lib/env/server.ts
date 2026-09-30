@@ -35,6 +35,7 @@ const privilegedServerEnvironmentSchema = z.object({
   VAPID_PRIVATE_KEY: z.string().min(30).optional(),
   VAPID_SUBJECT: z.string().regex(/^(mailto:|https:\/\/)/u).optional(),
   OTP_HMAC_SECRET: z.string().min(32).optional(),
+  TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
 });
 
 export function getServerEnvironment() {
@@ -78,6 +79,7 @@ export function getPrivilegedServerEnvironment() {
       VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
       VAPID_SUBJECT: process.env.VAPID_SUBJECT,
       OTP_HMAC_SECRET: process.env.OTP_HMAC_SECRET,
+      TURNSTILE_SECRET_KEY: process.env.TURNSTILE_SECRET_KEY,
     }),
   };
 }

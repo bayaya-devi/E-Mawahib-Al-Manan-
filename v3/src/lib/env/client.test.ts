@@ -9,11 +9,13 @@ describe("client environment", () => {
         NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
         NEXT_PUBLIC_SUPABASE_ANON_KEY: "publishable-key-with-safe-length",
         NEXT_PUBLIC_APP_ENV: "test",
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: "site-key",
       }),
     ).toEqual({
       NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "publishable-key-with-safe-length",
       NEXT_PUBLIC_APP_ENV: "test",
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: "site-key",
     });
   });
 

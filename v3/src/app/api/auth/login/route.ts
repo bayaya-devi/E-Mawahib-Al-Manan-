@@ -4,6 +4,7 @@ import { signInWithAlias } from "@/features/identity/application/sign-in";
 import { getLoginRateLimit, recordLoginRateLimit } from "@/features/identity/application/login-rate-limit";
 import { AUTH_MESSAGES } from "@/features/identity/domain/auth-messages";
 import { hasTrustedOrigin } from "@/lib/http/same-origin";
+import { verifyTurnstile } from "@/lib/security/turnstile";
 
 export async function POST(request: Request) {
   if (!hasTrustedOrigin(request)) {
@@ -21,6 +22,13 @@ export async function POST(request: Request) {
       { ok: false, message: AUTH_MESSAGES.invalidCredentials },
       { status: 400 },
     );
+  }
+
+  const turnstileToken = input && typeof input === "object"
+    ? (input as { turnstileToken?: unknown }).turnstileToken
+    : undefined;
+  if (!await verifyTurnstile(typeof turnstileToken === "string" ? turnstileToken : undefined)) {
+    return NextResponse.json({ ok: false, message: AUTH_MESSAGES.invalidCredentials }, { status: 401 });
   }
 
   const rateLimit = await getLoginRateLimit(request, input);
