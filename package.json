@@ -1,0 +1,14 @@
+{
+  "name": "e-mawahib-al-manan-site",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "build": "node scripts/build-site.js",
+    "test:build": "node scripts/test-site-build.js"
+  },
+  "devDependencies": {
+    "html-minifier-terser": "^7.2.0",
+    "lightningcss": "^1.29.1",
+    "terser": "^5.31.6"
+  }
+}
