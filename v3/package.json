@@ -5,14 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "next build --webpack",
+    "build": "node --max-old-space-size=4096 ./node_modules/next/dist/bin/next build --webpack",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest",
-    "test:run": "vitest run",
-    "test:db": "vitest run tests/database/migrations.test.ts",
-    "test:coverage": "vitest run --coverage",
+    "test": "node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs",
+    "test:run": "node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run",
+    "test:db": "node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run tests/database/migrations.test.ts",
+    "test:coverage": "node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run --coverage",
+    "test:critical": "node --max-old-space-size=4096 ./node_modules/vitest/vitest.mjs run src/features/identity/application/sign-in.test.ts src/lib/auth/authorization.test.ts tests/database/migrations.test.ts src/features/quran/learning-plan.test.ts",
     "test:e2e": "playwright test",
     "security:secrets": "node scripts/check-secrets.mjs",
     "security:audit": "npm audit --omit=dev --audit-level=high",
@@ -31,7 +32,8 @@
     "quran:migration": "node scripts/quran/generate-warsh-migration.mjs",
     "quran:verify-production": "node scripts/quran/verify-production-quran.mjs",
     "notifications:vapid": "web-push generate-vapid-keys --json",
-    "check": "npm run security:secrets && npm run lint && npm run typecheck && npm run test:run && npm run build"
+    "check": "npm run security:secrets && npm run lint && npm run typecheck && npm run test:run && npm run build",
+    "quality:report": "node scripts/quality-report.mjs"
   },
   "engines": {
     "node": ">=22.0.0 <25"

@@ -15,6 +15,11 @@ export default defineConfig({
       "tests/public-site/**/*.test.ts",
     ],
     environment: "node",
+    // The production schema is intentionally comprehensive. One fork keeps the
+    // full suite reliable on modest developer machines and CI runners.
+    pool: "forks",
+    maxWorkers: 1,
+    fileParallelism: false,
     setupFiles: ["./vitest.setup.ts"],
     coverage: {
       provider: "v8",
