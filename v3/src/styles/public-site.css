@@ -261,3 +261,20 @@
   .login-v3__roles button, .login-v3__control, .login-v3__submit, .login-v3__visit { transition: none; }
   .login-v3__visit--desktop { animation: none; }
 }
+
+.privacy-consent { position: fixed; z-index: 120; inset: 0; display: grid; align-items: end; padding: 18px; background: rgb(12 28 23 / 34%); }
+.privacy-consent > div { width: min(100%, 760px); margin-inline: auto; padding: 22px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow-2); }
+.privacy-consent h2, .privacy-consent p { margin-block: 0 10px; }
+.privacy-consent fieldset { display: flex; flex-wrap: wrap; gap: 10px 22px; margin: 16px 0; padding: 0; border: 0; }
+.privacy-consent label { display: inline-flex; align-items: center; gap: 7px; font-weight: 750; }
+.privacy-consent nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.privacy-consent button, .privacy-map-placeholder button, .public-footer-privacy { min-height: 42px; border: 1px solid var(--brand); border-radius: 7px; padding-inline: 16px; color: var(--brand-strong); background: transparent; font: inherit; font-weight: 800; cursor: pointer; }
+.privacy-consent button:last-child { color: white; background: var(--brand); }
+.public-footer-privacy { min-height: auto; border: 0; padding: 0; color: inherit; }
+.privacy-map-placeholder { min-height: 270px; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px; text-align: center; background: var(--surface-muted); }
+.legal-page { max-width: 900px; }
+.legal-page > section { padding-block: 24px; border-bottom: 1px solid var(--border); }
+.legal-page > section h2 { margin-top: 0; }
+.privacy-account-actions { display: grid; gap: 12px; }
+.privacy-details { display: grid; gap: 6px; font-weight: 800; }
+.privacy-details textarea { width: 100%; padding: 12px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--surface); color: var(--ink); font: inherit; resize: vertical; }

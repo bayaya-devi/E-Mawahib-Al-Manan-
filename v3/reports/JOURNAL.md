@@ -28,3 +28,10 @@ Décisions prises : pas de refactor massif des deux modules admin pendant ce mod
 - Timeouts, reprises exponentielles et circuit breaker pour les dépendances critiques.
 - Sauvegardes chiffrées, restauration protégée, test d'intégrité et rétention documentés.
 - Supervision Uptime Kuma, configurations PM2/systemd et scénario de charge k6 ajoutés.
+
+## 2026-10-14 - Module 09 conformité technique
+
+- Consentement public réversible et preuve anonymisée/versionnée.
+- Chargement de la carte externe conditionné au choix utilisateur.
+- Pages légales trilingues, registre et procédures marqués pour validation juridique.
+- Export personnel JSON, demandes de droits auditées et purge technique planifiée.

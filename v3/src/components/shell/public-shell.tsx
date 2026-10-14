@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { locales, pageFromPath, publicCopy, publicHref, publicPages, type PublicLocale } from "@/features/public-site/content";
 import { publicLocaleCookie } from "@/features/public-site/locale-preference";
 import { PublicMotion } from "@/features/public-site/public-motion";
+import { ConsentBanner } from "@/features/privacy";
 
 const localeLabels: Record<PublicLocale, string> = { ar: "العربية", fr: "Français", en: "English", amz: "ⵜⴰⵛⵍⵃⵉⵜ" };
 
@@ -56,7 +57,8 @@ export function PublicShell({ locale, children }: { locale: PublicLocale; childr
       {open && <nav className="public-v3__mobile-nav" aria-label={copy.menu}>{publicPages.map((item) => <Link key={item} className={item === page ? "is-active" : undefined} href={publicHref(locale, item)} onClick={() => { setOpen(false); setLanguageOpen(false); }}>{copy.nav[item]}</Link>)}<Link className="public-v3__login public-v3__login--mobile" href="/login" onClick={() => { setOpen(false); setLanguageOpen(false); }}><LogIn aria-hidden="true" size={17} /><span>{copy.login}</span></Link></nav>}
     </header>
     <main id="main-content">{children}</main>
-    <footer className="public-v3__footer"><Image src="/dar-al-hadith/logo.webp" alt="" width={55} height={54} /><strong>{copy.footer}</strong><nav aria-label={copy.menu}>{publicPages.slice(1, 6).map((item) => <Link key={item} href={publicHref(locale, item)}>{copy.nav[item]}</Link>)}</nav></footer>
+    <footer className="public-v3__footer"><Image src="/dar-al-hadith/logo.webp" alt="" width={55} height={54} /><strong>{copy.footer}</strong><nav aria-label={copy.menu}>{publicPages.slice(1, 6).map((item) => <Link key={item} href={publicHref(locale, item)}>{copy.nav[item]}</Link>)}<Link href={`/${locale}/legal/privacy`}>{locale === "ar" ? "الخصوصية" : locale === "en" ? "Privacy" : "Confidentialité"}</Link><Link href={`/${locale}/legal/cookies`}>{locale === "ar" ? "ملفات الارتباط" : locale === "en" ? "Cookies" : "Cookies"}</Link><Link href={`/${locale}/legal/terms`}>{locale === "ar" ? "شروط الاستخدام" : locale === "en" ? "Terms" : "Conditions"}</Link><Link href={`/${locale}/legal/legal`}>{locale === "ar" ? "الإشعار القانوني" : locale === "en" ? "Legal" : "Mentions légales"}</Link><button type="button" className="public-footer-privacy" onClick={() => window.dispatchEvent(new Event("mawahib:privacy-open"))}>{locale === "ar" ? "اختيارات الخصوصية" : locale === "en" ? "Privacy choices" : "Choix de confidentialité"}</button></nav></footer>
+    <ConsentBanner locale={locale} />
     <PublicMotion />
   </div>;
 }
