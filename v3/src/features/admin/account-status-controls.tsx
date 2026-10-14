@@ -30,7 +30,7 @@ export function AccountStatusControls({ userId, schoolId, status }: { userId: st
     router.refresh();
   }
 
-  async function permanentlyDelete(): Promise<void> {
+  async function moveToTrash(): Promise<void> {
     if (busy || confirmation.trim() !== "حذف") return;
     setBusy(true);
     let response: Response;
@@ -43,7 +43,7 @@ export function AccountStatusControls({ userId, schoolId, status }: { userId: st
     const result = await response.json().catch(() => null) as { message?: string } | null;
     setBusy(false);
     if (!response.ok) return showToast({ title: result?.message ?? "تعذر حذف الحساب", tone: "info" });
-    showToast({ title: "تم حذف الحساب نهائيا", tone: "success" });
+    showToast({ title: result?.message ?? "تم نقل الحساب إلى سلة المحذوفات", tone: "success" });
     // Keep the administrator in the current list after a deletion. A detail page
     // has no remaining resource, so it falls back to the neutral people list.
     if (/^\/admin\/people\/[^/]+$/.test(pathname)) {
@@ -53,10 +53,10 @@ export function AccountStatusControls({ userId, schoolId, status }: { userId: st
     router.refresh();
   }
 
-  const deletion = <Dialog trigger={<Button variant="danger">حذف نهائي</Button>} title="حذف الحساب نهائيا" description="هذا الإجراء لا يمكن التراجع عنه. الحسابات ذات السجل التعليمي أو المالي تُؤرشف حفاظا على التاريخ.">
+  const deletion = <Dialog trigger={<Button variant="danger">نقل إلى المحذوفات</Button>} title="نقل الحساب إلى المحذوفات" description="يتوقف الدخول وتبقى السجلات التعليمية والمالية محفوظة. يمكن للإدارة إعادة التفعيل لاحقا.">
     <div className="command-form">
       <label>اكتب «حذف» للتأكيد<input value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></label>
-      <Button variant="danger" loading={busy} disabled={confirmation.trim() !== "حذف"} onClick={() => void permanentlyDelete()}>حذف الحساب نهائيا</Button>
+      <Button variant="danger" loading={busy} disabled={confirmation.trim() !== "حذف"} onClick={() => void moveToTrash()}>نقل إلى المحذوفات</Button>
     </div>
   </Dialog>;
 

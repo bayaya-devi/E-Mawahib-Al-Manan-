@@ -4,14 +4,13 @@ import { z } from "zod";
 
 import { can } from "@/lib/auth/authorization";
 import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 import type { AppRole } from "@/types";
 
 type DeleteResult =
   | { ok: true; message: string }
   | { ok: false; code: "FORBIDDEN" | "INVALID" | "FAILED"; message: string };
 
-export async function permanentlyDeleteAccount(targetUserId: string): Promise<DeleteResult> {
+export async function moveAccountToTrash(targetUserId: string): Promise<DeleteResult> {
   if (!z.string().uuid().safeParse(targetUserId).success) {
     return { ok: false, code: "INVALID", message: "معرّف الحساب غير صالح." };
   }
@@ -32,21 +31,18 @@ export async function permanentlyDeleteAccount(targetUserId: string): Promise<De
     return { ok: false, code: "FORBIDDEN", message: "غير مسموح بحذف هذا الحساب." };
   }
 
-  const admin = createAdminClient();
-  const { error: dataError } = await admin.rpc("cleanup_provisioned_account_data", {
+  const { error } = await session.rpc("admin_soft_delete_account", {
     target_user_id: targetUserId,
+    target_school_id: targetMembership.school_id,
   });
-  if (dataError) {
+  if (error) {
     return {
       ok: false,
       code: "FAILED",
-      message: "تعذر حذف بيانات الحساب نهائيا. لم يتم حذف بيانات الدخول.",
+      message: error.message === "last_direction_account_required"
+        ? "يجب الاحتفاظ بحساب إدارة نشط واحد على الأقل."
+        : "تعذر نقل الحساب إلى سلة المحذوفات.",
     };
   }
-
-  const { error: authError } = await admin.auth.admin.deleteUser(targetUserId);
-  if (authError) {
-    return { ok: false, code: "FAILED", message: "تم حذف بيانات الحساب، وتعذر حذف بيانات الدخول." };
-  }
-  return { ok: true, message: "تم حذف الحساب نهائيا." };
+  return { ok: true, message: "تم نقل الحساب إلى سلة المحذوفات مع حفظ السجل." };
 }

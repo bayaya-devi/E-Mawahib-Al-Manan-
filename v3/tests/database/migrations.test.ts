@@ -1228,4 +1228,43 @@ describe("V3 migrations and RLS", () => {
     const ledger = await database.query<{ count: number }>(`select count(*)::integer count from public.finance_transactions where student_id='${users.studentA}' and occurred_on='2026-10-01'`);
     expect(ledger.rows).toEqual([{ count: 0 }]);
   });
+
+  it("enforces class capacity while preserving a legitimate existing enrollment", async () => {
+    await database.exec(`update public.classes set capacity=1 where id='${classes.first}'`);
+    await runAsUser(users.adminA, `select public.admin_set_student_relations('${users.studentA}','${classes.first}','{${users.teacherA}}'::uuid[])`);
+    await database.exec(`
+      insert into public.school_memberships(school_id,user_id,status)
+      values('${schools.first}','${users.studentB}','active')
+      on conflict(school_id,user_id) do update set status='active',ended_at=null;
+    `);
+    await expect(runAsUser(users.adminA, `select public.admin_set_student_relations('${users.studentB}','${classes.first}','{${users.teacherA}}'::uuid[])`))
+      .rejects.toThrow(/class_capacity_exceeded/);
+    const enrollment = await database.query<{ count: number }>(`select count(*)::integer count from public.class_enrollments where class_id='${classes.first}' and status='active'`);
+    expect(enrollment.rows).toEqual([{ count: 1 }]);
+    await database.exec(`update public.classes set capacity=null where id='${classes.first}'`);
+  });
+
+  it("keeps audit logs append-only and strips nested secrets", async () => {
+    await database.exec(`insert into public.audit_logs(actor_id,school_id,action,entity_type,metadata)
+      values('${users.adminA}','${schools.first}','test.sanitized','test','{"password":"hidden","nested":{"token":"hidden","safe":"kept"}}')`);
+    const result = await database.query<{ metadata: Record<string, unknown> }>(`select metadata from public.audit_logs where action='test.sanitized'`);
+    expect(result.rows[0]?.metadata).toEqual({ nested: { safe: "kept" } });
+    await expect(runAsUser(users.adminA, "update public.audit_logs set action='tampered' where action='test.sanitized'")).rejects.toThrow();
+  });
+
+  it("moves accounts to a restorable trash without deleting history", async () => {
+    await runAsUser(users.adminA, `select public.admin_soft_delete_account('${users.studentA}','${schools.first}')`);
+    const trashed = await database.query<{ status: string; deleted: boolean; learning: number }>(`
+      select p.status,(p.deleted_at is not null) deleted,
+        (select count(*)::integer from public.student_surah_progress where student_id=p.id) learning
+      from public.profiles p where p.id='${users.studentA}'`);
+    expect(trashed.rows[0]).toMatchObject({ status: "archived", deleted: true });
+    await runAsUser(users.adminA, `select public.admin_restore_account('${users.studentA}','${schools.first}')`);
+    const restored = await database.query<{ status: string; deleted: boolean }>(`select status,(deleted_at is not null) deleted from public.profiles where id='${users.studentA}'`);
+    expect(restored.rows).toEqual([{ status: "active", deleted: false }]);
+  });
+
+  it("protects the last active direction account", async () => {
+    await expect(database.exec(`update public.profiles set status='archived',archived_at=now() where id='${users.direction}'`)).rejects.toThrow(/last_direction_account_required/);
+  });
 });

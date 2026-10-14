@@ -108,6 +108,8 @@ type ProfileRow = {
   created_at: string;
   updated_at: string;
   archived_at: string | null;
+  deleted_at: string | null;
+  deleted_by: string | null;
 };
 
 type UserRoleRow = {
@@ -1576,6 +1578,14 @@ export type Database = {
           target_class_id: string;
           target_teacher_ids: string[];
         };
+        Returns: undefined;
+      };
+      admin_soft_delete_account: {
+        Args: { target_user_id: string; target_school_id: string };
+        Returns: undefined;
+      };
+      admin_restore_account: {
+        Args: { target_user_id: string; target_school_id: string };
         Returns: undefined;
       };
       admin_set_teacher_classes: {

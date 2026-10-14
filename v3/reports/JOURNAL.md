@@ -11,3 +11,11 @@ Travail effectué : inventaire produit et qualité, commandes de contrôle docum
 Décisions prises : pas de refactor massif des deux modules admin pendant ce module ; découpage lors des prochaines évolutions avec tests E2E. La compatibilité API est préservée.
 
 À faire par un humain : aucune action technique pour ce module.
+## 2026-10-14 - Module 02 backend
+
+- Relations V3 vérifiées: le modèle réel utilise `classes`, `class_enrollments` et `class_teacher_assignments`.
+- Capacité des classes rendue atomique sous concurrence.
+- Suppression applicative remplacée par une corbeille réversible qui conserve les historiques.
+- Dernier compte de direction protégé.
+- Métadonnées d'audit nettoyées des secrets usuels.
+- Prévisualisation CSV des paiements ajoutée sans écriture automatique.

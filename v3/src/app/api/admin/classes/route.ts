@@ -32,6 +32,7 @@ function classErrorMessage(message: string) {
     teacher_scope_denied: "تعذر التحقق من الأستاذ المختار.",
     primary_teacher_required: "اختر أستاذ القسم أولاً.",
     invalid_schedule_text: "نص مواعيد الحصص طويل جداً.",
+    class_capacity_exceeded: "اكتمل عدد مقاعد القسم. ارفع السعة أو أزل طالبا قبل الحفظ.",
   } as Record<string, string>)[message] ?? message;
 }
 
