@@ -1,5 +1,7 @@
 import "server-only";
 
+import { fetchWithResilience } from "@/lib/http/resilience";
+
 const siteverifyUrl = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
 type TurnstileResponse = { success?: boolean };
@@ -14,7 +16,7 @@ export async function verifyTurnstile(token: string | undefined): Promise<boolea
     const payload = new FormData();
     payload.set("secret", secret);
     payload.set("response", token);
-    const response = await fetch(siteverifyUrl, { method: "POST", body: payload, cache: "no-store" });
+    const response = await fetchWithResilience(siteverifyUrl, { method: "POST", body: payload, cache: "no-store", timeoutMs: 5_000, retries: 1, circuitKey: "cloudflare-turnstile" });
     if (!response.ok) return false;
     return (await response.json() as TurnstileResponse).success === true;
   } catch {

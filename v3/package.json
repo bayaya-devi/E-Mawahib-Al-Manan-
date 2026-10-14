@@ -34,7 +34,8 @@
     "quran:verify-production": "node scripts/quran/verify-production-quran.mjs",
     "notifications:vapid": "web-push generate-vapid-keys --json",
     "check": "npm run security:secrets && npm run lint && npm run typecheck && npm run test:run && npm run build",
-    "quality:report": "node scripts/quality-report.mjs"
+    "quality:report": "node scripts/quality-report.mjs",
+    "test:load": "k6 run tests/load/smoke.js"
   },
   "engines": {
     "node": ">=22.0.0 <25"

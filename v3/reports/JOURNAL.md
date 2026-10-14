@@ -19,3 +19,12 @@ Décisions prises : pas de refactor massif des deux modules admin pendant ce mod
 - Dernier compte de direction protégé.
 - Métadonnées d'audit nettoyées des secrets usuels.
 - Prévisualisation CSV des paiements ajoutée sans écriture automatique.
+
+## 2026-10-14 - Module 04 fiabilité
+
+- Sondes publiques distinctes `/health` et `/ready`, sans fuite de configuration.
+- Mode maintenance HTTP 503 laissant les sondes accessibles.
+- Erreurs trilingues, logs JSON nettoyés et identifiants de requête.
+- Timeouts, reprises exponentielles et circuit breaker pour les dépendances critiques.
+- Sauvegardes chiffrées, restauration protégée, test d'intégrité et rétention documentés.
+- Supervision Uptime Kuma, configurations PM2/systemd et scénario de charge k6 ajoutés.

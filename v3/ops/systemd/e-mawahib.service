@@ -1,0 +1,21 @@
+[Unit]
+Description=e-Mawahib Al-Manan web application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=e-mawahib
+WorkingDirectory=/opt/e-mawahib/current
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/e-mawahib/environment
+ExecStart=/usr/bin/npm start
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+LimitNOFILE=65535
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

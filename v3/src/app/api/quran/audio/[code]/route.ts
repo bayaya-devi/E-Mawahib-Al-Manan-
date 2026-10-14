@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { fetchWithResilience } from "@/lib/http/resilience";
+
 const SOURCES = [
   "https://everyayah.com/data/warsh/warsh_ibrahim_aldosary_128kbps",
   "https://everyayah.com/data/warsh/warsh_yassin_al_jazaery_64kbps",
@@ -14,10 +16,13 @@ export async function GET(request: Request, context: { params: Promise<{ code: s
 
   for (const base of sources) {
     try {
-      const upstream = await fetch(`${base}/${code}.mp3`, {
+      const upstream = await fetchWithResilience(`${base}/${code}.mp3`, {
         ...(range ? { headers: { Range: range } } : {}),
         cache: "force-cache",
         next: { revalidate: 60 * 60 * 24 * 30 },
+        timeoutMs: 8_000,
+        retries: 1,
+        circuitKey: new URL(base).hostname,
       });
       if (!upstream.ok || !upstream.body) continue;
       const headers = new Headers();
