@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { advanceLearning, currentRound, initialLearningState, makeLearningPlan, learningOrder, upgradeLearningState, type LearningState } from '@/features/quran/learning-plan';
 import { isCorrect } from '@/features/games/engine';
+import { hasTrustedOrigin } from '@/lib/http/same-origin';
 
 const inputSchema = z.object({ key: z.string().regex(/^(surah|review)-\d+$/), version: z.number().int().nonnegative(), answer: z.string().max(20000).optional(), retry: z.boolean().optional() });
 async function context(key: string) {
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
   catch (error) { return failure(error); }
 }
 export async function POST(request: Request) {
-  if (request.headers.get('origin') !== new URL(request.url).origin) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
+  if (!hasTrustedOrigin(request)) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   try {
     const input = inputSchema.parse(await request.json());
     const value = await context(input.key);
