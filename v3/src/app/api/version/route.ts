@@ -5,8 +5,8 @@ export function GET() {
     {
       appVersion: process.env.NEXT_PUBLIC_APP_VERSION ?? "unknown",
       buildSha:
-        process.env.VERCEL_GIT_COMMIT_SHA ??
-        process.env.NEXT_PUBLIC_BUILD_SHA ??
+        process.env.VERCEL_GIT_COMMIT_SHA ||
+        process.env.NEXT_PUBLIC_BUILD_SHA ||
         "unknown",
       buildDate: process.env.NEXT_PUBLIC_BUILD_DATE ?? "unknown",
     },
