@@ -1,0 +1,30 @@
+name: V3 notification worker
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v3-notification-worker
+  cancel-in-progress: false
+
+jobs:
+  deliver:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Deliver queued notifications
+        env:
+          V3_APP_URL: ${{ vars.V3_APP_URL }}
+          NOTIFICATION_WORKER_SECRET: ${{ secrets.NOTIFICATION_WORKER_SECRET }}
+        run: |
+          test -n "$V3_APP_URL" || { echo "V3_APP_URL repository variable is missing"; exit 1; }
+          test -n "$NOTIFICATION_WORKER_SECRET" || { echo "NOTIFICATION_WORKER_SECRET repository secret is missing"; exit 1; }
+          curl --fail-with-body --silent --show-error \
+            --retry 2 --retry-all-errors --max-time 120 \
+            -H "Authorization: Bearer $NOTIFICATION_WORKER_SECRET" \
+            "$V3_APP_URL/api/notifications/worker"

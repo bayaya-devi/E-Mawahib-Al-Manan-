@@ -1,0 +1,12 @@
+node_modules
+.next
+.next-stale-*
+.npm-cache-v3
+coverage
+playwright-report
+test-results
+.artifacts
+tests
+*.log
+.env.local
+.env.*.local

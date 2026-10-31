@@ -1,0 +1,76 @@
+"use client";
+
+import { Eye, EyeOff, Home, LogIn, UserRound } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import Script from "next/script";
+import { useState } from "react";
+
+import { buildCanonicalLoginAlias, type LoginAccountKind } from "./domain/legacy-login";
+
+export function LoginForm() {
+  const router = useRouter();
+  const [kind, setKind] = useState<LoginAccountKind>("student");
+  const [firstName, setFirstName] = useState("");
+  const [secondValue, setSecondValue] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (busy) return;
+    const login = buildCanonicalLoginAlias(kind, firstName, secondValue);
+    if (!firstName.trim() || !secondValue.trim() || !password.trim() || login.length < 3) {
+      setMessage("يرجى ملء جميع الحقول.");
+      return;
+    }
+    setBusy(true);
+    setMessage("");
+    try {
+      const turnstileToken = new FormData(event.currentTarget).get("cf-turnstile-response");
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ login, password, kind, firstName, secondValue, turnstileToken }),
+      });
+      const result = (await response.json()) as { ok?: boolean; roles?: string[]; message?: string };
+      if (!response.ok || !result.ok) {
+        setMessage(result.message ?? "تعذر تسجيل الدخول. حاول مرة أخرى.");
+        return;
+      }
+      const roles = result.roles ?? [];
+      const destination = roles.includes("direction") || roles.includes("admin")
+        ? "/admin"
+        : roles.includes("teacher")
+          ? "/teacher"
+        : "/student";
+      router.replace(destination);
+      router.refresh();
+    } catch {
+      setMessage("تعذر الاتصال الآن. حاول مرة أخرى.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <form className="login-v3__form" onSubmit={submit} noValidate>
+    <fieldset className="login-v3__roles">
+      <legend>نوع الحساب</legend>
+      <button type="button" className={kind === "student" ? "is-active" : undefined} onClick={() => { setKind("student"); setMessage(""); }}>تلميذ</button>
+      <button type="button" className={kind === "teacher" ? "is-active" : undefined} onClick={() => { setKind("teacher"); setMessage(""); }}>أستاذ</button>
+    </fieldset>
+    <label><span>الاسم</span><span className="login-v3__control"><UserRound aria-hidden="true" size={20} /><input value={firstName} onChange={(event) => setFirstName(event.target.value)} autoComplete="given-name" required /></span></label>
+    <label><span>{kind === "teacher" ? "القسم" : "الاسم العائلي"}</span><span className="login-v3__control"><UserRound aria-hidden="true" size={20} /><input value={secondValue} onChange={(event) => setSecondValue(event.target.value)} autoComplete={kind === "teacher" ? "organization" : "family-name"} required /></span></label>
+    <label><span>كلمة المرور</span><span className="login-v3__control"><input dir="ltr" type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" required /><button type="button" aria-label={showPassword ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"} onClick={() => setShowPassword((value) => !value)}>{showPassword ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}</button></span></label>
+    {siteKey ? <><Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" /><div className="cf-turnstile" data-sitekey={siteKey} data-theme="auto" data-size="flexible" /></> : null}
+    {message && <p className="login-v3__message" role="alert">{message}</p>}
+    <div className="login-v3__actions">
+      <Link className="login-v3__visit login-v3__visit--mobile" href="/ar"><Home aria-hidden="true" size={18} />زيارة الموقع</Link>
+      <button className="login-v3__submit" type="submit" disabled={busy}><LogIn aria-hidden="true" size={20} />{busy ? "جار التحقق..." : "دخول"}</button>
+    </div>
+    <p className="login-v3__help">إذا لم تكن لديك معلومات الدخول، تواصل مع الإدارة.</p>
+  </form>;
+}

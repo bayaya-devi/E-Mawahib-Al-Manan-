@@ -1,0 +1,1 @@
+import {AppShell} from "@/components/shell";import {AdminFinanceWorkspace} from "@/features/admin/administration-workspaces";import {getAdminCommandData} from "@/features/admin/repository";export const dynamic="force-dynamic";export default async function Page(){return <AppShell kind="admin"><AdminFinanceWorkspace data={await getAdminCommandData()}/></AppShell>}

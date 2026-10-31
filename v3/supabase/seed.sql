@@ -1,0 +1,1 @@
+-- Intentionally empty. V3 never seeds production data automatically.

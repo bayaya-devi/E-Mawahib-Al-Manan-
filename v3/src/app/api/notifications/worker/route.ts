@@ -1,0 +1,44 @@
+import { timingSafeEqual } from "node:crypto";
+import { NextResponse } from "next/server";
+import { deliverNotification } from "@/features/notifications/providers";
+import { getPrivilegedServerEnvironment } from "@/lib/env/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export async function POST(request: Request) {
+  return runWorker(request);
+}
+
+export async function GET(request: Request) {
+  return runWorker(request);
+}
+
+async function runWorker(request: Request) {
+  const environment = getPrivilegedServerEnvironment();
+  const workerSecret = environment.NOTIFICATION_WORKER_SECRET ?? environment.CRON_SECRET;
+  if (!workerSecret) return NextResponse.json({ error: "worker_not_configured" }, { status: 503 });
+  const supplied = request.headers.get("authorization")?.replace(/^Bearer\s+/iu, "") ?? "";
+  if (!sameSecret(supplied, workerSecret)) return NextResponse.json({ error: "not_authorized" }, { status: 401 });
+  const client = createAdminClient(); await client.rpc("process_due_notification_events", { target_limit: 100 });
+  const claimed = await client.rpc("claim_notification_deliveries", { target_limit: 50 });
+  if (claimed.error) return NextResponse.json({ error: "queue_unavailable" }, { status: 503 });
+  const configs = {
+    appBaseUrl: environment.APP_BASE_URL, resendApiKey: environment.RESEND_API_KEY, emailFrom: environment.EMAIL_FROM,
+    twilioAccountSid: environment.TWILIO_ACCOUNT_SID, twilioAuthToken: environment.TWILIO_AUTH_TOKEN,
+    twilioFromNumber: environment.TWILIO_FROM_NUMBER, twilioMessagingServiceSid: environment.TWILIO_MESSAGING_SERVICE_SID,
+    vapidPublicKey: environment.NEXT_PUBLIC_VAPID_PUBLIC_KEY, vapidPrivateKey: environment.VAPID_PRIVATE_KEY, vapidSubject: environment.VAPID_SUBJECT,
+    webhook: {
+      email: { url: environment.NOTIFICATION_EMAIL_WEBHOOK_URL, token: environment.NOTIFICATION_EMAIL_WEBHOOK_TOKEN },
+      sms: { url: environment.NOTIFICATION_SMS_WEBHOOK_URL, token: environment.NOTIFICATION_SMS_WEBHOOK_TOKEN },
+      push: { url: environment.NOTIFICATION_PUSH_WEBHOOK_URL, token: environment.NOTIFICATION_PUSH_WEBHOOK_TOKEN },
+    },
+  };
+  let sent = 0; let failed = 0;
+  for (const job of claimed.data ?? []) {
+    const result = await deliverNotification(job, configs);
+    await client.rpc("finish_notification_delivery", { target_delivery_id: job.delivery_id, target_success: result.success, target_provider: result.provider, target_provider_message_id: result.messageId ?? null, target_error_code: result.errorCode ?? null, target_error_detail: result.errorDetail ?? null, target_permanent: result.permanent ?? false });
+    if (!result.success && result.permanent && job.channel === "push") await client.rpc("disable_push_subscription", { target_endpoint: job.destination });
+    if (result.success) sent++; else failed++;
+  }
+  return NextResponse.json({ claimed: claimed.data?.length ?? 0, sent, failed });
+}
+function sameSecret(first: string, second: string) { const a = Buffer.from(first); const b = Buffer.from(second); return a.length === b.length && timingSafeEqual(a, b); }
