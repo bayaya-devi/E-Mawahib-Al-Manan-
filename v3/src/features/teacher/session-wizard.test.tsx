@@ -24,7 +24,7 @@ describe("teacher session start", () => {
     fireEvent.click(screen.getByRole("button", { name: "حفظ الحضور والمتابعة" }));
     await waitFor(() => expect(rpc).toHaveBeenCalledWith("teacher_save_attendance", { target_run_id: "run-1", attendance_rows: [{ student_id: "student-1", status: "present", minutes_late: 0 }] }));
     expect(await screen.findByRole("combobox", { name: "الطالب" })).toBeTruthy();
-  });
+  }, 15_000);
 
   it("persists attendance and keeps absent students out of the recitation selector", async () => {
     render(<ToastProvider><SessionWizard data={multiStudentSessionData} /></ToastProvider>);

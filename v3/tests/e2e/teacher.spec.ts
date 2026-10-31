@@ -4,7 +4,7 @@ test.setTimeout(60_000);
 
 test("teacher home keeps the essential mobile actions accessible", async ({ page }) => {
   await page.goto("/teacher");
-  await expect(page.getByRole("heading", { name: "ملخص العمل" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /مرحبًا/ })).toBeVisible();
   await expect(page.getByRole("link", { name: /بدء حصة/ }).first()).toBeVisible();
   await expect(page.getByRole("button", { name: /تسجيل الخروج/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /فتح البحث العام/ })).toHaveCount(0);
@@ -20,6 +20,8 @@ test("session mode explains why a session cannot start without an assigned class
 });
 
 test("teacher navigation reaches every workspace", async ({ page }) => {
+  await page.goto("/teacher/classes");
+  await expect(page.getByRole("heading", { name: "الأقسام المسندة" })).toBeVisible();
   await page.goto("/teacher/professional");
   await expect(page.getByText("الملف المهني")).toBeVisible();
   await expect(page.getByRole("button", { name: "الطلبات" })).toBeVisible();
