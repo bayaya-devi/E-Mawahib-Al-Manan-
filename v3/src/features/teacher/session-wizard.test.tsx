@@ -49,7 +49,7 @@ describe("teacher session start", () => {
 });
 
 const sessionData: TeacherSessionData = {
-  teacher: { id: "teacher-1", name: "أحمد" },
+  teacher: { id: "teacher-1", name: "أحمد", gender: "male" },
   classes: [{ id: "class-1", name: "القسم الأول", level: null, studentCount: 1 }],
   students: [{ id: "student-1", name: "ياسين", classId: "class-1", className: "القسم الأول", lastSurahNumber: null, lastProgressPercent: 0, absenceCount: 0, lateCount: 0, pendingAssignments: 0, hiddenByTeacher: false, suggestion: "متابعة المسار المعتاد", masteredSurahs: [], attendanceHistory: [], recitations: [], notes: [], assignments: [] }],
   schedule: [], nextCourse: null, openRun: null, messages: [], requests: [], alerts: [], enrollmentDossiers: [], assignmentReminders: [], taskCount: 0,

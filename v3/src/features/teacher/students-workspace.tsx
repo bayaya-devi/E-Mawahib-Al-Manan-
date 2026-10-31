@@ -8,26 +8,34 @@ import { getAllSurahs, getSurah } from "@/features/quran/canonical";
 import { createClient } from "@/lib/supabase/client";
 import type { TeacherClass, TeacherEnrollmentDossier, TeacherStudent } from "./models";
 
-export function TeacherStudentsWorkspace({ students, classes, enrollmentDossiers }: { students: TeacherStudent[]; classes: TeacherClass[]; enrollmentDossiers: TeacherEnrollmentDossier[] }) {
+export function TeacherStudentsWorkspace({ students, classes, enrollmentDossiers, initialClass = "all", initialEnrollmentOpen = false }: { students: TeacherStudent[]; classes: TeacherClass[]; enrollmentDossiers: TeacherEnrollmentDossier[]; initialClass?: string; initialEnrollmentOpen?: boolean }) {
   const router = useRouter();
   const ordered = useMemo(() => [...students].sort((a, b) => new Intl.Collator("ar", { sensitivity: "base" }).compare(a.name, b.name)), [students]);
-  const visible = ordered.filter((student) => !student.hiddenByTeacher);
-  const hidden = ordered.filter((student) => student.hiddenByTeacher);
+  const [search, setSearch] = useState("");
+  const [classFilter, setClassFilter] = useState(classes.some(({ id }) => id === initialClass) ? initialClass : "all");
+  const normalizedSearch = normalizeSearch(search);
+  const filtered = ordered.filter((student) => (classFilter === "all" || student.classId === classFilter) && (!normalizedSearch || normalizeSearch(`${student.name} ${student.className}`).includes(normalizedSearch)));
+  const visible = filtered.filter((student) => !student.hiddenByTeacher);
+  const hidden = filtered.filter((student) => student.hiddenByTeacher);
   const [active, setActive] = useState<TeacherStudent | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [assigning, setAssigning] = useState(false);
-  const [enrolling, setEnrolling] = useState(false);
+  const [enrolling, setEnrolling] = useState(initialEnrollmentOpen);
   const pressTimer = useRef<number | null>(null);
   function toggle(id: string) { setSelected((items) => items.includes(id) ? items.filter((item) => item !== id) : [...items, id]); }
   function beginPress(id: string) { pressTimer.current = window.setTimeout(() => toggle(id), 480); }
   function endPress() { if (pressTimer.current) window.clearTimeout(pressTimer.current); pressTimer.current = null; }
   return <div className="teacher-workspace teacher-students">
     <header className="teacher-page-head teacher-page-head--actions"><div><span>المتابعة</span><h1>الطلاب</h1></div><Button onClick={() => setEnrolling(true)}><UserPlus size={18} />إضافة طالب</Button></header>
+    <section className="teacher-student-toolbar" aria-label="البحث وتصفية الطلاب">
+      <label><span>البحث</span><div><Search aria-hidden="true" size={18} /><input type="search" value={search} placeholder="اسم الطالب أو القسم" onChange={(event) => setSearch(event.target.value)} /></div></label>
+      <label><span>القسم</span><select value={classFilter} onChange={(event) => setClassFilter(event.target.value)}><option value="all">كل الأقسام ({students.length})</option>{classes.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.studentCount})</option>)}</select></label>
+    </section>
     {selected.length ? <div className="student-selection-bar"><strong>{selected.length} محدد</strong><Button size="sm" variant="secondary" onClick={() => setSelected(ordered.map(({ id }) => id))}><CheckSquare2 size={17} />كل القسم</Button><Button size="sm" onClick={() => setAssigning(true)}><ClipboardPlus size={17} />إرسال واجب</Button><Button size="sm" variant="quiet" onClick={() => setSelected([])}>إلغاء</Button></div> : null}
-    {visible.length ? <div className="teacher-student-list">{visible.map((student) => <article className={selected.includes(student.id) ? "is-selected" : undefined} key={student.id} onPointerDown={() => beginPress(student.id)} onPointerUp={endPress} onPointerCancel={endPress} onContextMenu={(event) => { event.preventDefault(); toggle(student.id); }}>
+    {visible.length ? <div className="teacher-student-list">{visible.map((student) => <article className={selected.includes(student.id) ? "is-selected" : undefined} key={`${student.classId}:${student.id}`} onPointerDown={() => beginPress(student.id)} onPointerUp={endPress} onPointerCancel={endPress} onContextMenu={(event) => { event.preventDefault(); toggle(student.id); }}>
       <button className="student-select" type="button" aria-label={`تحديد ${student.name}`} aria-pressed={selected.includes(student.id)} onClick={() => toggle(student.id)}><span /></button>
       <button className="student-open" type="button" onClick={() => selected.length ? toggle(student.id) : setActive(student)}><span className="teacher-avatar">{student.name.slice(0, 1)}</span><span><strong>{student.name}</strong><small>{student.className} · {student.lastSurahNumber ? getSurah(student.lastSurahNumber)?.nameArabic : "لا يوجد تقدم"}</small></span><Badge tone={student.absenceCount >= 2 || student.pendingAssignments > 0 ? "warning" : "success"}>{student.pendingAssignments ? `${student.pendingAssignments} واجب` : "متابعة"}</Badge></button>
-    </article>)}</div> : <EmptyState title={hidden.length ? "كل الطلاب مخفيون" : "لا يوجد طلاب"} description={hidden.length ? "يمكنك إظهارهم من القائمة أدناه." : "لا يوجد طلاب مرتبطون بأقسامك."} />}
+    </article>)}</div> : <EmptyState title={hidden.length ? "كل الطلاب المطابقين مخفيون" : normalizedSearch || classFilter !== "all" ? "لا توجد نتيجة" : "لا يوجد طلاب"} description={hidden.length ? "يمكنك إظهارهم من القائمة أدناه." : normalizedSearch || classFilter !== "all" ? "غيّر عبارة البحث أو اختر قسما آخر." : "لا يوجد طلاب مرتبطون بأقسامك."} />}
     {hidden.length ? <details className="student-disclosure teacher-hidden-students"><summary>الطلاب المخفيون<Badge tone="neutral">{hidden.length}</Badge></summary><div className="teacher-record-list">{hidden.map((student) => <article key={student.id}><div><strong>{student.name}</strong><small>{student.className}</small></div><Button size="sm" variant="quiet" onClick={() => setActive(student)}><Eye size={16} />إظهار</Button></article>)}</div></details> : null}
     {enrollmentDossiers.length ? <details className="student-disclosure enrollment-dossiers" open><summary>ملفات التسجيل<Badge tone="neutral">{enrollmentDossiers.length}</Badge></summary><div className="teacher-record-list">{enrollmentDossiers.map((dossier) => <article key={dossier.id}><div><strong>{dossier.studentName}</strong><small>{dossier.className} · {enrollmentStatus(dossier.status)} · {formatDate(dossier.createdAt)}</small>{dossier.resolutionNote ? <small>{dossier.resolutionNote}</small> : null}</div></article>)}</div></details> : null}
     <Drawer open={Boolean(active)} onOpenChange={(open) => !open && setActive(null)} title={active?.name ?? "الطالب"}>{active ? <StudentSheet student={active} onAssign={() => { setSelected([active.id]); setActive(null); setAssigning(true); }} onUpdated={() => { setActive(null); router.refresh(); }} /> : null}</Drawer>
@@ -82,3 +90,4 @@ function appreciation(value: string): string { return ({ excellent: "ممتاز"
 function enrollmentStatus(value: TeacherEnrollmentDossier["status"]): string { return ({ submitted: "قيد المراجعة", enrolled: "تم التسجيل", rejected: "مرفوض", cancelled: "ملغى" } as const)[value]; }
 function enrollmentError(message: string): string { if (message.includes("class_capacity_exceeded")) return "اكتملت سعة القسم."; if (message.includes("student_already_enrolled")) return "هذا الطالب مسجل بالفعل في قسم آخر."; if (message.includes("existing_student_match")) return "يوجد طالب مطابق. استخدم البحث عن طالب موجود."; if (message.includes("duplicate_enrollment_dossier")) return "يوجد ملف تسجيل مطابق قيد المراجعة."; if (message.includes("class_not_assigned")) return "لا يسمح لك بالتسجيل في هذا القسم."; if (message.includes("invalid_")) return "تحقق من معلومات التسجيل."; return "تعذر إتمام التسجيل. تحقق من الاتصال ثم أعد المحاولة."; }
 function localDate(value = new Date()): string { const offset = value.getTimezoneOffset() * 60_000; return new Date(value.getTime() - offset).toISOString().slice(0, 10); }
+function normalizeSearch(value: string): string { return value.normalize("NFKD").replace(/[\u064B-\u065F\u0670]/g, "").replace(/[أإآ]/g, "ا").replace(/ى/g, "ي").trim().toLocaleLowerCase("ar"); }

@@ -17,6 +17,19 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: 
 afterEach(() => { cleanup(); rpc.mockClear(); refresh.mockClear(); });
 
 describe("teacher student enrollment", () => {
+  it("filters the full roster by name and assigned class", () => {
+    render(<ToastProvider><TeacherStudentsWorkspace students={[student("student-1", "مريم الإدريسي", "class-1", "القسم الأول"), student("student-2", "أمين العلوي", "class-2", "القسم الثاني")]} classes={[{ id: "class-1", name: "القسم الأول", level: "مبتدئ", studentCount: 1 }, { id: "class-2", name: "القسم الثاني", level: "متوسط", studentCount: 1 }]} enrollmentDossiers={[]} /></ToastProvider>);
+    expect(screen.getByText("مريم الإدريسي")).toBeVisible();
+    expect(screen.getByText("أمين العلوي")).toBeVisible();
+    fireEvent.change(screen.getByPlaceholderText("اسم الطالب أو القسم"), { target: { value: "مريم" } });
+    expect(screen.getByText("مريم الإدريسي")).toBeVisible();
+    expect(screen.queryByText("أمين العلوي")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText("اسم الطالب أو القسم"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("القسم"), { target: { value: "class-2" } });
+    expect(screen.queryByText("مريم الإدريسي")).not.toBeInTheDocument();
+    expect(screen.getByText("أمين العلوي")).toBeVisible();
+  });
+
   it("searches and enrolls an existing same-school student", async () => {
     renderWorkspace();
     fireEvent.click(screen.getByRole("button", { name: "إضافة طالب" }));
@@ -45,4 +58,8 @@ describe("teacher student enrollment", () => {
 
 function renderWorkspace() {
   render(<ToastProvider><TeacherStudentsWorkspace students={[]} classes={[{ id: "class-1", name: "القسم الأول", level: "مبتدئ", studentCount: 1 }]} enrollmentDossiers={[]} /></ToastProvider>);
+}
+
+function student(id: string, name: string, classId: string, className: string) {
+  return { id, name, classId, className, lastSurahNumber: null, lastProgressPercent: 0, absenceCount: 0, lateCount: 0, pendingAssignments: 0, hiddenByTeacher: false, suggestion: "", masteredSurahs: [], attendanceHistory: [], recitations: [], notes: [], assignments: [] };
 }

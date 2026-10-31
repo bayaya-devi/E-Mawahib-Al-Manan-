@@ -26,7 +26,7 @@ export type TeacherEnrollmentDossier = {
 };
 
 export type TeacherHomeData = {
-  teacher: { id: string; name: string } | null;
+  teacher: { id: string; name: string; gender: "male" | "female" | "unspecified" | null } | null;
   classes: TeacherClass[];
   students: TeacherStudent[];
   schedule: TeacherCourse[];
@@ -45,7 +45,7 @@ export type SessionAttendance = { studentId: string; status: DatabaseAttendanceS
 export type TeacherSessionData = TeacherHomeData & { attendance: SessionAttendance[]; openReportId: string | null; elapsedSeconds: number; defaultDueDate: string };
 
 export type TeacherProfessionalData = {
-  teacher: { id: string; name: string } | null;
+  teacher: { id: string; name: string; gender: "male" | "female" | "unspecified" | null } | null;
   classes?: TeacherClass[];
   recurringSchedule?: TeacherHomeData["recurringSchedule"];
   schedule: TeacherCourse[];

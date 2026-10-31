@@ -13,8 +13,9 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
     const { data: auth } = await client.auth.getUser();
     const teacherId = auth.user?.id;
     if (!teacherId) return emptyHome;
-    const [profile, role, assignments, courses, messages, requests, alerts, openRun, enrollmentDossiers] = await Promise.all([
+    const [profile, teacherProfile, role, assignments, courses, messages, requests, alerts, openRun, enrollmentDossiers] = await Promise.all([
       client.from("profiles").select("id,display_name,status").eq("id", teacherId).maybeSingle(),
+      client.from("teacher_profiles").select("gender").eq("user_id", teacherId).maybeSingle(),
       client.from("user_roles").select("role").eq("user_id", teacherId).eq("role", "teacher").maybeSingle(),
       client.from("class_teacher_assignments").select("class_id").eq("teacher_id", teacherId).eq("status", "active"),
       client.from("course_sessions").select("id,class_id,title,starts_at,ends_at,location,status").eq("teacher_id", teacherId).order("starts_at").limit(30),
@@ -90,7 +91,7 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
       return targets.filter((target) => ["todo", "in_progress"].includes(submissionStatus.get(`${item.id}:${target.id}`) ?? "todo")).map((target) => ({ id: `${item.id}:${target.id}`, studentId: target.id, studentName: target.name, surahNumber: item.surah_number, verseFrom: item.verse_from, verseTo: item.verse_to, dueAt: item.due_at! }));
     }).slice(0, 8);
     return {
-      teacher: { id: profile.data.id, name: profile.data.display_name }, classes, students, schedule,
+      teacher: { id: profile.data.id, name: profile.data.display_name, gender: teacherProfile.data?.gender ?? null }, classes, students, schedule,
       recurringSchedule: (classSchedules.data ?? []).map((slot) => ({ id: slot.id, classId: slot.class_id, className: classNames.get(slot.class_id) ?? "القسم", dayOfWeek: slot.day_of_week, startsAt: slot.starts_at, endsAt: slot.ends_at, room: slot.room })),
       nextCourse: schedule.find((course) => course.status === "scheduled" && new Date(course.endsAt).getTime() >= now) ?? null,
       openRun: openRun.data ? { id: openRun.data.id, courseSessionId: openRun.data.course_session_id, classId: openRun.data.class_id, status: openRun.data.status, startedAt: openRun.data.started_at } : null,

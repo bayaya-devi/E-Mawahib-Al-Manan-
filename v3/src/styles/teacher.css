@@ -13,6 +13,11 @@
 .teacher-summary article strong { color: var(--ink); overflow-wrap: anywhere; }
 .teacher-reminders { padding-block-start: 12px; }
 .teacher-reminders .teacher-record-list article { grid-template-columns: auto minmax(0, 1fr); }
+.teacher-quick-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.teacher-quick-actions a { min-width: 0; display: flex; align-items: center; gap: 11px; padding: 15px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); color: var(--ink); }
+.teacher-quick-actions a > svg { flex: 0 0 auto; color: var(--brand); }
+.teacher-quick-actions a span { min-width: 0; display: grid; }
+.teacher-quick-actions small { color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .teacher-hero { display: flex; align-items: end; justify-content: space-between; gap: var(--space-5); padding: clamp(24px, 4vw, 48px); border-radius: var(--radius-xl); color: white; background: linear-gradient(135deg, #07543f, #0d7657); box-shadow: var(--shadow-lg); }
 .teacher-hero span, .teacher-hero p { color: #d7f4e9; }
 .teacher-hero h1 { margin: 6px 0 8px; font-size: clamp(1.75rem, 3vw, 2.65rem); }
@@ -112,6 +117,22 @@
 .teacher-record-list small { color: var(--text-muted); }
 .teacher-page-head--actions { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
 .teacher-page-head--actions > div { display: grid; gap: 2px; }
+.teacher-student-toolbar { display: grid; grid-template-columns: minmax(0, 2fr) minmax(190px, 1fr); gap: 10px; }
+.teacher-student-toolbar label { display: grid; gap: 6px; color: var(--ink-soft); font-size: .84rem; font-weight: 800; }
+.teacher-student-toolbar label > div { min-height: 46px; display: flex; align-items: center; gap: 8px; padding-inline: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }
+.teacher-student-toolbar input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; }
+.teacher-student-toolbar select { min-height: 46px; padding-inline: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--ink); font: inherit; }
+.teacher-class-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.teacher-class-grid > article { display: grid; gap: 16px; padding: 20px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+.teacher-class-grid article > header, .teacher-class-grid article > header > div { display: flex; align-items: center; justify-content: space-between; gap: 11px; }
+.teacher-class-grid h2, .teacher-class-grid p { margin: 0; }
+.teacher-class-grid p { color: var(--ink-soft); }
+.teacher-class-icon { width: 44px; height: 44px; display: grid; place-items: center; flex: 0 0 auto; border-radius: var(--radius-md); background: var(--brand-soft); color: var(--brand); }
+.teacher-class-grid dl { display: grid; gap: 9px; margin: 0; }
+.teacher-class-grid dl div { display: grid; grid-template-columns: minmax(90px, auto) minmax(0, 1fr); gap: 12px; padding-block: 9px; border-block-end: 1px solid var(--border); }
+.teacher-class-grid dt { display: flex; align-items: center; gap: 7px; color: var(--ink-soft); }
+.teacher-class-grid dd { margin: 0; font-weight: 800; }
+.teacher-class-actions { display: flex; gap: 8px; }
 .teacher-inline-action { width: fit-content; padding: 3px 0; border: 0; color: var(--brand-strong); background: transparent; font: inherit; font-weight: 800; cursor: pointer; }
 .teacher-students-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .teacher-student-card { display: grid; gap: 10px; padding: 18px; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--surface-raised); }
@@ -215,6 +236,7 @@
   .teacher-metrics { grid-template-columns: repeat(2, 1fr); }
   .teacher-students-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .teacher-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .teacher-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .salary-calendar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .teacher-settings { grid-template-columns: 1fr; }
 }
@@ -238,10 +260,11 @@
   .teacher-summary { grid-template-columns: 1fr; }
   .teacher-page-head--actions { align-items: stretch; flex-direction: column; }
   .teacher-page-head--actions .ui-button { width: 100%; }
+  .teacher-student-toolbar, .teacher-class-grid { grid-template-columns: 1fr; }
   .enrollment-search { grid-template-columns: 1fr; }
   .session-footer--wide { position: static; display: grid; grid-template-columns: repeat(2, 1fr); }
   .session-footer--wide .ui-button { width: 100%; }
-  .app-shell--teacher .mobile-nav { grid-template-columns: repeat(6, minmax(0, 1fr)); inset-inline: 4px; }
+  .app-shell--teacher .mobile-nav { grid-template-columns: repeat(7, minmax(68px, 1fr)); inset-inline: 4px; }
   .app-shell--teacher .mobile-nav .app-nav-link { font-size: .54rem; }
   .teacher-signout { width: 44px; justify-content: center; padding: 0; }
   .teacher-signout span { display: none; }

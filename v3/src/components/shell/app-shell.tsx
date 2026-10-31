@@ -59,6 +59,7 @@ const navigation: Record<ShellKind, NavItem[]> = {
   ],
   teacher: [
     { label: "الرئيسية", href: "/teacher", icon: Home },
+    { label: "الأقسام", href: "/teacher/classes", icon: GraduationCap },
     { label: "الطلاب", href: "/teacher/students", icon: UsersRound },
     { label: "بدء حصة", href: "/teacher/session", icon: BookOpenText },
     { label: "الرسائل", href: "/teacher/messages", icon: MessageSquareText },
@@ -91,6 +92,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   const router = useRouter();
   const [commandOpen, setCommandOpen] = useState(false);
   const [teacherName, setTeacherName] = useState("");
+  const [teacherGender, setTeacherGender] = useState<"male" | "female" | "unspecified" | null>(null);
   const [studentName, setStudentName] = useState("");
   const [signingOut, setSigningOut] = useState(false);
   const [navigationOpen, setNavigationOpen] = useState(true);
@@ -135,7 +137,11 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
     void createClient().auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const profile = await createClient().from("profiles").select("display_name").eq("id", data.user.id).maybeSingle();
-      if (kind === "teacher") setTeacherName(profile.data?.display_name ?? "");
+      if (kind === "teacher") {
+        setTeacherName(profile.data?.display_name ?? "");
+        const teacherProfile = await createClient().from("teacher_profiles").select("gender").eq("user_id", data.user.id).maybeSingle();
+        setTeacherGender(teacherProfile.data?.gender ?? null);
+      }
       else setStudentName(profile.data?.display_name ?? "");
     });
   }, [kind]);
@@ -167,7 +173,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 
         <div className="app-frame">
           <header className="app-header">
-            {kind === "teacher" ? <div className="teacher-shell-identity"><strong>أستاذ(ة) {teacherName}</strong></div> : kind === "student" ? <div className="student-shell-identity"><strong>{studentName || "حساب الطالب"}</strong></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
+            {kind === "teacher" ? <div className="teacher-shell-identity"><strong>{teacherGender === "female" ? "أستاذة" : teacherGender === "male" ? "أستاذ" : "أستاذ(ة)"} {teacherName}</strong></div> : kind === "student" ? <div className="student-shell-identity"><strong>{studentName || "حساب الطالب"}</strong></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
             <div className="app-header__actions">
               <button className="navigation-toggle navigation-toggle--mobile" type="button" aria-label={navigationOpen ? "إخفاء قائمة التنقل" : "إظهار قائمة التنقل"} aria-expanded={navigationOpen} aria-controls="application-navigation mobile-navigation" onClick={() => setNavigationOpen((open) => !open)}>
                 <Menu aria-hidden="true" size={20} />
