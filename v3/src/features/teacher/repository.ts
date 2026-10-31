@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logServerError } from "@/lib/observability/logger";
 import type { TeacherHomeData, TeacherProfessionalData, TeacherSessionData } from "./models";
 
-const emptyHome: TeacherHomeData = { teacher: null, classes: [], students: [], schedule: [], nextCourse: null, openRun: null, messages: [], requests: [], alerts: [], assignmentReminders: [], taskCount: 0 };
+const emptyHome: TeacherHomeData = { teacher: null, classes: [], students: [], schedule: [], nextCourse: null, openRun: null, messages: [], requests: [], alerts: [], enrollmentDossiers: [], assignmentReminders: [], taskCount: 0 };
 
 export async function getTeacherHome(): Promise<TeacherHomeData> {
   if (process.env.NEXT_PUBLIC_APP_ENV === "test") return emptyHome;
@@ -13,7 +13,7 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
     const { data: auth } = await client.auth.getUser();
     const teacherId = auth.user?.id;
     if (!teacherId) return emptyHome;
-    const [profile, role, assignments, courses, messages, requests, alerts, openRun] = await Promise.all([
+    const [profile, role, assignments, courses, messages, requests, alerts, openRun, enrollmentDossiers] = await Promise.all([
       client.from("profiles").select("id,display_name,status").eq("id", teacherId).maybeSingle(),
       client.from("user_roles").select("role").eq("user_id", teacherId).eq("role", "teacher").maybeSingle(),
       client.from("class_teacher_assignments").select("class_id").eq("teacher_id", teacherId).eq("status", "active"),
@@ -22,6 +22,7 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
       client.from("teacher_requests").select("id,kind,title,details,status,starts_on,ends_on,admin_response,submitted_at").eq("teacher_id", teacherId).order("submitted_at", { ascending: false }).limit(20),
       client.from("user_notifications").select("id,title,body,read_at,created_at").eq("user_id", teacherId).order("created_at", { ascending: false }).limit(10),
       client.from("teacher_session_runs").select("id,course_session_id,class_id,status,started_at").eq("teacher_id", teacherId).in("status", ["in_progress", "report_pending"]).limit(1).maybeSingle(),
+      client.from("teacher_student_enrollment_dossiers").select("id,class_id,first_name,last_name,enrollment_date,status,resolution_note,created_at").eq("requested_by", teacherId).order("created_at", { ascending: false }).limit(30),
     ]);
     if (!profile.data || profile.data.status !== "active" || !role.data) return emptyHome;
     const teacherName = profile.data.display_name;
@@ -96,6 +97,7 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
       messages: (messages.data ?? []).map((row) => ({ id: row.id, subject: row.subject, body: row.body, senderId: row.sender_id, read: Boolean(row.read_at), createdAt: row.created_at })),
       requests: (requests.data ?? []).map((row) => ({ id: row.id, kind: row.kind, title: row.title, details: row.details, status: row.status, startsOn: row.starts_on, endsOn: row.ends_on, adminResponse: row.admin_response, submittedAt: row.submitted_at })),
       alerts: (alerts.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body, read: Boolean(row.read_at), createdAt: row.created_at })),
+      enrollmentDossiers: (enrollmentDossiers.data ?? []).map((row) => ({ id: row.id, classId: row.class_id, className: classNames.get(row.class_id) ?? "القسم", studentName: `${row.first_name} ${row.last_name}`.trim(), enrollmentDate: row.enrollment_date, status: row.status, createdAt: row.created_at, resolutionNote: row.resolution_note })),
       assignmentReminders: reminders,
       taskCount: (submissionRows.data ?? []).length + (assignmentRows.data ?? []).filter((item) => !item.student_id && !item.class_id).length,
     };

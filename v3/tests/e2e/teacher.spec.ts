@@ -38,3 +38,11 @@ test("teacher navigation reaches every workspace", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "المظهر" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "الحسابات" })).toBeVisible();
 });
+
+test("teacher student enrollment entry point stays explicit when no class is assigned", async ({ page }) => {
+  await page.goto("/teacher/students");
+  await page.getByRole("button", { name: "إضافة طالب" }).click();
+  await expect(page.getByRole("heading", { name: "إضافة طالب" })).toBeVisible();
+  await expect(page.getByText("لا يوجد قسم مسند", { exact: true })).toBeVisible();
+  await expect(page.getByText(/لا يمكنك تسجيل طالب/)).toBeVisible();
+});

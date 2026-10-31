@@ -724,6 +724,27 @@ type TeacherStudentNoteRow = {
   content: string;
   created_at: string;
 };
+type TeacherStudentEnrollmentDossierRow = {
+  id: string;
+  school_id: string;
+  class_id: string;
+  requested_by: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth: string | null;
+  gender: "male" | "female" | "unspecified" | null;
+  guardian_name: string | null;
+  guardian_phone: string | null;
+  level: string | null;
+  enrollment_date: string;
+  status: "submitted" | "enrolled" | "rejected" | "cancelled";
+  linked_student_id: string | null;
+  resolution_note: string | null;
+  resolved_by: string | null;
+  resolved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
 type AcademicYearRow = {
   id: string;
   school_id: string;
@@ -1254,6 +1275,7 @@ export type Database = {
       teacher_salary_records: ReadonlyTable<TeacherSalaryRecordRow>;
       teacher_documents: ReadonlyTable<TeacherDocumentRow>;
       teacher_student_notes: ReadonlyTable<TeacherStudentNoteRow>;
+      teacher_student_enrollment_dossiers: ReadonlyTable<TeacherStudentEnrollmentDossierRow>;
       academic_years: ReadonlyTable<AcademicYearRow>;
       school_rooms: ReadonlyTable<SchoolRoomRow>;
       student_digital_files: ReadonlyTable<StudentDigitalFileRow>;
@@ -1533,6 +1555,34 @@ export type Database = {
       };
       teacher_start_class_session: {
         Args: { target_class_id: string };
+        Returns: string;
+      };
+      teacher_search_enrollment_candidates: {
+        Args: { target_class_id: string; target_query: string };
+        Returns: Array<{
+          student_id: string;
+          display_name: string;
+          student_number: string | null;
+          active_class_id: string | null;
+          active_class_name: string | null;
+        }>;
+      };
+      teacher_enroll_existing_student: {
+        Args: { target_class_id: string; target_student_id: string };
+        Returns: string;
+      };
+      teacher_submit_student_enrollment_dossier: {
+        Args: {
+          target_class_id: string;
+          target_first_name: string;
+          target_last_name: string;
+          target_date_of_birth?: string | null;
+          target_gender?: "male" | "female" | "unspecified" | null;
+          target_guardian_name?: string | null;
+          target_guardian_phone?: string | null;
+          target_level?: string | null;
+          target_enrollment_date?: string;
+        };
         Returns: string;
       };
       teacher_can_access_conversation: {

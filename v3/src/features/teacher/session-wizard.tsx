@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Badge, Button, useToast } from "@/components/ui";
 import { getAllSurahs, getSurah } from "@/features/quran/canonical";
 import { createClient } from "@/lib/supabase/client";
-import type { DatabaseRecitationAppreciation } from "@/types/database";
+import type { DatabaseAttendanceStatus, DatabaseRecitationAppreciation } from "@/types/database";
 import type { TeacherSessionData } from "./models";
 
 const difficulties = ["ضعف التركيز", "نسيان متكرر", "صعوبة الربط", "قلة المراجعة"];
@@ -14,15 +14,17 @@ const difficulties = ["ضعف التركيز", "نسيان متكرر", "صعو�
 export function SessionWizard({ data }: { data: TeacherSessionData }) {
   const router = useRouter(); const { showToast } = useToast();
   const [runId, setRunId] = useState(data.openRun?.id ?? null); const [reportId, setReportId] = useState(data.openReportId);
-  const [step, setStep] = useState(data.openRun?.status === "report_pending" ? 2 : data.openRun ? 1 : 0);
+  const [step, setStep] = useState(data.openRun?.status === "report_pending" ? 3 : data.openRun ? 1 : 0);
   const [startedAt, setStartedAt] = useState(data.openRun?.startedAt ?? null); const [seconds, setSeconds] = useState(data.elapsedSeconds);
   const [busy, setBusy] = useState(false); const [error, setError] = useState<string | null>(null);
   const [worked, setWorked] = useState(() => new Set(data.attendance.filter(({ processed }) => processed).map(({ studentId }) => studentId)));
   const [selectedClassId, setSelectedClassId] = useState(data.openRun?.classId ?? data.nextCourse?.classId ?? data.classes[0]?.id ?? "");
   const activeClassId = data.openRun?.classId ?? selectedClassId;
   const students = data.students.filter(({ classId }) => classId === activeClassId);
+  const [attendance, setAttendance] = useState<Record<string, { status: DatabaseAttendanceStatus; minutesLate: number }>>(() => Object.fromEntries(data.students.map((item) => { const saved = data.attendance.find(({ studentId }) => studentId === item.id); return [item.id, { status: saved?.status ?? "absent", minutesLate: saved?.minutesLate ?? 0 }]; })));
+  const attendingStudents = students.filter(({ id }) => !["absent", "excused"].includes(attendance[id]?.status ?? "absent"));
   const [selectedStudentId, setSelectedStudentId] = useState(data.students[0]?.id ?? "");
-  const student = students.find(({ id }) => id === selectedStudentId) ?? students[0];
+  const student = attendingStudents.find(({ id }) => id === selectedStudentId) ?? attendingStudents[0];
 
   useEffect(() => { if (!startedAt) return; const timer = window.setInterval(() => setSeconds((value) => value + 1), 1000); return () => window.clearInterval(timer); }, [startedAt]);
 
@@ -37,18 +39,26 @@ export function SessionWizard({ data }: { data: TeacherSessionData }) {
     if (result.error || !result.data) return setError("تعذر بدء الحصة. تحقق من الاتصال ثم حاول مجددًا.");
     setRunId(result.data); setStartedAt(new Date().toISOString()); setSelectedStudentId(students[0]?.id ?? ""); setStep(1);
   }
-  async function openReport() { if (!runId) return; setBusy(true); setError(null); const result = await createClient().rpc("teacher_open_session_report", { target_run_id: runId }); setBusy(false); if (result.error || !result.data) return setError("تعذر فتح تقرير الحصة."); setReportId(result.data); setStep(2); }
+  async function saveAttendance() { if (!runId) return; setBusy(true); setError(null); const attendanceRows = students.map(({ id }) => ({ student_id: id, status: attendance[id]?.status ?? "absent", minutes_late: attendance[id]?.status === "late" ? attendance[id]?.minutesLate ?? 0 : 0 })); const result = await createClient().rpc("teacher_save_attendance", { target_run_id: runId, attendance_rows: attendanceRows }); setBusy(false); if (result.error) return setError("تعذر حفظ الحضور. تحقق من الاتصال ثم حاول مجددًا."); setSelectedStudentId(attendingStudents[0]?.id ?? ""); setStep(2); showToast({ title: "تم حفظ الحضور", tone: "success" }); }
+  async function openReport() { if (!runId) return; setBusy(true); setError(null); const result = await createClient().rpc("teacher_open_session_report", { target_run_id: runId }); setBusy(false); if (result.error || !result.data) return setError("تعذر فتح تقرير الحصة."); setReportId(result.data); setStep(3); }
   async function cancelSession() { if (!runId || !window.confirm("هل أنت متأكد(ة) من إلغاء هذه الحصة؟")) return; if (!window.confirm("سيتم إلغاء الحصة الجارية. أكد(ي) مرة ثانية.")) return; setBusy(true); const result = await createClient().rpc("teacher_cancel_session", { target_run_id: runId }); setBusy(false); if (result.error) return setError("تعذر إلغاء الحصة."); router.replace("/teacher"); router.refresh(); }
   function leave() { if (runId && !window.confirm("الحصة محفوظة وما زالت جارية. هل تريد(ين) الخروج من الشاشة؟")) return; router.push("/teacher"); }
 
   return <div className="session-mode">
     <header className="session-top"><div><span>{formatDate(new Date())}</span><strong>{data.nextCourse?.className ?? data.classes.find(({ id }) => id === activeClassId)?.name ?? "الحصة"}</strong></div>{startedAt ? <div className="session-timer"><Clock3 size={17} /><span>البداية {formatTime(startedAt)}</span><strong>{formatDuration(seconds)}</strong></div> : null}<div className="session-top__actions">{runId ? <Button size="sm" variant="quiet" disabled={busy} onClick={() => void cancelSession()}>إلغاء الحصة</Button> : null}<Button size="sm" variant="quiet" onClick={leave}>خروج</Button></div></header>
-    <div className="session-progress" aria-label={`الخطوة ${step + 1} من 3`}>{[0, 1, 2].map((item) => <span key={item} className={item <= step ? "is-active" : undefined} />)}</div>
+    <div className="session-progress" aria-label={`الخطوة ${step + 1} من 4`}>{[0, 1, 2, 3].map((item) => <span key={item} className={item <= step ? "is-active" : undefined} />)}</div>
     {error ? <p className="session-error" role="alert"><AlertTriangle size={18} />{error}</p> : null}
     {step === 0 ? <StartStep data={data} classId={activeClassId} onClassChange={setSelectedClassId} busy={busy} onStart={() => void start()} /> : null}
-    {step === 1 && student ? <StudentStep key={student.id} runId={runId!} students={students} student={student} selectedStudentId={student.id} onStudentChange={setSelectedStudentId} defaultDueDate={data.defaultDueDate} busy={busy} setBusy={setBusy} onError={setError} onWorked={() => { setWorked((current) => new Set(current).add(student.id)); showToast({ title: "تم حفظ التعلم", description: student.name, tone: "success" }); }} onFinish={() => void openReport()} /> : null}
-    {step === 2 && reportId ? <ReportStep reportId={reportId} students={students} worked={worked} busy={busy} setBusy={setBusy} onError={setError} onSubmitted={() => { showToast({ title: "تم إرسال تقرير الحصة", tone: "success" }); router.push("/teacher/professional?tab=reports"); router.refresh(); }} /> : null}
+    {step === 1 ? <AttendanceStep students={students} attendance={attendance} onChange={(studentId, value) => setAttendance((current) => ({ ...current, [studentId]: value }))} busy={busy} onSave={() => void saveAttendance()} /> : null}
+    {step === 2 && student ? <StudentStep key={student.id} runId={runId!} students={attendingStudents} student={student} selectedStudentId={student.id} onStudentChange={setSelectedStudentId} defaultDueDate={data.defaultDueDate} busy={busy} setBusy={setBusy} onError={setError} onWorked={() => { setWorked((current) => new Set(current).add(student.id)); showToast({ title: "تم حفظ التعلم", description: student.name, tone: "success" }); }} onFinish={() => void openReport()} /> : null}
+    {step === 2 && !student ? <section className="session-step session-start"><Badge tone="neutral">الحضور</Badge><h1>لا يوجد طالب حاضر</h1><p className="session-blocked">يمكنك إنهاء الحصة وإرسال التقرير دون تسجيل قراءة.</p><Button onClick={() => void openReport()}><StopCircle size={17} />إنهاء الحصة</Button></section> : null}
+    {step === 3 && reportId ? <ReportStep reportId={reportId} students={students} worked={worked} busy={busy} setBusy={setBusy} onError={setError} onSubmitted={() => { showToast({ title: "تم إرسال تقرير الحصة", tone: "success" }); router.push("/teacher/professional?tab=reports"); router.refresh(); }} /> : null}
   </div>;
+}
+
+function AttendanceStep({ students, attendance, onChange, busy, onSave }: { students: TeacherSessionData["students"]; attendance: Record<string, { status: DatabaseAttendanceStatus; minutesLate: number }>; onChange: (studentId: string, value: { status: DatabaseAttendanceStatus; minutesLate: number }) => void; busy: boolean; onSave: () => void }) {
+  const options: Array<[DatabaseAttendanceStatus, string]> = [["present", "حاضر"], ["absent", "غائب"], ["late", "متأخر"], ["excused", "مبرر"]];
+  return <section className="session-step attendance-step"><Badge tone="brand">الحضور</Badge><h1>تسجيل الحضور</h1><p>كل طالب غير محدد يبقى غائبا حتى تختار حالته.</p><div className="attendance-register">{students.map((student) => { const value = attendance[student.id] ?? { status: "absent" as const, minutesLate: 0 }; return <article key={student.id}><strong>{student.name}</strong><div className="choice-row" aria-label={`حضور ${student.name}`}>{options.map(([status, label]) => <button type="button" aria-pressed={value.status === status} className={value.status === status ? "is-active" : undefined} key={status} onClick={() => onChange(student.id, { status, minutesLate: status === "late" ? value.minutesLate : 0 })}>{label}</button>)}</div>{value.status === "late" ? <label>دقائق التأخر<input aria-label={`دقائق تأخر ${student.name}`} type="number" min="0" max="600" value={value.minutesLate} onChange={(event) => onChange(student.id, { status: "late", minutesLate: Math.max(0, Math.min(600, Number(event.target.value))) })} /></label> : null}</article>; })}</div><div className="session-footer"><Button loading={busy} disabled={!students.length} onClick={onSave}><Check size={17} />حفظ الحضور والمتابعة</Button></div></section>;
 }
 
 function StartStep({ data, classId, onClassChange, busy, onStart }: { data: TeacherSessionData; classId: string; onClassChange: (value: string) => void; busy: boolean; onStart: () => void }) {
