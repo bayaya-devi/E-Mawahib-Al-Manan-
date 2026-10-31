@@ -19,9 +19,14 @@ export type TeacherMessage = { id: string; subject: string; body: string; sender
 export type TeacherRequest = { id: string; kind: DatabaseTeacherRequestKind; title: string; details: string | null; status: DatabaseWorkflowStatus; startsOn: string | null; endsOn: string | null; adminResponse: string | null; submittedAt: string };
 export type TeacherAlert = { id: string; title: string; body: string; read: boolean; createdAt: string };
 export type TeacherOpenRun = { id: string; courseSessionId: string; classId: string; status: DatabaseTeacherSessionStatus; startedAt: string };
+export type TeacherEnrollmentDossier = {
+  id: string; classId: string; className: string; studentName: string;
+  enrollmentDate: string; status: "submitted" | "enrolled" | "rejected" | "cancelled";
+  createdAt: string; resolutionNote: string | null;
+};
 
 export type TeacherHomeData = {
-  teacher: { id: string; name: string } | null;
+  teacher: { id: string; name: string; gender: "male" | "female" | "unspecified" | null } | null;
   classes: TeacherClass[];
   students: TeacherStudent[];
   schedule: TeacherCourse[];
@@ -31,6 +36,7 @@ export type TeacherHomeData = {
   messages: TeacherMessage[];
   requests: TeacherRequest[];
   alerts: TeacherAlert[];
+  enrollmentDossiers: TeacherEnrollmentDossier[];
   assignmentReminders: TeacherAssignmentReminder[];
   taskCount: number;
 };
@@ -39,7 +45,7 @@ export type SessionAttendance = { studentId: string; status: DatabaseAttendanceS
 export type TeacherSessionData = TeacherHomeData & { attendance: SessionAttendance[]; openReportId: string | null; elapsedSeconds: number; defaultDueDate: string };
 
 export type TeacherProfessionalData = {
-  teacher: { id: string; name: string } | null;
+  teacher: { id: string; name: string; gender: "male" | "female" | "unspecified" | null } | null;
   classes?: TeacherClass[];
   recurringSchedule?: TeacherHomeData["recurringSchedule"];
   schedule: TeacherCourse[];

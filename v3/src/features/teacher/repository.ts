@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { logServerError } from "@/lib/observability/logger";
 import type { TeacherHomeData, TeacherProfessionalData, TeacherSessionData } from "./models";
 
-const emptyHome: TeacherHomeData = { teacher: null, classes: [], students: [], schedule: [], nextCourse: null, openRun: null, messages: [], requests: [], alerts: [], assignmentReminders: [], taskCount: 0 };
+const emptyHome: TeacherHomeData = { teacher: null, classes: [], students: [], schedule: [], nextCourse: null, openRun: null, messages: [], requests: [], alerts: [], enrollmentDossiers: [], assignmentReminders: [], taskCount: 0 };
 
 export async function getTeacherHome(): Promise<TeacherHomeData> {
   if (process.env.NEXT_PUBLIC_APP_ENV === "test") return emptyHome;
@@ -13,8 +13,9 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
     const { data: auth } = await client.auth.getUser();
     const teacherId = auth.user?.id;
     if (!teacherId) return emptyHome;
-    const [profile, role, assignments, courses, messages, requests, alerts, openRun] = await Promise.all([
+    const [profile, teacherProfile, role, assignments, courses, messages, requests, alerts, openRun, enrollmentDossiers] = await Promise.all([
       client.from("profiles").select("id,display_name,status").eq("id", teacherId).maybeSingle(),
+      client.from("teacher_profiles").select("gender").eq("user_id", teacherId).maybeSingle(),
       client.from("user_roles").select("role").eq("user_id", teacherId).eq("role", "teacher").maybeSingle(),
       client.from("class_teacher_assignments").select("class_id").eq("teacher_id", teacherId).eq("status", "active"),
       client.from("course_sessions").select("id,class_id,title,starts_at,ends_at,location,status").eq("teacher_id", teacherId).order("starts_at").limit(30),
@@ -22,19 +23,22 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
       client.from("teacher_requests").select("id,kind,title,details,status,starts_on,ends_on,admin_response,submitted_at").eq("teacher_id", teacherId).order("submitted_at", { ascending: false }).limit(20),
       client.from("user_notifications").select("id,title,body,read_at,created_at").eq("user_id", teacherId).order("created_at", { ascending: false }).limit(10),
       client.from("teacher_session_runs").select("id,course_session_id,class_id,status,started_at").eq("teacher_id", teacherId).in("status", ["in_progress", "report_pending"]).limit(1).maybeSingle(),
+      client.from("teacher_student_enrollment_dossiers").select("id,class_id,first_name,last_name,enrollment_date,status,resolution_note,created_at").eq("requested_by", teacherId).order("created_at", { ascending: false }).limit(30),
     ]);
     if (!profile.data || profile.data.status !== "active" || !role.data) return emptyHome;
     const teacherName = profile.data.display_name;
     const classIds = (assignments.data ?? []).map(({ class_id }) => class_id);
-    const [classRows, enrollmentRows, classSchedules] = classIds.length ? await Promise.all([
+    const classBundle = classIds.length ? await Promise.all([
       client.from("classes").select("id,name,level,schedule_text").in("id", classIds),
-      client.from("class_enrollments").select("class_id,student_id").in("class_id", classIds).eq("status", "active"),
+      loadAllActiveEnrollments(client, classIds),
       client.from("class_schedule_slots").select("id,class_id,day_of_week,starts_at,ends_at,room").in("class_id", classIds).order("day_of_week").order("starts_at"),
-    ]) : [{ data: [] }, { data: [] }, { data: [] }];
-    const enrollments = enrollmentRows.data ?? [];
+    ]) : null;
+    const classRows = classBundle?.[0].data ?? [];
+    const enrollments = classBundle?.[1] ?? [];
+    const classSchedules = classBundle?.[2].data ?? [];
     const studentIds = enrollments.map(({ student_id }) => student_id);
     const [studentProfiles, progressRows, attendanceRows, quickAbsenceRows, listPreferences, assignmentRows, submissionRows, recitationRows, noteRows] = studentIds.length ? await Promise.all([
-      client.from("profiles").select("id,display_name").in("id", studentIds),
+      loadStudentProfiles(client, studentIds),
       client.from("student_surah_progress").select("student_id,surah_number,status,completion_percent,mastered_at,last_activity_at").in("student_id", studentIds).order("last_activity_at", { ascending: false }),
       client.from("attendance_records").select("id,student_id,status,minutes_late,recorded_at").in("student_id", studentIds).order("recorded_at", { ascending: false }),
       client.from("teacher_quick_absences").select("id,student_id,class_id,absent_on,created_at").eq("teacher_id", teacherId).in("student_id", studentIds).order("absent_on", { ascending: false }),
@@ -43,9 +47,9 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
       client.from("assignment_submissions").select("assignment_id,student_id,status").in("student_id", studentIds),
       client.from("teacher_recitations").select("id,student_id,surah_number,verse_from,verse_to,appreciation,comment,recorded_at").eq("recorded_by", teacherId).in("student_id", studentIds).order("recorded_at", { ascending: false }).limit(500),
       client.from("teacher_student_notes").select("id,student_id,content,created_at").eq("teacher_id", teacherId).in("student_id", studentIds).order("created_at", { ascending: false }).limit(500),
-    ]) : [{ data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
-    const classNames = new Map((classRows.data ?? []).map((row) => [row.id, row.name]));
-    const names = new Map((studentProfiles.data ?? []).map((row) => [row.id, row.display_name]));
+    ]) : [[], { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
+    const classNames = new Map(classRows.map((row) => [row.id, row.name]));
+    const names = new Map(studentProfiles.map((row) => [row.id, row.display_name]));
     const latestProgress = new Map<string, { surah_number: number; completion_percent: number }>();
     for (const row of progressRows.data ?? []) if (!latestProgress.has(row.student_id)) latestProgress.set(row.student_id, row);
     const attendanceAbsenceDays = new Set((attendanceRows.data ?? []).filter(({ status }) => status === "absent").map((row) => `${row.student_id}:${row.recorded_at.slice(0, 10)}`));
@@ -80,7 +84,7 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
       };
     });
     const classStudentCounts = countBy(enrollments.map(({ class_id }) => class_id));
-    const classes = (classRows.data ?? []).map((row) => ({ id: row.id, name: row.name, level: row.level, studentCount: classStudentCounts.get(row.id) ?? 0, scheduleText: row.schedule_text }));
+    const classes = classRows.map((row) => ({ id: row.id, name: row.name, level: row.level, studentCount: classStudentCounts.get(row.id) ?? 0, scheduleText: row.schedule_text }));
     const schedule = (courses.data ?? []).map((course) => ({ id: course.id, classId: course.class_id, className: classNames.get(course.class_id) ?? "القسم", title: course.title, startsAt: course.starts_at, endsAt: course.ends_at, location: course.location, status: course.status }));
     const now = Date.now();
     const reminders = (assignmentRows.data ?? []).flatMap((item) => {
@@ -89,13 +93,14 @@ export async function getTeacherHome(): Promise<TeacherHomeData> {
       return targets.filter((target) => ["todo", "in_progress"].includes(submissionStatus.get(`${item.id}:${target.id}`) ?? "todo")).map((target) => ({ id: `${item.id}:${target.id}`, studentId: target.id, studentName: target.name, surahNumber: item.surah_number, verseFrom: item.verse_from, verseTo: item.verse_to, dueAt: item.due_at! }));
     }).slice(0, 8);
     return {
-      teacher: { id: profile.data.id, name: profile.data.display_name }, classes, students, schedule,
-      recurringSchedule: (classSchedules.data ?? []).map((slot) => ({ id: slot.id, classId: slot.class_id, className: classNames.get(slot.class_id) ?? "القسم", dayOfWeek: slot.day_of_week, startsAt: slot.starts_at, endsAt: slot.ends_at, room: slot.room })),
+      teacher: { id: profile.data.id, name: profile.data.display_name, gender: teacherProfile.data?.gender ?? null }, classes, students, schedule,
+      recurringSchedule: classSchedules.map((slot) => ({ id: slot.id, classId: slot.class_id, className: classNames.get(slot.class_id) ?? "القسم", dayOfWeek: slot.day_of_week, startsAt: slot.starts_at, endsAt: slot.ends_at, room: slot.room })),
       nextCourse: schedule.find((course) => course.status === "scheduled" && new Date(course.endsAt).getTime() >= now) ?? null,
       openRun: openRun.data ? { id: openRun.data.id, courseSessionId: openRun.data.course_session_id, classId: openRun.data.class_id, status: openRun.data.status, startedAt: openRun.data.started_at } : null,
       messages: (messages.data ?? []).map((row) => ({ id: row.id, subject: row.subject, body: row.body, senderId: row.sender_id, read: Boolean(row.read_at), createdAt: row.created_at })),
       requests: (requests.data ?? []).map((row) => ({ id: row.id, kind: row.kind, title: row.title, details: row.details, status: row.status, startsOn: row.starts_on, endsOn: row.ends_on, adminResponse: row.admin_response, submittedAt: row.submitted_at })),
       alerts: (alerts.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body, read: Boolean(row.read_at), createdAt: row.created_at })),
+      enrollmentDossiers: (enrollmentDossiers.data ?? []).map((row) => ({ id: row.id, classId: row.class_id, className: classNames.get(row.class_id) ?? "القسم", studentName: `${row.first_name} ${row.last_name}`.trim(), enrollmentDate: row.enrollment_date, status: row.status, createdAt: row.created_at, resolutionNote: row.resolution_note })),
       assignmentReminders: reminders,
       taskCount: (submissionRows.data ?? []).length + (assignmentRows.data ?? []).filter((item) => !item.student_id && !item.class_id).length,
     };
@@ -137,3 +142,29 @@ export async function getTeacherProfessional(): Promise<TeacherProfessionalData>
 
 function countBy(values: readonly string[]): Map<string, number> { const counts = new Map<string, number>(); for (const value of values) counts.set(value, (counts.get(value) ?? 0) + 1); return counts; }
 function suggestionFor(absences: number, pending: number, progress: number): string { if (absences >= 2) return "ابدأ بسؤال قصير بعد الغياب"; if (pending > 0) return "راجع الواجب قبل التلاوة"; if (progress > 0 && progress < 60) return "ثبّت آخر مقطع قبل الجديد"; return "متابعة المسار المعتاد"; }
+
+type TeacherServerClient = Awaited<ReturnType<typeof createClient>>;
+type EnrollmentRow = { class_id: string; student_id: string };
+type StudentNameRow = { id: string; display_name: string };
+
+async function loadAllActiveEnrollments(client: TeacherServerClient, classIds: string[]): Promise<EnrollmentRow[]> {
+  const pageSize = 500;
+  const rows: EnrollmentRow[] = [];
+  for (let from = 0; ; from += pageSize) {
+    const result = await client.from("class_enrollments").select("class_id,student_id").in("class_id", classIds).eq("status", "active").order("class_id").order("student_id").range(from, from + pageSize - 1);
+    if (result.error) throw result.error;
+    rows.push(...(result.data ?? []));
+    if ((result.data?.length ?? 0) < pageSize) return rows;
+  }
+}
+
+async function loadStudentProfiles(client: TeacherServerClient, studentIds: string[]): Promise<StudentNameRow[]> {
+  const uniqueIds = [...new Set(studentIds)];
+  const rows: StudentNameRow[] = [];
+  for (let index = 0; index < uniqueIds.length; index += 200) {
+    const result = await client.from("profiles").select("id,display_name").in("id", uniqueIds.slice(index, index + 200));
+    if (result.error) throw result.error;
+    rows.push(...(result.data ?? []));
+  }
+  return rows;
+}

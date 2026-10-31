@@ -28,6 +28,7 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
+  outputFileTracingRoot: process.cwd(),
   poweredByHeader: false,
   reactStrictMode: true,
   experimental: {

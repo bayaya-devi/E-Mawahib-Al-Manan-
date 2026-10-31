@@ -382,6 +382,7 @@ describe("V3 migrations and RLS", () => {
       "teacher_session_reports",
       "teacher_session_runs",
       "teacher_session_students",
+      "teacher_student_enrollment_dossiers",
       "teacher_student_list_preferences",
       "teacher_student_notes",
       "user_contact_links",
@@ -524,6 +525,7 @@ describe("V3 migrations and RLS", () => {
       "teacher_session_reports_read",
       "teacher_session_runs_read",
       "teacher_session_students_read",
+      "teacher_student_enrollment_dossiers_read",
       "teacher_student_list_preferences_read",
       "teacher_student_notes_read",
       "user_contact_links_scoped_read",
@@ -937,9 +939,15 @@ describe("V3 migrations and RLS", () => {
         '${runId}', '${users.studentA}', 114::smallint, 1::smallint, 6::smallint,
         'very_good'::public.recitation_appreciation, 'Stable work', 'good'::public.session_behavior_status,
         '["review"]'::jsonb, true, 113::smallint, 1::smallint, 5::smallint,
-        true, now() + interval '7 days'
+        true, now() + interval '7 days', true
       )`,
     );
+
+    const masteredProgress = await asUser<{ surah_number: number; status: string; completion_percent: number }>(
+      users.studentA,
+      "select surah_number,status,completion_percent from public.student_surah_progress where surah_number = 114",
+    );
+    expect(masteredProgress).toEqual([{ surah_number: 114, status: "mastered", completion_percent: 100 }]);
 
     const report = await asUser<{ report_id: string }>(
       users.teacherA,
@@ -1231,6 +1239,53 @@ describe("V3 migrations and RLS", () => {
     expect(payment.rows).toEqual([{ status: "exempt" }]);
     const ledger = await database.query<{ count: number }>(`select count(*)::integer count from public.finance_transactions where student_id='${users.studentA}' and occurred_on='2026-10-01'`);
     expect(ledger.rows).toEqual([{ count: 0 }]);
+  });
+
+  it("lets a teacher enroll only an existing student from the assigned school and class", async () => {
+    const candidate = "30000000-0000-4000-8000-000000000003";
+    await database.exec(`
+      insert into auth.users(id,email) values('${candidate}','candidate@example.test');
+      insert into public.profiles(id,display_name,first_name,last_name,status)
+      values('${candidate}','Candidate Student','Candidate','Student','active');
+      insert into public.user_roles(user_id,role) values('${candidate}','student');
+      insert into public.student_profiles(user_id,student_number,date_of_birth)
+      values('${candidate}','CAND-001','2014-05-10');
+      insert into public.school_memberships(school_id,user_id,status)
+      values('${schools.first}','${candidate}','active');
+    `);
+    const candidates = await asUser<{ student_id: string; active_class_id: string | null }>(users.teacherA,
+      `select student_id,active_class_id from public.teacher_search_enrollment_candidates('${classes.first}','Candidate')`);
+    expect(candidates).toEqual([{ student_id: candidate, active_class_id: null }]);
+    const first = await asUser<{ id: string }>(users.teacherA,
+      `select public.teacher_enroll_existing_student('${classes.first}','${candidate}') as id`);
+    const repeated = await asUser<{ id: string }>(users.teacherA,
+      `select public.teacher_enroll_existing_student('${classes.first}','${candidate}') as id`);
+    expect(repeated).toEqual(first);
+    await expect(asUser(users.teacherB,
+      `select public.teacher_enroll_existing_student('${classes.first}','${users.studentB}')`))
+      .rejects.toThrow(/class_not_assigned/);
+    const audit = await database.query<{ action: string }>(
+      `select action from public.audit_logs where entity_id='${first[0]?.id}'`);
+    expect(audit.rows).toEqual([{ action: "teacher.student.enrolled" }]);
+    await database.exec(`update public.class_enrollments set status='withdrawn',ended_at=now() where id='${first[0]?.id}'`);
+  });
+
+  it("stores a new student dossier without creating an incomplete login account", async () => {
+    const created = await asUser<{ id: string }>(users.teacherA, `select public.teacher_submit_student_enrollment_dossier(
+      '${classes.first}','New','Learner','2015-03-04','female','Guardian Name','0612345678','Beginner','2026-10-31'
+    ) as id`);
+    const dossier = await asUser<{ first_name: string; status: string; guardian_phone: string }>(users.teacherA,
+      `select first_name,status,guardian_phone from public.teacher_student_enrollment_dossiers where id='${created[0]?.id}'`);
+    expect(dossier).toEqual([{ first_name: "New", status: "submitted", guardian_phone: "0612345678" }]);
+    const authAccount = await database.query<{ count: number }>("select count(*)::integer count from auth.users where email='new.learner@example.test'");
+    expect(authAccount.rows).toEqual([{ count: 0 }]);
+    await expect(asUser(users.teacherA, `insert into public.teacher_student_enrollment_dossiers(
+      school_id,class_id,requested_by,first_name,last_name,enrollment_date
+    ) values('${schools.first}','${classes.first}','${users.teacherA}','Bypass','Denied',current_date)`))
+      .rejects.toThrow(/permission denied/);
+    await expect(asUser(users.teacherA, `select public.teacher_submit_student_enrollment_dossier(
+      '${classes.first}','New','Learner','2015-03-04','female','Guardian Name','0612345678','Beginner','2026-10-31'
+    )`)).rejects.toThrow(/duplicate_enrollment_dossier/);
   });
 
   it("enforces class capacity while preserving a legitimate existing enrollment", async () => {

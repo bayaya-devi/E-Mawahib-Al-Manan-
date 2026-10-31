@@ -13,6 +13,11 @@
 .teacher-summary article strong { color: var(--ink); overflow-wrap: anywhere; }
 .teacher-reminders { padding-block-start: 12px; }
 .teacher-reminders .teacher-record-list article { grid-template-columns: auto minmax(0, 1fr); }
+.teacher-quick-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.teacher-quick-actions a { min-width: 0; display: flex; align-items: center; gap: 11px; padding: 15px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); color: var(--ink); }
+.teacher-quick-actions a > svg { flex: 0 0 auto; color: var(--brand); }
+.teacher-quick-actions a span { min-width: 0; display: grid; }
+.teacher-quick-actions small { color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .teacher-hero { display: flex; align-items: end; justify-content: space-between; gap: var(--space-5); padding: clamp(24px, 4vw, 48px); border-radius: var(--radius-xl); color: white; background: linear-gradient(135deg, #07543f, #0d7657); box-shadow: var(--shadow-lg); }
 .teacher-hero span, .teacher-hero p { color: #d7f4e9; }
 .teacher-hero h1 { margin: 6px 0 8px; font-size: clamp(1.75rem, 3vw, 2.65rem); }
@@ -72,6 +77,11 @@
 .attendance-actions button, .choice-row button { min-height: 38px; padding: 7px 12px; border: 1px solid var(--border-strong); border-radius: 999px; color: var(--text-muted); background: transparent; font: inherit; font-weight: 750; cursor: pointer; }
 .attendance-actions button.is-active, .choice-row button.is-active { color: white; border-color: var(--brand-strong); background: var(--brand-strong); }
 .attendance-list input[type=number] { width: 68px; }
+.attendance-step > p { margin: 0; color: var(--ink-soft); }
+.attendance-register { display: grid; gap: 8px; }
+.attendance-register article { display: grid; grid-template-columns: minmax(120px, 1fr) minmax(260px, 2fr) minmax(110px, auto); align-items: center; gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }
+.attendance-register article > label { display: grid; gap: 4px; color: var(--ink-soft); font-size: .8rem; }
+.attendance-register input { width: 100%; min-height: 38px; padding-inline: 9px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-raised); color: var(--ink); font: inherit; }
 .student-session-head { justify-content: start; }
 .student-session-head small, .student-session-head p { color: var(--text-muted); }
 .student-session-head h1 { font-size: 1.55rem; }
@@ -105,6 +115,24 @@
 .teacher-record-list article { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; padding: 15px 2px; border-bottom: 1px solid var(--border-subtle); }
 .teacher-record-list article > div { display: grid; gap: 4px; }
 .teacher-record-list small { color: var(--text-muted); }
+.teacher-page-head--actions { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
+.teacher-page-head--actions > div { display: grid; gap: 2px; }
+.teacher-student-toolbar { display: grid; grid-template-columns: minmax(0, 2fr) minmax(190px, 1fr); gap: 10px; }
+.teacher-student-toolbar label { display: grid; gap: 6px; color: var(--ink-soft); font-size: .84rem; font-weight: 800; }
+.teacher-student-toolbar label > div { min-height: 46px; display: flex; align-items: center; gap: 8px; padding-inline: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }
+.teacher-student-toolbar input { min-width: 0; flex: 1; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; }
+.teacher-student-toolbar select { min-height: 46px; padding-inline: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--ink); font: inherit; }
+.teacher-class-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.teacher-class-grid > article { display: grid; gap: 16px; padding: 20px; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface); }
+.teacher-class-grid article > header, .teacher-class-grid article > header > div { display: flex; align-items: center; justify-content: space-between; gap: 11px; }
+.teacher-class-grid h2, .teacher-class-grid p { margin: 0; }
+.teacher-class-grid p { color: var(--ink-soft); }
+.teacher-class-icon { width: 44px; height: 44px; display: grid; place-items: center; flex: 0 0 auto; border-radius: var(--radius-md); background: var(--brand-soft); color: var(--brand); }
+.teacher-class-grid dl { display: grid; gap: 9px; margin: 0; }
+.teacher-class-grid dl div { display: grid; grid-template-columns: minmax(90px, auto) minmax(0, 1fr); gap: 12px; padding-block: 9px; border-block-end: 1px solid var(--border); }
+.teacher-class-grid dt { display: flex; align-items: center; gap: 7px; color: var(--ink-soft); }
+.teacher-class-grid dd { margin: 0; font-weight: 800; }
+.teacher-class-actions { display: flex; gap: 8px; }
 .teacher-inline-action { width: fit-content; padding: 3px 0; border: 0; color: var(--brand-strong); background: transparent; font: inherit; font-weight: 800; cursor: pointer; }
 .teacher-students-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .teacher-student-card { display: grid; gap: 10px; padding: 18px; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: var(--surface-raised); }
@@ -136,6 +164,18 @@
 .note-form { display: grid; gap: 8px; }
 .note-form textarea { min-height: 84px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--ink); }
 .assignment-form > p { display: flex; align-items: center; gap: 8px; }
+.mastery-confirm { align-items: center; padding: 12px; border: 1px solid color-mix(in srgb, var(--success) 45%, var(--border)); border-radius: var(--radius-md); background: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+.mastery-confirm span { display: grid; gap: 2px; }
+.mastery-confirm small { color: var(--ink-soft); font-weight: 500; }
+.enrollment-form { gap: 16px; }
+.enrollment-form .form-help { margin: 0; color: var(--ink-soft); line-height: 1.75; }
+.enrollment-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 9px; }
+.enrollment-results { display: grid; overflow: hidden; border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.enrollment-results article { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 12px; border-block-end: 1px solid var(--border); }
+.enrollment-results article:last-child { border-block-end: 0; }
+.enrollment-results article > div { display: grid; gap: 3px; min-width: 0; }
+.enrollment-results small { color: var(--ink-soft); }
+.enrollment-error { margin: 0; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--border)); border-radius: var(--radius-md); background: color-mix(in srgb, var(--danger) 7%, var(--surface)); color: var(--ink); }
 .salary-calendar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .salary-calendar details, .teacher-report-row { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }
 .salary-calendar summary, .teacher-report-row summary { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; cursor: pointer; }
@@ -199,6 +239,7 @@
   .teacher-metrics { grid-template-columns: repeat(2, 1fr); }
   .teacher-students-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .teacher-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .teacher-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .salary-calendar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .teacher-settings { grid-template-columns: 1fr; }
 }
@@ -211,6 +252,7 @@
   .session-top > div:first-child { flex: 1; }
   .session-brief, .student-insight, .report-presence { grid-template-columns: 1fr; }
   .attendance-list article { grid-template-columns: auto 1fr; }
+  .attendance-register article { grid-template-columns: 1fr; }
   .attendance-actions { grid-column: 1 / -1; }
   .session-title { align-items: start; flex-direction: column; }
   .session-footer { position: sticky; bottom: 8px; z-index: 10; padding: 10px; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: color-mix(in srgb, var(--surface-raised) 94%, transparent); backdrop-filter: blur(12px); }
@@ -219,9 +261,13 @@
   .student-selection-bar .ui-button { flex: 0 0 auto; }
   .salary-calendar { grid-template-columns: 1fr; }
   .teacher-summary { grid-template-columns: 1fr; }
+  .teacher-page-head--actions { align-items: stretch; flex-direction: column; }
+  .teacher-page-head--actions .ui-button { width: 100%; }
+  .teacher-student-toolbar, .teacher-class-grid { grid-template-columns: 1fr; }
+  .enrollment-search { grid-template-columns: 1fr; }
   .session-footer--wide { position: static; display: grid; grid-template-columns: repeat(2, 1fr); }
   .session-footer--wide .ui-button { width: 100%; }
-  .app-shell--teacher .mobile-nav { grid-template-columns: repeat(6, minmax(0, 1fr)); inset-inline: 4px; }
+  .app-shell--teacher .mobile-nav { grid-template-columns: repeat(7, minmax(68px, 1fr)); inset-inline: 4px; }
   .app-shell--teacher .mobile-nav .app-nav-link { font-size: .54rem; }
   .teacher-signout { width: 44px; justify-content: center; padding: 0; }
   .teacher-signout span { display: none; }

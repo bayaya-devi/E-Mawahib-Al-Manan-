@@ -149,7 +149,8 @@
 .app-rail__nav { display: grid; gap: 3px; }
 .app-rail__collapse { position: absolute; inset-block-start: 22px; inset-inline-end: 10px; width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--ink-soft); background: var(--surface); cursor: pointer; }
 .app-shell.is-navigation-collapsed .app-rail__collapse { position: static; order: -1; }
-.app-nav-link { min-height: 48px; display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--ink-soft); font-family: var(--font-display); font-size: 0.8rem; font-weight: 650; transition: color var(--motion-fast), background var(--motion-fast), translate var(--motion-fast); }
+.app-nav-link { position: relative; min-height: 48px; display: flex; align-items: center; gap: var(--space-3); padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--ink-soft); font-family: var(--font-display); font-size: 0.8rem; font-weight: 650; transition: color var(--motion-fast), background var(--motion-fast), translate var(--motion-fast); }
+.app-nav-link__session { position: absolute; inset-block-start: 8px; inset-inline-start: 8px; width: 9px; height: 9px; border: 2px solid var(--surface); border-radius: 50%; background: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent); }
 .app-nav-link:hover { color: var(--brand); background: var(--brand-soft); translate: -2px 0; }
 .app-nav-link.is-active { color: white; background: var(--brand); }
 .app-rail__profile { margin-block-start: auto; display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3); border-block-start: 1px solid var(--border); }

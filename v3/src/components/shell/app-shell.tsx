@@ -59,6 +59,7 @@ const navigation: Record<ShellKind, NavItem[]> = {
   ],
   teacher: [
     { label: "الرئيسية", href: "/teacher", icon: Home },
+    { label: "الأقسام", href: "/teacher/classes", icon: GraduationCap },
     { label: "الطلاب", href: "/teacher/students", icon: UsersRound },
     { label: "بدء حصة", href: "/teacher/session", icon: BookOpenText },
     { label: "الرسائل", href: "/teacher/messages", icon: MessageSquareText },
@@ -91,6 +92,8 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   const router = useRouter();
   const [commandOpen, setCommandOpen] = useState(false);
   const [teacherName, setTeacherName] = useState("");
+  const [teacherGender, setTeacherGender] = useState<"male" | "female" | "unspecified" | null>(null);
+  const [teacherSessionActive, setTeacherSessionActive] = useState(false);
   const [studentName, setStudentName] = useState("");
   const [signingOut, setSigningOut] = useState(false);
   const [navigationOpen, setNavigationOpen] = useState(true);
@@ -135,9 +138,22 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
     void createClient().auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const profile = await createClient().from("profiles").select("display_name").eq("id", data.user.id).maybeSingle();
-      if (kind === "teacher") setTeacherName(profile.data?.display_name ?? "");
+      if (kind === "teacher") {
+        setTeacherName(profile.data?.display_name ?? "");
+        const teacherProfile = await createClient().from("teacher_profiles").select("gender").eq("user_id", data.user.id).maybeSingle();
+        setTeacherGender(teacherProfile.data?.gender ?? null);
+        const activeSession = await createClient().from("teacher_session_runs").select("id").eq("teacher_id", data.user.id).in("status", ["in_progress", "report_pending"]).limit(1).maybeSingle();
+        setTeacherSessionActive(Boolean(activeSession.data));
+      }
       else setStudentName(profile.data?.display_name ?? "");
     });
+  }, [kind]);
+
+  useEffect(() => {
+    if (kind !== "teacher") return;
+    const updateSession = (event: Event) => setTeacherSessionActive(Boolean((event as CustomEvent<{ active?: boolean }>).detail?.active));
+    window.addEventListener("mawahib:teacher-session", updateSession);
+    return () => window.removeEventListener("mawahib:teacher-session", updateSession);
   }, [kind]);
 
   async function signOut(): Promise<void> {
@@ -157,7 +173,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
           </Link>
           <button className="app-rail__collapse" type="button" aria-label={navigationOpen ? "طي قائمة التنقل" : "فتح قائمة التنقل"} aria-expanded={navigationOpen} onClick={() => setNavigationOpen((open) => !open)}><Menu aria-hidden="true" size={19} /></button>
           <nav className="app-rail__nav" aria-label="التنقل الرئيسي">
-            {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
+            {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} indicator={teacherSessionActive && item.href === "/teacher/session"} />)}
           </nav>
           <Link className="app-rail__profile" prefetch={false} href={kind === "student" ? "/student/profile" : kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`}>
             <Avatar name="حساب المستخدم" size="sm" />
@@ -167,7 +183,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 
         <div className="app-frame">
           <header className="app-header">
-            {kind === "teacher" ? <div className="teacher-shell-identity"><strong>أستاذ(ة) {teacherName}</strong></div> : kind === "student" ? <div className="student-shell-identity"><strong>{studentName || "حساب الطالب"}</strong></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
+            {kind === "teacher" ? <div className="teacher-shell-identity"><strong>{teacherGender === "female" ? "أستاذة" : teacherGender === "male" ? "أستاذ" : "أستاذ(ة)"} {teacherName}</strong></div> : kind === "student" ? <div className="student-shell-identity"><strong>{studentName || "حساب الطالب"}</strong></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
             <div className="app-header__actions">
               <button className="navigation-toggle navigation-toggle--mobile" type="button" aria-label={navigationOpen ? "إخفاء قائمة التنقل" : "إظهار قائمة التنقل"} aria-expanded={navigationOpen} aria-controls="application-navigation mobile-navigation" onClick={() => setNavigationOpen((open) => !open)}>
                 <Menu aria-hidden="true" size={20} />
@@ -186,7 +202,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
         </div>
 
         <nav className="mobile-nav" id="mobile-navigation" aria-label="التنقل الرئيسي للهاتف">
-          {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
+          {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} indicator={teacherSessionActive && item.href === "/teacher/session"} />)}
         </nav>
         {kind === "family" ? <CommandPalette items={commands} open={commandOpen} onOpenChange={setCommandOpen} /> : null}
       </div>
@@ -194,12 +210,13 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   );
 }
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({ item, active, indicator = false }: { item: NavItem; active: boolean; indicator?: boolean }) {
   const Icon = item.icon;
   return (
-    <Link className={cn("app-nav-link", active && "is-active")} href={item.href} prefetch={false} aria-label={item.label} aria-current={active ? "page" : undefined}>
+    <Link className={cn("app-nav-link", active && "is-active", indicator && "has-session-indicator")} href={item.href} prefetch={false} aria-label={indicator ? `${item.label}، حصة جارية` : item.label} aria-current={active ? "page" : undefined}>
       <Icon aria-hidden="true" size={21} strokeWidth={active ? 2.4 : 1.8} />
       <span>{item.label}</span>
+      {indicator ? <i className="app-nav-link__session" aria-hidden="true" /> : null}
     </Link>
   );
 }
