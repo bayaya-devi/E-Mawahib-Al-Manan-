@@ -939,9 +939,15 @@ describe("V3 migrations and RLS", () => {
         '${runId}', '${users.studentA}', 114::smallint, 1::smallint, 6::smallint,
         'very_good'::public.recitation_appreciation, 'Stable work', 'good'::public.session_behavior_status,
         '["review"]'::jsonb, true, 113::smallint, 1::smallint, 5::smallint,
-        true, now() + interval '7 days'
+        true, now() + interval '7 days', true
       )`,
     );
+
+    const masteredProgress = await asUser<{ surah_number: number; status: string; completion_percent: number }>(
+      users.studentA,
+      "select surah_number,status,completion_percent from public.student_surah_progress where surah_number = 114",
+    );
+    expect(masteredProgress).toEqual([{ surah_number: 114, status: "mastered", completion_percent: 100 }]);
 
     const report = await asUser<{ report_id: string }>(
       users.teacherA,

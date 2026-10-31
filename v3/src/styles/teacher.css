@@ -164,6 +164,9 @@
 .note-form { display: grid; gap: 8px; }
 .note-form textarea { min-height: 84px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--ink); }
 .assignment-form > p { display: flex; align-items: center; gap: 8px; }
+.mastery-confirm { align-items: center; padding: 12px; border: 1px solid color-mix(in srgb, var(--success) 45%, var(--border)); border-radius: var(--radius-md); background: color-mix(in srgb, var(--success) 8%, var(--surface)); }
+.mastery-confirm span { display: grid; gap: 2px; }
+.mastery-confirm small { color: var(--ink-soft); font-weight: 500; }
 .enrollment-form { gap: 16px; }
 .enrollment-form .form-help { margin: 0; color: var(--ink-soft); line-height: 1.75; }
 .enrollment-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 9px; }

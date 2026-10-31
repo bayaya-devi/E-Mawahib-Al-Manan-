@@ -10,10 +10,10 @@ Le code a nettement progressé et les tests ciblés critiques réussissent, mais
 
 1. Aucun environnement de préproduction ni comptes isolés par rôle : les parcours CRUD et inter-rôles ne peuvent pas être prouvés.
 2. Les E2E locaux utilisent `NEXT_PUBLIC_APP_ENV=test`, qui contourne volontairement le contrôle de session du proxy.
-3. Le build production et la suite complète n'ont pas abouti sur ce poste faute de mémoire/espace.
+3. Le build production et la suite complète sont passés dans la CI GitHub du lot précédent ; le lot courant doit encore terminer son quality gate.
 4. Les textes juridiques portent encore le marqueur `TODO-JURISTE`.
 5. Aucune mesure Lighthouse/Web Vitals/SQL représentative n'a été obtenue.
-6. Les migrations `202610310001` et `202610310002` sont validées localement mais non appliquées en préproduction/production.
+6. Les migrations `202610310001`, `202610310002` et `202610310003` sont versionnées mais non appliquées en préproduction/production.
 
 ## Contrôles réussis
 
@@ -33,13 +33,13 @@ Revue à haute confiance : aucune injection, XSS explicite, exécution de comman
 
 | Élément | État |
 |---|---|
-| Modifications locales | oui |
-| Commits | `9788b26`, `8a5c5e7`, `3399455` ; documentation du présent lot à committer |
-| Push distant | non |
+| Modifications applicatives | lot final maîtrise/séance inclus dans la branche de PR |
+| Commits principaux | `9788b26`, `8a5c5e7`, `3399455`, `f20bc60`, `48b582b` et lot final maîtrise/séance |
+| Push distant | oui, branche de PR publiée |
 | Préproduction | non |
 | Production | non |
 | Migrations appliquées | non |
-| Migrations en attente | `202610310001_v3_teacher_student_enrollment.sql`, `202610310002_v3_teacher_private_documents.sql` |
+| Migrations en attente | `202610310001_v3_teacher_student_enrollment.sql`, `202610310002_v3_teacher_private_documents.sql`, `202610310003_v3_teacher_mastery_progress.sql` |
 
 ## Passage possible à READY FOR CONTROLLED RELEASE
 

@@ -6,9 +6,9 @@ Date : 2026-10-31. Les résultats ci-dessous correspondent uniquement aux comman
 |---|---|---|---|
 | Types | `npm run typecheck` | PASS | TypeScript sans erreur après corrections |
 | Lint ciblé | `npx eslint ...` sur fichiers modifiés | PASS | aucune erreur ni avertissement |
-| Professeur UI | Vitest `students-workspace`, `teacher-classes`, `session-wizard` | PASS | recherche/filtre, inscription, classes, présence/séance |
+| Professeur UI | Vitest `students-workspace`, `teacher-classes`, `session-wizard` | PASS sur le dernier lot CI ; nouvelle régression en attente CI | recherche/filtre, inscription, classes, présence/séance, maîtrise et signal de séance active |
 | Sécurité/autorisation ciblées | 7 fichiers Vitest mono-worker | PASS | 14 tests initiaux réussis ; séance rejouée séparément 2/2 après ajustement du délai |
-| Migrations/RLS | Vitest PGlite mono-worker | PASS | 44/44 tests |
+| Migrations/RLS | Vitest PGlite mono-worker | PASS sur le dernier lot CI ; nouvelle régression en attente CI | 44 tests existants et contrôle ajouté de la progression maîtrisée |
 | Régression globale | Vitest complet | BLOCKED | V8 `Fatal process out of memory: Zone` avant résultat complet |
 | Build production | `npm run build` | BLOCKED | non relancé : espace libre et mémoire insuffisants ; `.next` absent |
 | Playwright | suites E2E | BLOCKED | démarrage Next/Chromium précédemment impossible dans la limite mémoire/disque ; nouvelle assertion professeur non encore exécutée |
@@ -22,7 +22,7 @@ Date : 2026-10-31. Les résultats ci-dessous correspondent uniquement aux comman
 
 - Public : rendu/navigation responsive et en-têtes de sécurité couverts par les E2E existants, mais non rejoués dans ce lot faute de ressources.
 - Administration : rendu des écrans couvert en environnement isolé ; aucun CRUD Supabase réel n'est déclaré PASS.
-- Professeur : logique critique couverte par tests UI et DB ; persistance inter-rôles réelle reste BLOCKED.
+- Professeur : logique critique couverte par tests UI et DB, y compris l'écriture commune du progrès élève/professeur et la persistance d'une séance hors de sa page ; persistance inter-rôles réelle reste BLOCKED.
 - Élève : plan Quran, corpus, moteur de jeu, route audio et stabilisation couverts par tests ; autorisation horizontale réelle reste BLOCKED.
 - Famille : rendu isolé existant ; relations parent-enfant réelles restent BLOCKED.
 

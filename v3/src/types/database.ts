@@ -1490,6 +1490,7 @@ export type Database = {
           target_goal_to: number;
           target_create_assignment: boolean;
           target_assignment_due: string | null;
+          target_mark_mastered: boolean;
         };
         Returns: string;
       };

@@ -14,11 +14,16 @@ afterEach(() => { cleanup(); rpc.mockClear(); });
 
 describe("teacher session start", () => {
   it("starts an assigned class without requiring a pre-scheduled course", async () => {
+    const sessionEvent = vi.fn();
+    window.addEventListener("mawahib:teacher-session", sessionEvent);
     render(<ToastProvider><SessionWizard data={sessionData} /></ToastProvider>);
     const start = screen.getByRole("button", { name: /بدء الحصة/ });
     expect(start).not.toBeDisabled();
     fireEvent.click(start);
     await waitFor(() => expect(rpc).toHaveBeenCalledWith("teacher_start_class_session", { target_class_id: "class-1" }));
+    expect(sessionEvent).toHaveBeenCalledOnce();
+    expect((sessionEvent.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({ active: true });
+    window.removeEventListener("mawahib:teacher-session", sessionEvent);
     expect(screen.getByRole("heading", { name: "تسجيل الحضور" })).toBeVisible();
     fireEvent.click(within(screen.getByLabelText("حضور ياسين")).getByRole("button", { name: "حاضر" }));
     fireEvent.click(screen.getByRole("button", { name: "حفظ الحضور والمتابعة" }));
@@ -45,6 +50,25 @@ describe("teacher session start", () => {
     await waitFor(() => expect(rpc.mock.calls.filter(([name, payload]) => name === "teacher_record_student_work" && payload.target_student_id === "late")).toHaveLength(2));
     fireEvent.change(screen.getByLabelText("الطالب"), { target: { value: "worked" } });
     expect((screen.getByLabelText("الطالب") as HTMLSelectElement).value).toBe("worked");
+  });
+
+  it("marks a complete learned surah in the shared student progress", async () => {
+    render(<ToastProvider><SessionWizard data={multiStudentSessionData} /></ToastProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "حفظ الحضور والمتابعة" }));
+    await screen.findByLabelText("تأكيد إتقان السورة");
+    fireEvent.click(screen.getByLabelText("تأكيد إتقان السورة"));
+    fireEvent.click(screen.getByRole("button", { name: "حفظ التعلم" }));
+
+    await waitFor(() => expect(rpc).toHaveBeenCalledWith(
+      "teacher_record_student_work",
+      expect.objectContaining({
+        target_student_id: "present",
+        target_surah_number: 114,
+        target_verse_from: 1,
+        target_verse_to: 6,
+        target_mark_mastered: true,
+      }),
+    ));
   });
 });
 

@@ -13,6 +13,7 @@ test("teacher home keeps the essential mobile actions accessible", async ({ page
 
 test("session mode explains why a session cannot start without an assigned class", async ({ page }) => {
   await page.goto("/teacher/session");
+  await expect(page.getByRole("link", { name: "الرئيسية" }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "هل أنت مستعد(ة) لبدء الحصة؟" })).toBeVisible();
   await expect(page.getByRole("button", { name: /بدء الحصة/ })).toBeDisabled();
   await expect(page.getByText(/تعذر التحقق|لا يوجد قسم مسند/)).toBeVisible();
