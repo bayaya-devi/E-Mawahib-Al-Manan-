@@ -14,8 +14,8 @@ Date : 2026-10-31. Les résultats ci-dessous correspondent uniquement aux comman
 | Playwright | suites E2E | BLOCKED | démarrage Next/Chromium précédemment impossible dans la limite mémoire/disque ; nouvelle assertion professeur non encore exécutée |
 | Auth réelle | comptes admin/teacher/student/parent | BLOCKED | aucun `.env` réel, aucun storage state, aucun compte isolé |
 | Secrets | `npm run security:secrets` | PASS | 386 fichiers analysés, aucun secret détecté |
+| Dépendances production | `npm audit --omit=dev --audit-level=high` | PASS | 0 vulnérabilité après Next.js 16.4.3 et Zod 4.6.6 |
 | Découverte E2E | `npx playwright test --list` | PASS | 129 scénarios valides sur Chrome/tablette/mobile |
-| Dépendances | `npm audit` | NOT TESTED dans ce lot | réseau/lockfile à contrôler avant release |
 | Performance | Lighthouse/Web Vitals/SQL EXPLAIN | NOT TESTED | serveur déployé et données représentatives requis |
 
 ## Couverture démontrée

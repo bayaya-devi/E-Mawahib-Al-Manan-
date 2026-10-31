@@ -23,6 +23,7 @@ Le code a nettement progressé et les tests ciblés critiques réussissent, mais
 - Protection de routes centralisée et contrôles RLS présents.
 - Documents professeur privés avec URL signée courte.
 - Aucun secret réel ajouté au dépôt.
+- Audit des dépendances de production sans vulnérabilité haute ou critique après mise à jour de Next.js et Zod.
 
 ## Sécurité
 

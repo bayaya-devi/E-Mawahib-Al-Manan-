@@ -10,6 +10,7 @@
 | BUG-006 | Basse | Salutation professeur neutre malgré un genre déjà stocké | Lecture `teacher_profiles.gender` dans accueil et shell | typecheck | CORRIGÉ |
 | BUG-007 | Moyenne | Test E2E professeur attendait l'ancien titre et ignorait la nouvelle route classes | Assertion sur la salutation et couverture `/teacher/classes` | 129 tests Playwright découverts sans erreur ; exécution navigateur à relancer | CORRIGÉ, NAVIGATEUR BLOQUÉ mémoire |
 | BUG-011 | Haute | La liste d'inscriptions professeur reposait sur la limite de lignes Supabase par défaut et pouvait tronquer un grand effectif | Pagination stable par 500 inscriptions et chargement des profils par lots de 200 | Typecheck ; charge Supabase à rejouer | CORRIGÉ, CHARGE RÉELLE BLOCKED |
+| BUG-012 | Critique | Le quality gate a détecté des avis de sécurité de production affectant Next.js 16.3.8 et Zod 4.5.4 | Next.js 16.4.3 et Zod 4.6.6, lockfile régénéré | `npm audit --omit=dev --audit-level=high` | CORRIGÉ |
 | BUG-008 | Bloquante release | Pages juridiques contiennent `TODO-JURISTE` | Aucune règle juridique inventée ; validation humaine requise | inspection code | OUVERT |
 | BUG-009 | Bloquante QA | Aucun environnement Supabase de préproduction ni comptes de test multi-rôles disponibles | Préparer comptes isolés hors dépôt et secrets CI | E2E inter-rôles requis | OUVERT |
 | BUG-010 | Infrastructure | Suite complète/build/Playwright tués par manque de mémoire/disque local | Suites ciblées mono-worker ; aucune falsification de résultat | rapports de commande | OUVERT |
