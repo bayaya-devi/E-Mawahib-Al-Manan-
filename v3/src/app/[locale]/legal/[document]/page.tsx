@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { PublicShell } from "@/components/shell";
+import { PublicShell } from "@/components/shell/public-shell";
 import { isPublicLocale, type PublicLocale } from "@/features/public-site/content";
 import { legalDocuments, legalTitles, type LegalDocument } from "@/features/privacy/legal-content";
 

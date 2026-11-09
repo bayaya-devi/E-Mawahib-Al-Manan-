@@ -35,3 +35,10 @@ Décisions prises : pas de refactor massif des deux modules admin pendant ce mod
 - Chargement de la carte externe conditionné au choix utilisateur.
 - Pages légales trilingues, registre et procédures marqués pour validation juridique.
 - Export personnel JSON, demandes de droits auditées et purge technique planifiée.
+
+# 2026-10-14 — Performance (module 01)
+
+- Audit Lighthouse avant/après conservé dans `reports/perf`.
+- Shell public transformé en composant serveur et imports publics isolés.
+- Images AVIF/WebP, cache et budget automatisé ajoutés.
+- Les mesures locales invalides `NO_NAVSTART` restent explicitement signalées; la mesure de production est requise après déploiement.

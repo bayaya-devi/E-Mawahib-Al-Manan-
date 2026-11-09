@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { PublicShell } from "@/components/shell";
+import { PublicShell } from "@/components/shell/public-shell";
 import { isPublicLocale, pageFromPath, publicCopy, publicHref, type PublicLocale, type PublicPage } from "@/features/public-site/content";
 import { DynamicPublicContent } from "@/features/public-site/dynamic-content";
 import { getPublicSiteData, type PublicSiteData } from "@/features/public-site/repository";
-import { ConsentGatedMap } from "@/features/privacy";
+import { ConsentGatedMap } from "@/features/privacy/consent-gated-map";
 
 type RouteProps = { params: Promise<{ locale: string; page?: string[] }> };
 export async function generateMetadata({ params }: RouteProps): Promise<Metadata> {
@@ -26,7 +26,7 @@ export default async function LocalizedPublicPage({ params }: RouteProps) {
   const page = pageFromPath(segments?.[0]);
   if (!page) notFound();
   const data = await getPublicSiteData(rawLocale);
-  return <PublicShell locale={rawLocale}><PublicPage locale={rawLocale} page={page} data={data} /></PublicShell>;
+  return <PublicShell locale={rawLocale} page={page}><PublicPage locale={rawLocale} page={page} data={data} /></PublicShell>;
 }
 
 function PageIntro({ eyebrow, title, intro }: { eyebrow: string; title: string; intro?: string }) {
@@ -37,15 +37,15 @@ function PublicPage({ locale, page, data }: { locale: PublicLocale; page: Public
   const copy = publicCopy[locale];
   if (page === "home") return <>
     <section className="public-home-hero">
-      <Image className="public-home-hero__image" src="/dar-al-hadith/facade.webp" alt="" fill sizes="100vw" priority />
+      <Image className="public-home-hero__image" src="/dar-al-hadith/facade.webp" alt="" fill sizes="100vw" priority unoptimized />
       <div className="public-home-hero__shade" />
       <div className="public-home-hero__content"><span>{copy.hero.kicker}</span><h1>{copy.hero.title}</h1><p>{data.profile?.tagline ?? copy.hero.copy}</p><div><Link className="public-cta" href={publicHref(locale, "registration")}>{copy.hero.primary}<ArrowRight aria-hidden="true" size={19} /></Link><Link className="public-cta public-cta--quiet" href={publicHref(locale, "programs")}>{copy.hero.secondary}</Link></div></div>
     </section>
     <section className="public-trust"><strong>{copy.hero.trust}</strong></section>
-    <section className="public-feature-band"><div><span>{copy.about.eyebrow}</span><h2>{copy.about.title}</h2><p>{data.profile?.description ?? copy.about.paragraphs[0]}</p><Link href={publicHref(locale, "about")}>{copy.nav.about}<ArrowRight aria-hidden="true" size={18} /></Link></div><Image src="/dar-al-hadith/classroom.jpg" alt={copy.about.caption} width={720} height={480} /></section>
+    <section className="public-feature-band"><div><span>{copy.about.eyebrow}</span><h2>{copy.about.title}</h2><p>{data.profile?.description ?? copy.about.paragraphs[0]}</p><Link href={publicHref(locale, "about")}>{copy.nav.about}<ArrowRight aria-hidden="true" size={18} /></Link></div><Image src="/dar-al-hadith/classroom.webp" alt={copy.about.caption} width={720} height={480} /></section>
     <section className="public-home-grid">{copy.programs.items.map((item, index) => <article key={item.title}><span>0{index + 1}</span><h2>{item.title}</h2><p>{item.copy}</p></article>)}</section>
   </>;
-  if (page === "about") return <div className="public-page"><PageIntro eyebrow={copy.about.eyebrow} title={copy.about.title} /><section className="public-story"><div>{copy.about.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</div><figure><Image src="/dar-al-hadith/classroom.jpg" alt={copy.about.caption} width={760} height={520} /><figcaption>{copy.about.caption}</figcaption></figure></section></div>;
+  if (page === "about") return <div className="public-page"><PageIntro eyebrow={copy.about.eyebrow} title={copy.about.title} /><section className="public-story"><div>{copy.about.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</div><figure><Image src="/dar-al-hadith/classroom.webp" alt={copy.about.caption} width={760} height={520} /><figcaption>{copy.about.caption}</figcaption></figure></section></div>;
   if (page === "programs") return <div className="public-page"><PageIntro eyebrow={copy.programs.eyebrow} title={copy.programs.title} intro={copy.programs.intro} /><section className="public-program-list">{copy.programs.items.map((item, index) => <article key={item.title}><span>0{index + 1}</span><div><h2>{item.title}</h2><p>{item.copy}</p></div><BookOpenText aria-hidden="true" /></article>)}</section></div>;
   if (page === "schedule") return <div className="public-page"><PageIntro eyebrow={copy.schedule.eyebrow} title={copy.schedule.title} intro={copy.schedule.intro} /><section className="public-schedule-hours" aria-label={copy.schedule.title}>{copy.schedule.hours.map((hour) => <p key={hour}>{hour}</p>)}</section><DynamicPublicContent kind="schedule" locale={locale} initial={data} /></div>;
   if (page === "courses") return <div className="public-page"><PageIntro eyebrow={copy.courses.eyebrow} title={copy.courses.title} intro={copy.courses.intro} /><section className="public-check-list">{copy.courses.items.map((item) => <article key={item}><Check aria-hidden="true" /><strong>{item}</strong></article>)}</section></div>;

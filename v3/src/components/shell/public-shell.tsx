@@ -1,64 +1,27 @@
-"use client";
-
-import { ChevronDown, LogIn, Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { cookies } from "next/headers";
 
-import { locales, pageFromPath, publicCopy, publicHref, publicPages, type PublicLocale } from "@/features/public-site/content";
-import { publicLocaleCookie } from "@/features/public-site/locale-preference";
+import { publicCopy, publicHref, publicPages, type PublicLocale, type PublicPage } from "@/features/public-site/content";
+import { ConsentBanner } from "@/features/privacy/consent-banner";
 import { PublicMotion } from "@/features/public-site/public-motion";
-import { ConsentBanner } from "@/features/privacy";
+import { PrivacyPreferencesButton, PublicHeaderControls } from "./public-shell-controls";
 
-const localeLabels: Record<PublicLocale, string> = { ar: "العربية", fr: "Français", en: "English", amz: "ⵜⴰⵛⵍⵃⵉⵜ" };
-
-export function PublicShell({ locale, children }: { locale: PublicLocale; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  const [languageOpen, setLanguageOpen] = useState(false);
-  const languageRef = useRef<HTMLDivElement>(null);
-  const pathname = usePathname();
+export async function PublicShell({ locale, page, children }: { locale: PublicLocale; page?: PublicPage; children: ReactNode }) {
   const copy = publicCopy[locale];
-  const page = pageFromPath(pathname.split("/").filter(Boolean)[1]) ?? "home";
-  useEffect(() => {
-    const closeOnOutsidePress = (event: MouseEvent) => {
-      if (!languageRef.current?.contains(event.target as Node)) setLanguageOpen(false);
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setLanguageOpen(false);
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", closeOnOutsidePress);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("mousedown", closeOnOutsidePress);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, []);
-  const saveLocale = useCallback((nextLocale: PublicLocale) => { document.cookie = `${publicLocaleCookie}=${nextLocale}; Path=/; Max-Age=31536000; SameSite=Lax`; }, []);
+  const consentStored = (await cookies()).has("mawahib_consent");
+  const navItems = publicPages.map((item) => ({ id: item, label: copy.nav[item], href: publicHref(locale, item) }));
+  const languageItems = (["ar", "fr", "en", "amz"] as const).filter((item) => item !== locale).map((item) => ({ locale: item, href: page ? publicHref(item, page) : `/${item}` }));
   return <div className="public-v3" lang={locale === "amz" ? "zgh-Tfng" : locale} dir={locale === "ar" ? "rtl" : "ltr"}>
     <header className="public-v3__header">
-      <Link className="public-v3__brand" href={publicHref(locale, "home")} aria-label={copy.brand}>
-        <Image src="/dar-al-hadith/logo.webp" alt="" width={53} height={52} priority />
-        <span><strong>{copy.brand}</strong><small>{copy.association}</small></span>
-      </Link>
-      <nav className="public-v3__desktop-nav" aria-label={copy.menu}>{publicPages.map((item) => <Link key={item} className={item === page ? "is-active" : undefined} href={publicHref(locale, item)}>{copy.nav[item]}</Link>)}</nav>
-      <div className="public-v3__actions">
-        <div className="public-v3__language" ref={languageRef}>
-          <button type="button" aria-haspopup="menu" aria-expanded={languageOpen} aria-controls="public-language-menu" onClick={() => setLanguageOpen((value) => !value)}>{localeLabels[locale]}<ChevronDown aria-hidden="true" size={16} /></button>
-          {languageOpen && <div id="public-language-menu" aria-label={copy.language}>{locales.filter((item) => item !== locale).map((item) => <Link key={item} href={publicHref(item, page)} hrefLang={item === "amz" ? "zgh" : item} onClick={() => { saveLocale(item); setLanguageOpen(false); setOpen(false); }}>{localeLabels[item]}</Link>)}</div>}
-        </div>
-        <Link className="public-v3__login" href="/login" aria-label={copy.login} title={copy.login}><LogIn aria-hidden="true" size={17} /><span>{copy.login}</span></Link>
-        <button className="public-v3__menu" type="button" aria-label={copy.menu} aria-expanded={open} onClick={() => setOpen((value) => !value)}>{open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}</button>
-      </div>
-      {open && <nav className="public-v3__mobile-nav" aria-label={copy.menu}>{publicPages.map((item) => <Link key={item} className={item === page ? "is-active" : undefined} href={publicHref(locale, item)} onClick={() => { setOpen(false); setLanguageOpen(false); }}>{copy.nav[item]}</Link>)}<Link className="public-v3__login public-v3__login--mobile" href="/login" onClick={() => { setOpen(false); setLanguageOpen(false); }}><LogIn aria-hidden="true" size={17} /><span>{copy.login}</span></Link></nav>}
+      <Link className="public-v3__brand" href={publicHref(locale, "home")} aria-label={copy.brand}><Image src="/dar-al-hadith/logo.webp" alt="" width={53} height={52} priority /><span><strong>{copy.brand}</strong><small>{copy.association}</small></span></Link>
+      <nav className="public-v3__desktop-nav" aria-label={copy.menu}>{navItems.map((item) => <Link key={item.id} className={item.id === page ? "is-active" : undefined} href={item.href}>{item.label}</Link>)}</nav>
+      <PublicHeaderControls locale={locale} currentPage={page} labels={{ login: copy.login, menu: copy.menu, language: copy.language }} navItems={navItems} languageItems={languageItems} />
     </header>
     <main id="main-content">{children}</main>
-    <footer className="public-v3__footer"><Image src="/dar-al-hadith/logo.webp" alt="" width={55} height={54} /><strong>{copy.footer}</strong><nav aria-label={copy.menu}>{publicPages.slice(1, 6).map((item) => <Link key={item} href={publicHref(locale, item)}>{copy.nav[item]}</Link>)}<Link href={`/${locale}/legal/privacy`}>{locale === "ar" ? "الخصوصية" : locale === "en" ? "Privacy" : "Confidentialité"}</Link><Link href={`/${locale}/legal/cookies`}>{locale === "ar" ? "ملفات الارتباط" : locale === "en" ? "Cookies" : "Cookies"}</Link><Link href={`/${locale}/legal/terms`}>{locale === "ar" ? "شروط الاستخدام" : locale === "en" ? "Terms" : "Conditions"}</Link><Link href={`/${locale}/legal/legal`}>{locale === "ar" ? "الإشعار القانوني" : locale === "en" ? "Legal" : "Mentions légales"}</Link><button type="button" className="public-footer-privacy" onClick={() => window.dispatchEvent(new Event("mawahib:privacy-open"))}>{locale === "ar" ? "اختيارات الخصوصية" : locale === "en" ? "Privacy choices" : "Choix de confidentialité"}</button></nav></footer>
-    <ConsentBanner locale={locale} />
+    <footer className="public-v3__footer"><Image src="/dar-al-hadith/logo.webp" alt="" width={55} height={54} /><strong>{copy.footer}</strong><nav aria-label={copy.menu}>{navItems.slice(1, 6).map((item) => <Link key={item.id} href={item.href}>{item.label}</Link>)}<Link href={`/${locale}/legal/privacy`}>{locale === "ar" ? "الخصوصية" : locale === "en" ? "Privacy" : "Confidentialité"}</Link><Link href={`/${locale}/legal/cookies`}>{locale === "ar" ? "ملفات الارتباط" : "Cookies"}</Link><Link href={`/${locale}/legal/terms`}>{locale === "ar" ? "شروط الاستخدام" : locale === "en" ? "Terms" : "Conditions"}</Link><Link href={`/${locale}/legal/legal`}>{locale === "ar" ? "الإشعار القانوني" : locale === "en" ? "Legal" : "Mentions légales"}</Link><PrivacyPreferencesButton locale={locale} /></nav></footer>
+    <ConsentBanner locale={locale} initialOpen={!consentStored} />
     <PublicMotion />
   </div>;
 }

@@ -13,8 +13,8 @@ const copy = {
   en: { title: "Privacy choices", text: "Necessary storage keeps the site working. Audience measurement and marketing stay blocked unless you choose them.", refuse: "Reject optional", accept: "Accept all", save: "Save choices", audience: "Audience measurement", marketing: "Marketing" },
 } as const;
 
-export function ConsentBanner({ locale }: { locale: PublicLocale }) {
-  const [open, setOpen] = useState(false);
+export function ConsentBanner({ locale, initialOpen = false }: { locale: PublicLocale; initialOpen?: boolean }) {
+  const [open, setOpen] = useState(initialOpen);
   const [audience, setAudience] = useState(false);
   const [marketing, setMarketing] = useState(false);
   const text = copy[locale === "amz" ? "fr" : locale];
@@ -22,7 +22,7 @@ export function ConsentBanner({ locale }: { locale: PublicLocale }) {
     const timer = window.setTimeout(() => {
       const current = readConsent();
       if (!current || current.version !== policyVersion) setOpen(true);
-      else { setAudience(current.audience); setMarketing(current.marketing); }
+      else { setOpen(false); setAudience(current.audience); setMarketing(current.marketing); }
     }, 0);
     const show = () => setOpen(true);
     window.addEventListener("mawahib:privacy-open", show);

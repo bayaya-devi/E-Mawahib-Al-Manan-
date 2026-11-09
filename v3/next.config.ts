@@ -27,11 +27,13 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  images: { formats: ["image/avif", "image/webp"], minimumCacheTTL: 2_592_000 },
   allowedDevOrigins: ["127.0.0.1"],
   poweredByHeader: false,
   reactStrictMode: true,
   experimental: {
     typedEnv: true,
+    ...(process.env.NEXT_CONSTRAINED_BUILD === "1" ? { cpus: 1, webpackBuildWorker: false } : {}),
   },
   env: {
     NEXT_PUBLIC_APP_VERSION: appVersion,
@@ -40,6 +42,10 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      {
+        source: "/dar-al-hadith/:asset*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
+      },
       {
         source: "/:path*",
         headers: [

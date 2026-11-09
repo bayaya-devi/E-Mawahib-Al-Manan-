@@ -35,7 +35,8 @@
     "notifications:vapid": "web-push generate-vapid-keys --json",
     "check": "npm run security:secrets && npm run lint && npm run typecheck && npm run test:run && npm run build",
     "quality:report": "node scripts/quality-report.mjs",
-    "test:load": "k6 run tests/load/smoke.js"
+    "test:load": "k6 run tests/load/smoke.js",
+    "perf:check": "node scripts/performance-check.mjs"
   },
   "engines": {
     "node": ">=22.0.0 <25"

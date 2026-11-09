@@ -1,0 +1,5 @@
+{
+  "maxStaticJavaScriptBytes": 4000000,
+  "maxStaticCssBytes": 350000,
+  "maxPublicImageBytes": 150000
+}
