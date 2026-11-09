@@ -853,8 +853,38 @@ type FinanceTransactionRow = {
   source_type: string;
   source_id: string | null;
   reference_code: string | null;
+  class_id: string | null;
+  payment_method: "cash" | "bank" | "card" | "other" | null;
+  allocation_kind: "direct" | "common" | "unassigned";
+  transaction_status: "posted" | "reversed";
+  reversed_transaction_id: string | null;
+  idempotency_key: string | null;
   created_by: string;
   created_at: string;
+};
+type FinanceClassAllocationRow = {
+  id: string;
+  transaction_id: string;
+  class_id: string;
+  amount: number;
+  created_at: string;
+};
+type RecurringChargeRow = {
+  id: string;
+  school_id: string;
+  title: string;
+  category: string;
+  amount: number;
+  currency: string;
+  due_day: number;
+  class_id: string | null;
+  allocation_kind: "direct" | "common";
+  active: boolean;
+  starts_on: string;
+  ends_on: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
 };
 type StudentPaymentRow = {
   id: string;
@@ -1305,6 +1335,8 @@ export type Database = {
       school_incidents: ReadonlyTable<SchoolIncidentRow>;
       inventory_items: ReadonlyTable<InventoryItemRow>;
       finance_transactions: ReadonlyTable<FinanceTransactionRow>;
+      finance_class_allocations: ReadonlyTable<FinanceClassAllocationRow>;
+      recurring_charges: ReadonlyTable<RecurringChargeRow>;
       student_payments: ReadonlyTable<StudentPaymentRow>;
       admin_school_settings: ReadonlyTable<AdminSchoolSettingRow>;
       school_documents: ReadonlyTable<SchoolDocumentRow>;
@@ -1605,6 +1637,45 @@ export type Database = {
       };
       admin_create_command_record: {
         Args: { target_kind: string; payload: Json };
+        Returns: string;
+      };
+      admin_record_manual_finance: {
+        Args: {
+          target_school_id: string;
+          target_direction: "income" | "expense";
+          target_category: string;
+          target_amount: number;
+          target_occurred_on: string;
+          target_description: string;
+          target_class_id: string | null;
+          target_payment_method: "cash" | "bank" | "card" | "other";
+          target_allocation_kind: "direct" | "common" | "unassigned";
+          target_idempotency_key: string;
+        };
+        Returns: string;
+      };
+      admin_reverse_manual_finance: {
+        Args: { target_transaction_id: string; target_reason: string; target_idempotency_key: string };
+        Returns: string;
+      };
+      admin_save_recurring_charge: {
+        Args: {
+          target_school_id: string;
+          target_id: string | null;
+          target_title: string;
+          target_category: string;
+          target_amount: number;
+          target_due_day: number;
+          target_class_id: string | null;
+          target_allocation_kind: "direct" | "common";
+          target_starts_on: string;
+          target_ends_on: string | null;
+          target_active: boolean;
+        };
+        Returns: string;
+      };
+      admin_pay_recurring_charge: {
+        Args: { target_charge_id: string; target_period_month: string; target_paid_on: string; target_idempotency_key: string };
         Returns: string;
       };
       admin_update_person: {

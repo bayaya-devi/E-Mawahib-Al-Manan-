@@ -1,6 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { readFile, readdir } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 const users = {
@@ -48,6 +49,7 @@ const supabasePrelude = `
 `;
 
 let database: PGlite;
+let databaseDirectory: string;
 
 async function applyMigrations() {
   const migrationsDirectory = path.resolve(
@@ -298,15 +300,17 @@ describe("V3 migrations and RLS", () => {
     await database.exec(`delete from public.conversation_messages where conversation_id='${conversation}'; delete from public.conversation_members where conversation_id='${conversation}'; delete from public.conversations where id='${conversation}'; delete from public.student_profile_switch_authorizations;`);
   });
   beforeAll(async () => {
-    database = new PGlite();
+    databaseDirectory = await mkdtemp(path.join(tmpdir(), "e-mawahib-pglite-"));
+    database = new PGlite(databaseDirectory);
     await database.exec(supabasePrelude);
     await applyMigrations();
     await runSqlContractTests();
     await seedSecurityScenarios();
-  }, 30_000);
+  }, 90_000);
 
   afterAll(async () => {
     await database.close();
+    await rm(databaseDirectory, { recursive: true, force: true });
   });
 
   it("creates the exact account statuses and roles", async () => {
@@ -385,6 +389,7 @@ describe("V3 migrations and RLS", () => {
       "exams",
       "family_relationships",
       "feature_flags",
+      "finance_class_allocations",
       "finance_transactions",
       "game_attempts",
       "inventory_items",
@@ -429,6 +434,7 @@ describe("V3 migrations and RLS", () => {
       "recitation_attempts",
       "recitation_errors",
       "recitation_results",
+      "recurring_charges",
       "review_passages",
       "role_permissions",
       "school_announcements",
@@ -529,6 +535,7 @@ describe("V3 migrations and RLS", () => {
       "exams_read_scoped",
       "family_relationships_select_scoped",
       "feature_flags_active_read",
+      "finance_class_allocations_admin_read",
       "finance_transactions_admin_read",
       "finance_transactions_student_read",
       "game_attempts_read_scoped",
@@ -575,6 +582,7 @@ describe("V3 migrations and RLS", () => {
       "recitation_attempts_read_scoped",
       "recitation_errors_read_scoped",
       "recitation_results_read_scoped",
+      "recurring_charges_admin_read",
       "review_passages_read_scoped",
       "role_permissions_active_read",
       "schema_versions_direction_read",
@@ -1302,6 +1310,37 @@ describe("V3 migrations and RLS", () => {
     await runAsUser(users.adminA, `select public.admin_record_teacher_salary('${users.teacherA}','2026-09-01',1750,'2026-09-06','Corrected')`);
     const salaryLedger = await database.query<{ count: number; amount: number }>(`select count(*)::integer count,max(amount)::integer amount from public.finance_transactions where source_type='teacher_salary' and teacher_id='${users.teacherA}'`);
     expect(salaryLedger.rows).toEqual([{ count: 1, amount: 1750 }]);
+  });
+
+  it("records idempotent manual finance, preserves reversals, and scopes recurring charges", async () => {
+    const manualKey = "93000000-0000-4000-8000-000000000001";
+    const manualSql = `select public.admin_record_manual_finance('${schools.first}','income','donation',250,'2026-11-01','Donation','${classes.first}','cash','direct','${manualKey}') as id`;
+    const first = await asUser<{ id: string }>(users.adminA, manualSql);
+    const repeated = await asUser<{ id: string }>(users.adminA, manualSql);
+    expect(repeated).toEqual(first);
+    const single = await database.query<{ count: number }>(`select count(*)::integer count from public.finance_transactions where idempotency_key='${manualKey}'`);
+    expect(single.rows).toEqual([{ count: 1 }]);
+
+    const reversalKey = "93000000-0000-4000-8000-000000000002";
+    await runAsUser(users.adminA, `select public.admin_reverse_manual_finance('${first[0]?.id}','Input correction','${reversalKey}')`);
+    const net = await database.query<{ total: number }>(`select coalesce(sum(case when direction='income' then amount else -amount end),0)::integer total from public.finance_transactions where id='${first[0]?.id}' or reversed_transaction_id='${first[0]?.id}'`);
+    expect(net.rows).toEqual([{ total: 0 }]);
+    await expect(runAsUser(users.adminA, `select public.admin_reverse_manual_finance('${first[0]?.id}','Again','93000000-0000-4000-8000-000000000003')`)).rejects.toThrow(/transaction_not_reversible/);
+
+    const charge = await asUser<{ id: string }>(users.adminA, `select public.admin_save_recurring_charge('${schools.first}',null::uuid,'Rent','rent',1200::numeric,5::smallint,null::uuid,'common','2026-01-01'::date,null::date,true) as id`);
+    const paymentKey = "93000000-0000-4000-8000-000000000004";
+    await runAsUser(users.adminA, `select public.admin_pay_recurring_charge('${charge[0]?.id}','2026-11-01','2026-11-05','${paymentKey}')`);
+    await runAsUser(users.adminA, `select public.admin_pay_recurring_charge('${charge[0]?.id}','2026-11-01','2026-11-06','93000000-0000-4000-8000-000000000005')`);
+    const oneCharge = await database.query<{ count: number }>(`select count(*)::integer count from public.finance_transactions where reference_code='recurring:${charge[0]?.id}:2026-11-01'`);
+    expect(oneCharge.rows).toEqual([{ count: 1 }]);
+    expect(await asUser<{ id: string }>(users.studentA, "select id from public.recurring_charges")).toEqual([]);
+    expect(await asUser<{ id: string }>(users.teacherA, "select id from public.finance_class_allocations")).toEqual([]);
+  });
+
+  it("assigns future student payment ledger entries to the official active class", async () => {
+    await runAsUser(users.adminA, `select public.admin_record_student_payment('${users.studentA}','2026-12-01',80,'2026-12-03','December')`);
+    const ledger = await database.query<{ class_id: string; allocation_kind: string }>(`select class_id,allocation_kind from public.finance_transactions where student_id='${users.studentA}' and occurred_on='2026-12-03'`);
+    expect(ledger.rows).toEqual([{ class_id: classes.first, allocation_kind: "direct" }]);
   });
 
   it("accepts a zero fee as an exemption without creating fake revenue", async () => {

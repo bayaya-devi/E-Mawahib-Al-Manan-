@@ -28,6 +28,9 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
+  // CI may run the standalone typecheck first, then skip Next's duplicate worker
+  // on memory-constrained hosts. Production builds check types by default.
+  typescript: { ignoreBuildErrors: process.env.NEXT_SKIP_DUPLICATE_TYPECHECK === "1" },
   images: { formats: ["image/avif", "image/webp"], minimumCacheTTL: 2_592_000 },
   allowedDevOrigins: ["127.0.0.1"],
   poweredByHeader: false,

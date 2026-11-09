@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowDown,
@@ -759,7 +759,7 @@ export function AdminFinanceWorkspace({ data }: { data: AdminCommandData }) {
   const monthly = groupFinance(data.finance);
   return (
     <div className="command-page">
-      <PageHead title="المالية" action={<ManualFinance />} />
+      <PageHead title="المالية" action={<ManualFinance data={data} />} />
       <div className="admin-local-tools">
         <select
           aria-label="نوع العملية"
@@ -821,6 +821,11 @@ export function AdminFinanceWorkspace({ data }: { data: AdminCommandData }) {
           );
         })}
       </section>
+      <section className="command-panel">
+        <div className="command-heading"><h2>النتيجة التحليلية حسب القسم</h2></div>
+        <div className="class-finance-grid">{data.classFinance.map((row) => <article key={row.classId} className={row.result > 0 ? "is-positive" : row.result < 0 ? "is-negative" : "is-balanced"}><div><strong>{row.className}</strong><small>{row.teacherName ?? "أستاذ غير معيّن"} · {row.students} طالب</small></div><b>{money(row.result)}</b><small>مداخيل {money(row.income)} · مصاريف مباشرة {money(row.directExpense)}</small></article>)}</div>
+      </section>
+      <RecurringCharges data={data} />
       <div className="finance-ledger">
         {rows.map((row) => (
           <article key={row.id}>
@@ -830,10 +835,11 @@ export function AdminFinanceWorkspace({ data }: { data: AdminCommandData }) {
             <div>
               <strong>{category(row.category)}</strong>
               <small>
-                {row.occurredOn} · {source(row.sourceType)}
+                {row.occurredOn} · {source(row.sourceType)}{row.classId ? ` · ${data.classes.find((item) => item.id === row.classId)?.name ?? "قسم"}` : ""}
               </small>
             </div>
             <b>{money(row.amount)}</b>
+            {row.sourceType === "manual" && row.transactionStatus === "posted" ? <ReverseFinance transactionId={row.id} /> : null}
           </article>
         ))}
       </div>
@@ -841,28 +847,28 @@ export function AdminFinanceWorkspace({ data }: { data: AdminCommandData }) {
   );
 }
 
-function ManualFinance() {
+function ManualFinance({ data }: { data: AdminCommandData }) {
   const [direction, setDirection] = useState("income");
   const [amount, setAmount] = useState("");
   const [categoryValue, setCategory] = useState("donation");
   const [description, setDescription] = useState("");
+  const [occurredOn, setOccurredOn] = useState(new Date().toISOString().slice(0, 10));
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [allocationKind, setAllocationKind] = useState("unassigned");
+  const [classId, setClassId] = useState("");
   const [busy, setBusy] = useState(false);
   const { showToast } = useToast();
   const router = useRouter();
   async function save() {
+    if (!data.school || (allocationKind === "direct" && !classId)) return;
     setBusy(true);
-    const result = await createClient().rpc("admin_create_command_record", {
-      target_kind: "finance",
-      payload: {
-        direction,
-        amount,
-        category: categoryValue,
-        description,
-        date: new Date().toISOString().slice(0, 10),
-      },
+    const response = await fetch("/api/admin/finance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind: "manual", schoolId: data.school.id, direction, amount: Number(amount), category: categoryValue, description, occurredOn, paymentMethod, allocationKind, classId: classId || null, idempotencyKey: crypto.randomUUID() }),
     });
     setBusy(false);
-    if (result.error)
+    if (!response.ok)
       return showToast({ title: "تعذر حفظ العملية", tone: "info" });
     showToast({ title: "تم حفظ العملية", tone: "success" });
     router.refresh();
@@ -919,6 +925,10 @@ function ManualFinance() {
             onChange={(e) => setAmount(e.target.value)}
           />
         </label>
+        <label>التاريخ<input type="date" value={occurredOn} onChange={(event) => setOccurredOn(event.target.value)} /></label>
+        <label>طريقة الأداء<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option value="cash">نقدا</option><option value="bank">تحويل بنكي</option><option value="card">بطاقة</option><option value="other">أخرى</option></select></label>
+        <label>التخصيص<select value={allocationKind} onChange={(event) => { setAllocationKind(event.target.value); if (event.target.value !== "direct") setClassId(""); }}><option value="unassigned">غير مخصص</option><option value="common">مشترك</option><option value="direct">قسم محدد</option></select></label>
+        {allocationKind === "direct" ? <label>القسم<select value={classId} onChange={(event) => setClassId(event.target.value)}><option value="">اختر القسم</option>{data.classes.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label> : null}
         <label>
           البيان
           <input
@@ -928,7 +938,7 @@ function ManualFinance() {
         </label>
         <Button
           loading={busy}
-          disabled={Number(amount) <= 0}
+          disabled={Number(amount) <= 0 || !occurredOn || !data.school || (allocationKind === "direct" && !classId)}
           onClick={() => void save()}
         >
           حفظ
@@ -936,6 +946,49 @@ function ManualFinance() {
       </div>
     </Dialog>
   );
+}
+
+function ReverseFinance({ transactionId }: { transactionId: string }) {
+  const [busy, setBusy] = useState(false);
+  const { showToast } = useToast();
+  const router = useRouter();
+  async function reverse() {
+    const reason = window.prompt("سبب إلغاء العملية");
+    if (!reason || reason.trim().length < 3) return;
+    setBusy(true);
+    const response = await fetch("/api/admin/finance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "reverse", transactionId, reason, idempotencyKey: crypto.randomUUID() }) });
+    setBusy(false);
+    if (!response.ok) return showToast({ title: "تعذر إلغاء العملية", tone: "info" });
+    showToast({ title: "تم إلغاء العملية مع حفظ أثرها", tone: "success" });
+    router.refresh();
+  }
+  return <Button variant="quiet" loading={busy} onClick={() => void reverse()}>إلغاء</Button>;
+}
+
+function RecurringCharges({ data }: { data: AdminCommandData }) {
+  const [title, setTitle] = useState("");
+  const [amount, setAmount] = useState("");
+  const [dueDay, setDueDay] = useState("1");
+  const [busy, setBusy] = useState(false);
+  const { showToast } = useToast();
+  const router = useRouter();
+  async function request(payload: object) {
+    setBusy(true);
+    const response = await fetch("/api/admin/finance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    setBusy(false);
+    if (!response.ok) { showToast({ title: "تعذر حفظ العملية", tone: "info" }); return false; }
+    showToast({ title: "تم تحديث المصاريف المتكررة", tone: "success" }); router.refresh(); return true;
+  }
+  async function save() {
+    if (!data.school) return;
+    const ok = await request({ kind: "recurring_save", schoolId: data.school.id, id: null, title, category: "recurring_expense", amount: Number(amount), dueDay: Number(dueDay), classId: null, allocationKind: "common", startsOn: new Date().toISOString().slice(0, 10), endsOn: null, active: true });
+    if (ok) { setTitle(""); setAmount(""); }
+  }
+  async function pay(chargeId: string) {
+    const now = new Date(); const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    await request({ kind: "recurring_pay", chargeId, month, paidOn: now.toISOString().slice(0, 10), idempotencyKey: crypto.randomUUID() });
+  }
+  return <section className="command-panel"><div className="command-heading"><h2>المصاريف المتكررة</h2></div><div className="recurring-charge-form"><input aria-label="اسم المصروف" placeholder="مثال: الكراء" value={title} onChange={(event) => setTitle(event.target.value)} /><input aria-label="المبلغ" type="number" min="0.01" placeholder="المبلغ" value={amount} onChange={(event) => setAmount(event.target.value)} /><input aria-label="يوم الاستحقاق" type="number" min="1" max="28" value={dueDay} onChange={(event) => setDueDay(event.target.value)} /><Button loading={busy} disabled={title.trim().length < 2 || Number(amount) <= 0} onClick={() => void save()}>إضافة</Button></div><div className="recurring-charge-list">{data.recurringCharges.map((charge) => <article key={charge.id}><div><strong>{charge.title}</strong><small>اليوم {charge.dueDay} من كل شهر · {money(charge.amount)}</small></div><Button variant="secondary" loading={busy} onClick={() => void pay(charge.id)}>تسجيل أداء هذا الشهر</Button></article>)}</div></section>;
 }
 
 export function AdminMonitoringWorkspace({ data }: { data: AdminCommandData }) {
@@ -956,6 +1009,7 @@ export function AdminMonitoringWorkspace({ data }: { data: AdminCommandData }) {
       (kindFilter === "all" || row.kind === kindFilter) &&
       (!dateFilter || row.occurredAt.startsWith(dateFilter)),
   );
+  useAdminRealtimeRefresh();
   return (
     <div className="command-page">
       <PageHead title="المتابعة" />
@@ -1000,6 +1054,21 @@ export function AdminMonitoringWorkspace({ data }: { data: AdminCommandData }) {
       </div>
     </div>
   );
+}
+
+function useAdminRealtimeRefresh() {
+  const router = useRouter();
+  useEffect(() => {
+    const client = createClient();
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const refresh = () => { if (timer) clearTimeout(timer); timer = setTimeout(() => router.refresh(), 500); };
+    const channel = client.channel("admin-live-activity")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_logs" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "learning_events" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "teacher_recitations" }, refresh)
+      .subscribe();
+    return () => { if (timer) clearTimeout(timer); void client.removeChannel(channel); };
+  }, [router]);
 }
 
 function PageHead({
