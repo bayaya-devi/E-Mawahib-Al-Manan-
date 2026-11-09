@@ -18,23 +18,26 @@ import {
   UserCog,
   HeartHandshake,
   Landmark,
+  MoreHorizontal,
   RadioTower,
   UsersRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 
-import { Avatar, CommandPalette, ToastProvider } from "@/components/ui";
+import { Avatar, CommandPalette, Drawer, ToastProvider } from "@/components/ui";
 import { NotificationCenter } from "@/features/notifications";
 import { OfflineProvider } from "@/features/offline";
 import { applyAppearance, readAppearance, watchSystemAppearance } from "@/features/settings/appearance";
 import { rememberAuthenticatedAccount } from "@/features/teacher/device-account-vault";
 import type { CommandItem } from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
+import { getStudentStage, type StudentStage } from "@/lib/ui/student-stage";
 import { createClient } from "@/lib/supabase/client";
 
 export type ShellKind = "student" | "family" | "teacher" | "admin";
@@ -94,7 +97,11 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   const [studentName, setStudentName] = useState("");
   const [signingOut, setSigningOut] = useState(false);
   const [navigationOpen, setNavigationOpen] = useState(true);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const [studentStage, setStudentStage] = useState<StudentStage>("neutral");
   const items = navigation[kind];
+  const mobileItems = items.slice(0, 4);
+  const secondaryItems = items.slice(4);
   const commands = useMemo<CommandItem[]>(() => items.map((item) => ({
     label: item.label,
     href: item.href,
@@ -102,21 +109,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   })), [items, kind]);
 
   useEffect(() => {
-    if (kind === "admin") applyAppearance(readAppearance(), "forest");
-    else applyAppearance();
-    let lastScrollY = window.scrollY;
-    let frame = 0;
-    const handleScroll = () => {
-      if (!window.matchMedia("(max-width: 720px)").matches) return;
-      if (frame) return;
-      frame = window.requestAnimationFrame(() => {
-        const current = window.scrollY;
-        if (current < 48 || current < lastScrollY - 8) setNavigationOpen(true);
-        else if (current > lastScrollY + 8 && current > 96) setNavigationOpen(false);
-        lastScrollY = current;
-        frame = 0;
-      });
-    };
+    applyAppearance(readAppearance());
     void rememberAuthenticatedAccount();
     const listener = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
@@ -125,18 +118,24 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
       }
     };
     window.addEventListener("keydown", listener);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    const stopAppearanceWatch = kind === "admin" ? () => undefined : watchSystemAppearance();
-    return () => { if (frame) window.cancelAnimationFrame(frame); window.removeEventListener("keydown", listener); window.removeEventListener("scroll", handleScroll); stopAppearanceWatch(); };
+    const stopAppearanceWatch = watchSystemAppearance();
+    return () => { window.removeEventListener("keydown", listener); stopAppearanceWatch(); };
   }, [kind]);
 
   useEffect(() => {
     if (kind !== "teacher" && kind !== "student") return;
-    void createClient().auth.getUser().then(async ({ data }) => {
+    const client = createClient();
+    void client.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
-      const profile = await createClient().from("profiles").select("display_name").eq("id", data.user.id).maybeSingle();
+      const [profile, student] = await Promise.all([
+        client.from("profiles").select("display_name").eq("id", data.user.id).maybeSingle(),
+        kind === "student" ? client.from("student_profiles").select("date_of_birth").eq("user_id", data.user.id).maybeSingle() : Promise.resolve({ data: null }),
+      ]);
       if (kind === "teacher") setTeacherName(profile.data?.display_name ?? "");
-      else setStudentName(profile.data?.display_name ?? "");
+      else {
+        setStudentName(profile.data?.display_name ?? "");
+        setStudentStage(getStudentStage(student.data?.date_of_birth));
+      }
     });
   }, [kind]);
 
@@ -149,10 +148,10 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 
   return (
     <ToastProvider><OfflineProvider>
-      <div className={cn("app-shell", `app-shell--${kind}`, !navigationOpen && "is-navigation-collapsed")}>
+      <div className={cn("app-shell", `app-shell--${kind}`, !navigationOpen && "is-navigation-collapsed")} data-student-stage={kind === "student" ? studentStage : undefined}>
         <aside className="app-rail" id="application-navigation" aria-label="التنقل الرئيسي">
           <Link className="brand-mark" href="/" aria-label="مواهب المنان">
-            <span aria-hidden="true">م</span>
+            <Image src="/dar-al-hadith/logo.webp" alt="" width={44} height={43} priority />
             <strong>مواهب المنان</strong>
           </Link>
           <button className="app-rail__collapse" type="button" aria-label={navigationOpen ? "طي قائمة التنقل" : "فتح قائمة التنقل"} aria-expanded={navigationOpen} onClick={() => setNavigationOpen((open) => !open)}><Menu aria-hidden="true" size={19} /></button>
@@ -169,7 +168,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
           <header className="app-header">
             {kind === "teacher" ? <div className="teacher-shell-identity"><strong>أستاذ(ة) {teacherName}</strong></div> : kind === "student" ? <div className="student-shell-identity"><strong>{studentName || "حساب الطالب"}</strong></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
             <div className="app-header__actions">
-              <button className="navigation-toggle navigation-toggle--mobile" type="button" aria-label={navigationOpen ? "إخفاء قائمة التنقل" : "إظهار قائمة التنقل"} aria-expanded={navigationOpen} aria-controls="application-navigation mobile-navigation" onClick={() => setNavigationOpen((open) => !open)}>
+              <button className="navigation-toggle navigation-toggle--mobile" type="button" aria-label="فتح بقية الأقسام" aria-expanded={mobileMoreOpen} aria-controls="mobile-more-navigation" onClick={() => setMobileMoreOpen(true)}>
                 <Menu aria-hidden="true" size={20} />
               </button>
               {kind === "family" ? <button className="global-search-trigger" type="button" aria-label="فتح البحث العام" onClick={() => setCommandOpen(true)}>
@@ -186,18 +185,24 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
         </div>
 
         <nav className="mobile-nav" id="mobile-navigation" aria-label="التنقل الرئيسي للهاتف">
-          {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
+          {mobileItems.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
+          <button className={cn("app-nav-link", "mobile-nav__more", secondaryItems.some((item) => isActivePath(pathname, item.href)) && "is-active")} type="button" aria-label="المزيد" aria-expanded={mobileMoreOpen} onClick={() => setMobileMoreOpen(true)}><MoreHorizontal aria-hidden="true" size={21} /><span>المزيد</span></button>
         </nav>
+        <Drawer open={mobileMoreOpen} onOpenChange={setMobileMoreOpen} title="بقية الأقسام">
+          <nav className="mobile-more-nav" id="mobile-more-navigation" aria-label="بقية أقسام المنصة">
+            {secondaryItems.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} onNavigate={() => setMobileMoreOpen(false)} />)}
+          </nav>
+        </Drawer>
         {kind === "family" ? <CommandPalette items={commands} open={commandOpen} onOpenChange={setCommandOpen} /> : null}
       </div>
     </OfflineProvider></ToastProvider>
   );
 }
 
-function NavLink({ item, active }: { item: NavItem; active: boolean }) {
+function NavLink({ item, active, onNavigate }: { item: NavItem; active: boolean; onNavigate?: () => void }) {
   const Icon = item.icon;
   return (
-    <Link className={cn("app-nav-link", active && "is-active")} href={item.href} prefetch={false} aria-label={item.label} aria-current={active ? "page" : undefined}>
+    <Link className={cn("app-nav-link", active && "is-active")} href={item.href} prefetch={false} aria-label={item.label} aria-current={active ? "page" : undefined} title={item.label} {...(onNavigate ? { onClick: onNavigate } : {})}>
       <Icon aria-hidden="true" size={21} strokeWidth={active ? 2.4 : 1.8} />
       <span>{item.label}</span>
     </Link>

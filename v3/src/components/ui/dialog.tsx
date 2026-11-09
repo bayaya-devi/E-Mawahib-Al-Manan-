@@ -31,7 +31,7 @@ export function Dialog({
       <DialogPrimitive.Trigger asChild>{trigger}</DialogPrimitive.Trigger>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="ui-dialog-overlay" />
-        <DialogPrimitive.Content className="ui-dialog" dir="rtl">
+        <DialogPrimitive.Content className="ui-dialog">
           <DialogPrimitive.Title className="ui-dialog__title">{title}</DialogPrimitive.Title>
           {description ? (
             <DialogPrimitive.Description className="ui-dialog__description">
@@ -63,7 +63,7 @@ export function Drawer({
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="ui-dialog-overlay" />
-        <DialogPrimitive.Content className={cn("ui-dialog", "ui-drawer")} dir="rtl">
+        <DialogPrimitive.Content className={cn("ui-dialog", "ui-drawer")}>
           <DialogPrimitive.Title className="ui-dialog__title">{title}</DialogPrimitive.Title>
           <div className="ui-dialog__body">{children}</div>
           <DialogPrimitive.Close className="ui-dialog__close" aria-label="إغلاق">

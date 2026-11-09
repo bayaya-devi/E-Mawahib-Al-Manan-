@@ -18,11 +18,14 @@ vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({ auth: { getUser
 afterEach(() => { cleanup(); localStorage.clear(); vi.useRealTimers(); vi.clearAllMocks(); });
 
 describe("student stabilization", () => {
-  it("collapses and restores the six-item navigation with one logout", () => {
+  it("keeps primary mobile destinations visible and secondary destinations in the more drawer", () => {
     render(<AppShell kind="student"><p>محتوى</p></AppShell>);
-    expect(screen.getAllByRole("link", { name: /الرئيسية|السور|الألعاب|الوالدان|ملفي|الإعدادات/ })).toHaveLength(12);
+    expect(screen.getAllByRole("link", { name: /الرئيسية|السور|الألعاب|الوالدان|ملفي|الإعدادات/ })).toHaveLength(9);
     expect(screen.getAllByRole("button", { name: "تسجيل الخروج" })).toHaveLength(1);
-    const toggle = screen.getByRole("button", { name: "إخفاء قائمة التنقل" });
+    fireEvent.click(screen.getByRole("button", { name: "المزيد" }));
+    expect(screen.getAllByRole("link", { name: /الوالدان|ملفي|الإعدادات/ })).toHaveLength(3);
+    fireEvent.click(screen.getByRole("button", { name: "إغلاق" }));
+    const toggle = screen.getByRole("button", { name: "طي قائمة التنقل" });
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(toggle);
