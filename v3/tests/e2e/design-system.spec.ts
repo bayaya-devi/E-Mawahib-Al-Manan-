@@ -5,7 +5,7 @@ const shells = [
   ["/student", null],
   ["/family", "متابعة الأبناء"],
   ["/teacher", "ملخص العمل"],
-  ["/admin", "الصفحة الرئيسية"],
+  ["/admin", "نظرة المؤسسة اليوم"],
 ] as const;
 
 for (const [path, heading] of shells) {

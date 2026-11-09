@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("admin home is compact and uses the required limits", async ({ page }) => {
   await page.goto("/admin");
   await expect(
-    page.getByRole("heading", { name: "الصفحة الرئيسية" }),
+    page.getByRole("heading", { name: "نظرة المؤسسة اليوم" }),
   ).toBeVisible();
   await expect(page.locator(".command-metrics article")).toHaveCount(4);
   await expect(
@@ -34,7 +34,7 @@ test("all ten admin destinations are reachable on mobile", async ({
 }) => {
   test.setTimeout(90_000);
   for (const [path, heading] of [
-    ["", "الصفحة الرئيسية"],
+    ["", "نظرة المؤسسة اليوم"],
     ["teachers", "الأساتذة"],
     ["students", "الطلاب"],
     ["classes", "الأقسام"],
@@ -61,6 +61,8 @@ test("admin navigation folds and global search is absent", async ({ page }) => {
     await page.getByRole("button", { name: "فتح بقية الأقسام" }).click();
     await expect(page.getByRole("navigation", { name: "بقية الأقسام" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "بقية الأقسام" }).getByRole("link", { name: "المالية" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("navigation", { name: "بقية الأقسام" })).toBeHidden();
     return;
   }
   const toggle = page.getByRole("button", { name: "طي قائمة التنقل" });

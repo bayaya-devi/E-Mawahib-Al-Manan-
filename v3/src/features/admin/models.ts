@@ -128,6 +128,42 @@ export type AdminCommandData = {
     currency: string;
     occurredOn: string;
     sourceType: string;
+    classId: string | null;
+    paymentMethod: string | null;
+    allocationKind: string;
+    transactionStatus: string;
+    reversedTransactionId: string | null;
+  }>;
+  recurringCharges: Array<{
+    id: string;
+    title: string;
+    category: string;
+    amount: number;
+    dueDay: number;
+    classId: string | null;
+    allocationKind: string;
+    active: boolean;
+    startsOn: string;
+    endsOn: string | null;
+  }>;
+  classFinance: Array<{
+    classId: string;
+    className: string;
+    teacherName: string | null;
+    students: number;
+    income: number;
+    directExpense: number;
+    commonShare: number;
+    result: number;
+  }>;
+  scheduledNow: Array<{
+    classId: string;
+    className: string;
+    teacherName: string | null;
+    startsAt: string;
+    endsAt: string;
+    room: string | null;
+    confirmed: boolean;
   }>;
   payments: Array<{
     id: string;

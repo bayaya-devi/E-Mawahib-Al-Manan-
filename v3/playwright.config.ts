@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
+  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR ?? "test-results",
   fullyParallel: true,
   workers: process.env.CI ? "50%" : 1,
   forbidOnly: Boolean(process.env.CI),
@@ -21,9 +22,15 @@ export default defineConfig({
     url: "http://127.0.0.1:3001",
     reuseExistingServer: !process.env.CI,
     env: {
+      NEXT_DIST_DIR: process.env.PLAYWRIGHT_DIST_DIR ?? ".next-e2e",
+      NEXT_CONSTRAINED_BUILD: "1",
+      NODE_OPTIONS: "--max-old-space-size=2048",
       NEXT_PUBLIC_APP_ENV: "test",
       NEXT_PUBLIC_SUPABASE_URL: "https://example.supabase.co",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: "test-publishable-key-with-safe-length",
+      SUPABASE_SERVICE_ROLE_KEY: "test-service-role-key-with-safe-length",
+      INTERACTION_HMAC_KEY: "test-interaction-hmac-key-000000000000",
+      AUTH_INTERNAL_EMAIL_DOMAIN: "accounts.test.invalid",
       APP_BASE_URL: "http://127.0.0.1:3001",
     },
   },

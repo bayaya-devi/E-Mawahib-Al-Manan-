@@ -26,6 +26,9 @@ const empty: AdminCommandData = {
   incidents: [],
   inventory: [],
   finance: [],
+  recurringCharges: [],
+  classFinance: [],
+  scheduledNow: [],
   payments: [],
   financeThreshold: 0,
   salaries: [],
@@ -83,6 +86,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
       tasks,
       inventory,
       finance,
+      recurringCharges,
       payments,
       settings,
       salaries,
@@ -178,10 +182,16 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         .order("name"),
       client
         .from("finance_transactions")
-        .select("id,direction,category,amount,currency,occurred_on,source_type")
+        .select("id,direction,category,amount,currency,occurred_on,source_type,class_id,payment_method,allocation_kind,transaction_status,reversed_transaction_id")
         .eq("school_id", schoolId)
         .order("occurred_on", { ascending: false })
-        .limit(100),
+        .limit(5000),
+      client
+        .from("recurring_charges")
+        .select("id,title,category,amount,due_day,class_id,allocation_kind,active,starts_on,ends_on")
+        .eq("school_id", schoolId)
+        .order("active", { ascending: false })
+        .order("title"),
       client
         .from("student_payments")
         .select(
@@ -526,6 +536,11 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
           occurredAt: row.occurred_at,
         })),
     ].sort((a, b) => b.occurredAt.localeCompare(a.occurredAt));
+    const monthFinance = (finance.data ?? []).filter((row) => row.occurred_on >= monthStart);
+    const monthIncome = monthFinance.filter((row) => row.direction === "income").reduce((sum, row) => sum + Number(row.amount), 0);
+    const monthExpense = monthFinance.filter((row) => row.direction === "expense").reduce((sum, row) => sum + Number(row.amount), 0);
+    const contributionDue = (payments.data ?? []).filter((row) => row.period_month === monthStart && !["exempt", "cancelled"].includes(row.status)).reduce((sum, row) => sum + Math.max(0, Number(row.expected_amount)-Number(row.received_amount)), 0);
+    const scheduledNow = currentScheduledClasses(classes, names, sessionRows);
     return {
       school: schoolResult.data,
       metrics: [
@@ -550,6 +565,12 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
             .length,
         },
         { key: "reports", label: "تقارير اليوم", value: todayReports.length },
+        { key: "sessions", label: "حصص مبرمجة الآن", value: scheduledNow.length },
+        { key: "income", label: "مداخيل الشهر (DH)", value: monthIncome, tone: "good" },
+        { key: "expense", label: "مصاريف الشهر (DH)", value: monthExpense, tone: "warning" },
+        { key: "net", label: "نتيجة الشهر (DH)", value: monthIncome-monthExpense, tone: monthIncome-monthExpense < 0 ? "danger" : "good" },
+        { key: "contribution_due", label: "اشتراكات منتظرة (DH)", value: contributionDue, tone: contributionDue > 0 ? "warning" : "good" },
+        { key: "requests", label: "طلبات قيد المعالجة", value: pendingRequests.length, tone: pendingRequests.length ? "warning" : "good" },
       ],
       tasks: taskQueue,
       insights,
@@ -608,7 +629,32 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         currency: row.currency,
         occurredOn: row.occurred_on,
         sourceType: row.source_type,
+        classId: row.class_id,
+        paymentMethod: row.payment_method,
+        allocationKind: row.allocation_kind,
+        transactionStatus: row.transaction_status,
+        reversedTransactionId: row.reversed_transaction_id,
       })),
+      recurringCharges: (recurringCharges.data ?? []).map((row) => ({
+        id: row.id,
+        title: row.title,
+        category: row.category,
+        amount: Number(row.amount),
+        dueDay: row.due_day,
+        classId: row.class_id,
+        allocationKind: row.allocation_kind,
+        active: row.active,
+        startsOn: row.starts_on,
+        endsOn: row.ends_on,
+      })),
+      classFinance: classes.map((classroom) => {
+        const rows = (finance.data ?? []).filter((row) => row.class_id === classroom.id);
+        const income = rows.filter((row) => row.direction === "income").reduce((sum, row) => sum + Number(row.amount), 0);
+        const directExpense = rows.filter((row) => row.direction === "expense").reduce((sum, row) => sum + Number(row.amount), 0);
+        const teacherId = classroom.teacherId;
+        return { classId: classroom.id, className: classroom.name, teacherName: teacherId ? names.get(teacherId) ?? null : null, students: classroom.students, income, directExpense, commonShare: 0, result: income-directExpense };
+      }),
+      scheduledNow,
       payments: (payments.data ?? []).map((row) => ({
         id: row.id,
         studentId: row.student_id,
@@ -686,6 +732,17 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
     logServerError("ADMIN_COMMAND_LOAD_FAILED", error);
     return empty;
   }
+}
+
+export async function getAdminSettingsData(): Promise<{ schoolId: string | null; financeThreshold: number }> {
+  if (process.env.NEXT_PUBLIC_APP_ENV === "test") return { schoolId: null, financeThreshold: 0 };
+  const client = await createClient();
+  const { data: auth } = await client.auth.getUser();
+  if (!auth.user) return { schoolId: null, financeThreshold: 0 };
+  const membership = await client.from("school_memberships").select("school_id").eq("user_id", auth.user.id).eq("status", "active").limit(1).maybeSingle();
+  if (!membership.data?.school_id) return { schoolId: null, financeThreshold: 0 };
+  const settings = await client.from("admin_school_settings").select("finance_alert_threshold").eq("school_id", membership.data.school_id).maybeSingle();
+  return { schoolId: membership.data.school_id, financeThreshold: Number(settings.data?.finance_alert_threshold ?? 0) };
 }
 
 function countBy(values: readonly string[]): Map<string, number> {
@@ -811,4 +868,37 @@ function buildInsights(
       href: "/admin/operations",
     });
   return result;
+}
+
+function currentScheduledClasses(
+  classes: AdminCommandData["classes"],
+  names: Map<string, string>,
+  sessions: Array<{ class_id: string; teacher_id: string; starts_at: string; ends_at: string; status: string }>,
+): AdminCommandData["scheduledNow"] {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Casablanca",
+    weekday: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const weekday = parts.find((part) => part.type === "weekday")?.value ?? "Sun";
+  const dayOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekday);
+  const currentTime = `${parts.find((part) => part.type === "hour")?.value ?? "00"}:${parts.find((part) => part.type === "minute")?.value ?? "00"}`;
+  return classes.flatMap((classroom) => classroom.schedule
+    .filter((slot) => slot.dayOfWeek === dayOfWeek && slot.startsAt.slice(0, 5) <= currentTime && slot.endsAt.slice(0, 5) > currentTime)
+    .map((slot) => {
+      const activeSession = sessions.find((session) => session.class_id === classroom.id && new Date(session.starts_at) <= now && new Date(session.ends_at) > now && session.status !== "cancelled");
+      const teacherId = activeSession?.teacher_id ?? classroom.teacherId;
+      return {
+        classId: classroom.id,
+        className: classroom.name,
+        teacherName: teacherId ? names.get(teacherId) ?? null : null,
+        startsAt: slot.startsAt,
+        endsAt: slot.endsAt,
+        room: slot.room,
+        confirmed: Boolean(activeSession),
+      };
+    }));
 }

@@ -11,6 +11,7 @@ test.beforeEach(async ({ context }) => {
 test("language switch preserves the current public page", async ({ page }) => {
   await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
   await page.goto("/ar/programs");
+  await rejectOptionalConsent(page);
   await page.locator(".public-v3__language > button").click();
   await page.getByRole("link", { name: "Français", exact: true }).click();
   await expect(page).toHaveURL(/\/fr\/programs$/);
@@ -25,6 +26,7 @@ test("root selects a browser language once and preserves a manual choice", async
   await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
   await page.goto("/");
   await expect(page).toHaveURL(/\/fr$/);
+  await rejectOptionalConsent(page);
   await page.goto("/ar");
   await page.locator(".public-v3__language > button").click();
   await page.getByRole("link", { name: "English", exact: true }).click();
@@ -38,6 +40,7 @@ test("mobile menu and language menu remain usable together", async ({ page }) =>
   await page.setViewportSize({ width: 375, height: 812 });
   await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
   await page.goto("/ar");
+  await rejectOptionalConsent(page);
   await page.getByRole("button", { name: "القائمة" }).click();
   await page.locator(".public-v3__language > button").click();
   await expect(page.getByRole("link", { name: "Français", exact: true })).toBeVisible();
@@ -49,6 +52,7 @@ test("mobile header keeps the site menu and login visible at narrow widths", asy
   await page.setViewportSize({ width: 320, height: 720 });
   await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
   await page.goto("/ar");
+  await rejectOptionalConsent(page);
   const login = page.locator(".public-v3__actions > .public-v3__login");
   const menu = page.getByRole("button", { name: "القائمة" });
   await expect(login).toBeVisible();
@@ -65,6 +69,7 @@ test("mobile header keeps the site menu and login visible at narrow widths", asy
 test("contact presents the official phone and the verified map", async ({ page }) => {
   await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
   await page.goto("/ar/contact");
+  await acceptAllConsent(page);
   await expect(page.locator('a[href="tel:+212639598936"]')).toHaveText(/0639-598936/);
   await expect(page.getByTitle("دار القرآن والحديث - جمعية مواهب المنان")).toHaveAttribute("loading", "lazy");
   await expect(page.getByRole("link", { name: "فتح الخريطة" })).toHaveAttribute("href", "https://maps.app.goo.gl/EfrBwvpKfKZmuCSd9");
@@ -73,6 +78,7 @@ test("contact presents the official phone and the verified map", async ({ page }
 test("language menu closes with Escape and an outside click", async ({ page }) => {
   await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
   await page.goto("/ar");
+  await rejectOptionalConsent(page);
   await page.locator(".public-v3__language > button").click();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("link", { name: "Français", exact: true })).toHaveCount(0);
@@ -117,6 +123,7 @@ test("replay like updates through the protected interaction endpoint", async ({ 
   await page.route(`**/api/public/replays/${replayId}/view`, (route) => route.fulfill({ json: { ok: true, viewsCount: 13 } }));
   await page.route(`**/api/public/replays/${replayId}/like`, (route) => { liked = !liked; return route.fulfill({ json: { ok: true, liked, likesCount: liked ? 5 : 4 } }); });
   await page.goto("/ar/replays");
+  await rejectOptionalConsent(page);
   const like = page.getByRole("button", { name: /4 إعجاب/ });
   await like.click();
   await expect(page.getByRole("button", { name: /5 إعجاب/ })).toBeVisible();
@@ -164,4 +171,18 @@ async function fillTranslations(page: import("@playwright/test").Page, title: st
     await page.locator(`[name="${locale}-title"]`).fill(`${title} ${locale}`);
     await page.locator(`[name="${locale}-summary"]`).fill(`${summary} ${locale}`);
   }
+}
+
+async function rejectOptionalConsent(page: import("@playwright/test").Page) {
+  const dialog = page.getByRole("dialog", { name: /اختيارات الخصوصية|Choix de confidentialité|Privacy choices/ });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: /رفض غير الضروري|Tout refuser|Reject optional/ }).click();
+  await expect(dialog).toBeHidden();
+}
+
+async function acceptAllConsent(page: import("@playwright/test").Page) {
+  const dialog = page.getByRole("dialog", { name: /اختيارات الخصوصية|Choix de confidentialité|Privacy choices/ });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: /قبول الكل|Tout accepter|Accept all/ }).click();
+  await expect(dialog).toBeHidden();
 }

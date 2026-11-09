@@ -2,9 +2,10 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 
 const budget = JSON.parse(await readFile("performance-budget.json", "utf8"));
+const distDirectory = process.env.NEXT_DIST_DIR ?? ".next";
 const checks = [
-  ["JavaScript statique", await sizeOf(".next/static/chunks", ".js"), budget.maxStaticJavaScriptBytes],
-  ["CSS statique", await sizeOf(".next/static/css", ".css"), budget.maxStaticCssBytes],
+  ["JavaScript statique", await sizeOf(path.join(distDirectory, "static/chunks"), ".js"), budget.maxStaticJavaScriptBytes],
+  ["CSS statique", await sizeOf(path.join(distDirectory, "static/css"), ".css"), budget.maxStaticCssBytes],
   ["Plus grande image publique", await largestFile("public", /\.(avif|webp|png|jpe?g)$/iu), budget.maxPublicImageBytes],
 ];
 let failed = false;
