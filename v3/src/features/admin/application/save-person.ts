@@ -18,6 +18,7 @@ export type PersonFormPayload = {
   guardianSecondaryPhone?: string | undefined;
   canLeaveAlone?: boolean | undefined;
   dateOfBirth?: string | undefined;
+  ageCategory?: "CHILD_5_8" | "TEEN_9_18" | "ADULT_19_PLUS" | null | undefined;
   identityDocumentReceived?: boolean | undefined;
   birthCertificateReceived?: boolean | undefined;
   guardianIdentityReceived?: boolean | undefined;
@@ -81,6 +82,14 @@ export async function savePersonFromAdmin(
         message: "تعذر ربط الطالب بالقسم والأستاذ. اختر أستاذا من المؤسسة ثم أعد المحاولة.",
       };
     }
+  }
+
+  if (role === "student" && input.ageCategory !== undefined) {
+    const category = await client.rpc("admin_set_student_age_category", {
+      target_student_id: targetUserId,
+      target_category: input.ageCategory,
+    });
+    if (category.error) return { ok: false as const, message: "تعذر حفظ الفئة العمرية." };
   }
 
   if (role === "teacher") {

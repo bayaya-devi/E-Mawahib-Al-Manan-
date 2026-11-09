@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -21,11 +21,16 @@ async function sourceFiles(directory: string): Promise<string[]> {
 }
 
 describe("source security boundaries", () => {
-  it("does not use browser storage as an authorization source", async () => {
+  let sources: Array<{ file: string; source: string }> = [];
+
+  beforeAll(async () => {
     const files = await sourceFiles(path.resolve(import.meta.dirname, "../.."));
+    sources = await Promise.all(files.map(async (file) => ({ file, source: await readFile(file, "utf8") })));
+  }, 30_000);
+
+  it("does not use browser storage as an authorization source", () => {
     const violations: string[] = [];
-    for (const file of files) {
-      const source = await readFile(file, "utf8");
+    for (const { file, source } of sources) {
       if (/(?:localStorage|sessionStorage).*role|role.*(?:localStorage|sessionStorage)/i.test(source)) {
         violations.push(file);
       }
@@ -33,8 +38,7 @@ describe("source security boundaries", () => {
     expect(violations).toEqual([]);
   });
 
-  it("does not expose service credentials or legacy hardcoded admin identifiers", async () => {
-    const files = await sourceFiles(path.resolve(import.meta.dirname, "../.."));
+  it("does not expose service credentials or legacy hardcoded admin identifiers", () => {
     const forbiddenFragments = [
       "NEXT_PUBLIC_SUPABASE_SERVICE_ROLE",
       "AUTI1",
@@ -42,8 +46,7 @@ describe("source security boundaries", () => {
       "!0110",
     ];
     const violations: string[] = [];
-    for (const file of files) {
-      const source = await readFile(file, "utf8");
+    for (const { file, source } of sources) {
       if (forbiddenFragments.some((fragment) => source.includes(fragment))) {
         violations.push(file);
       }

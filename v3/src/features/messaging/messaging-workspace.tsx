@@ -15,13 +15,13 @@ const requestKinds: Array<[DatabaseServiceRequestKind, string]> = [
   ["administrative_question", "سؤال إداري"], ["complaint", "شكوى"], ["class_change", "تغيير قسم"], ["technical_problem", "مشكلة تقنية"], ["other", "أخرى"],
 ];
 
-export function MessagingWorkspace({ data, teacherMode = false }: { data: MessagingWorkspaceData; teacherMode?: boolean }) {
+export function MessagingWorkspace({ data, teacherMode = false, studentActorId = null }: { data: MessagingWorkspaceData; teacherMode?: boolean; studentActorId?: string | null }) {
   const [tab, setTab] = useState<WorkspaceTab>("messages");
-  if (teacherMode) return <div className="communication-workspace teacher-text-messages"><header className="teacher-page-head"><span>التواصل</span><h1>الرسائل</h1></header><Messages data={data} /></div>;
-  return <div className="communication-workspace"><header className="communication-hero"><span>التواصل الموحّد</span><h1>الرسائل والطلبات</h1><p>المحادثات للتواصل اليومي، والطلبات لمسار إداري موثّق.</p></header><nav className="communication-tabs" aria-label="أقسام التواصل"><button className={tab === "messages" ? "is-active" : undefined} type="button" onClick={() => setTab("messages")}><MessageSquareText size={18} />الرسائل</button><button className={tab === "requests" ? "is-active" : undefined} type="button" onClick={() => setTab("requests")}><Inbox size={18} />الطلبات</button></nav>{tab === "messages" ? <Messages data={data} /> : <Requests data={data} />}</div>;
+  if (teacherMode) return <div className="communication-workspace teacher-text-messages"><header className="teacher-page-head"><span>التواصل</span><h1>الرسائل</h1></header><Messages data={data} studentActorId={null} /></div>;
+  return <div className="communication-workspace"><header className="communication-hero"><span>التواصل الموحّد</span><h1>الرسائل والطلبات</h1><p>المحادثات للتواصل اليومي، والطلبات لمسار إداري موثّق.</p></header><nav className="communication-tabs" aria-label="أقسام التواصل"><button className={tab === "messages" ? "is-active" : undefined} type="button" onClick={() => setTab("messages")}><MessageSquareText size={18} />الرسائل</button><button className={tab === "requests" ? "is-active" : undefined} type="button" onClick={() => setTab("requests")}><Inbox size={18} />الطلبات</button></nav>{tab === "messages" ? <Messages data={data} studentActorId={studentActorId} /> : <Requests data={data} />}</div>;
 }
 
-function Messages({ data }: { data: MessagingWorkspaceData }) {
+function Messages({ data, studentActorId }: { data: MessagingWorkspaceData; studentActorId: string | null }) {
   const { showToast } = useToast();
   const router = useRouter();
   const [selectedId, setSelectedId] = useState(data.conversations.find((item) => !item.archived)?.id ?? null);
@@ -31,10 +31,14 @@ function Messages({ data }: { data: MessagingWorkspaceData }) {
   const conversations = data.conversations.filter((item) => !item.archived && `${item.subject} ${item.participantNames.join(" ")}`.includes(search.trim()));
   const messages = useMemo(() => data.messages.filter((item) => item.conversationId === selectedId), [data.messages, selectedId]);
 
-  async function openConversation(id: string): Promise<void> { setSelectedId(id); await createClient().rpc("mark_conversation_read", { target_conversation_id: id }); }
+  async function openConversation(id: string): Promise<void> { setSelectedId(id); const client = createClient(); if (studentActorId) await client.rpc("mark_student_conversation_read", { target_student_id: studentActorId, target_conversation_id: id }); else await client.rpc("mark_conversation_read", { target_conversation_id: id }); }
   async function createConversation(): Promise<void> {
     if (!target || !subject.trim()) return; setBusy(true);
-    const { data: id, error } = await createClient().rpc("create_direct_conversation", { target_user_id: target, target_subject: subject }); setBusy(false);
+    const client = createClient();
+    const result = studentActorId
+      ? await client.rpc("create_student_conversation", { target_student_id: studentActorId, target_user_id: target, target_subject: subject })
+      : await client.rpc("create_direct_conversation", { target_user_id: target, target_subject: subject });
+    const { data: id, error } = result; setBusy(false);
     if (error || !id) return showToast({ title: "تعذر إنشاء المحادثة", description: "تحقق من صلاحية التواصل ثم حاول مجددًا.", tone: "info" });
     setSelectedId(id); setSubject(""); router.refresh();
   }
@@ -42,15 +46,19 @@ function Messages({ data }: { data: MessagingWorkspaceData }) {
     const text = body.trim(); if (!selectedId || (!text && !file)) return;
     if (file && !navigator.onLine) return showToast({ title: "يلزم الاتصال لإرسال المرفق", description: "يمكنك إرسال الرسالة النصية الآن أو المحاولة لاحقًا.", tone: "info" });
     const clientId = crypto.randomUUID(); setBusy(true);
-    const { data: messageId, error } = await createClient().rpc("send_conversation_message", { target_conversation_id: selectedId, target_body: text || file?.name || "مرفق", target_client_id: clientId });
+    const client = createClient();
+    const result = studentActorId
+      ? await client.rpc("send_student_conversation_message", { target_student_id: studentActorId, target_conversation_id: selectedId, target_body: text || file?.name || "مرفق", target_client_id: clientId })
+      : await client.rpc("send_conversation_message", { target_conversation_id: selectedId, target_body: text || file?.name || "مرفق", target_client_id: clientId });
+    const { data: messageId, error } = result;
     if (error && !navigator.onLine) {
-      await enqueueOfflineMutation({ id: clientId, kind: "message.send", payload: { conversationId: selectedId, body: text, clientId } });
+      await enqueueOfflineMutation({ id: clientId, kind: "message.send", payload: { conversationId: selectedId, body: text, clientId, ...(studentActorId ? { studentId: studentActorId } : {}) } });
       showToast({ title: "حُفظت الرسالة للإرسال", description: "ستُرسل تلقائيًا عند عودة الاتصال.", tone: "info" }); setBody(""); setBusy(false); return;
     }
-    if (!error && file && messageId) { const form = new FormData(); form.set("file", file); form.set("messageId", String(messageId)); form.set("conversationId", selectedId); const response = await fetch("/api/messages/attachments", { method: "POST", body: form }); if (!response.ok) showToast({ title: "أُرسلت الرسالة دون المرفق", description: "صيغة الملف أو حجمه غير مقبول.", tone: "info" }); }
+    if (!error && file && messageId) { const form = new FormData(); form.set("file", file); form.set("messageId", String(messageId)); form.set("conversationId", selectedId); if (studentActorId) form.set("studentId", studentActorId); const response = await fetch("/api/messages/attachments", { method: "POST", body: form }); if (!response.ok) showToast({ title: "أُرسلت الرسالة دون المرفق", description: "صيغة الملف أو حجمه غير مقبول.", tone: "info" }); }
     setBusy(false); if (error) return showToast({ title: "تعذر إرسال الرسالة", tone: "info" }); setBody(""); setFile(null); router.refresh();
   }
-  async function archive(): Promise<void> { if (!selectedId) return; await createClient().rpc("archive_conversation", { target_conversation_id: selectedId, target_archived: true }); router.refresh(); }
+  async function archive(): Promise<void> { if (!selectedId) return; const client = createClient(); if (studentActorId) await client.rpc("archive_student_conversation", { target_student_id: studentActorId, target_conversation_id: selectedId, target_archived: true }); else await client.rpc("archive_conversation", { target_conversation_id: selectedId, target_archived: true }); router.refresh(); }
 
   return <section className="message-layout"><aside className="conversation-list"><Input label="البحث في المحادثات" value={search} onChange={(event) => setSearch(event.target.value)} /><details className="communication-compose"><summary><Plus size={17} />محادثة جديدة</summary><Select label="المستلم" value={target} onChange={(event) => setTarget(event.target.value)}><option value="">اختر المستلم</option>{data.targets.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</Select><Input label="الموضوع" maxLength={120} value={subject} onChange={(event) => setSubject(event.target.value)} /><Button loading={busy} onClick={() => void createConversation()}>إنشاء</Button></details>{conversations.map((item) => <button className={item.id === selectedId ? "is-active" : undefined} type="button" key={item.id} onClick={() => void openConversation(item.id)}><span><strong>{item.subject}</strong><small>{item.participantNames.join("، ")}</small></span>{item.unread ? <i aria-label="غير مقروء" /> : null}</button>)}</aside><div className="message-thread">{selectedId ? <><header><div><strong>{data.conversations.find((item) => item.id === selectedId)?.subject}</strong><small>سجل المحادثة محفوظ</small></div><Button size="icon" variant="quiet" aria-label="أرشفة المحادثة" onClick={() => void archive()}><Archive size={18} /></Button></header><div className="message-thread__history" aria-live="polite">{messages.map((item) => <article className={item.senderId === data.currentUserId ? "is-own" : undefined} key={item.id}><strong>{item.senderName}</strong><p>{item.body}</p>{item.attachments.map((attachment) => <a className="message-attachment" href={`/api/messages/attachments/${attachment.id}`} target="_blank" rel="noreferrer" key={attachment.id}><Paperclip size={14} />{attachment.fileName}</a>)}<time>{formatDate(item.createdAt)}</time></article>)}</div><footer><label className="message-file" title="إرفاق ملف"><Paperclip size={19} /><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf,audio/mpeg,audio/ogg,audio/webm" onChange={(event) => setFile(event.target.files?.[0] ?? null)} /><span>{file?.name ?? "مرفق"}</span></label><textarea aria-label="نص الرسالة" value={body} maxLength={4000} placeholder="اكتب رسالتك" onChange={(event) => setBody(event.target.value)} /><Button size="icon" loading={busy} aria-label="إرسال" onClick={() => void sendMessage()}><Send size={19} /></Button></footer></> : <EmptyState title="اختر محادثة" description="اختر محادثة أو ابدأ واحدة جديدة." icon={MessageSquareText} />}</div></section>;
 }

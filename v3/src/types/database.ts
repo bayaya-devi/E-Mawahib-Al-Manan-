@@ -146,6 +146,7 @@ type PersonProfileRow = {
 type StudentProfileRow = PersonProfileRow & {
   student_number: string | null;
   date_of_birth: string | null;
+  age_category: "CHILD_5_8" | "TEEN_9_18" | "ADULT_19_PLUS" | null;
   gender: "male" | "female" | "unspecified" | null;
   accessibility_notes: string | null;
 };
@@ -1193,6 +1194,44 @@ export type Database = {
         version: number;
         updated_at: string;
       }>;
+      quran_exercise_attempts: ReadonlyTable<{
+        id: string;
+        student_id: string;
+        learning_key: string;
+        exercise_index: number;
+        attempt_number: number;
+        status: "passed" | "failed" | "abandoned";
+        correct_count: number;
+        error_count: number;
+        completed_at: string;
+      }>;
+      quran_juz_exam_attempts: ReadonlyTable<{
+        id: string;
+        student_id: string;
+        juz_number: number;
+        attempt_number: number;
+        score: number;
+        question_count: number;
+        passed: boolean;
+        completed_at: string;
+      }>;
+      quran_juz_passages: ReadonlyTable<{
+        juz_number: number;
+        learning_order: number;
+        surah_number: number;
+        verse_from: number;
+        verse_to: number;
+        created_at: string;
+      }>;
+      student_profile_switch_authorizations: ReadonlyTable<{
+        source_student_id: string;
+        target_student_id: string;
+        status: "active" | "revoked";
+        granted_by: string;
+        granted_at: string;
+        revoked_at: string | null;
+        revoked_by: string | null;
+      }>;
       profiles: ReadonlyTable<ProfileRow>;
       user_roles: ReadonlyTable<UserRoleRow>;
       schools: ReadonlyTable<SchoolRow>;
@@ -1572,6 +1611,39 @@ export type Database = {
         Args: { target_user_id: string; payload: Json };
         Returns: undefined;
       };
+      admin_set_student_age_category: {
+        Args: {
+          target_student_id: string;
+          target_category: "CHILD_5_8" | "TEEN_9_18" | "ADULT_19_PLUS" | null;
+        };
+        Returns: undefined;
+      };
+      can_switch_student_profile: {
+        Args: { target_student_id: string };
+        Returns: boolean;
+      };
+      admin_set_student_sibling_link: {
+        Args: { source_student: string; target_student: string; make_active: boolean };
+        Returns: undefined;
+      };
+      get_student_teacher_follow_up: {
+        Args: { target_student: string };
+        Returns: Array<{
+          id: string;
+          recorded_at: string;
+          teacher_name: string;
+          class_name: string | null;
+          surah_number: number;
+          verse_from: number;
+          verse_to: number;
+          appreciation: string;
+          comment: string | null;
+        }>;
+      };
+      restart_student_learning: {
+        Args: { target_student: string; target_key: string; expected_version: number; next_state: Json };
+        Returns: number;
+      };
       admin_set_student_relations: {
         Args: {
           target_student_id: string;
@@ -1651,6 +1723,50 @@ export type Database = {
       };
       create_direct_conversation: {
         Args: { target_user_id: string; target_subject: string };
+        Returns: string;
+      };
+      can_act_as_student: {
+        Args: { target_student_id: string };
+        Returns: boolean;
+      };
+      set_student_locale: {
+        Args: { target_student_id: string; target_locale: "ar" | "fr" };
+        Returns: undefined;
+      };
+      student_can_message_user: {
+        Args: { target_student_id: string; target_user_id: string };
+        Returns: boolean;
+      };
+      list_student_message_targets: {
+        Args: { target_student_id: string };
+        Returns: Array<{ user_id: string; display_name: string }>;
+      };
+      create_student_conversation: {
+        Args: { target_student_id: string; target_user_id: string; target_subject: string };
+        Returns: string;
+      };
+      send_student_conversation_message: {
+        Args: { target_student_id: string; target_conversation_id: string; target_body: string; target_client_id: string };
+        Returns: number;
+      };
+      mark_student_conversation_read: {
+        Args: { target_student_id: string; target_conversation_id: string };
+        Returns: undefined;
+      };
+      archive_student_conversation: {
+        Args: { target_student_id: string; target_conversation_id: string; target_archived?: boolean };
+        Returns: undefined;
+      };
+      register_student_message_attachment: {
+        Args: {
+          target_student_id: string;
+          target_message_id: number;
+          target_storage_path: string;
+          target_file_name: string;
+          target_mime_type: string;
+          target_size_bytes: number;
+          target_checksum: string;
+        };
         Returns: string;
       };
       send_conversation_message: {

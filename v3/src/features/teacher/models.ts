@@ -9,6 +9,8 @@ export type TeacherStudent = {
   hiddenByTeacher: boolean;
   suggestion: string;
   masteredSurahs: Array<{ surahNumber: number; masteredAt: string | null }>;
+  digitalAttempts: Array<{ learningKey: string; status: string; correct: number; errors: number; completedAt: string }>;
+  juzExams: Array<{ juzNumber: number; score: number; passed: boolean; completedAt: string }>;
   attendanceHistory: Array<{ id: string; status: DatabaseAttendanceStatus; minutesLate: number; recordedAt: string }>;
   recitations: Array<{ id: string; surahNumber: number; verseFrom: number; verseTo: number; appreciation: DatabaseRecitationAppreciation; comment: string | null; recordedAt: string }>;
   notes: Array<{ id: string; content: string; teacherName: string; createdAt: string }>;

@@ -23,9 +23,10 @@ export async function POST(request: Request) {
   if (claim.data === "busy") return NextResponse.json({ ok: false, retryable: true }, { status: 409 });
   let error: { message: string } | null = null;
   if (kind === "message.send") {
-    const input = z.object({ conversationId: z.string().uuid(), body: z.string().min(1).max(4000), clientId: z.string().uuid() }).safeParse(payload);
+    const input = z.object({ conversationId: z.string().uuid(), body: z.string().min(1).max(4000), clientId: z.string().uuid(), studentId: z.string().uuid().optional() }).safeParse(payload);
     if (!input.success) return invalidMutation(client, id);
-    ({ error } = await client.rpc("send_conversation_message", { target_conversation_id: input.data.conversationId, target_body: input.data.body, target_client_id: input.data.clientId }));
+    if (input.data.studentId) ({ error } = await client.rpc("send_student_conversation_message", { target_student_id: input.data.studentId, target_conversation_id: input.data.conversationId, target_body: input.data.body, target_client_id: input.data.clientId }));
+    else ({ error } = await client.rpc("send_conversation_message", { target_conversation_id: input.data.conversationId, target_body: input.data.body, target_client_id: input.data.clientId }));
   } else if (kind === "request.create") {
     const input = z.object({ kind: z.enum(["leave","absence","equipment","incident","salary_problem","administrative_question","complaint","class_change","technical_problem","other"]), priority: z.enum(["low","normal","high","urgent"]), title: z.string().min(3).max(120), details: z.string().max(4000), clientId: z.string().uuid() }).safeParse(payload);
     if (!input.success) return invalidMutation(client, id);

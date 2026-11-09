@@ -105,7 +105,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
         .from("school_memberships")
         .select("user_id,status")
         .eq("school_id", schoolId),
-      client.from("student_profiles").select("user_id,date_of_birth,gender,accessibility_notes"),
+      client.from("student_profiles").select("user_id,date_of_birth,age_category,gender,accessibility_notes"),
       client
         .from("teacher_profiles")
         .select("user_id,gender,phone,email,monthly_salary"),
@@ -351,6 +351,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
           guardianSecondaryPhone: file?.guardian_secondary_phone ?? null,
           canLeaveAlone: file?.can_leave_alone ?? false,
           dateOfBirth: student?.date_of_birth ?? null,
+          ageCategory: student?.age_category ?? null,
           identityDocumentReceived: file?.identity_document_received ?? false,
           birthCertificateReceived: file?.birth_certificate_received ?? false,
           guardianIdentityReceived: file?.guardian_identity_received ?? false,

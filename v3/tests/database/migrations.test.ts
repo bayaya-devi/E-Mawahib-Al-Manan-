@@ -225,6 +225,78 @@ describe("V3 migrations and RLS", () => {
     expect((await asUser(users.studentA,"select state from public.student_learning_sessions where learning_key='review-0'"))[0]?.state).toMatchObject({passed:true});
     await database.exec(`delete from public.student_learning_sessions where student_id='${users.studentA}'; delete from public.learning_events where student_id='${users.studentA}' and surah_number=96; delete from public.student_surah_progress where student_id='${users.studentA}' and surah_number=96;`);
   });
+
+  it("isolates digital attempts while allowing the assigned teacher and administration to read them", async () => {
+    await database.exec(`
+      insert into public.quran_exercise_attempts
+        (student_id, learning_key, exercise_index, attempt_number, status, correct_count, error_count)
+      values ('${users.studentA}', 'surah-114', 0, 0, 'passed', 4, 1);
+      insert into public.quran_juz_exam_attempts
+        (student_id, juz_number, attempt_number, score, question_count)
+      values ('${users.studentA}', 30, 1, 80, 10);
+    `);
+
+    expect(await asUser(users.studentA, "select learning_key from public.quran_exercise_attempts where learning_key='surah-114'")).toHaveLength(1);
+    expect(await asUser(users.studentB, "select learning_key from public.quran_exercise_attempts where learning_key='surah-114'")).toEqual([]);
+    expect(await asUser(users.teacherA, "select learning_key from public.quran_exercise_attempts where learning_key='surah-114'")).toHaveLength(1);
+    expect(await asUser(users.teacherB, "select learning_key from public.quran_exercise_attempts where learning_key='surah-114'")).toEqual([]);
+    expect(await asUser(users.adminA, "select juz_number from public.quran_juz_exam_attempts where juz_number=30")).toHaveLength(1);
+
+    await database.exec(`
+      delete from public.quran_exercise_attempts where student_id='${users.studentA}';
+      delete from public.quran_juz_exam_attempts where student_id='${users.studentA}';
+    `);
+  });
+
+  it("restarts an interrupted exercise and records the abandoned attempt server-side", async () => {
+    const partial = JSON.stringify({ schema: 3, cursor: 0, question: 2, questionMistake: false, errors: 1, correct: 1, attempt: 0, failed: false, passed: false, score: null, lastResult: null });
+    const restarted = JSON.stringify({ schema: 3, cursor: 0, question: 0, questionMistake: false, errors: 0, correct: 0, attempt: 1, failed: false, passed: false, score: null, lastResult: null });
+    await runAsDatabaseRole("service_role", `select public.save_student_learning('${users.studentA}','surah-114',0,'${partial}')`);
+    await runAsDatabaseRole("service_role", `select public.restart_student_learning('${users.studentA}','surah-114',1,'${restarted}')`);
+    const session = await asUser<{ version: number; state: { question: number; attempt: number } }>(users.studentA, "select version,state from public.student_learning_sessions where learning_key='surah-114'");
+    const abandoned = await asUser<{ status: string }>(users.studentA, "select status from public.quran_exercise_attempts where learning_key='surah-114'");
+    expect(session[0]).toMatchObject({ version: 2, state: { question: 0, attempt: 1 } });
+    expect(abandoned).toEqual([{ status: "abandoned" }]);
+    await database.exec(`delete from public.quran_exercise_attempts where student_id='${users.studentA}' and learning_key='surah-114'; delete from public.student_learning_sessions where student_id='${users.studentA}' and learning_key='surah-114';`);
+  });
+
+  it("authorizes only explicit active sibling profile links and supports immediate revocation", async () => {
+    await database.exec(`
+      insert into public.student_profile_switch_authorizations
+        (source_student_id, target_student_id, granted_by)
+      values ('${users.studentA}', '${users.studentB}', '${users.adminA}');
+    `);
+
+    expect((await asUser<{ allowed: boolean }>(users.studentA, `select public.can_switch_student_profile('${users.studentB}') as allowed`))[0]?.allowed).toBe(true);
+    expect((await asUser<{ allowed: boolean }>(users.studentB, `select public.can_switch_student_profile('${users.studentA}') as allowed`))[0]?.allowed).toBe(false);
+    expect(await asUser(users.studentB, "select * from public.student_profile_switch_authorizations")).toEqual([]);
+
+    await database.exec(`
+      update public.student_profile_switch_authorizations
+      set status='revoked', revoked_at=now(), revoked_by='${users.adminA}'
+      where source_student_id='${users.studentA}' and target_student_id='${users.studentB}';
+    `);
+    expect((await asUser<{ allowed: boolean }>(users.studentA, `select public.can_switch_student_profile('${users.studentB}') as allowed`))[0]?.allowed).toBe(false);
+    await database.exec("delete from public.student_profile_switch_authorizations");
+  });
+
+  it("keeps delegated sibling conversations under the selected student's identity", async () => {
+    await database.exec(`
+      insert into public.student_profile_switch_authorizations(source_student_id,target_student_id,granted_by)
+      values ('${users.studentA}','${users.studentB}','${users.adminA}');
+    `);
+    const created = await asUser<{ conversation_id: string }>(users.studentA, `
+      select public.create_student_conversation('${users.studentB}','${users.teacherB}','متابعة') as conversation_id
+    `);
+    const conversation = created[0]!.conversation_id;
+    await asUser(users.studentA, `select public.send_student_conversation_message('${users.studentB}','${conversation}','السلام عليكم','00000000-0000-4000-8000-000000000011')`);
+    const sent = await asUser<{ sender_id: string; body: string }>(users.studentA, `select sender_id,body from public.conversation_messages where conversation_id='${conversation}'`);
+    expect(sent).toEqual([{ sender_id: users.studentB, body: "السلام عليكم" }]);
+
+    await database.exec(`update public.student_profile_switch_authorizations set status='revoked',revoked_at=now(),revoked_by='${users.adminA}' where source_student_id='${users.studentA}' and target_student_id='${users.studentB}'`);
+    expect(await asUser(users.studentA, `select id from public.conversations where id='${conversation}'`)).toEqual([]);
+    await database.exec(`delete from public.conversation_messages where conversation_id='${conversation}'; delete from public.conversation_members where conversation_id='${conversation}'; delete from public.conversations where id='${conversation}'; delete from public.student_profile_switch_authorizations;`);
+  });
   beforeAll(async () => {
     database = new PGlite();
     await database.exec(supabasePrelude);
@@ -349,6 +421,9 @@ describe("V3 migrations and RLS", () => {
       "public_site_profiles",
       "push_subscriptions",
       "quran_audio_tracks",
+      "quran_exercise_attempts",
+      "quran_juz_exam_attempts",
+      "quran_juz_passages",
       "quran_surahs",
       "quran_verses",
       "recitation_attempts",
@@ -370,6 +445,7 @@ describe("V3 migrations and RLS", () => {
       "student_digital_files",
       "student_learning_sessions",
       "student_payments",
+      "student_profile_switch_authorizations",
       "student_profiles",
       "student_surah_progress",
       "student_verse_progress",
@@ -491,6 +567,9 @@ describe("V3 migrations and RLS", () => {
       "public_site_profile_translation_read",
       "push_subscriptions_own_read",
       "quran_audio_tracks_read",
+      "quran_exercise_attempts_scoped_read",
+      "quran_juz_exam_attempts_scoped_read",
+      "quran_juz_passages_read",
       "quran_surahs_read",
       "quran_verses_read",
       "recitation_attempts_read_scoped",
@@ -513,6 +592,7 @@ describe("V3 migrations and RLS", () => {
       "student_digital_files_student_read",
       "student_learning_sessions_own_read",
       "student_payments_admin_read",
+      "student_profile_switch_own_read",
       "student_profiles_select_scoped",
       "surah_progress_read_scoped",
       "teacher_documents_read",

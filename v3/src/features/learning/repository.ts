@@ -3,26 +3,27 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { logServerError } from "@/lib/observability/logger";
 import type { DatabaseAssignmentStatus } from "@/types/database";
+import { getActiveStudentContext } from "./student-context";
 import type { FamilyChildData, FamilyChildSummary, StudentDashboardData, StudentHistoryData, TeacherFollowUpEntry } from "./models";
 
 const emptyStudent: StudentDashboardData = {
   student: null, teacher: null, classroom: null, classScheduleText: null, nextCourse: null, courseSchedule: [], announcements: [], events: [],
-  assignments: [], goal: null, progress: [], notifications: [],
+  assignments: [], goal: null, progress: [], juzExams: [], notifications: [],
 };
 
 export async function getStudentDashboard(): Promise<StudentDashboardData> {
   if (process.env.NEXT_PUBLIC_APP_ENV === "test") return emptyStudent;
   try {
     const client = await createClient();
-    const { data: auth } = await client.auth.getUser();
-    const studentId = auth.user?.id;
+    const studentId = (await getActiveStudentContext())?.studentId;
     if (!studentId) return emptyStudent;
 
-    const [profileResult, enrollmentResult, membershipResult, progressResult, goalResult, submissionResult, notificationResult] = await Promise.all([
+    const [profileResult, enrollmentResult, membershipResult, progressResult, juzExamResult, goalResult, submissionResult, notificationResult] = await Promise.all([
       client.from("profiles").select("id,display_name").eq("id", studentId).maybeSingle(),
       client.from("class_enrollments").select("class_id").eq("student_id", studentId).eq("status", "active").maybeSingle(),
       client.from("school_memberships").select("school_id").eq("user_id", studentId).eq("status", "active").maybeSingle(),
       client.from("student_surah_progress").select("surah_number,status,completion_percent,stars").eq("student_id", studentId).order("surah_number", { ascending: false }),
+      client.from("quran_juz_exam_attempts").select("juz_number,score,passed,completed_at").eq("student_id", studentId).order("completed_at", { ascending: false }),
       client.from("learning_goals").select("id,surah_number,verse_from,verse_to,target_date").eq("student_id", studentId).is("completed_at", null).order("created_at", { ascending: false }).limit(1).maybeSingle(),
       client.from("assignment_submissions").select("assignment_id,status").eq("student_id", studentId),
       client.from("user_notifications").select("id,title,body,href,read_at,created_at").eq("user_id", studentId).order("created_at", { ascending: false }).limit(8),
@@ -62,6 +63,7 @@ export async function getStudentDashboard(): Promise<StudentDashboardData> {
       assignments,
       goal: goalResult.data ? { id: goalResult.data.id, surahNumber: goalResult.data.surah_number, verseFrom: goalResult.data.verse_from, verseTo: goalResult.data.verse_to, targetDate: goalResult.data.target_date } : null,
       progress: (progressResult.data ?? []).map((row) => ({ surahNumber: row.surah_number, status: row.status, percent: row.completion_percent, stars: row.stars })),
+      juzExams: (juzExamResult.data ?? []).map((row) => ({ juzNumber: row.juz_number, score: row.score, passed: row.passed, completedAt: row.completed_at })),
       notifications: (notificationResult.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body, href: row.href, read: Boolean(row.read_at), createdAt: row.created_at })),
     };
   } catch (error) {
@@ -108,7 +110,7 @@ export async function getFamilyChild(studentId: string): Promise<FamilyChildData
       client.from("school_announcements").select("id,title,body,published_at").order("published_at", { ascending: false }).limit(12),
       client.from("user_notifications").select("id,title,body,created_at,read_at").eq("user_id", auth.user.id).order("created_at", { ascending: false }).limit(20),
       client.from("legacy_history_records").select("id,title,body,occurred_at,historical_date_label").eq("subject_id", studentId).eq("category", "student_message").order("legacy_id", { ascending: false }).limit(200),
-      client.from("authorized_documents").select("id,title,storage_path,created_at").eq("student_id", studentId).eq("visible_to_family", true).order("created_at", { ascending: false }),
+      client.from("authorized_documents").select("id,title,created_at").eq("student_id", studentId).eq("visible_to_family", true).order("created_at", { ascending: false }),
     ]);
     const examIds = (examResults.data ?? []).map(({ exam_id }) => exam_id);
     const examRows = examIds.length ? await client.from("exams").select("id,title").in("id", examIds) : { data: [] };
@@ -125,7 +127,7 @@ export async function getFamilyChild(studentId: string): Promise<FamilyChildData
         ...(messages.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body, createdAt: row.created_at, dateLabel: null, read: Boolean(row.read_at) })),
         ...(legacyMessages.data ?? []).map((row) => ({ id: row.id, title: row.title, body: row.body ?? "", createdAt: row.occurred_at, dateLabel: row.historical_date_label, read: true })),
       ],
-      documents: (documents.data ?? []).map((row) => ({ id: row.id, title: row.title, storagePath: row.storage_path, createdAt: row.created_at })),
+      documents: (documents.data ?? []).map((row) => ({ id: row.id, title: row.title, createdAt: row.created_at })),
     };
   } catch (error) {
     logServerError("FAMILY_CHILD_LOAD_FAILED", error);
@@ -138,9 +140,8 @@ export async function getStudentHistory(): Promise<StudentHistoryData> {
   if (process.env.NEXT_PUBLIC_APP_ENV === "test") return empty;
   try {
     const client = await createClient();
-    const { data: auth } = await client.auth.getUser();
-    if (!auth.user) return empty;
-    const studentId = auth.user.id;
+    const studentId = (await getActiveStudentContext())?.studentId;
+    if (!studentId) return empty;
     const [events, attempts, teacherRecitations, reviews] = await Promise.all([
       client.from("learning_events").select("id,event_kind,surah_number,occurred_at").eq("student_id", studentId).order("occurred_at", { ascending: false }).limit(80),
       client.from("recitation_attempts").select("id,surah_number,verse_from,verse_to,status,started_at").eq("student_id", studentId).order("started_at", { ascending: false }).limit(40),
@@ -168,9 +169,9 @@ export async function getTeacherFollowUp(): Promise<TeacherFollowUpEntry[]> {
   if (process.env.NEXT_PUBLIC_APP_ENV === "test") return [];
   try {
     const client = await createClient();
-    const { data: auth } = await client.auth.getUser();
-    if (!auth.user) return [];
-    const followUp = await client.rpc("get_own_teacher_follow_up");
+    const studentId = (await getActiveStudentContext())?.studentId;
+    if (!studentId) return [];
+    const followUp = await client.rpc("get_student_teacher_follow_up", { target_student: studentId });
     if (followUp.error) throw followUp.error;
     return (followUp.data ?? []).map((row) => ({
       id: row.id,
@@ -189,22 +190,23 @@ export async function getTeacherFollowUp(): Promise<TeacherFollowUpEntry[]> {
   }
 }
 
-export async function getStudentAccountProfile(): Promise<{ name: string; dateOfBirth: string | null; className: string | null; teacherName: string | null; scheduleText: string | null; documents: Array<{ id: string; title: string; category: string; path: string }>; file: { birth: boolean; guardian: boolean; identity: boolean; paymentRequired: boolean; fee: number | null; payments: Array<{ month: string; amount: number; date: string }>; legacyPayments?: Array<{ id: string; month: string; amount: number | null; status: string }> } | null }> {
+export async function getStudentAccountProfile(): Promise<{ name: string; dateOfBirth: string | null; className: string | null; teacherName: string | null; scheduleText: string | null; documents: Array<{ id: string; title: string; category: string }>; file: { birth: boolean; guardian: boolean; identity: boolean; paymentRequired: boolean; fee: number | null; payments: Array<{ month: string; amount: number; expectedAmount: number; date: string; status: "paid" | "partial" | "exempt" }>; legacyPayments?: Array<{ id: string; month: string; amount: number | null; status: string }> } | null }> {
   const empty = { name: "حساب الطالب", dateOfBirth: null, className: null, teacherName: null, scheduleText: null, documents: [], file: null };
   if (process.env.NEXT_PUBLIC_APP_ENV === "test") return empty;
   try {
-    const client = await createClient(); const { data: auth } = await client.auth.getUser(); if (!auth.user) return empty;
+    const client = await createClient(); const studentId = (await getActiveStudentContext())?.studentId; if (!studentId) return empty;
     const [profile, student, enrollment, file, payments, legacyPayments, documents] = await Promise.all([
-      client.from("profiles").select("display_name").eq("id", auth.user.id).maybeSingle(),
-      client.from("student_profiles").select("date_of_birth").eq("user_id", auth.user.id).maybeSingle(),
-      client.from("class_enrollments").select("class_id").eq("student_id", auth.user.id).eq("status", "active").maybeSingle(),
-      client.from("student_digital_files").select("birth_certificate_received,guardian_identity_received,identity_document_received,payment_required,monthly_fee").eq("student_id", auth.user.id).maybeSingle(),
-      client.from("student_payments").select("period_month,received_amount,paid_on,status").eq("student_id", auth.user.id).in("status", ["paid", "partial", "exempt"]).order("period_month", { ascending: false }),
-      client.from("legacy_history_records").select("id,historical_date_label,metadata").eq("subject_id", auth.user.id).eq("category", "student_payment_snapshot").order("legacy_id", { ascending: false }),
-      client.from("school_documents").select("id,title,category,storage_path").eq("related_user_id", auth.user.id).eq("visible_to_related_user", true).order("created_at", { ascending: false }),
+      client.from("profiles").select("display_name").eq("id", studentId).maybeSingle(),
+      client.from("student_profiles").select("date_of_birth").eq("user_id", studentId).maybeSingle(),
+      client.from("class_enrollments").select("class_id").eq("student_id", studentId).eq("status", "active").maybeSingle(),
+      client.from("student_digital_files").select("birth_certificate_received,guardian_identity_received,identity_document_received,payment_required,monthly_fee").eq("student_id", studentId).maybeSingle(),
+      client.from("student_payments").select("period_month,expected_amount,received_amount,paid_on,status").eq("student_id", studentId).in("status", ["paid", "partial", "exempt"]).order("period_month", { ascending: false }),
+      client.from("legacy_history_records").select("id,historical_date_label,metadata").eq("subject_id", studentId).eq("category", "student_payment_snapshot").order("legacy_id", { ascending: false }),
+      client.from("school_documents").select("id,title,category").eq("related_user_id", studentId).eq("visible_to_related_user", true).order("created_at", { ascending: false }),
     ]);
     const classroom = enrollment.data?.class_id ? await client.from("classes").select("name,schedule_text").eq("id", enrollment.data.class_id).maybeSingle() : { data: null };
-    const teacher = await client.rpc("get_own_class_teacher_name");
-    return { name: profile.data?.display_name ?? empty.name, dateOfBirth: student.data?.date_of_birth ?? null, className: classroom.data?.name ?? null, teacherName: teacher.data ?? null, scheduleText: classroom.data?.schedule_text ?? null, documents: (documents.data ?? []).map((document) => ({ id: document.id, title: document.title, category: document.category, path: document.storage_path })), file: file.data ? { birth: file.data.birth_certificate_received, guardian: file.data.guardian_identity_received, identity: file.data.identity_document_received, paymentRequired: file.data.payment_required, fee: file.data.monthly_fee, payments: (payments.data ?? []).map((payment) => ({ month: payment.period_month.slice(0, 7), amount: Number(payment.received_amount), date: payment.paid_on })), legacyPayments: (legacyPayments.data ?? []).map((payment) => { const metadata = payment.metadata && typeof payment.metadata === "object" && !Array.isArray(payment.metadata) ? payment.metadata : {}; return { id: payment.id, month: payment.historical_date_label ?? "شهر سابق", amount: typeof metadata.amount === "number" ? metadata.amount : null, status: typeof metadata.status === "string" ? metadata.status : "—" }; }) } : null };
+    const assignment = enrollment.data?.class_id ? await client.from("class_teacher_assignments").select("teacher_id").eq("class_id", enrollment.data.class_id).eq("status", "active").order("assigned_at").limit(1).maybeSingle() : { data: null };
+    const teacher = assignment.data?.teacher_id ? await client.from("profiles").select("display_name").eq("id", assignment.data.teacher_id).maybeSingle() : { data: null };
+    return { name: profile.data?.display_name ?? empty.name, dateOfBirth: student.data?.date_of_birth ?? null, className: classroom.data?.name ?? null, teacherName: teacher.data?.display_name ?? null, scheduleText: classroom.data?.schedule_text ?? null, documents: (documents.data ?? []).map((document) => ({ id: document.id, title: document.title, category: document.category })), file: file.data ? { birth: file.data.birth_certificate_received, guardian: file.data.guardian_identity_received, identity: file.data.identity_document_received, paymentRequired: file.data.payment_required, fee: file.data.monthly_fee, payments: (payments.data ?? []).map((payment) => ({ month: payment.period_month.slice(0, 7), amount: Number(payment.received_amount), expectedAmount: Number(payment.expected_amount), date: payment.paid_on, status: payment.status as "paid" | "partial" | "exempt" })), legacyPayments: (legacyPayments.data ?? []).map((payment) => { const metadata = payment.metadata && typeof payment.metadata === "object" && !Array.isArray(payment.metadata) ? payment.metadata : {}; return { id: payment.id, month: payment.historical_date_label ?? "شهر سابق", amount: typeof metadata.amount === "number" ? metadata.amount : null, status: typeof metadata.status === "string" ? metadata.status : "—" }; }) } : null };
   } catch (error) { logServerError("STUDENT_PROFILE_LOAD_FAILED", error); return empty; }
 }

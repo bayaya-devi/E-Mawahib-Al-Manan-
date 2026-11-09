@@ -26,6 +26,7 @@ export function AccountDialog({
     classIds: string;
     classId: string;
     teacherId: string;
+    ageCategory: string;
   } & Record<string, string>;
   const [role, setRole] = useState<DatabaseAppRole>(defaultRole ?? "student");
   const [form, setForm] = useState<AccountForm>({
@@ -38,6 +39,7 @@ export function AccountDialog({
     classIds: "",
     classId: "",
     teacherId: "",
+    ageCategory: "",
   });
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(false);
@@ -98,6 +100,7 @@ export function AccountDialog({
           guardianSecondaryPhone: form.guardianSecondaryPhone ?? "",
           canLeaveAlone: form.canLeaveAlone === "true",
           dateOfBirth: form.dateOfBirth ?? "",
+          ageCategory: form.ageCategory || null,
           identityDocumentReceived: form.identity === "true",
           birthCertificateReceived: form.birth === "true",
           guardianIdentityReceived: form.guardianIdentity === "true",
@@ -118,7 +121,7 @@ export function AccountDialog({
       }
       showToast({ title: "تم إنشاء الحساب والملف", tone: "success" });
       setOpen(false);
-      setForm({ firstName: "", lastName: "", login: "", temporaryPassword: "", gender: "unspecified", monthlyAmount: "0", classIds: "", classId: "", teacherId: "" });
+      setForm({ firstName: "", lastName: "", login: "", temporaryPassword: "", gender: "unspecified", monthlyAmount: "0", classIds: "", classId: "", teacherId: "", ageCategory: "" });
       router.refresh();
     } catch {
       showToast({ title: "تعذر الاتصال بالخدمة. حاول مرة أخرى.", tone: "info" });
@@ -278,6 +281,15 @@ export function AccountDialog({
                 </select>
               </label>
             </div>
+            <label>
+              الفئة العمرية للواجهة
+              <select value={form.ageCategory} onChange={(e) => set("ageCategory", e.target.value)}>
+                <option value="">واجهة محايدة</option>
+                <option value="CHILD_5_8">من 5 إلى 8 سنوات</option>
+                <option value="TEEN_9_18">من 9 إلى 18 سنة</option>
+                <option value="ADULT_19_PLUS">19 سنة فما فوق</option>
+              </select>
+            </label>
             <label>
               الأستاذ المسؤول (اختياري)
               <select

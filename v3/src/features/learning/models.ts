@@ -12,6 +12,7 @@ export type StudentDashboardData = {
   assignments: Array<{ id: string; title: string; instructions: string | null; dueAt: string | null; surahNumber: number | null; verseFrom: number | null; verseTo: number | null; status: DatabaseAssignmentStatus }>;
   goal: { id: string; surahNumber: number; verseFrom: number; verseTo: number; targetDate: string | null } | null;
   progress: Array<{ surahNumber: number; status: DatabaseLearningProgressStatus; percent: number; stars: number }>;
+  juzExams: Array<{ juzNumber: number; score: number; passed: boolean; completedAt: string }>;
   notifications: Array<{ id: string; title: string; body: string; href: string | null; read: boolean; createdAt: string }>;
 };
 
@@ -24,7 +25,7 @@ export type FamilyChildData = {
   exams: Array<{ id: string; title: string; score: number | null; appreciation: string | null; completedAt: string | null }>;
   announcements: StudentDashboardData["announcements"];
   messages: Array<{ id: string; title: string; body: string; createdAt: string | null; dateLabel: string | null; read: boolean }>;
-  documents: Array<{ id: string; title: string; storagePath: string; createdAt: string }>;
+  documents: Array<{ id: string; title: string; createdAt: string }>;
 };
 
 export type StudentHistoryData = {

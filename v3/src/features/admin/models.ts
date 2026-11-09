@@ -47,6 +47,7 @@ export type CommandPerson = {
   guardianSecondaryPhone: string | null;
   canLeaveAlone: boolean;
   dateOfBirth: string | null;
+  ageCategory: "CHILD_5_8" | "TEEN_9_18" | "ADULT_19_PLUS" | null;
   identityDocumentReceived: boolean;
   birthCertificateReceived: boolean;
   guardianIdentityReceived: boolean;

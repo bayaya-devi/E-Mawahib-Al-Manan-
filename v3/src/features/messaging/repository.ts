@@ -3,19 +3,23 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { logServerError } from "@/lib/observability/logger";
 import type { MessagingWorkspaceData } from "./models";
+import { getActiveStudentContext } from "@/features/learning/student-context";
 
 const emptyData: MessagingWorkspaceData = { currentUserId: null, canManageRequests: false, conversations: [], messages: [], targets: [], requests: [] };
 
-export async function getMessagingWorkspace(): Promise<MessagingWorkspaceData> {
+export async function getMessagingWorkspace(studentMode = false): Promise<MessagingWorkspaceData> {
   if (process.env.NEXT_PUBLIC_APP_ENV === "test") return emptyData;
   try {
     const client = await createClient();
     const { data: auth } = await client.auth.getUser();
-    const userId = auth.user?.id;
-    if (!userId) return emptyData;
+    const accountId = auth.user?.id;
+    if (!accountId) return emptyData;
+    const studentContext = studentMode ? await getActiveStudentContext() : null;
+    const userId = studentContext?.studentId ?? accountId;
+    const delegated = userId !== accountId;
     const [membershipResult, requestResult, roleResult] = await Promise.all([
       client.from("conversation_members").select("conversation_id,last_read_at,archived_at").eq("user_id", userId),
-      client.from("service_requests").select("id,reference,requester_id,assigned_to,kind,status,priority,title,details,created_at").order("created_at", { ascending: false }).limit(50),
+      delegated ? Promise.resolve({ data: [] }) : client.from("service_requests").select("id,reference,requester_id,assigned_to,kind,status,priority,title,details,created_at").order("created_at", { ascending: false }).limit(50),
       client.from("user_roles").select("role").eq("user_id", userId),
     ]);
     const memberships = membershipResult.data ?? [];
@@ -25,7 +29,7 @@ export async function getMessagingWorkspace(): Promise<MessagingWorkspaceData> {
       conversationIds.length ? client.from("conversations").select("id,subject,last_message_at,created_at").in("id", conversationIds).order("last_message_at", { ascending: false, nullsFirst: false }) : Promise.resolve({ data: [] }),
       conversationIds.length ? client.from("conversation_members").select("conversation_id,user_id").in("conversation_id", conversationIds) : Promise.resolve({ data: [] }),
       conversationIds.length ? client.from("conversation_messages").select("id,conversation_id,sender_id,body,created_at").in("conversation_id", conversationIds).order("created_at").limit(500) : Promise.resolve({ data: [] }),
-      client.rpc("list_message_targets"),
+      studentMode ? client.rpc("list_student_message_targets", { target_student_id: userId }) : client.rpc("list_message_targets"),
       requestIds.length ? client.from("service_request_events").select("id,request_id,event_kind,from_status,to_status,note,created_at").in("request_id", requestIds).order("created_at") : Promise.resolve({ data: [] }),
     ]);
     const memberRows = memberResult.data ?? [];

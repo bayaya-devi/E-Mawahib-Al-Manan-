@@ -27,6 +27,7 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  distDir: process.env.NEXT_DIST_DIR ?? ".next",
   images: { formats: ["image/avif", "image/webp"], minimumCacheTTL: 2_592_000 },
   allowedDevOrigins: ["127.0.0.1"],
   poweredByHeader: false,

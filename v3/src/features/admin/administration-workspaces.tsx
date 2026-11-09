@@ -145,6 +145,7 @@ function PersonDialog({
     guardian_secondary_phone: person.guardianSecondaryPhone ?? "",
     can_leave_alone: person.canLeaveAlone,
     date_of_birth: person.dateOfBirth ?? "",
+    age_category: person.ageCategory ?? "",
     identity_document_received: person.identityDocumentReceived,
     birth_certificate_received: person.birthCertificateReceived,
     guardian_identity_received: person.guardianIdentityReceived,
@@ -154,6 +155,8 @@ function PersonDialog({
     teacher_ids: person.teacherIds,
   });
   const [busy, setBusy] = useState(false);
+  const [siblingId, setSiblingId] = useState("");
+  const [siblingBusy, setSiblingBusy] = useState(false);
   const { showToast } = useToast();
   const router = useRouter();
   async function save() {
@@ -175,6 +178,7 @@ function PersonDialog({
         guardianSecondaryPhone: form.guardian_secondary_phone,
         canLeaveAlone: form.can_leave_alone,
         dateOfBirth: form.date_of_birth || undefined,
+        ageCategory: form.age_category || null,
         identityDocumentReceived: form.identity_document_received,
         birthCertificateReceived: form.birth_certificate_received,
         guardianIdentityReceived: form.guardian_identity_received,
@@ -194,6 +198,15 @@ function PersonDialog({
     } finally {
       setBusy(false);
     }
+  }
+  async function setSiblingLink(active: boolean) {
+    if (!siblingId || siblingBusy) return;
+    setSiblingBusy(true);
+    const { error } = await createClient().rpc("admin_set_student_sibling_link", { source_student: person.id, target_student: siblingId, make_active: active });
+    setSiblingBusy(false);
+    if (error) return showToast({ title: "تعذر تحديث رابط الإخوة", description: error.message, tone: "info" });
+    showToast({ title: active ? "تم ربط الحسابين" : "تم إلغاء الربط فوراً", tone: "success" });
+    router.refresh();
   }
   const related =
     person.role === "student"
@@ -321,6 +334,18 @@ function PersonDialog({
               />
             </label>
             <label>
+              الفئة العمرية للواجهة
+              <select
+                value={form.age_category}
+                onChange={(e) => setForm({ ...form, age_category: e.target.value as typeof form.age_category })}
+              >
+                <option value="">واجهة محايدة</option>
+                <option value="CHILD_5_8">من 5 إلى 8 سنوات</option>
+                <option value="TEEN_9_18">من 9 إلى 18 سنة</option>
+                <option value="ADULT_19_PLUS">19 سنة فما فوق</option>
+              </select>
+            </label>
+            <label>
               القسم
               <select
                 value={form.class_id}
@@ -348,6 +373,14 @@ function PersonDialog({
                   ))}
               </select>
             </label>
+            <fieldset className="admin-checks">
+              <legend>التبديل الآمن بين حسابات الإخوة</legend>
+              <select aria-label="حساب الأخ أو الأخت" value={siblingId} onChange={(event) => setSiblingId(event.target.value)}>
+                <option value="">اختر حساباً</option>
+                {data.people.filter((item) => item.role === "student" && item.id !== person.id && item.status === "active").map((student) => <option key={student.id} value={student.id}>{student.name}{student.className ? ` · ${student.className}` : ""}</option>)}
+              </select>
+              <div className="form-pair"><Button size="sm" loading={siblingBusy} disabled={!siblingId} onClick={() => void setSiblingLink(true)}>ربط الحسابين</Button><Button size="sm" variant="secondary" loading={siblingBusy} disabled={!siblingId} onClick={() => void setSiblingLink(false)}>إلغاء الربط</Button></div>
+            </fieldset>
             <label>
               الولي
               <input

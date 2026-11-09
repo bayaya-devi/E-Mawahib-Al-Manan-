@@ -37,8 +37,9 @@ import { applyAppearance, readAppearance, watchSystemAppearance } from "@/featur
 import { rememberAuthenticatedAccount } from "@/features/teacher/device-account-vault";
 import type { CommandItem } from "@/components/ui";
 import { cn } from "@/lib/ui/cn";
-import { getStudentStage, type StudentStage } from "@/lib/ui/student-stage";
+import { getStudentStage, type StudentAgeCategory, type StudentStage } from "@/lib/ui/student-stage";
 import { createClient } from "@/lib/supabase/client";
+import { StudentLocaleProvider, type StudentLocale } from "@/features/learning/student-locale";
 
 export type ShellKind = "student" | "family" | "teacher" | "admin";
 type NavItem = { label: string; href: string; icon: LucideIcon };
@@ -48,9 +49,10 @@ const navigation: Record<ShellKind, NavItem[]> = {
     { label: "الرئيسية", href: "/student", icon: Home },
     { label: "السور", href: "/student/quran", icon: BookOpenText },
     { label: "متابعة الحفظ", href: "/student/follow-up", icon: ChartNoAxesCombined },
+    { label: "ملفي", href: "/student/profile", icon: CircleUserRound },
+    { label: "الرسائل", href: "/student/messages", icon: MessageSquareText },
     { label: "الألعاب", href: "/student/games", icon: Gamepad2 },
     { label: "الوالدان", href: "/student/parents", icon: ClipboardCheck },
-    { label: "ملفي", href: "/student/profile", icon: CircleUserRound },
     { label: "الإعدادات", href: "/student/settings", icon: Settings },
   ],
   family: [
@@ -63,9 +65,9 @@ const navigation: Record<ShellKind, NavItem[]> = {
   teacher: [
     { label: "الرئيسية", href: "/teacher", icon: Home },
     { label: "الطلاب", href: "/teacher/students", icon: UsersRound },
-    { label: "بدء حصة", href: "/teacher/session", icon: BookOpenText },
-    { label: "الرسائل", href: "/teacher/messages", icon: MessageSquareText },
     { label: "ملفي", href: "/teacher/professional", icon: ClipboardCheck },
+    { label: "الرسائل", href: "/teacher/messages", icon: MessageSquareText },
+    { label: "بدء حصة", href: "/teacher/session", icon: BookOpenText },
     { label: "الإعدادات", href: "/teacher/settings", icon: Settings },
   ],
   admin: [
@@ -81,6 +83,17 @@ const navigation: Record<ShellKind, NavItem[]> = {
     { label: "الإعدادات", href: "/admin/settings", icon: Settings },
   ],
 };
+
+const studentNavigationFr: NavItem[] = [
+  { label: "Accueil", href: "/student", icon: Home },
+  { label: "Sourates", href: "/student/quran", icon: BookOpenText },
+  { label: "Suivi", href: "/student/follow-up", icon: ChartNoAxesCombined },
+  { label: "Mon dossier", href: "/student/profile", icon: CircleUserRound },
+  { label: "Messages", href: "/student/messages", icon: MessageSquareText },
+  { label: "Jeux", href: "/student/games", icon: Gamepad2 },
+  { label: "Parents", href: "/student/parents", icon: ClipboardCheck },
+  { label: "Paramètres", href: "/student/settings", icon: Settings },
+];
 
 const shellLabels: Record<ShellKind, { section: string; title: string }> = {
   student: { section: "", title: "" },
@@ -99,9 +112,13 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   const [navigationOpen, setNavigationOpen] = useState(true);
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const [studentStage, setStudentStage] = useState<StudentStage>("neutral");
-  const items = navigation[kind];
-  const mobileItems = items.slice(0, 4);
-  const secondaryItems = items.slice(4);
+  const [studentLocale, setStudentLocale] = useState<StudentLocale>("ar");
+  const [studentProfiles, setStudentProfiles] = useState<Array<{ id: string; name: string; ageCategory: StudentAgeCategory | null; locale: StudentLocale }>>([]);
+  const [activeStudent, setActiveStudent] = useState("");
+  const items = kind === "student" && studentLocale === "fr" ? studentNavigationFr : navigation[kind];
+  const mobileItemCount = kind === "student" ? 5 : 4;
+  const mobileItems = items.slice(0, mobileItemCount);
+  const secondaryItems = items.slice(mobileItemCount);
   const commands = useMemo<CommandItem[]>(() => items.map((item) => ({
     label: item.label,
     href: item.href,
@@ -124,20 +141,39 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 
   useEffect(() => {
     if (kind !== "teacher" && kind !== "student") return;
+    if (kind === "student") {
+      void fetch("/api/student/profile-switch", { cache: "no-store" }).then(async (response) => {
+        if (!response.ok) return;
+        const value = await response.json() as { active: string; profiles: Array<{ id: string; name: string; ageCategory: StudentAgeCategory | null; locale: StudentLocale }> };
+        const selected = value.profiles.find((profile) => profile.id === value.active) ?? value.profiles[0];
+        setStudentProfiles(value.profiles); setActiveStudent(selected?.id ?? ""); setStudentName(selected?.name ?? ""); setStudentStage(getStudentStage(selected?.ageCategory ?? null)); setStudentLocale(selected?.locale ?? "ar");
+      }).catch(() => undefined);
+      return;
+    }
     const client = createClient();
     void client.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
-      const [profile, student] = await Promise.all([
-        client.from("profiles").select("display_name").eq("id", data.user.id).maybeSingle(),
-        kind === "student" ? client.from("student_profiles").select("date_of_birth").eq("user_id", data.user.id).maybeSingle() : Promise.resolve({ data: null }),
-      ]);
-      if (kind === "teacher") setTeacherName(profile.data?.display_name ?? "");
-      else {
-        setStudentName(profile.data?.display_name ?? "");
-        setStudentStage(getStudentStage(student.data?.date_of_birth));
-      }
+      const profile = await client.from("profiles").select("display_name").eq("id", data.user.id).maybeSingle();
+      setTeacherName(profile.data?.display_name ?? "");
     });
   }, [kind]);
+
+  async function switchStudent(studentId: string): Promise<void> {
+    if (!studentId || studentId === activeStudent) return;
+    const response = await fetch("/api/student/profile-switch", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ studentId }) });
+    if (!response.ok) return;
+    const selected = studentProfiles.find((profile) => profile.id === studentId);
+    setActiveStudent(studentId); setStudentName(selected?.name ?? ""); setStudentStage(getStudentStage(selected?.ageCategory ?? null)); setStudentLocale(selected?.locale ?? "ar"); router.refresh();
+  }
+
+  async function switchStudentLocale(locale: StudentLocale): Promise<void> {
+    if (!activeStudent || locale === studentLocale) return;
+    const response = await fetch("/api/student/profile-switch", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ studentId: activeStudent, locale }) });
+    if (!response.ok) return;
+    setStudentLocale(locale);
+    setStudentProfiles((profiles) => profiles.map((profile) => profile.id === activeStudent ? { ...profile, locale } : profile));
+    router.refresh();
+  }
 
   async function signOut(): Promise<void> {
     setSigningOut(true);
@@ -148,7 +184,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 
   return (
     <ToastProvider><OfflineProvider>
-      <div className={cn("app-shell", `app-shell--${kind}`, !navigationOpen && "is-navigation-collapsed")} data-student-stage={kind === "student" ? studentStage : undefined}>
+      <StudentLocaleProvider locale={studentLocale}><div className={cn("app-shell", `app-shell--${kind}`, !navigationOpen && "is-navigation-collapsed")} data-student-stage={kind === "student" ? studentStage : undefined} lang={kind === "student" ? studentLocale : "ar"} dir={kind === "student" && studentLocale === "fr" ? "ltr" : "rtl"}>
         <aside className="app-rail" id="application-navigation" aria-label="التنقل الرئيسي">
           <Link className="brand-mark" href="/" aria-label="مواهب المنان">
             <Image src="/dar-al-hadith/logo.webp" alt="" width={44} height={43} priority />
@@ -166,7 +202,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 
         <div className="app-frame">
           <header className="app-header">
-            {kind === "teacher" ? <div className="teacher-shell-identity"><strong>أستاذ(ة) {teacherName}</strong></div> : kind === "student" ? <div className="student-shell-identity"><strong>{studentName || "حساب الطالب"}</strong></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
+            {kind === "teacher" ? <div className="teacher-shell-identity"><strong>أستاذ(ة) {teacherName}</strong></div> : kind === "student" ? <div className="student-shell-identity"><strong>{studentName || (studentLocale === "fr" ? "Compte élève" : "حساب الطالب")}</strong>{studentProfiles.length > 1 ? <select aria-label={studentLocale === "fr" ? "Changer de profil élève" : "تغيير ملف الطالب"} value={activeStudent} onChange={(event) => void switchStudent(event.target.value)}>{studentProfiles.map((profile) => <option value={profile.id} key={profile.id}>{profile.name}</option>)}</select> : null}<select aria-label={studentLocale === "fr" ? "Langue" : "اللغة"} value={studentLocale} onChange={(event) => void switchStudentLocale(event.target.value as StudentLocale)}><option value="ar">العربية</option><option value="fr">Français</option></select></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
             <div className="app-header__actions">
               <button className="navigation-toggle navigation-toggle--mobile" type="button" aria-label="فتح بقية الأقسام" aria-expanded={mobileMoreOpen} aria-controls="mobile-more-navigation" onClick={() => setMobileMoreOpen(true)}>
                 <Menu aria-hidden="true" size={20} />
@@ -186,7 +222,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
 
         <nav className="mobile-nav" id="mobile-navigation" aria-label="التنقل الرئيسي للهاتف">
           {mobileItems.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
-          <button className={cn("app-nav-link", "mobile-nav__more", secondaryItems.some((item) => isActivePath(pathname, item.href)) && "is-active")} type="button" aria-label="المزيد" aria-expanded={mobileMoreOpen} onClick={() => setMobileMoreOpen(true)}><MoreHorizontal aria-hidden="true" size={21} /><span>المزيد</span></button>
+          {kind === "student" ? null : <button className={cn("app-nav-link", "mobile-nav__more", secondaryItems.some((item) => isActivePath(pathname, item.href)) && "is-active")} type="button" aria-label="المزيد" aria-expanded={mobileMoreOpen} onClick={() => setMobileMoreOpen(true)}><MoreHorizontal aria-hidden="true" size={21} /><span>المزيد</span></button>}
         </nav>
         <Drawer open={mobileMoreOpen} onOpenChange={setMobileMoreOpen} title="بقية الأقسام">
           <nav className="mobile-more-nav" id="mobile-more-navigation" aria-label="بقية أقسام المنصة">
@@ -194,7 +230,7 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
           </nav>
         </Drawer>
         {kind === "family" ? <CommandPalette items={commands} open={commandOpen} onOpenChange={setCommandOpen} /> : null}
-      </div>
+      </div></StudentLocaleProvider>
     </OfflineProvider></ToastProvider>
   );
 }

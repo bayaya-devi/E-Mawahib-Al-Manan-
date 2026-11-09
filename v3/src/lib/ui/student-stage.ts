@@ -1,18 +1,9 @@
 export type StudentStage = "neutral" | "child" | "teen" | "adult";
+export type StudentAgeCategory = "CHILD_5_8" | "TEEN_9_18" | "ADULT_19_PLUS";
 
-export function getStudentStage(dateOfBirth: string | null | undefined, today = new Date()): StudentStage {
-  if (!dateOfBirth) return "neutral";
-
-  const birthDate = new Date(`${dateOfBirth}T00:00:00`);
-  if (Number.isNaN(birthDate.getTime()) || birthDate > today) return "neutral";
-
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const birthdayHasPassed = today.getMonth() > birthDate.getMonth()
-    || (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
-  if (!birthdayHasPassed) age -= 1;
-
-  if (age < 5) return "neutral";
-  if (age <= 8) return "child";
-  if (age <= 18) return "teen";
-  return "adult";
+export function getStudentStage(category: StudentAgeCategory | null | undefined): StudentStage {
+  if (category === "CHILD_5_8") return "child";
+  if (category === "TEEN_9_18") return "teen";
+  if (category === "ADULT_19_PLUS") return "adult";
+  return "neutral";
 }

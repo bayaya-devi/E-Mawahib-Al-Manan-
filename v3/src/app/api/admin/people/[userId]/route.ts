@@ -18,6 +18,7 @@ const payloadSchema = z.object({
   guardianSecondaryPhone: z.string().max(60).optional(),
   canLeaveAlone: z.boolean().optional(),
   dateOfBirth: z.string().max(20).optional(),
+  ageCategory: z.enum(["CHILD_5_8", "TEEN_9_18", "ADULT_19_PLUS"]).nullable().optional(),
   identityDocumentReceived: z.boolean().optional(),
   birthCertificateReceived: z.boolean().optional(),
   guardianIdentityReceived: z.boolean().optional(),
