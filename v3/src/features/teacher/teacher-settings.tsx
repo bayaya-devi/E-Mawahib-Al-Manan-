@@ -14,8 +14,8 @@ import type { SavedDeviceAccount } from "./device-account-vault";
 export function TeacherSettings() {
   const router = useRouter(); const { showToast } = useToast(); const [accounts, setAccounts] = useState<SavedDeviceAccount[]>([]); const [activeId, setActiveId] = useState<string | null>(null); const [busy, setBusy] = useState(false);
   const [expiredIds, setExpiredIds] = useState<Set<string>>(new Set());
-  const [appearance, setAppearance] = useState<Appearance>(readAppearance); const [accent, setAccent] = useState<Accent>(readAccent);
-  useEffect(() => { applyAppearance(appearance, accent); void rememberAuthenticatedAccount().then(({ items, active }) => { setAccounts(items); setActiveId(active); }); }, [appearance, accent]);
+  const [appearance, setAppearance] = useState<Appearance>("system"); const [accent, setAccent] = useState<Accent>("mawahib");
+  useEffect(() => { let mounted = true; queueMicrotask(() => { if (!mounted) return; const storedAppearance = readAppearance(); const storedAccent = readAccent(); setAppearance(storedAppearance); setAccent(storedAccent); applyAppearance(storedAppearance, storedAccent); }); void rememberAuthenticatedAccount().then(({ items, active }) => { if (!mounted) return; setAccounts(items); setActiveId(active); }); return () => { mounted = false; }; }, []);
   function changeAppearance(value: Appearance) { setAppearance(value); saveAppearance(value, accent); }
   function changeAccent(value: Accent) { setAccent(value); saveAppearance(appearance, value); }
   async function switchAccount(account: SavedDeviceAccount) { if (account.id === activeId) return; if (expiredIds.has(account.id)) return router.push("/login?addAccount=1"); setBusy(true); const result = await createClient().auth.setSession({ access_token: account.accessToken, refresh_token: account.refreshToken }); setBusy(false); if (result.error || !result.data.session) { setExpiredIds((current) => new Set(current).add(account.id)); return showToast({ title: "إعادة الاتصال مطلوبة", description: "أدخل(ي) بيانات هذا الحساب مرة واحدة.", tone: "info" }); } router.push(deviceAccountHome(account.kind)); router.refresh(); }

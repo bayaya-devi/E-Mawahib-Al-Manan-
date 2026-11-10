@@ -58,14 +58,9 @@ test("admin navigation folds and global search is absent", async ({ page }) => {
     page.getByRole("button", { name: "فتح البحث العام" }),
   ).toHaveCount(0);
   if ((page.viewportSize()?.width ?? 1280) < 760) {
-    await page.getByRole("button", { name: "إخفاء قائمة التنقل" }).click();
-    await expect(page.locator(".app-shell")).toHaveClass(
-      /is-navigation-collapsed/,
-    );
-    await page.getByRole("button", { name: "إظهار قائمة التنقل" }).click();
-    await expect(page.locator(".app-shell")).not.toHaveClass(
-      /is-navigation-collapsed/,
-    );
+    await page.getByRole("button", { name: "فتح بقية الأقسام" }).click();
+    await expect(page.getByRole("navigation", { name: "بقية الأقسام" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "بقية الأقسام" }).getByRole("link", { name: "المالية" })).toBeVisible();
     return;
   }
   const toggle = page.getByRole("button", { name: "طي قائمة التنقل" });

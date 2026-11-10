@@ -13,7 +13,7 @@ export default function LoginPage() {
       <Link className="login-v3__visit login-v3__visit--desktop" href="/ar"><House aria-hidden="true" size={18} />زيارة الموقع</Link>
     </section>
     <section className="login-v3__panel">
-      <Image className="login-v3__mobile-logo" src="/dar-al-hadith/logo.webp" alt="جمعية مواهب المنان" width={72} height={70} priority />
+      <Image className="login-v3__mobile-logo" src="/dar-al-hadith/logo.webp" alt="جمعية مواهب المنان" width={72} height={70} style={{ height: "auto" }} priority />
       <header><h2>تسجيل الدخول</h2></header>
       <LoginForm />
     </section>

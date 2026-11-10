@@ -30,9 +30,12 @@ test("multi-question learning, retry, final test and audio revisit", async ({ pa
   async function answer(correct: boolean) {
     await expect(page.locator(".exercise-result")).toHaveCount(0, { timeout: 2_000 });
     const plan = makeLearningPlan(key, state.attempt); const item = currentRound(plan, state)!; const before = version;
+    await expect(page.locator(".exercise-prompt")).toHaveText(item.prompt);
     if (item.kind === "verse_order") {
-      const ordered = correct ? [...item.options].sort((a, b) => item.answer.indexOf(a) - item.answer.indexOf(b)) : [...item.options].reverse();
-      for (const fragment of ordered) await page.locator(".learning-word-bank button:enabled").filter({ hasText: fragment }).first().click();
+      const expectedOrder = [...item.options].sort((a, b) => item.answer.indexOf(a) - item.answer.indexOf(b));
+      const ordered = correct ? expectedOrder : [...expectedOrder.slice(1), expectedOrder[0]!];
+      await expect(page.locator(".learning-word-bank button:not(:disabled)")).toHaveCount(item.options.length);
+      for (const fragment of ordered) await page.locator(".learning-word-bank").getByRole("button", { name: fragment, exact: true }).click();
       await page.getByRole("button", { name: "تحقق", exact: true }).click();
     } else {
       const value = correct ? item.answer : item.options.find((option) => option !== item.answer)!;
@@ -44,7 +47,7 @@ test("multi-question learning, retry, final test and audio revisit", async ({ pa
   await answer(true); await answer(true); await answer(false); await answer(true); await answer(true); await answer(true); await answer(true);
   expect(state.cursor).toBe(1); expect(state.lastResult).toMatchObject({ correct: 5, errors: 1, passed: true });
   await expect(page.getByRole("dialog")).toBeVisible(); await page.getByRole("button", { name: "متابعة", exact: true }).click();
-  await answer(false); await answer(true); await answer(false);
+  await answer(false); await answer(true); await answer(false); await answer(true); await answer(false);
   await expect(page.getByRole("heading", { name: "اقتربت من الإتقان" })).toBeVisible();
   await page.getByRole("button", { name: "إعادة التمرين", exact: true }).click(); await expect.poll(() => state.failed).toBe(false);
   while (!state.passed) { await answer(true); if (!state.passed && state.lastResult?.passed) { await expect(page.getByRole("dialog")).toBeVisible(); await page.getByRole("button", { name: "متابعة", exact: true }).click(); } }

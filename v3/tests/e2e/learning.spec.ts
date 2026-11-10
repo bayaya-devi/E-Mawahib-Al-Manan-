@@ -16,9 +16,14 @@ test.describe("student and family V3", () => {
 
   test("keeps core student navigation visible and pages free of horizontal overflow", async ({ page }) => {
     await page.goto("/student");
-    await expect(page.locator('.app-nav-link:visible').filter({ hasText: 'الألعاب' })).toBeVisible();
     const viewport = page.viewportSize();
     await expect(page.getByRole("navigation", { name: viewport && viewport.width <= 720 ? "التنقل الرئيسي للهاتف" : "التنقل الرئيسي" }).first()).toBeVisible();
+    if (viewport && viewport.width <= 720) {
+      await page.getByRole("button", { name: "فتح بقية الأقسام" }).click();
+      await expect(page.getByRole("navigation", { name: "بقية الأقسام" }).getByRole("link", { name: "الألعاب" })).toBeVisible();
+    } else {
+      await expect(page.locator('.app-nav-link:visible').filter({ hasText: 'الألعاب' })).toBeVisible();
+    }
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(1);
   });

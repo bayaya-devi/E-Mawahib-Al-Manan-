@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { publicCopy, publicHref, publicPages, type PublicLocale, type PublicPage } from "@/features/public-site/content";
 import { ConsentBanner } from "@/features/privacy/consent-banner";
 import { PublicMotion } from "@/features/public-site/public-motion";
+import { PublicDocumentLanguage } from "./public-document-language";
 import { PrivacyPreferencesButton, PublicHeaderControls } from "./public-shell-controls";
 
 export async function PublicShell({ locale, page, children }: { locale: PublicLocale; page?: PublicPage; children: ReactNode }) {
@@ -14,6 +15,7 @@ export async function PublicShell({ locale, page, children }: { locale: PublicLo
   const navItems = publicPages.map((item) => ({ id: item, label: copy.nav[item], href: publicHref(locale, item) }));
   const languageItems = (["ar", "fr", "en", "amz"] as const).filter((item) => item !== locale).map((item) => ({ locale: item, href: page ? publicHref(item, page) : `/${item}` }));
   return <div className="public-v3" lang={locale === "amz" ? "zgh-Tfng" : locale} dir={locale === "ar" ? "rtl" : "ltr"}>
+    <PublicDocumentLanguage locale={locale} />
     <header className="public-v3__header">
       <Link className="public-v3__brand" href={publicHref(locale, "home")} aria-label={copy.brand}><Image src="/dar-al-hadith/logo.webp" alt="" width={53} height={52} priority /><span><strong>{copy.brand}</strong><small>{copy.association}</small></span></Link>
       <nav className="public-v3__desktop-nav" aria-label={copy.menu}>{navItems.map((item) => <Link key={item.id} className={item.id === page ? "is-active" : undefined} href={item.href}>{item.label}</Link>)}</nav>

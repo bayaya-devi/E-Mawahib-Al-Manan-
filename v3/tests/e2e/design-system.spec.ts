@@ -19,6 +19,34 @@ for (const [path, heading] of shells) {
   });
 }
 
+test("French public pages expose an LTR document and localized skip link", async ({ page }) => {
+  await page.goto("/fr");
+  await expect(page.locator("html")).toHaveAttribute("lang", "fr");
+  await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+  await expect(page.getByRole("link", { name: "Aller au contenu" })).toHaveAttribute("href", "#main-content");
+});
+
+test("public and login layouts reflow at the required representative widths", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chrome", "The viewport matrix only needs one browser engine.");
+  for (const width of [320, 375, 430, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: width < 768 ? 844 : 900 });
+    for (const path of ["/ar", "/login"]) {
+      await page.goto(path);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow, `${path} must not overflow at ${width}px`).toBeLessThanOrEqual(1);
+      await expect(page.locator("main").first()).toBeVisible();
+    }
+  }
+});
+
+test("saved dark appearance remains readable", async ({ page }) => {
+  await page.goto("/student/settings");
+  await page.evaluate(() => localStorage.setItem("emawahib.appearance", "dark"));
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-appearance", "dark");
+  await expect(page.locator("body")).toHaveCSS("color", "rgb(247, 247, 245)");
+});
+
 test("application shell exposes responsive navigation", async ({ page }) => {
   await page.goto("/student");
   if ((page.viewportSize()?.width ?? 0) <= 720) {

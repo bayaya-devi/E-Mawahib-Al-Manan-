@@ -65,9 +65,9 @@ const navigation: Record<ShellKind, NavItem[]> = {
   teacher: [
     { label: "الرئيسية", href: "/teacher", icon: Home },
     { label: "الطلاب", href: "/teacher/students", icon: UsersRound },
-    { label: "ملفي", href: "/teacher/professional", icon: ClipboardCheck },
-    { label: "الرسائل", href: "/teacher/messages", icon: MessageSquareText },
     { label: "بدء حصة", href: "/teacher/session", icon: BookOpenText },
+    { label: "الرسائل", href: "/teacher/messages", icon: MessageSquareText },
+    { label: "ملفي", href: "/teacher/professional", icon: ClipboardCheck },
     { label: "الإعدادات", href: "/teacher/settings", icon: Settings },
   ],
   admin: [
@@ -116,6 +116,34 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   const [studentProfiles, setStudentProfiles] = useState<Array<{ id: string; name: string; ageCategory: StudentAgeCategory | null; locale: StudentLocale }>>([]);
   const [activeStudent, setActiveStudent] = useState("");
   const items = kind === "student" && studentLocale === "fr" ? studentNavigationFr : navigation[kind];
+  const isStudentFrench = kind === "student" && studentLocale === "fr";
+  const interfaceLabels = isStudentFrench ? {
+    mainNavigation: "Navigation principale",
+    mobileNavigation: "Navigation principale sur mobile",
+    more: "Plus",
+    moreSections: "Autres rubriques",
+    openMore: "Ouvrir les autres rubriques",
+    profile: "Profil",
+    account: "Compte",
+    personalProfile: "Profil personnel",
+    collapseNavigation: "Réduire la navigation",
+    expandNavigation: "Déployer la navigation",
+    signOut: "Se déconnecter",
+    signingOut: "Déconnexion",
+  } : {
+    mainNavigation: "التنقل الرئيسي",
+    mobileNavigation: "التنقل الرئيسي للهاتف",
+    more: "المزيد",
+    moreSections: "بقية الأقسام",
+    openMore: "فتح بقية الأقسام",
+    profile: "الملف الشخصي",
+    account: "الحساب",
+    personalProfile: "الملف الشخصي",
+    collapseNavigation: "طي قائمة التنقل",
+    expandNavigation: "فتح قائمة التنقل",
+    signOut: "تسجيل الخروج",
+    signingOut: "جار الخروج",
+  };
   const mobileItemCount = kind === "student" ? 5 : 4;
   const mobileItems = items.slice(0, mobileItemCount);
   const secondaryItems = items.slice(mobileItemCount);
@@ -185,18 +213,18 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
   return (
     <ToastProvider><OfflineProvider>
       <StudentLocaleProvider locale={studentLocale}><div className={cn("app-shell", `app-shell--${kind}`, !navigationOpen && "is-navigation-collapsed")} data-student-stage={kind === "student" ? studentStage : undefined} lang={kind === "student" ? studentLocale : "ar"} dir={kind === "student" && studentLocale === "fr" ? "ltr" : "rtl"}>
-        <aside className="app-rail" id="application-navigation" aria-label="التنقل الرئيسي">
+        <aside className="app-rail" id="application-navigation" aria-label={interfaceLabels.mainNavigation}>
           <Link className="brand-mark" href="/" aria-label="مواهب المنان">
             <Image src="/dar-al-hadith/logo.webp" alt="" width={44} height={43} priority />
             <strong>مواهب المنان</strong>
           </Link>
-          <button className="app-rail__collapse" type="button" aria-label={navigationOpen ? "طي قائمة التنقل" : "فتح قائمة التنقل"} aria-expanded={navigationOpen} onClick={() => setNavigationOpen((open) => !open)}><Menu aria-hidden="true" size={19} /></button>
-          <nav className="app-rail__nav" aria-label="التنقل الرئيسي">
+          <button className="app-rail__collapse" type="button" aria-label={navigationOpen ? interfaceLabels.collapseNavigation : interfaceLabels.expandNavigation} aria-expanded={navigationOpen} onClick={() => setNavigationOpen((open) => !open)}><Menu aria-hidden="true" size={19} /></button>
+          <nav className="app-rail__nav" aria-label={interfaceLabels.mainNavigation}>
             {items.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
           </nav>
           <Link className="app-rail__profile" prefetch={false} href={kind === "student" ? "/student/profile" : kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`}>
-            <Avatar name="حساب المستخدم" size="sm" />
-            <span><strong>الحساب</strong><small>الملف الشخصي</small></span>
+            <Avatar name={interfaceLabels.account} size="sm" />
+            <span><strong>{interfaceLabels.account}</strong><small>{interfaceLabels.personalProfile}</small></span>
           </Link>
         </aside>
 
@@ -204,15 +232,15 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
           <header className="app-header">
             {kind === "teacher" ? <div className="teacher-shell-identity"><strong>أستاذ(ة) {teacherName}</strong></div> : kind === "student" ? <div className="student-shell-identity"><strong>{studentName || (studentLocale === "fr" ? "Compte élève" : "حساب الطالب")}</strong>{studentProfiles.length > 1 ? <select aria-label={studentLocale === "fr" ? "Changer de profil élève" : "تغيير ملف الطالب"} value={activeStudent} onChange={(event) => void switchStudent(event.target.value)}>{studentProfiles.map((profile) => <option value={profile.id} key={profile.id}>{profile.name}</option>)}</select> : null}<select aria-label={studentLocale === "fr" ? "Langue" : "اللغة"} value={studentLocale} onChange={(event) => void switchStudentLocale(event.target.value as StudentLocale)}><option value="ar">العربية</option><option value="fr">Français</option></select></div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
             <div className="app-header__actions">
-              <button className="navigation-toggle navigation-toggle--mobile" type="button" aria-label="فتح بقية الأقسام" aria-expanded={mobileMoreOpen} aria-controls="mobile-more-navigation" onClick={() => setMobileMoreOpen(true)}>
+              <button className="navigation-toggle navigation-toggle--mobile" type="button" aria-label={interfaceLabels.openMore} aria-expanded={mobileMoreOpen} aria-controls="mobile-more-navigation" onClick={() => setMobileMoreOpen(true)}>
                 <Menu aria-hidden="true" size={20} />
               </button>
               {kind === "family" ? <button className="global-search-trigger" type="button" aria-label="فتح البحث العام" onClick={() => setCommandOpen(true)}>
                 <Search aria-hidden="true" size={18} />
                 <span>بحث</span><kbd>Ctrl K</kbd>
-              </button> : <button className="teacher-signout" type="button" aria-label="تسجيل الخروج" disabled={signingOut} onClick={() => void signOut()}><LogOut aria-hidden="true" size={18} /><span>{signingOut ? "جار الخروج" : "تسجيل الخروج"}</span></button>}
+              </button> : <button className="teacher-signout" type="button" aria-label={interfaceLabels.signOut} disabled={signingOut} onClick={() => void signOut()}><LogOut aria-hidden="true" size={18} /><span>{signingOut ? interfaceLabels.signingOut : interfaceLabels.signOut}</span></button>}
               <NotificationCenter />
-              <Link className="mobile-profile" prefetch={false} href={kind === "student" ? "/student/profile" : kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`} aria-label="الملف الشخصي">
+              <Link className="mobile-profile" prefetch={false} href={kind === "student" ? "/student/profile" : kind === "teacher" ? "/teacher/professional" : `/${kind}#profile`} aria-label={interfaceLabels.profile}>
                 <CircleUserRound aria-hidden="true" size={24} />
               </Link>
             </div>
@@ -220,12 +248,12 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
           <main className="app-content" id="main-content">{children}</main>
         </div>
 
-        <nav className="mobile-nav" id="mobile-navigation" aria-label="التنقل الرئيسي للهاتف">
+        <nav className="mobile-nav" id="mobile-navigation" aria-label={interfaceLabels.mobileNavigation}>
           {mobileItems.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} />)}
-          {kind === "student" ? null : <button className={cn("app-nav-link", "mobile-nav__more", secondaryItems.some((item) => isActivePath(pathname, item.href)) && "is-active")} type="button" aria-label="المزيد" aria-expanded={mobileMoreOpen} onClick={() => setMobileMoreOpen(true)}><MoreHorizontal aria-hidden="true" size={21} /><span>المزيد</span></button>}
+          {kind === "student" ? null : <button className={cn("app-nav-link", "mobile-nav__more", secondaryItems.some((item) => isActivePath(pathname, item.href)) && "is-active")} type="button" aria-label={interfaceLabels.more} aria-expanded={mobileMoreOpen} onClick={() => setMobileMoreOpen(true)}><MoreHorizontal aria-hidden="true" size={21} /><span>{interfaceLabels.more}</span></button>}
         </nav>
-        <Drawer open={mobileMoreOpen} onOpenChange={setMobileMoreOpen} title="بقية الأقسام">
-          <nav className="mobile-more-nav" id="mobile-more-navigation" aria-label="بقية أقسام المنصة">
+        <Drawer open={mobileMoreOpen} onOpenChange={setMobileMoreOpen} title={interfaceLabels.moreSections}>
+          <nav className="mobile-more-nav" id="mobile-more-navigation" aria-label={interfaceLabels.moreSections}>
             {secondaryItems.map((item) => <NavLink key={item.label} item={item} active={isActivePath(pathname, item.href)} onNavigate={() => setMobileMoreOpen(false)} />)}
           </nav>
         </Drawer>

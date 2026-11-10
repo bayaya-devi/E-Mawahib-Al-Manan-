@@ -221,8 +221,8 @@
   .teacher-summary { grid-template-columns: 1fr; }
   .session-footer--wide { position: static; display: grid; grid-template-columns: repeat(2, 1fr); }
   .session-footer--wide .ui-button { width: 100%; }
-  .app-shell--teacher .mobile-nav { grid-template-columns: repeat(6, minmax(0, 1fr)); inset-inline: 4px; }
-  .app-shell--teacher .mobile-nav .app-nav-link { font-size: .54rem; }
+  .app-shell--teacher .mobile-nav { grid-template-columns: repeat(5, minmax(0, 1fr)); inset-inline: 6px; }
+  .app-shell--teacher .mobile-nav .app-nav-link { font-size: .62rem; }
   .teacher-signout { width: 44px; justify-content: center; padding: 0; }
   .teacher-signout span { display: none; }
 }

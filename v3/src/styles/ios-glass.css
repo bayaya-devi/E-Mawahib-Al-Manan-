@@ -1,10 +1,6 @@
 /* Shared adaptive presentation layer. Business behavior remains in the existing components. */
 
-body {
-  background:
-    radial-gradient(circle at 12% -10%, color-mix(in srgb, var(--gold) 8%, transparent), transparent 30rem),
-    var(--canvas);
-}
+body { background: var(--canvas); }
 
 button, a, input, select, textarea { touch-action: manipulation; }
 button, [role="button"], a { -webkit-user-select: none; user-select: none; }
@@ -241,9 +237,13 @@ button, [role="button"], a { -webkit-user-select: none; user-select: none; }
 .app-shell--student[data-student-stage="child"] button { min-height: 50px; }
 .app-shell--student[data-student-stage="child"] .student-home-grid,
 .app-shell--student[data-student-stage="child"] .student-game-portal { gap: 18px; }
+.app-shell--student[data-student-stage="child"] h1 { font-size: clamp(1.7rem, 8vw, 2.35rem); }
+.app-shell--student[data-student-stage="child"] .ui-card { border-width: 2px; }
+.app-shell--student[data-student-stage="child"] .app-nav-link span { font-weight: 760; }
 .app-shell--student[data-student-stage="teen"] .app-content { font-size: 1rem; }
 .app-shell--student[data-student-stage="adult"] { --brand: #8c653d; --brand-soft: #eee4d8; }
 .app-shell--student[data-student-stage="adult"] .app-content { font-size: .98rem; }
+.app-shell--student[data-student-stage="adult"] .ui-card { box-shadow: 0 1px 2px rgb(36 28 24 / 4%); }
 .app-shell--student[data-student-stage="adult"] .student-stars { animation: none; }
 
 @media (max-width: 1024px) and (min-width: 721px) {
