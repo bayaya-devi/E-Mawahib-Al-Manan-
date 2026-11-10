@@ -2,11 +2,6 @@ import { expect, test } from "@playwright/test";
 
 const emptyContent = { ok: true, profile: null, schedules: [], news: [], replays: [] };
 const replayId = "11111111-1111-4111-8111-111111111111";
-const consentCookie = encodeURIComponent(JSON.stringify({ necessary: true, audience: true, marketing: false, version: "2026-10-14" }));
-
-test.beforeEach(async ({ context }) => {
-  await context.addCookies([{ name: "mawahib_consent", value: consentCookie, url: "http://127.0.0.1:3001" }]);
-});
 
 test("language switch preserves the current public page", async ({ page }) => {
   await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
@@ -21,7 +16,6 @@ test("language switch preserves the current public page", async ({ page }) => {
 
 test("root selects a browser language once and preserves a manual choice", async ({ browser }) => {
   const context = await browser.newContext({ locale: "fr-FR" });
-  await context.addCookies([{ name: "mawahib_consent", value: consentCookie, url: "http://127.0.0.1:3001" }]);
   const page = await context.newPage();
   await page.route("**/api/public/content**", (route) => route.fulfill({ json: emptyContent }));
   await page.goto("/");
