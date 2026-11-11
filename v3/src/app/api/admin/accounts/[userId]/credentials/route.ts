@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 const schema = z
   .object({
     login: z.string().optional(),
-    temporaryPassword: z.string().min(4).max(128).optional(),
+    temporaryPassword: z.string().min(8).max(128).optional(),
   })
   .refine((value) => value.login || value.temporaryPassword);
 export async function PATCH(
