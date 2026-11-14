@@ -51,6 +51,26 @@ test.beforeAll(async () => {
   });
   expect(activated.error).toBeNull();
 
+  const authUser = await admin.auth.admin.getUserById(studentId);
+  expect(authUser.error).toBeNull();
+  expect(authUser.data.user?.email).toBe(internalEmail("student"));
+  expect(authUser.data.user?.email_confirmed_at).toBeTruthy();
+
+  const resolvedAlias = await admin.rpc("resolve_login_alias", {
+    target_login_alias: "s_a.b",
+  });
+  expect(resolvedAlias.error).toBeNull();
+  expect(resolvedAlias.data).toBe(internalEmail("student"));
+
+  const directAuth = anonymousClient();
+  const directLogin = await directAuth.auth.signInWithPassword({
+    email: internalEmail("student"),
+    password,
+  });
+  expect(directLogin.error).toBeNull();
+  expect(directLogin.data.user?.id).toBe(studentId);
+  await directAuth.auth.signOut();
+
   const classroom = await admin.from("classes").insert({
     school_id: schoolId,
     name: "Classe Auth Test",
