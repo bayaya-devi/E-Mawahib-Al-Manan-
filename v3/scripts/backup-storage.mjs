@@ -8,6 +8,7 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!outputDirectory || !url || !key) throw new Error("output directory, NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required");
 const client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+await mkdir(path.join(outputDirectory, "storage"), { recursive: true });
 const { data: buckets, error } = await client.storage.listBuckets();
 if (error) throw error;
 const manifest = [];
