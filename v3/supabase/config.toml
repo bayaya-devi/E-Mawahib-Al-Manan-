@@ -31,6 +31,7 @@ refresh_token_reuse_interval = 10
 enable_signup = false
 
 [auth.email]
+enabled = true
 enable_signup = false
 double_confirm_changes = true
 enable_confirmations = true
