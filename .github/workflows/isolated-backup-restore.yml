@@ -75,8 +75,9 @@ jobs:
         shell: bash
         run: |
           db_container="$(docker ps --format '{{.Names}}' | grep -m 1 '^supabase_db_')"
-          docker exec "$db_container" createdb -U postgres backup_restore
+          docker exec "$db_container" createdb -U postgres -T postgres backup_restore
           export TEST_DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/backup_restore"
+          psql "$TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'drop schema public cascade; create schema public;'
           scripts/test-restore.sh "$(find backups/daily -name '*.enc' -print -quit)"
       - name: Stop isolated Supabase
         if: always()
