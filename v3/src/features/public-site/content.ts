@@ -1,7 +1,7 @@
 export const locales = ["ar", "fr", "en", "amz"] as const;
 export type PublicLocale = (typeof locales)[number];
-export const publicPages = ["home", "about", "programs", "schedule", "courses", "registration", "news", "replays", "faq", "contact"] as const;
-export type PublicPage = (typeof publicPages)[number];
+export type PublicPage = "home" | "about" | "programs" | "schedule" | "courses" | "registration" | "news" | "replays" | "faq" | "contact";
+export const publicPages: PublicPage[] = ["home", "programs", "schedule", "replays"];
 
 export const pagePaths: Record<PublicPage, string> = {
   home: "", about: "about", programs: "programs", schedule: "schedule",
@@ -91,3 +91,9 @@ export function pageFromPath(value?: string): PublicPage | null {
 }
 export function publicHref(locale: PublicLocale, page: PublicPage) { const path = pagePaths[page]; return `/${locale}${path ? `/${path}` : ""}`; }
 export function localeDirection(locale: PublicLocale) { return locale === "ar" ? "rtl" : "ltr"; }
+export function replacementForLegacyPublicPage(page: PublicPage): PublicPage | null {
+  if (page === "about" || page === "news") return "home";
+  if (page === "courses") return "programs";
+  if (page === "registration" || page === "faq" || page === "contact") return "schedule";
+  return null;
+}
