@@ -22,7 +22,7 @@ jobs:
           check ready "$base/ready" 200
           check login "$base/login" 200
           check version "$base/api/version" 200
-          code="$(curl --retry 2 --connect-timeout 10 --max-time 20 -sS -H 'Range: bytes=0-1023' -o /tmp/audio -w '%{http_code}' "$base/audio/001001.mp3")"
+          code="$(curl --retry 2 --connect-timeout 10 --max-time 20 -sS -H 'Range: bytes=0-1023' -o /tmp/audio -w '%{http_code}' "$base/api/quran/audio/001001")"
           echo "audio: $code ($(wc -c </tmp/audio) bytes)"
           test "$code" = 206 -o "$code" = 200
       - name: Record outcome
