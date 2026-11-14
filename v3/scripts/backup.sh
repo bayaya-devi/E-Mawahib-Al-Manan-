@@ -8,7 +8,7 @@ STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$BACKUP_ROOT/daily" "$BACKUP_ROOT/weekly" "$BACKUP_ROOT/monthly"
-pg_dump --format=custom --no-owner --no-acl --file "$WORK/database.dump" "$DATABASE_URL"
+pg_dump --format=custom --no-owner --no-acl "$DATABASE_URL" > "$WORK/database.dump"
 node scripts/backup-storage.mjs "$WORK"
 node scripts/backup-manifest.mjs "$WORK/backup-manifest.json" "$WORK/database.dump" "$WORK/storage-manifest.json"
 tar -C "$WORK" -czf "$WORK/e-mawahib-$STAMP.tar.gz" database.dump storage storage-manifest.json backup-manifest.json
