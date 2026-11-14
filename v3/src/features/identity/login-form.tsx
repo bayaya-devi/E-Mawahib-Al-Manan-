@@ -2,14 +2,18 @@
 
 import { Eye, EyeOff, Home, LogIn, UserRound } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { useState } from "react";
 
 import { buildCanonicalLoginAlias, type LoginAccountKind } from "./domain/legacy-login";
 
+export function dashboardPathForRoles(roles: string[]) {
+  if (roles.includes("direction") || roles.includes("admin")) return "/admin";
+  if (roles.includes("teacher")) return "/teacher";
+  return "/student";
+}
+
 export function LoginForm() {
-  const router = useRouter();
   const [kind, setKind] = useState<LoginAccountKind>("student");
   const [firstName, setFirstName] = useState("");
   const [secondValue, setSecondValue] = useState("");
@@ -42,13 +46,10 @@ export function LoginForm() {
         return;
       }
       const roles = result.roles ?? [];
-      const destination = roles.includes("direction") || roles.includes("admin")
-        ? "/admin"
-        : roles.includes("teacher")
-          ? "/teacher"
-        : "/student";
-      router.replace(destination);
-      router.refresh();
+      const destination = dashboardPathForRoles(roles);
+      // The login response updates Supabase cookies. A hard navigation guarantees
+      // that middleware and server components observe that new session immediately.
+      window.location.assign(destination);
     } catch {
       setMessage("تعذر الاتصال الآن. حاول مرة أخرى.");
     } finally {
