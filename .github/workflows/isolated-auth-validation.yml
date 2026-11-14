@@ -13,12 +13,16 @@ jobs:
   auth-lifecycle:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: v3
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: v3/package-lock.json
       - uses: supabase/setup-cli@v1
         with:
           version: latest
@@ -45,8 +49,8 @@ jobs:
         with:
           name: isolated-auth-evidence
           path: |
-            playwright-report/auth-real
-            test-results/auth-real
+            v3/playwright-report/auth-real
+            v3/test-results/auth-real
           if-no-files-found: ignore
           retention-days: 14
       - name: Stop isolated Supabase
