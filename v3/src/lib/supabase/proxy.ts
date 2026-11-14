@@ -32,7 +32,8 @@ export async function refreshSession(request: NextRequest) {
   // getUser validates the session with Supabase Auth; do not replace with getSession.
   const { data: auth } = await supabase.auth.getUser();
   const path = request.nextUrl.pathname;
-  const protectedRoles = requiredRolesForPath(path.startsWith("/api/admin") ? "/admin" : path);
+  const accessPath = protectedAccessPath(path);
+  const protectedRoles = requiredRolesForPath(accessPath);
   if (protectedRoles && !auth.user) return deny(request, 401);
 
   if (auth.user && protectedRoles) {
@@ -41,12 +42,19 @@ export async function refreshSession(request: NextRequest) {
       supabase.from("user_roles").select("role").eq("user_id", auth.user.id),
     ]);
     const actorRoles = (roles.data ?? []).map(({ role }) => role as AppRole);
-    if (profile.error || roles.error || profile.data?.status !== "active" || !mayAccessPath(path.startsWith("/api/admin") ? "/admin" : path, actorRoles)) {
+    if (profile.error || roles.error || profile.data?.status !== "active" || !mayAccessPath(accessPath, actorRoles)) {
       return deny(request, 403);
     }
   }
 
   return response;
+}
+
+function protectedAccessPath(pathname: string): string {
+  for (const role of ["admin", "teacher", "student", "family"] as const) {
+    if (pathname === `/api/${role}` || pathname.startsWith(`/api/${role}/`)) return `/${role}`;
+  }
+  return pathname;
 }
 
 function deny(request: NextRequest, status: 401 | 403) {

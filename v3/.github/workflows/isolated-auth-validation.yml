@@ -1,0 +1,54 @@
+name: Isolated Supabase Auth validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/staging-crud-validation
+
+permissions:
+  contents: read
+
+jobs:
+  auth-lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci
+      - name: Start isolated Supabase
+        run: supabase start
+      - name: Export ephemeral local credentials
+        shell: bash
+        run: |
+          supabase status -o env > /tmp/supabase-status.env
+          set -a
+          source /tmp/supabase-status.env
+          set +a
+          echo "NEXT_PUBLIC_SUPABASE_URL=${API_URL}" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${ANON_KEY}" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE""_KEY=${SERVICE_ROLE_KEY}" >> "$GITHUB_ENV"
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run real Auth lifecycle
+        run: npx playwright test --config=playwright.auth.config.ts
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: isolated-auth-evidence
+          path: |
+            playwright-report/auth-real
+            test-results/auth-real
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Stop isolated Supabase
+        if: always()
+        run: supabase stop --no-backup

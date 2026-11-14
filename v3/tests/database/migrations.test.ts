@@ -502,12 +502,25 @@ describe("V3 migrations and RLS", () => {
   });
 
   it("installs the reviewed RLS policy set", async () => {
-    const result = await database.query<{ policyname: string }>(`
-      select policyname from pg_policies
+    const result = await database.query<{ policyname: string; tablename: string; permissive: string }>(`
+      select policyname, tablename, permissive from pg_policies
       where schemaname = 'public'
       order by policyname
     `);
-    expect(result.rows.map(({ policyname }) => policyname)).toEqual([
+    const activeGates = result.rows.filter(({ policyname }) => policyname === "active_account_gate");
+    const protectedTables = await database.query<{ tablename: string }>(`
+      select c.relname as tablename
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'public'
+        and c.relkind in ('r', 'p')
+        and c.relrowsecurity
+      order by c.relname
+    `);
+    expect(activeGates).toHaveLength(protectedTables.rows.length);
+    expect(activeGates.every(({ permissive }) => permissive === "RESTRICTIVE")).toBe(true);
+    expect(activeGates.map(({ tablename }) => tablename).sort()).toEqual(protectedTables.rows.map(({ tablename }) => tablename));
+    expect(result.rows.filter(({ policyname }) => policyname !== "active_account_gate").map(({ policyname }) => policyname)).toEqual([
       "academic_years_admin_read",
       "admin_permission_grants_read",
       "admin_profiles_select_self_or_direction",

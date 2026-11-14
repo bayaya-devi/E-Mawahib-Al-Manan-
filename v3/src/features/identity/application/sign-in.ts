@@ -71,7 +71,10 @@ export async function signInWithAlias(input: unknown): Promise<SignInResult> {
     };
   }
 
-  const { data: profile, error: profileError } = await client
+  // The database denies archived sessions at the RLS boundary. Use the
+  // trusted server client here so the login endpoint can still return the
+  // precise account-state message after Supabase Auth validates a password.
+  const { data: profile, error: profileError } = await adminClient
     .from("profiles")
     .select("status")
     .eq("id", authenticatedUserId)
@@ -96,7 +99,7 @@ export async function signInWithAlias(input: unknown): Promise<SignInResult> {
     };
   }
 
-  const { data: roleRows, error: roleError } = await client
+  const { data: roleRows, error: roleError } = await adminClient
     .from("user_roles")
     .select("role")
     .eq("user_id", authenticatedUserId);

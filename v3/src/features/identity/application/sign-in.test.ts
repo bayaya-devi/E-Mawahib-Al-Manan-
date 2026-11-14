@@ -15,7 +15,18 @@ vi.mock("@/lib/env/server", () => ({
     LEGACY_AUTH_HMAC_KEY: "legacy-auth-key-with-at-least-32-characters",
   }),
 }));
-vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc: mocks.resolveAlias }) }));
+vi.mock("@/lib/supabase/admin", () => ({
+  createAdminClient: () => ({
+    rpc: mocks.resolveAlias,
+    from: (table: string) => ({
+      select: () => ({
+        eq: () => table === "profiles"
+          ? { maybeSingle: mocks.profile }
+          : mocks.roles(),
+      }),
+    }),
+  }),
+}));
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
     auth: { signInWithPassword: mocks.signIn, signOut: mocks.signOut },
