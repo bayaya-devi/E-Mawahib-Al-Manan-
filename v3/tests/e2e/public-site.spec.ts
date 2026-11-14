@@ -104,11 +104,9 @@ test("schedule keeps administration hours without an empty-state rectangle", asy
   await expect(page.locator(".public-empty")).toHaveCount(0);
 });
 
-test("published back-to-school news is displayed in the active locale", async ({ page }) => {
-  await page.route("**/api/public/content**", (route) => route.fulfill({ json: { ...emptyContent, news: [{ id: replayId, title: "Rentrée des cours 2026-2027", excerpt: "La rentrée des cours à Dar Al-Qur’an wal-Hadith aura lieu le lundi 7 septembre 2026.", body: "", imageUrl: null, eventDate: "2026-09-07", publishedAt: "2026-09-05T09:00:00Z" }] } }));
+test("retired public news route returns to the public home", async ({ page }) => {
   await page.goto("/fr/news");
-  await expect(page.getByRole("heading", { name: "Rentrée des cours 2026-2027" })).toBeVisible();
-  await expect(page.locator(".public-content-grid time")).toHaveText("7 septembre 2026");
+  await expect(page).toHaveURL(/\/fr$/);
 });
 
 test("replay like updates through the protected interaction endpoint", async ({ page }) => {

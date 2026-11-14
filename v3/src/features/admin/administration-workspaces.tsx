@@ -22,6 +22,7 @@ import { ACCOUNT_PASSWORD_MIN_LENGTH } from "@/features/identity/domain/password
 import type { AdminCommandData, CommandPerson } from "./models";
 import { AccountDialog } from "./account-dialog";
 import { AccountStatusControls } from "./account-status-controls";
+import { filterAdminPeople } from "./people-filter";
 
 export function AdminPeopleWorkspace({
   kind,
@@ -32,19 +33,10 @@ export function AdminPeopleWorkspace({
 }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
   const rows = useMemo(
-    () =>
-      data.people.filter(
-        (p) =>
-          p.role === kind &&
-          p.status !== "archived" &&
-          (filter === "all" ||
-            (filter.startsWith("class:")
-              ? p.classId === filter.slice(6)
-              : p.gender === filter)) &&
-          normalize(p.name).includes(normalize(query)),
-      ),
-    [data.people, kind, filter, query],
+    () => filterAdminPeople(data.people, kind, query, filter, statusFilter),
+    [data.people, kind, filter, query, statusFilter],
   );
   return (
     <div className="command-page">
@@ -83,6 +75,17 @@ export function AdminPeopleWorkspace({
               </option>
             ))}
         </select>
+        <select
+          aria-label="حالة الحساب"
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+        >
+          <option value="active">الحسابات النشطة</option>
+          <option value="pending">قيد التفعيل</option>
+          <option value="suspended">الحسابات الموقوفة</option>
+          <option value="archived">الأرشيف وسلة المحذوفات</option>
+          <option value="all">كل الحالات</option>
+        </select>
       </div>
       {rows.length ? (
         <div className="admin-people-table" role="list">
@@ -91,10 +94,7 @@ export function AdminPeopleWorkspace({
           ))}
         </div>
       ) : (
-        <EmptyState
-          title="لا توجد نتائج"
-          description="غيّر البحث أو التصفية."
-        />
+        <EmptyState title="لا توجد نتائج" description="غيّر البحث أو التصفية." />
       )}
     </div>
   );
@@ -122,6 +122,13 @@ function PersonRow({
       ) : (
         <Badge tone="neutral">{person.monthlyAmount ?? 0} DH</Badge>
       )}
+      {person.status !== "active" ? (
+        <Badge tone="warning">
+          {person.deletedAt
+            ? "في سلة المحذوفات"
+            : accountStatusLabel(person.status)}
+        </Badge>
+      ) : null}
       <PersonDialog person={person} data={data} />
     </article>
   );
@@ -167,35 +174,43 @@ function PersonDialog({
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-        firstName: form.first_name,
-        lastName: form.last_name,
-        gender: form.gender,
-        phone: form.phone,
-        email: form.email,
-        monthlyAmount: form.monthly_amount,
-        guardianName: form.guardian_name,
-        guardianFirstName: form.guardian_name,
-        guardianPhone: form.guardian_phone,
-        guardianSecondaryPhone: form.guardian_secondary_phone,
-        canLeaveAlone: form.can_leave_alone,
-        dateOfBirth: form.date_of_birth || undefined,
-        ageCategory: form.age_category || null,
-        identityDocumentReceived: form.identity_document_received,
-        birthCertificateReceived: form.birth_certificate_received,
-        guardianIdentityReceived: form.guardian_identity_received,
-        accessibilityNotes: form.accessibility_notes,
-        classId: form.class_id || undefined,
-        classIds: form.class_ids,
-        teacherIds: form.teacher_ids,
+          firstName: form.first_name,
+          lastName: form.last_name,
+          gender: form.gender,
+          phone: form.phone,
+          email: form.email,
+          monthlyAmount: form.monthly_amount,
+          guardianName: form.guardian_name,
+          guardianFirstName: form.guardian_name,
+          guardianPhone: form.guardian_phone,
+          guardianSecondaryPhone: form.guardian_secondary_phone,
+          canLeaveAlone: form.can_leave_alone,
+          dateOfBirth: form.date_of_birth || undefined,
+          ageCategory: form.age_category || null,
+          identityDocumentReceived: form.identity_document_received,
+          birthCertificateReceived: form.birth_certificate_received,
+          guardianIdentityReceived: form.guardian_identity_received,
+          accessibilityNotes: form.accessibility_notes,
+          classId: form.class_id || undefined,
+          classIds: form.class_ids,
+          teacherIds: form.teacher_ids,
         }),
       });
-      const result = (await response.json().catch(() => null)) as { message?: string } | null;
+      const result = (await response.json().catch(() => null)) as {
+        message?: string;
+      } | null;
       if (!response.ok)
-        return showToast({ title: result?.message ?? "تعذر حفظ الملف", tone: "info" });
+        return showToast({
+          title: result?.message ?? "تعذر حفظ الملف",
+          tone: "info",
+        });
       showToast({ title: "تم حفظ الملف", tone: "success" });
       router.refresh();
     } catch {
-      showToast({ title: "تعذر الاتصال بالخدمة. حاول مرة أخرى.", tone: "info" });
+      showToast({
+        title: "تعذر الاتصال بالخدمة. حاول مرة أخرى.",
+        tone: "info",
+      });
     } finally {
       setBusy(false);
     }
@@ -203,10 +218,25 @@ function PersonDialog({
   async function setSiblingLink(active: boolean) {
     if (!siblingId || siblingBusy) return;
     setSiblingBusy(true);
-    const { error } = await createClient().rpc("admin_set_student_sibling_link", { source_student: person.id, target_student: siblingId, make_active: active });
+    const { error } = await createClient().rpc(
+      "admin_set_student_sibling_link",
+      {
+        source_student: person.id,
+        target_student: siblingId,
+        make_active: active,
+      },
+    );
     setSiblingBusy(false);
-    if (error) return showToast({ title: "تعذر تحديث رابط الإخوة", description: error.message, tone: "info" });
-    showToast({ title: active ? "تم ربط الحسابين" : "تم إلغاء الربط فوراً", tone: "success" });
+    if (error)
+      return showToast({
+        title: "تعذر تحديث رابط الإخوة",
+        description: error.message,
+        tone: "info",
+      });
+    showToast({
+      title: active ? "تم ربط الحسابين" : "تم إلغاء الربط فوراً",
+      tone: "success",
+    });
     router.refresh();
   }
   const related =
@@ -331,14 +361,21 @@ function PersonDialog({
               <input
                 type="date"
                 value={form.date_of_birth}
-                onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, date_of_birth: e.target.value })
+                }
               />
             </label>
             <label>
               الفئة العمرية للواجهة
               <select
                 value={form.age_category}
-                onChange={(e) => setForm({ ...form, age_category: e.target.value as typeof form.age_category })}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    age_category: e.target.value as typeof form.age_category,
+                  })
+                }
               >
                 <option value="">واجهة محايدة</option>
                 <option value="CHILD_5_8">من 5 إلى 8 سنوات</option>
@@ -352,11 +389,15 @@ function PersonDialog({
                 value={form.class_id}
                 onChange={(e) => {
                   const classId = e.target.value;
-                  const selectedClass = data.classes.find((item) => item.id === classId);
+                  const selectedClass = data.classes.find(
+                    (item) => item.id === classId,
+                  );
                   setForm({
                     ...form,
                     class_id: classId,
-                    teacher_ids: selectedClass?.teacherId ? [selectedClass.teacherId] : [],
+                    teacher_ids: selectedClass?.teacherId
+                      ? [selectedClass.teacherId]
+                      : [],
                   });
                 }}
               >
@@ -372,23 +413,67 @@ function PersonDialog({
               الأستاذ المسؤول
               <select
                 value={form.teacher_ids[0] ?? ""}
-                onChange={(e) => setForm({ ...form, teacher_ids: e.target.value ? [e.target.value] : [] })}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    teacher_ids: e.target.value ? [e.target.value] : [],
+                  })
+                }
               >
                 <option value="">اختر الأستاذ</option>
                 {data.people
-                  .filter((item) => item.role === "teacher" && item.status === "active")
+                  .filter(
+                    (item) =>
+                      item.role === "teacher" && item.status === "active",
+                  )
                   .map((teacher) => (
-                    <option key={teacher.id} value={teacher.id}>{teacher.name}</option>
+                    <option key={teacher.id} value={teacher.id}>
+                      {teacher.name}
+                    </option>
                   ))}
               </select>
             </label>
             <fieldset className="admin-checks">
               <legend>التبديل الآمن بين حسابات الإخوة</legend>
-              <select aria-label="حساب الأخ أو الأخت" value={siblingId} onChange={(event) => setSiblingId(event.target.value)}>
+              <select
+                aria-label="حساب الأخ أو الأخت"
+                value={siblingId}
+                onChange={(event) => setSiblingId(event.target.value)}
+              >
                 <option value="">اختر حساباً</option>
-                {data.people.filter((item) => item.role === "student" && item.id !== person.id && item.status === "active").map((student) => <option key={student.id} value={student.id}>{student.name}{student.className ? ` · ${student.className}` : ""}</option>)}
+                {data.people
+                  .filter(
+                    (item) =>
+                      item.role === "student" &&
+                      item.id !== person.id &&
+                      item.status === "active",
+                  )
+                  .map((student) => (
+                    <option key={student.id} value={student.id}>
+                      {student.name}
+                      {student.className ? ` · ${student.className}` : ""}
+                    </option>
+                  ))}
               </select>
-              <div className="form-pair"><Button size="sm" loading={siblingBusy} disabled={!siblingId} onClick={() => void setSiblingLink(true)}>ربط الحسابين</Button><Button size="sm" variant="secondary" loading={siblingBusy} disabled={!siblingId} onClick={() => void setSiblingLink(false)}>إلغاء الربط</Button></div>
+              <div className="form-pair">
+                <Button
+                  size="sm"
+                  loading={siblingBusy}
+                  disabled={!siblingId}
+                  onClick={() => void setSiblingLink(true)}
+                >
+                  ربط الحسابين
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  loading={siblingBusy}
+                  disabled={!siblingId}
+                  onClick={() => void setSiblingLink(false)}
+                >
+                  إلغاء الربط
+                </Button>
+              </div>
             </fieldset>
             <label>
               الولي
@@ -402,15 +487,36 @@ function PersonDialog({
             <div className="form-pair">
               <label>
                 هاتف الولي
-                <input dir="ltr" value={form.guardian_phone} onChange={(e) => setForm({ ...form, guardian_phone: e.target.value })} />
+                <input
+                  dir="ltr"
+                  value={form.guardian_phone}
+                  onChange={(e) =>
+                    setForm({ ...form, guardian_phone: e.target.value })
+                  }
+                />
               </label>
               <label>
                 هاتف ثانٍ
-                <input dir="ltr" value={form.guardian_secondary_phone} onChange={(e) => setForm({ ...form, guardian_secondary_phone: e.target.value })} />
+                <input
+                  dir="ltr"
+                  value={form.guardian_secondary_phone}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      guardian_secondary_phone: e.target.value,
+                    })
+                  }
+                />
               </label>
             </div>
             <label className="toggle-line">
-              <input type="checkbox" checked={form.can_leave_alone} onChange={(e) => setForm({ ...form, can_leave_alone: e.target.checked })} />
+              <input
+                type="checkbox"
+                checked={form.can_leave_alone}
+                onChange={(e) =>
+                  setForm({ ...form, can_leave_alone: e.target.checked })
+                }
+              />
               يسمح له بالعودة وحده بعد الحصة
             </label>
             <label>
@@ -465,6 +571,7 @@ function PersonDialog({
           userId={person.id}
           schoolId={data.school?.id ?? null}
           status={person.status}
+          deletedAt={person.deletedAt}
         />
         <details>
           <summary>سجل الأداءات</summary>
@@ -540,7 +647,11 @@ function CredentialsDialog({ person }: { person: CommandPerson }) {
         </label>
         <Button
           loading={busy}
-          disabled={(!login && !password) || password.length > 0 && password.length < 8}
+          disabled={
+            (!login && !password) ||
+            (password.length > 0 &&
+              password.length < ACCOUNT_PASSWORD_MIN_LENGTH)
+          }
           onClick={() => void save()}
         >
           تحديث آمن
@@ -566,17 +677,24 @@ function PaymentDialog({ person }: { person: CommandPerson }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         kind: person.role === "student" ? "student_payment" : "teacher_salary",
-        ...(person.role === "student" ? { studentId: person.id } : { teacherId: person.id }),
+        ...(person.role === "student"
+          ? { studentId: person.id }
+          : { teacherId: person.id }),
         month,
         amount: Number(amount),
         paidOn: date,
         note: note || null,
       }),
     });
-    const result = (await response.json().catch(() => null)) as { message?: string } | null;
+    const result = (await response.json().catch(() => null)) as {
+      message?: string;
+    } | null;
     setBusy(false);
     if (!response.ok)
-      return showToast({ title: result?.message ?? "تعذر تسجيل العملية", tone: "info" });
+      return showToast({
+        title: result?.message ?? "تعذر تسجيل العملية",
+        tone: "info",
+      });
     showToast({ title: "تم التسجيل وربط المالية", tone: "success" });
     router.refresh();
   }
@@ -831,8 +949,35 @@ export function AdminFinanceWorkspace({ data }: { data: AdminCommandData }) {
         })}
       </section>
       <section className="command-panel">
-        <div className="command-heading"><h2>النتيجة التحليلية حسب القسم</h2></div>
-        <div className="class-finance-grid">{data.classFinance.map((row) => <article key={row.classId} className={row.result > 0 ? "is-positive" : row.result < 0 ? "is-negative" : "is-balanced"}><div><strong>{row.className}</strong><small>{row.teacherName ?? "أستاذ غير معيّن"} · {row.students} طالب</small></div><b>{money(row.result)}</b><small>مداخيل {money(row.income)} · مصاريف مباشرة {money(row.directExpense)}</small></article>)}</div>
+        <div className="command-heading">
+          <h2>النتيجة التحليلية حسب القسم</h2>
+        </div>
+        <div className="class-finance-grid">
+          {data.classFinance.map((row) => (
+            <article
+              key={row.classId}
+              className={
+                row.result > 0
+                  ? "is-positive"
+                  : row.result < 0
+                    ? "is-negative"
+                    : "is-balanced"
+              }
+            >
+              <div>
+                <strong>{row.className}</strong>
+                <small>
+                  {row.teacherName ?? "أستاذ غير معيّن"} · {row.students} طالب
+                </small>
+              </div>
+              <b>{money(row.result)}</b>
+              <small>
+                مداخيل {money(row.income)} · مصاريف مباشرة{" "}
+                {money(row.directExpense)}
+              </small>
+            </article>
+          ))}
+        </div>
       </section>
       <RecurringCharges data={data} />
       <div className="finance-ledger">
@@ -844,11 +989,17 @@ export function AdminFinanceWorkspace({ data }: { data: AdminCommandData }) {
             <div>
               <strong>{category(row.category)}</strong>
               <small>
-                {row.occurredOn} · {source(row.sourceType)}{row.classId ? ` · ${data.classes.find((item) => item.id === row.classId)?.name ?? "قسم"}` : ""}
+                {row.occurredOn} · {source(row.sourceType)}
+                {row.classId
+                  ? ` · ${data.classes.find((item) => item.id === row.classId)?.name ?? "قسم"}`
+                  : ""}
               </small>
             </div>
             <b>{money(row.amount)}</b>
-            {row.sourceType === "manual" && row.transactionStatus === "posted" ? <ReverseFinance transactionId={row.id} /> : null}
+            {row.sourceType === "manual" &&
+            row.transactionStatus === "posted" ? (
+              <ReverseFinance transactionId={row.id} />
+            ) : null}
           </article>
         ))}
       </div>
@@ -861,7 +1012,9 @@ function ManualFinance({ data }: { data: AdminCommandData }) {
   const [amount, setAmount] = useState("");
   const [categoryValue, setCategory] = useState("donation");
   const [description, setDescription] = useState("");
-  const [occurredOn, setOccurredOn] = useState(new Date().toISOString().slice(0, 10));
+  const [occurredOn, setOccurredOn] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [allocationKind, setAllocationKind] = useState("unassigned");
   const [classId, setClassId] = useState("");
@@ -874,7 +1027,19 @@ function ManualFinance({ data }: { data: AdminCommandData }) {
     const response = await fetch("/api/admin/finance", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ kind: "manual", schoolId: data.school.id, direction, amount: Number(amount), category: categoryValue, description, occurredOn, paymentMethod, allocationKind, classId: classId || null, idempotencyKey: crypto.randomUUID() }),
+      body: JSON.stringify({
+        kind: "manual",
+        schoolId: data.school.id,
+        direction,
+        amount: Number(amount),
+        category: categoryValue,
+        description,
+        occurredOn,
+        paymentMethod,
+        allocationKind,
+        classId: classId || null,
+        idempotencyKey: crypto.randomUUID(),
+      }),
     });
     setBusy(false);
     if (!response.ok)
@@ -934,10 +1099,56 @@ function ManualFinance({ data }: { data: AdminCommandData }) {
             onChange={(e) => setAmount(e.target.value)}
           />
         </label>
-        <label>التاريخ<input type="date" value={occurredOn} onChange={(event) => setOccurredOn(event.target.value)} /></label>
-        <label>طريقة الأداء<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}><option value="cash">نقدا</option><option value="bank">تحويل بنكي</option><option value="card">بطاقة</option><option value="other">أخرى</option></select></label>
-        <label>التخصيص<select value={allocationKind} onChange={(event) => { setAllocationKind(event.target.value); if (event.target.value !== "direct") setClassId(""); }}><option value="unassigned">غير مخصص</option><option value="common">مشترك</option><option value="direct">قسم محدد</option></select></label>
-        {allocationKind === "direct" ? <label>القسم<select value={classId} onChange={(event) => setClassId(event.target.value)}><option value="">اختر القسم</option>{data.classes.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label> : null}
+        <label>
+          التاريخ
+          <input
+            type="date"
+            value={occurredOn}
+            onChange={(event) => setOccurredOn(event.target.value)}
+          />
+        </label>
+        <label>
+          طريقة الأداء
+          <select
+            value={paymentMethod}
+            onChange={(event) => setPaymentMethod(event.target.value)}
+          >
+            <option value="cash">نقدا</option>
+            <option value="bank">تحويل بنكي</option>
+            <option value="card">بطاقة</option>
+            <option value="other">أخرى</option>
+          </select>
+        </label>
+        <label>
+          التخصيص
+          <select
+            value={allocationKind}
+            onChange={(event) => {
+              setAllocationKind(event.target.value);
+              if (event.target.value !== "direct") setClassId("");
+            }}
+          >
+            <option value="unassigned">غير مخصص</option>
+            <option value="common">مشترك</option>
+            <option value="direct">قسم محدد</option>
+          </select>
+        </label>
+        {allocationKind === "direct" ? (
+          <label>
+            القسم
+            <select
+              value={classId}
+              onChange={(event) => setClassId(event.target.value)}
+            >
+              <option value="">اختر القسم</option>
+              {data.classes.map((item) => (
+                <option value={item.id} key={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <label>
           البيان
           <input
@@ -947,7 +1158,12 @@ function ManualFinance({ data }: { data: AdminCommandData }) {
         </label>
         <Button
           loading={busy}
-          disabled={Number(amount) <= 0 || !occurredOn || !data.school || (allocationKind === "direct" && !classId)}
+          disabled={
+            Number(amount) <= 0 ||
+            !occurredOn ||
+            !data.school ||
+            (allocationKind === "direct" && !classId)
+          }
           onClick={() => void save()}
         >
           حفظ
@@ -965,13 +1181,27 @@ function ReverseFinance({ transactionId }: { transactionId: string }) {
     const reason = window.prompt("سبب إلغاء العملية");
     if (!reason || reason.trim().length < 3) return;
     setBusy(true);
-    const response = await fetch("/api/admin/finance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "reverse", transactionId, reason, idempotencyKey: crypto.randomUUID() }) });
+    const response = await fetch("/api/admin/finance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind: "reverse",
+        transactionId,
+        reason,
+        idempotencyKey: crypto.randomUUID(),
+      }),
+    });
     setBusy(false);
-    if (!response.ok) return showToast({ title: "تعذر إلغاء العملية", tone: "info" });
+    if (!response.ok)
+      return showToast({ title: "تعذر إلغاء العملية", tone: "info" });
     showToast({ title: "تم إلغاء العملية مع حفظ أثرها", tone: "success" });
     router.refresh();
   }
-  return <Button variant="quiet" loading={busy} onClick={() => void reverse()}>إلغاء</Button>;
+  return (
+    <Button variant="quiet" loading={busy} onClick={() => void reverse()}>
+      إلغاء
+    </Button>
+  );
 }
 
 function RecurringCharges({ data }: { data: AdminCommandData }) {
@@ -983,21 +1213,109 @@ function RecurringCharges({ data }: { data: AdminCommandData }) {
   const router = useRouter();
   async function request(payload: object) {
     setBusy(true);
-    const response = await fetch("/api/admin/finance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+    const response = await fetch("/api/admin/finance", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
     setBusy(false);
-    if (!response.ok) { showToast({ title: "تعذر حفظ العملية", tone: "info" }); return false; }
-    showToast({ title: "تم تحديث المصاريف المتكررة", tone: "success" }); router.refresh(); return true;
+    if (!response.ok) {
+      showToast({ title: "تعذر حفظ العملية", tone: "info" });
+      return false;
+    }
+    showToast({ title: "تم تحديث المصاريف المتكررة", tone: "success" });
+    router.refresh();
+    return true;
   }
   async function save() {
     if (!data.school) return;
-    const ok = await request({ kind: "recurring_save", schoolId: data.school.id, id: null, title, category: "recurring_expense", amount: Number(amount), dueDay: Number(dueDay), classId: null, allocationKind: "common", startsOn: new Date().toISOString().slice(0, 10), endsOn: null, active: true });
-    if (ok) { setTitle(""); setAmount(""); }
+    const ok = await request({
+      kind: "recurring_save",
+      schoolId: data.school.id,
+      id: null,
+      title,
+      category: "recurring_expense",
+      amount: Number(amount),
+      dueDay: Number(dueDay),
+      classId: null,
+      allocationKind: "common",
+      startsOn: new Date().toISOString().slice(0, 10),
+      endsOn: null,
+      active: true,
+    });
+    if (ok) {
+      setTitle("");
+      setAmount("");
+    }
   }
   async function pay(chargeId: string) {
-    const now = new Date(); const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    await request({ kind: "recurring_pay", chargeId, month, paidOn: now.toISOString().slice(0, 10), idempotencyKey: crypto.randomUUID() });
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    await request({
+      kind: "recurring_pay",
+      chargeId,
+      month,
+      paidOn: now.toISOString().slice(0, 10),
+      idempotencyKey: crypto.randomUUID(),
+    });
   }
-  return <section className="command-panel"><div className="command-heading"><h2>المصاريف المتكررة</h2></div><div className="recurring-charge-form"><input aria-label="اسم المصروف" placeholder="مثال: الكراء" value={title} onChange={(event) => setTitle(event.target.value)} /><input aria-label="المبلغ" type="number" min="0.01" placeholder="المبلغ" value={amount} onChange={(event) => setAmount(event.target.value)} /><input aria-label="يوم الاستحقاق" type="number" min="1" max="28" value={dueDay} onChange={(event) => setDueDay(event.target.value)} /><Button loading={busy} disabled={title.trim().length < 2 || Number(amount) <= 0} onClick={() => void save()}>إضافة</Button></div><div className="recurring-charge-list">{data.recurringCharges.map((charge) => <article key={charge.id}><div><strong>{charge.title}</strong><small>اليوم {charge.dueDay} من كل شهر · {money(charge.amount)}</small></div><Button variant="secondary" loading={busy} onClick={() => void pay(charge.id)}>تسجيل أداء هذا الشهر</Button></article>)}</div></section>;
+  return (
+    <section className="command-panel">
+      <div className="command-heading">
+        <h2>المصاريف المتكررة</h2>
+      </div>
+      <div className="recurring-charge-form">
+        <input
+          aria-label="اسم المصروف"
+          placeholder="مثال: الكراء"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+        />
+        <input
+          aria-label="المبلغ"
+          type="number"
+          min="0.01"
+          placeholder="المبلغ"
+          value={amount}
+          onChange={(event) => setAmount(event.target.value)}
+        />
+        <input
+          aria-label="يوم الاستحقاق"
+          type="number"
+          min="1"
+          max="28"
+          value={dueDay}
+          onChange={(event) => setDueDay(event.target.value)}
+        />
+        <Button
+          loading={busy}
+          disabled={title.trim().length < 2 || Number(amount) <= 0}
+          onClick={() => void save()}
+        >
+          إضافة
+        </Button>
+      </div>
+      <div className="recurring-charge-list">
+        {data.recurringCharges.map((charge) => (
+          <article key={charge.id}>
+            <div>
+              <strong>{charge.title}</strong>
+              <small>
+                اليوم {charge.dueDay} من كل شهر · {money(charge.amount)}
+              </small>
+            </div>
+            <Button
+              variant="secondary"
+              loading={busy}
+              onClick={() => void pay(charge.id)}
+            >
+              تسجيل أداء هذا الشهر
+            </Button>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
 }
 
 export function AdminMonitoringWorkspace({ data }: { data: AdminCommandData }) {
@@ -1070,13 +1388,32 @@ function useAdminRealtimeRefresh() {
   useEffect(() => {
     const client = createClient();
     let timer: ReturnType<typeof setTimeout> | null = null;
-    const refresh = () => { if (timer) clearTimeout(timer); timer = setTimeout(() => router.refresh(), 500); };
-    const channel = client.channel("admin-live-activity")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "audit_logs" }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "learning_events" }, refresh)
-      .on("postgres_changes", { event: "*", schema: "public", table: "teacher_recitations" }, refresh)
+    const refresh = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => router.refresh(), 500);
+    };
+    const channel = client
+      .channel("admin-live-activity")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "audit_logs" },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "learning_events" },
+        refresh,
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "teacher_recitations" },
+        refresh,
+      )
       .subscribe();
-    return () => { if (timer) clearTimeout(timer); void client.removeChannel(channel); };
+    return () => {
+      if (timer) clearTimeout(timer);
+      void client.removeChannel(channel);
+    };
   }, [router]);
 }
 
@@ -1094,11 +1431,16 @@ function PageHead({
     </header>
   );
 }
-function normalize(value: string) {
-  return value
-    .normalize("NFKD")
-    .replace(/[\u064B-\u065F\u0670]/g, "")
-    .toLocaleLowerCase("ar");
+function accountStatusLabel(value: string) {
+  return (
+    (
+      {
+        pending: "قيد التفعيل",
+        suspended: "موقوف",
+        archived: "مؤرشف",
+      } as Record<string, string>
+    )[value] ?? value
+  );
 }
 function average(values: number[]) {
   return values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0;

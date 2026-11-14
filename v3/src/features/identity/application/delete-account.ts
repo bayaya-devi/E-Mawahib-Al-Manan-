@@ -24,7 +24,7 @@ export async function moveAccountToTrash(targetUserId: string): Promise<DeleteRe
   const [{ data: actorRoles }, { data: actorProfile }, { data: targetMembership }] = await Promise.all([
     session.from("user_roles").select("role").eq("user_id", auth.user.id),
     session.from("profiles").select("status").eq("id", auth.user.id).maybeSingle(),
-    session.from("school_memberships").select("school_id").eq("user_id", targetUserId).eq("status", "active").maybeSingle(),
+    session.from("school_memberships").select("school_id").eq("user_id", targetUserId).limit(1).maybeSingle(),
   ]);
   const roles = (actorRoles ?? []).map(({ role }) => role as AppRole);
   if (actorProfile?.status !== "active" || !roles.some((role) => can(role, "school:manage")) || !targetMembership) {

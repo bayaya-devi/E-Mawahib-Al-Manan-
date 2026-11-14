@@ -102,7 +102,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
     ] = await Promise.all([
       client
         .from("profiles")
-        .select("id,first_name,last_name,display_name,status")
+        .select("id,first_name,last_name,display_name,status,deleted_at")
         .order("display_name"),
       client.from("user_roles").select("user_id,role"),
       client
@@ -337,6 +337,7 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
           lastName: row.last_name,
           role,
           status: row.status,
+          deletedAt: row.deleted_at,
           classId,
           className:
             role === "teacher"

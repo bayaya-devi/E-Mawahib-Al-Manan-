@@ -13,11 +13,11 @@ const validAccount = {
 
 describe("provisionAccountInputSchema", () => {
   it("rejects passwords Supabase would reject before attempting account creation", () => {
-    expect(provisionAccountInputSchema.safeParse({ ...validAccount, temporaryPassword: "1234" }).success).toBe(false);
-    expect(provisionAccountInputSchema.safeParse({ ...validAccount, temporaryPassword: "Abc1234" }).success).toBe(false);
+    expect(provisionAccountInputSchema.safeParse({ ...validAccount, temporaryPassword: "12345" }).success).toBe(false);
   });
 
-  it("accepts a compliant temporary password", () => {
+  it("accepts the six-character Supabase Auth default", () => {
+    expect(provisionAccountInputSchema.safeParse({ ...validAccount, temporaryPassword: "Abc123" }).success).toBe(true);
     expect(provisionAccountInputSchema.safeParse(validAccount).success).toBe(true);
   });
 });

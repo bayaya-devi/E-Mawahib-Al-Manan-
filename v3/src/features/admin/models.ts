@@ -34,6 +34,7 @@ export type CommandPerson = {
   lastName: string | null;
   role: DatabaseAppRole;
   status: DatabaseAccountStatus;
+  deletedAt: string | null;
   classId: string | null;
   className: string | null;
   classIds: string[];
