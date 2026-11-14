@@ -56,7 +56,7 @@ jobs:
           for command in pg_dump pg_restore psql; do
             cat >"$HOME/bin/$command" <<EOF
           #!/usr/bin/env bash
-          exec docker run --rm --network host postgres:17 $command "\$@"
+          exec docker run --rm -i --network host postgres:17 $command "\$@"
           EOF
             chmod +x "$HOME/bin/$command"
           done
