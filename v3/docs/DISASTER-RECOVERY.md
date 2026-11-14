@@ -4,7 +4,7 @@
 
 Chaque archive contient un export PostgreSQL du schéma métier `public` au format `pg_dump` et les objets Supabase Storage accessibles au compte de service, avec chemins, tailles et empreintes SHA-256. L'archive est chiffrée avec AES-256-CBC + PBKDF2 et protégée contre la modification par une signature HMAC-SHA-256 distincte.
 
-Les archives ne couvrent pas les secrets Vercel/GitHub, les paramètres de projet Supabase, les clés de signature, les paramètres Auth ni les identités `auth.users` garanties par un export logique standard. Une reprise complète rétablit aussi ces éléments depuis le coffre de secrets.
+Les archives ne couvrent pas les secrets Vercel/GitHub, les paramètres de projet Supabase, les clés de signature, les paramètres Auth ni les identités `auth.users`. Elles incluent seulement la structure `auth` nécessaire à la répétition isolée. Une reprise complète rétablit aussi les comptes Auth et la configuration depuis Supabase et le coffre de secrets.
 
 ## Politique cible
 

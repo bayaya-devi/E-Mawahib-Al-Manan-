@@ -9,9 +9,10 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 mkdir -p "$BACKUP_ROOT/daily" "$BACKUP_ROOT/weekly" "$BACKUP_ROOT/monthly"
 pg_dump --format=custom --schema=public --no-owner --no-acl "$DATABASE_URL" > "$WORK/database.dump"
+pg_dump --format=custom --schema=auth --schema-only --no-owner --no-acl "$DATABASE_URL" > "$WORK/auth-schema.dump"
 node scripts/backup-storage.mjs "$WORK"
-node scripts/backup-manifest.mjs "$WORK/backup-manifest.json" "$WORK/database.dump" "$WORK/storage-manifest.json"
-tar -C "$WORK" -czf "$WORK/e-mawahib-$STAMP.tar.gz" database.dump storage storage-manifest.json backup-manifest.json
+node scripts/backup-manifest.mjs "$WORK/backup-manifest.json" "$WORK/database.dump" "$WORK/auth-schema.dump" "$WORK/storage-manifest.json"
+tar -C "$WORK" -czf "$WORK/e-mawahib-$STAMP.tar.gz" database.dump auth-schema.dump storage storage-manifest.json backup-manifest.json
 ARCHIVE="$BACKUP_ROOT/daily/e-mawahib-$STAMP.tar.gz.enc"
 openssl enc -aes-256-cbc -salt -pbkdf2 -in "$WORK/e-mawahib-$STAMP.tar.gz" -out "$ARCHIVE" -pass env:BACKUP_ENCRYPTION_KEY
 node scripts/backup-integrity.mjs sign "$ARCHIVE" "$ARCHIVE.integrity.json" >/dev/null
