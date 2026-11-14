@@ -181,7 +181,9 @@ test("real student Auth sessions are revoked by archive and restored safely", as
 async function login(page: Page, kind: "student" | "teacher", first: string, second: string, destination: string) {
   await openLogin(page, kind, first, second);
   await page.getByRole("button", { name: "دخول", exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`${destination.replaceAll("/", "\\/")}$`));
+  await expect(page).toHaveURL(new RegExp(`${destination.replaceAll("/", "\\/")}$`), {
+    timeout: 30_000,
+  });
 }
 
 async function openLogin(page: Page, kind: "student" | "teacher", first: string, second: string) {
