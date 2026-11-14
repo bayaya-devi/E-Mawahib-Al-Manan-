@@ -138,7 +138,7 @@ test("real student Auth sessions are revoked by archive and restored safely", as
       await openLogin(refusedPage, "student", "A", "B");
       await refusedPage.getByRole("button", { name: "دخول", exact: true }).click();
       await expect(refusedPage).toHaveURL(/\/login$/);
-      await expect(refusedPage.getByRole("alert")).toContainText("الإدارة");
+      await expect(refusedPage.locator(".login-v3__message")).toContainText("الإدارة");
     } finally {
       await refused.close();
     }
