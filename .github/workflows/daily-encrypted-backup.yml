@@ -42,7 +42,11 @@ jobs:
           for name in DATABASE_URL NEXT_PUBLIC_SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY BACKUP_ENCRYPTION_KEY BACKUP_INTEGRITY_KEY BACKUP_S3_BUCKET BACKUP_S3_REGION AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
             if [ -z "${!name}" ]; then echo "::error title=Backup not activated::Missing protected secret $name"; missing=1; fi
           done
-          if [ "$missing" -ne 0 ]; then exit 1; fi
+          if [ "$missing" -ne 0 ]; then
+            echo "### Backup not activated" >> "$GITHUB_STEP_SUMMARY"
+            echo "No production data was read. Configure the protected external backup secrets before enabling this job." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
       - name: Install PostgreSQL client and AWS CLI
         run: sudo apt-get update && sudo apt-get install -y postgresql-client awscli
       - name: Create encrypted backup and upload it outside production

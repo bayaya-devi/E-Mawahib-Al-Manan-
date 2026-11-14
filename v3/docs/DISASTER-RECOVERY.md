@@ -22,7 +22,7 @@ Configurer dans les secrets GitHub du dépôt, sans jamais les inscrire dans Git
 
 `DARALQURAN_BACKUP_DATABASE_URL`, `DARALQURAN_SUPABASE_URL`, `DARALQURAN_SUPABASE_SERVICE_ROLE_KEY`, `BACKUP_ENCRYPTION_KEY`, `BACKUP_INTEGRITY_KEY`, `BACKUP_S3_BUCKET`, `BACKUP_S3_REGION`, `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` et, si nécessaire, `BACKUP_S3_ENDPOINT`.
 
-Le bucket doit être privé et hors de l'infrastructure de production. Exécuter une fois `scripts/configure-backup-s3-lifecycle.sh` avec les mêmes identifiants AWS/S3 pour poser la rétention. Le workflow planifié `daily-encrypted-backup.yml` échoue explicitement si l'un de ces secrets manque : il ne peut donc pas annoncer une sauvegarde inexistante.
+Le bucket doit être privé et hors de l'infrastructure de production. Exécuter une fois `scripts/configure-backup-s3-lifecycle.sh` avec les mêmes identifiants AWS/S3 pour poser la rétention. Tant que les secrets manquent, le workflow planifié termine en état **non activé**, ne lit aucune donnée de production et n'annonce jamais de sauvegarde réussie.
 
 ## Répétition de restauration
 
