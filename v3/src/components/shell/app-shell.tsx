@@ -190,9 +190,9 @@ export function AppShell({ kind, children }: { kind: ShellKind; children: ReactN
           <header className="app-header">
             {kind === "teacher" ? <div className="teacher-shell-identity"><strong>أستاذ(ة) {teacherName}</strong></div> : kind === "student" ? <div className="student-shell-identity"><strong>{studentName || "حساب الطالب"}</strong>{studentProfiles.length > 1 ? <select aria-label="تغيير ملف الطالب" value={activeStudent} onChange={(event) => void switchStudent(event.target.value)}>{studentProfiles.map((profile) => <option value={profile.id} key={profile.id}>{profile.name}</option>)}</select> : null}</div> : <div><span>{shellLabels[kind].section}</span><strong>{shellLabels[kind].title}</strong></div>}
             <div className="app-header__actions">
-              <button className="navigation-toggle navigation-toggle--mobile" type="button" aria-label={interfaceLabels.openMore} aria-expanded={mobileMoreOpen} aria-controls="mobile-more-navigation" onClick={() => setMobileMoreOpen(true)}>
+              {secondaryItems.length > 0 ? <button className="navigation-toggle navigation-toggle--mobile" type="button" aria-label={interfaceLabels.openMore} aria-expanded={mobileMoreOpen} aria-controls="mobile-more-navigation" onClick={() => setMobileMoreOpen(true)}>
                 <Menu aria-hidden="true" size={20} />
-              </button>
+              </button> : null}
               {kind === "family" ? <button className="global-search-trigger" type="button" aria-label="فتح البحث العام" onClick={() => setCommandOpen(true)}>
                 <Search aria-hidden="true" size={18} />
                 <span>بحث</span><kbd>Ctrl K</kbd>

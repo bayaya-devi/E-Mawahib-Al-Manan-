@@ -18,17 +18,18 @@ vi.mock("@/lib/supabase/client", () => ({ createClient: () => ({ auth: { getUser
 afterEach(() => { cleanup(); localStorage.clear(); vi.useRealTimers(); vi.clearAllMocks(); });
 
 describe("student stabilization", () => {
-  it("keeps the five requested student destinations visible and secondary destinations in the menu", () => {
+  it("keeps only the four approved Arabic student destinations", () => {
     render(<AppShell kind="student"><p>محتوى</p></AppShell>);
     expect(screen.getAllByRole("link", { name: "الرئيسية" })).toHaveLength(2);
     expect(screen.getAllByRole("link", { name: "السور" })).toHaveLength(2);
     expect(screen.getAllByRole("link", { name: "متابعة الحفظ" })).toHaveLength(2);
     expect(screen.getAllByRole("link", { name: "ملفي" })).toHaveLength(2);
-    expect(screen.getAllByRole("link", { name: "الرسائل" })).toHaveLength(2);
+    expect(screen.queryByRole("link", { name: "الرسائل" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "الألعاب" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "الوالدان" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "الإعدادات" })).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "تسجيل الخروج" })).toHaveLength(1);
-    fireEvent.click(screen.getByRole("button", { name: "فتح بقية الأقسام" }));
-    expect(screen.getAllByRole("link", { name: /الألعاب|الوالدان|الإعدادات/ })).toHaveLength(3);
-    fireEvent.click(screen.getByRole("button", { name: "إغلاق" }));
+    expect(screen.queryByRole("button", { name: "فتح بقية الأقسام" })).not.toBeInTheDocument();
     const toggle = screen.getByRole("button", { name: "طي قائمة التنقل" });
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "false");
