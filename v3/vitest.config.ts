@@ -13,6 +13,7 @@ export default defineConfig({
       "tests/database/**/*.test.ts",
       "tests/migration/**/*.test.ts",
       "tests/public-site/**/*.test.ts",
+      "tests/operations/**/*.test.ts",
     ],
     environment: "node",
     // The production schema is intentionally comprehensive. One fork keeps the

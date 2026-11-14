@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
@@ -10,20 +11,25 @@ const client = createClient(url, key, { auth: { persistSession: false, autoRefre
 const { data: buckets, error } = await client.storage.listBuckets();
 if (error) throw error;
 const manifest = [];
-for (const bucket of buckets ?? []) await downloadFolder(bucket.name, "");
+const excludedBuckets = new Set((process.env.BACKUP_STORAGE_EXCLUDE_BUCKETS ?? "").split(",").map((name) => name.trim()).filter(Boolean));
+for (const bucket of buckets ?? []) if (!excludedBuckets.has(bucket.name)) await downloadFolder(bucket.name, "");
 await writeFile(path.join(outputDirectory, "storage-manifest.json"), JSON.stringify(manifest, null, 2));
 
 async function downloadFolder(bucket, prefix) {
-  const { data, error: listError } = await client.storage.from(bucket).list(prefix, { limit: 1000 });
-  if (listError) throw listError;
-  for (const entry of data ?? []) {
-    const objectPath = prefix ? `${prefix}/${entry.name}` : entry.name;
-    if (!entry.id) { await downloadFolder(bucket, objectPath); continue; }
-    const { data: blob, error: downloadError } = await client.storage.from(bucket).download(objectPath);
-    if (downloadError) throw downloadError;
-    const target = path.join(outputDirectory, "storage", bucket, ...objectPath.split("/"));
-    await mkdir(path.dirname(target), { recursive: true });
-    await writeFile(target, Buffer.from(await blob.arrayBuffer()));
-    manifest.push({ bucket, path: objectPath, size: blob.size });
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error: listError } = await client.storage.from(bucket).list(prefix, { limit: 1000, offset });
+    if (listError) throw listError;
+    for (const entry of data ?? []) {
+      const objectPath = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (!entry.id) { await downloadFolder(bucket, objectPath); continue; }
+      const { data: blob, error: downloadError } = await client.storage.from(bucket).download(objectPath);
+      if (downloadError) throw downloadError;
+      const target = path.join(outputDirectory, "storage", bucket, ...objectPath.split("/"));
+      await mkdir(path.dirname(target), { recursive: true });
+      const content = Buffer.from(await blob.arrayBuffer());
+      await writeFile(target, content);
+      manifest.push({ bucket, path: objectPath, size: content.byteLength, sha256: createHash("sha256").update(content).digest("hex") });
+    }
+    if ((data ?? []).length < 1000) break;
   }
 }

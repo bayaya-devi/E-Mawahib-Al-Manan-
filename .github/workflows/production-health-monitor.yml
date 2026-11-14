@@ -1,0 +1,30 @@
+name: Production health monitor
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check public production services without authentication
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="https://e-mawahib-al-manan.vercel.app"
+          check() { name="$1"; url="$2"; expected="$3"; code="$(curl --retry 2 --connect-timeout 10 --max-time 20 -sS -o /tmp/response -w '%{http_code}' "$url")"; echo "$name: $code"; test "$code" = "$expected"; }
+          check ready "$base/ready" 200
+          check login "$base/login" 200
+          check version "$base/api/version" 200
+          code="$(curl --retry 2 --connect-timeout 10 --max-time 20 -sS -H 'Range: bytes=0-1023' -o /tmp/audio -w '%{http_code}' "$base/audio/001001.mp3")"
+          echo "audio: $code ($(wc -c </tmp/audio) bytes)"
+          test "$code" = 206 -o "$code" = 200
+      - name: Record outcome
+        if: always()
+        run: echo "Health monitor completed at $(date -u +%FT%TZ). Failures generate GitHub Actions notifications for repository watchers."

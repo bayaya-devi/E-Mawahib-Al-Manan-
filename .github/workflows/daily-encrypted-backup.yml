@@ -1,0 +1,53 @@
+name: Daily encrypted production backup
+
+on:
+  schedule:
+    - cron: "23 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: v3
+    env:
+      DATABASE_URL: ${{ secrets.DARALQURAN_BACKUP_DATABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.DARALQURAN_SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.DARALQURAN_SUPABASE_SERVICE_ROLE_KEY }}
+      BACKUP_ENCRYPTION_KEY: ${{ secrets.BACKUP_ENCRYPTION_KEY }}
+      BACKUP_INTEGRITY_KEY: ${{ secrets.BACKUP_INTEGRITY_KEY }}
+      BACKUP_S3_BUCKET: ${{ secrets.BACKUP_S3_BUCKET }}
+      BACKUP_S3_REGION: ${{ secrets.BACKUP_S3_REGION }}
+      BACKUP_S3_ENDPOINT: ${{ secrets.BACKUP_S3_ENDPOINT }}
+      BACKUP_S3_PREFIX: e-mawahib
+      AWS_ACCESS_KEY_ID: ${{ secrets.BACKUP_S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.BACKUP_S3_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: v3/package-lock.json
+      - run: npm ci
+      - name: Verify secure backup configuration
+        shell: bash
+        run: |
+          missing=0
+          for name in DATABASE_URL NEXT_PUBLIC_SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY BACKUP_ENCRYPTION_KEY BACKUP_INTEGRITY_KEY BACKUP_S3_BUCKET BACKUP_S3_REGION AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            if [ -z "${!name}" ]; then echo "::error title=Backup not activated::Missing protected secret $name"; missing=1; fi
+          done
+          if [ "$missing" -ne 0 ]; then exit 1; fi
+      - name: Install PostgreSQL client and AWS CLI
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client awscli
+      - name: Create encrypted backup and upload it outside production
+        run: |
+          archive="$(scripts/backup.sh)"
+          scripts/upload-backup-s3.sh "$archive"
+          echo "### Backup complete" >> "$GITHUB_STEP_SUMMARY"
+          echo "Encrypted database and Storage archive uploaded; no backup payload was retained in GitHub." >> "$GITHUB_STEP_SUMMARY"

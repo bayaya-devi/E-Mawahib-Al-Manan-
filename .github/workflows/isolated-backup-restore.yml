@@ -1,0 +1,79 @@
+name: Isolated backup and restore rehearsal
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/post-production-operations
+    paths:
+      - "v3/scripts/backup*"
+      - "v3/scripts/restore.sh"
+      - "v3/scripts/test-restore.sh"
+      - ".github/workflows/isolated-backup-restore.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: v3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: v3/package-lock.json
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci
+      - run: supabase start
+      - name: Export isolated Supabase credentials
+        shell: bash
+        run: |
+          supabase status -o env > /tmp/supabase-status.env
+          set -a; source /tmp/supabase-status.env; set +a
+          {
+            echo "DATABASE_URL=${DB_URL}"
+            echo "NEXT_PUBLIC_SUPABASE_URL=${API_URL}"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SERVICE_ROLE_KEY}"
+            echo "BACKUP_ENCRYPTION_KEY=$(openssl rand -base64 48)"
+            echo "BACKUP_INTEGRITY_KEY=$(openssl rand -base64 48)"
+          } >> "$GITHUB_ENV"
+      - name: Provide PostgreSQL 17 clients through Docker
+        shell: bash
+        run: |
+          mkdir -p "$HOME/bin"
+          for command in pg_dump pg_restore psql; do
+            cat >"$HOME/bin/$command" <<EOF
+          #!/usr/bin/env bash
+          exec docker run --rm --network host postgres:17 $command "\$@"
+          EOF
+            chmod +x "$HOME/bin/$command"
+          done
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      - name: Create an encrypted backup in isolated Supabase
+        run: scripts/backup.sh
+      - name: Confirm tampering is rejected
+        shell: bash
+        run: |
+          archive="$(find backups/daily -name '*.enc' -print -quit)"
+          cp "$archive" /tmp/tampered.enc
+          cp "$archive.integrity.json" /tmp/tampered.enc.integrity.json
+          printf x >> /tmp/tampered.enc
+          if node scripts/backup-integrity.mjs verify /tmp/tampered.enc /tmp/tampered.enc.integrity.json; then exit 1; fi
+      - name: Restore into a disposable database and validate it
+        shell: bash
+        run: |
+          db_container="$(docker ps --format '{{.Names}}' | grep -m 1 '^supabase_db_')"
+          docker exec "$db_container" createdb -U postgres backup_restore
+          export TEST_DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/backup_restore"
+          scripts/test-restore.sh "$(find backups/daily -name '*.enc' -print -quit)"
+      - name: Stop isolated Supabase
+        if: always()
+        run: supabase stop --no-backup
