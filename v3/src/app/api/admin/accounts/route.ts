@@ -30,6 +30,12 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+  if (isStudent && !body.dossier?.classId) {
+    return NextResponse.json(
+      { ok: false, message: "اختر القسم قبل إنشاء حساب الطالب." },
+      { status: 400 },
+    );
+  }
   const result = await provisionAccount({
     ...(body as object),
     login: isStudent && body.firstName && body.lastName

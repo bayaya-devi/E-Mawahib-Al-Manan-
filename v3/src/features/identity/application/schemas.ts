@@ -4,6 +4,7 @@ import { APP_ROLES } from "@/types";
 import { ACCOUNT_STATUSES } from "@/types";
 
 import { isValidLoginAlias, normalizeLoginAlias } from "../domain/login-alias";
+import { ACCOUNT_PASSWORD_MAX_LENGTH, ACCOUNT_PASSWORD_MIN_LENGTH } from "../domain/password-policy";
 
 export const loginInputSchema = z.object({
   login: z.string().transform(normalizeLoginAlias).refine(isValidLoginAlias),
@@ -21,7 +22,7 @@ export const loginInputSchema = z.object({
 export const provisionAccountInputSchema = z.object({
   login: z.string().transform(normalizeLoginAlias).refine(isValidLoginAlias),
   // Supabase Auth requires a stronger password than the former four-character UI rule.
-  temporaryPassword: z.string().min(8).max(128),
+  temporaryPassword: z.string().min(ACCOUNT_PASSWORD_MIN_LENGTH).max(ACCOUNT_PASSWORD_MAX_LENGTH),
   firstName: z.string().trim().min(1).max(80),
   lastName: z.string().trim().min(1).max(80),
   roles: z.array(z.enum(APP_ROLES)).min(1).max(APP_ROLES.length),

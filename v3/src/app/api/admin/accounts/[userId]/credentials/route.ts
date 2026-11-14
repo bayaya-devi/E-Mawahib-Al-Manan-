@@ -6,10 +6,11 @@ import {
   isValidLoginAlias,
 } from "@/features/identity/domain/login-alias";
 import { createClient } from "@/lib/supabase/server";
+import { ACCOUNT_PASSWORD_MAX_LENGTH, ACCOUNT_PASSWORD_MIN_LENGTH } from "@/features/identity/domain/password-policy";
 const schema = z
   .object({
     login: z.string().optional(),
-    temporaryPassword: z.string().min(8).max(128).optional(),
+    temporaryPassword: z.string().min(ACCOUNT_PASSWORD_MIN_LENGTH).max(ACCOUNT_PASSWORD_MAX_LENGTH).optional(),
   })
   .refine((value) => value.login || value.temporaryPassword);
 export async function PATCH(

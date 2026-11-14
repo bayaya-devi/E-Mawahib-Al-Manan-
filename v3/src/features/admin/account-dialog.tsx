@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { UserPlus } from "lucide-react";
 import { Button, Dialog, useToast } from "@/components/ui";
 import { buildCanonicalLoginAlias } from "@/features/identity/domain/legacy-login";
+import { ACCOUNT_PASSWORD_MIN_LENGTH, accountPasswordRequirementAr } from "@/features/identity/domain/password-policy";
 import type { DatabaseAppRole } from "@/types/database";
 import type { AdminCommandData } from "./models";
 
@@ -372,7 +373,7 @@ export function AccountDialog({
             <input
               dir="ltr"
               type="password"
-              minLength={8}
+              minLength={ACCOUNT_PASSWORD_MIN_LENGTH}
               value={form.temporaryPassword}
               onChange={(e) => set("temporaryPassword", e.target.value)}
             />
@@ -405,6 +406,7 @@ function accountMissingFields({
   if (!form.firstName.trim()) missing.push("أدخل الاسم");
   if (!form.lastName.trim()) missing.push("أدخل النسب");
   if (role !== "student" && form.login.trim().length < 2) missing.push("أدخل اسم الدخول");
-  if (form.temporaryPassword.length < 8) missing.push("كلمة المرور 8 أحرف على الأقل");
+  if (role === "student" && !form.classId) missing.push("اختر القسم");
+  if (form.temporaryPassword.length < ACCOUNT_PASSWORD_MIN_LENGTH) missing.push(accountPasswordRequirementAr());
   return missing;
 }

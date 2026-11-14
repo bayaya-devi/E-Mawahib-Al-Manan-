@@ -18,6 +18,7 @@ import {
   useToast,
 } from "@/components/ui";
 import { createClient } from "@/lib/supabase/client";
+import { ACCOUNT_PASSWORD_MIN_LENGTH } from "@/features/identity/domain/password-policy";
 import type { AdminCommandData, CommandPerson } from "./models";
 import { AccountDialog } from "./account-dialog";
 import { AccountStatusControls } from "./account-status-controls";
@@ -349,7 +350,15 @@ function PersonDialog({
               القسم
               <select
                 value={form.class_id}
-                onChange={(e) => setForm({ ...form, class_id: e.target.value })}
+                onChange={(e) => {
+                  const classId = e.target.value;
+                  const selectedClass = data.classes.find((item) => item.id === classId);
+                  setForm({
+                    ...form,
+                    class_id: classId,
+                    teacher_ids: selectedClass?.teacherId ? [selectedClass.teacherId] : [],
+                  });
+                }}
               >
                 <option value="">اختر</option>
                 {data.classes.map((c) => (
@@ -524,7 +533,7 @@ function CredentialsDialog({ person }: { person: CommandPerson }) {
           <input
             dir="ltr"
             type="password"
-            minLength={8}
+            minLength={ACCOUNT_PASSWORD_MIN_LENGTH}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
