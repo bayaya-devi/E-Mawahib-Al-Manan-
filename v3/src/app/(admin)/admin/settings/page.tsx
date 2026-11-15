@@ -6,5 +6,5 @@ export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const data = await getAdminSettingsData();
-  return <AppShell kind="admin"><div className="command-page"><header className="admin-page-head"><h1>الإعدادات</h1></header><AdminSettings schoolId={data.schoolId} initialThreshold={data.financeThreshold}/></div></AppShell>;
+  return <AppShell kind="admin"><div className="command-page"><header className="admin-page-head"><h1>الإعدادات</h1></header><AdminSettings schoolId={data.schoolId} initialThreshold={data.financeThreshold} initialClassRankingNamesVisible={data.classRankingNamesVisible}/></div></AppShell>;
 }

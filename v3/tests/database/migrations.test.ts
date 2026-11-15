@@ -1388,6 +1388,83 @@ describe("V3 migrations and RLS", () => {
     await expect(runAsUser(users.adminA, "update public.audit_logs set action='tampered' where action='test.sanitized'")).rejects.toThrow();
   });
 
+  it("ranks only active classmates by persisted stars and protects names and scope", async () => {
+    const rankingStudents = {
+      first: "00000000-0000-4000-8000-000000000091",
+      second: "00000000-0000-4000-8000-000000000092",
+      archived: "00000000-0000-4000-8000-000000000093",
+    };
+
+    try {
+      await database.exec(`
+        insert into auth.users (id, email) values
+          ('${rankingStudents.first}', 'ranking-first@example.test'),
+          ('${rankingStudents.second}', 'ranking-second@example.test'),
+          ('${rankingStudents.archived}', 'ranking-archived@example.test');
+        insert into public.profiles (id, display_name, first_name, last_name, status) values
+          ('${rankingStudents.first}', 'Amina', 'Amina', 'Test', 'active'),
+          ('${rankingStudents.second}', 'Badr', 'Badr', 'Test', 'active'),
+          ('${rankingStudents.archived}', 'Celine', 'Celine', 'Test', 'active');
+        insert into public.user_roles (user_id, role) values
+          ('${rankingStudents.first}', 'student'),
+          ('${rankingStudents.second}', 'student'),
+          ('${rankingStudents.archived}', 'student');
+        insert into public.school_memberships (school_id, user_id, status) values
+          ('${schools.first}', '${rankingStudents.first}', 'active'),
+          ('${schools.first}', '${rankingStudents.second}', 'active'),
+          ('${schools.first}', '${rankingStudents.archived}', 'active');
+        insert into public.student_profiles (user_id) values
+          ('${rankingStudents.first}'), ('${rankingStudents.second}'), ('${rankingStudents.archived}');
+        insert into public.class_enrollments (class_id, student_id) values
+          ('${classes.first}', '${rankingStudents.first}'),
+          ('${classes.first}', '${rankingStudents.second}'),
+          ('${classes.first}', '${rankingStudents.archived}');
+        insert into public.student_surah_progress (student_id, surah_number, stars) values
+          ('${rankingStudents.first}', 114, 15),
+          ('${rankingStudents.first}', 113, 25),
+          ('${rankingStudents.second}', 114, 40);
+      `);
+
+      const ranked = await asUser<{ student_id: string; display_name: string | null; total_stars: number; class_rank: number }>(
+        rankingStudents.first,
+        `select student_id, display_name, total_stars, class_rank from public.get_student_class_leaderboard('${rankingStudents.first}')`,
+      );
+      expect(ranked.slice(0, 2)).toEqual([
+        { student_id: rankingStudents.first, display_name: "Amina", total_stars: 40, class_rank: 1 },
+        { student_id: rankingStudents.second, display_name: "Badr", total_stars: 40, class_rank: 1 },
+      ]);
+      expect(ranked.find(({ student_id }) => student_id === rankingStudents.archived)).toMatchObject({ display_name: "Celine", total_stars: 0 });
+
+      await expect(asUser(users.studentB, `select * from public.get_student_class_leaderboard('${rankingStudents.first}')`)).rejects.toThrow(/leaderboard_scope_denied/);
+      await expect(runAsUser(rankingStudents.first, `update public.student_surah_progress set stars = 999 where student_id = '${rankingStudents.first}' and surah_number = 114`)).rejects.toThrow();
+
+      await database.exec(`
+        insert into public.admin_school_settings (school_id, finance_alert_threshold, show_student_class_ranking_names, updated_by)
+        values ('${schools.first}', 0, false, '${users.adminA}')
+        on conflict(school_id) do update set show_student_class_ranking_names = false, updated_by = '${users.adminA}';
+      `);
+      const privateRanked = await asUser<{ display_name: string | null }>(rankingStudents.first, `select display_name from public.get_student_class_leaderboard('${rankingStudents.first}')`);
+      expect(privateRanked).not.toHaveLength(0);
+      expect(privateRanked.every(({ display_name }) => display_name === null)).toBe(true);
+
+      await database.exec(`update public.profiles set status = 'archived', archived_at = now() where id = '${rankingStudents.archived}'`);
+      const withoutArchived = await asUser<{ student_id: string }>(rankingStudents.first, `select student_id from public.get_student_class_leaderboard('${rankingStudents.first}')`);
+      expect(withoutArchived.map(({ student_id }) => student_id)).toEqual(expect.arrayContaining([rankingStudents.first, rankingStudents.second]));
+      expect(withoutArchived.map(({ student_id }) => student_id)).not.toContain(rankingStudents.archived);
+    } finally {
+      await database.exec(`
+        delete from public.admin_school_settings where school_id = '${schools.first}';
+        delete from public.student_surah_progress where student_id in ('${rankingStudents.first}', '${rankingStudents.second}', '${rankingStudents.archived}');
+        delete from public.class_enrollments where student_id in ('${rankingStudents.first}', '${rankingStudents.second}', '${rankingStudents.archived}');
+        delete from public.school_memberships where user_id in ('${rankingStudents.first}', '${rankingStudents.second}', '${rankingStudents.archived}');
+        delete from public.user_roles where user_id in ('${rankingStudents.first}', '${rankingStudents.second}', '${rankingStudents.archived}');
+        delete from public.student_profiles where user_id in ('${rankingStudents.first}', '${rankingStudents.second}', '${rankingStudents.archived}');
+        delete from public.profiles where id in ('${rankingStudents.first}', '${rankingStudents.second}', '${rankingStudents.archived}');
+        delete from auth.users where id in ('${rankingStudents.first}', '${rankingStudents.second}', '${rankingStudents.archived}');
+      `);
+    }
+  });
+
   it("moves accounts to a restorable trash without deleting history", async () => {
     await runAsUser(users.adminA, `select public.admin_soft_delete_account('${users.studentA}','${schools.first}')`);
     const trashed = await database.query<{ status: string; deleted: boolean; learning: number }>(`

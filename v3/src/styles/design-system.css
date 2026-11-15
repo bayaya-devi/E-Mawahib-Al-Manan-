@@ -135,6 +135,9 @@
 .ui-command__empty { padding: var(--space-8); margin: 0; color: var(--ink-soft); text-align: center; }
 
 .app-shell { min-height: 100svh; background-color: var(--canvas); }
+.app-shell--student, .app-shell--teacher { background-color: #f8f6f2; background-image: url("/patterns/dar-zellige.svg"); background-repeat: repeat; background-size: 128px 128px; }
+:root[data-appearance="dark"] .app-shell--student, :root[data-appearance="dark"] .app-shell--teacher { background-color: #171719; background-image: url("/patterns/dar-zellige-night.svg"); }
+.app-shell--student .app-frame, .app-shell--teacher .app-frame { background: color-mix(in srgb, var(--canvas) 82%, transparent); }
 .navigation-toggle { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: var(--radius-md); color: var(--ink); background: var(--surface); cursor: pointer; }
 .app-rail, .app-frame, .mobile-nav { transition: width .22s ease, margin .22s ease, opacity .18s ease, transform .22s ease; }
 .app-shell.is-navigation-collapsed .app-rail { width: 76px; align-items: center; padding-inline: 10px; }

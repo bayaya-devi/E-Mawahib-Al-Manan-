@@ -5,7 +5,9 @@ import { ToastProvider } from "@/components/ui";
 import { AppShell } from "@/components/shell/app-shell";
 import { QuranCatalog } from "@/features/quran/quran-catalog";
 import { ParentSurvey, StudentGames, StudentProfile } from "./student-extensions";
+import { StudentClassLeaderboard } from "./student-class-leaderboard";
 import { StudentDashboard } from "./student-dashboard";
+import { StudentLocaleProvider } from "./student-locale";
 import type { StudentDashboardData } from "./models";
 
 const replace = vi.fn();
@@ -43,6 +45,34 @@ describe("student stabilization", () => {
     expect(screen.getByText("محمد")).toBeVisible(); expect(screen.getByText("القسم الأول")).toBeVisible(); expect(screen.getByText("الثلاثاء والخميس: 18:00–20:00")).toBeVisible(); expect(screen.getByText("أوقات الحصص")).toBeVisible(); expect(screen.getAllByText("سُورَةُ النَّاسِ").length).toBeGreaterThan(0);
     expect(screen.queryByText("التنبيهات")).not.toBeInTheDocument(); expect(screen.queryByText("السورة التالية")).not.toBeInTheDocument();
   }, 10_000);
+
+  it("loads a class-only ranking, preserves tied ranks, masks names, and closes accessibly", async () => {
+    rpc.mockResolvedValueOnce({
+      error: null,
+      data: [
+        { class_id: "c", class_name: "القسم الأول", names_visible: false, student_id: "s", display_name: null, total_stars: 40, class_rank: 1 },
+        { class_id: "c", class_name: "القسم الأول", names_visible: false, student_id: "b", display_name: null, total_stars: 40, class_rank: 1 },
+        { class_id: "c", class_name: "القسم الأول", names_visible: false, student_id: "z", display_name: null, total_stars: 0, class_rank: 3 },
+      ],
+    });
+    render(<StudentClassLeaderboard studentId="s" />);
+    fireEvent.click(screen.getByRole("button", { name: "ترتيب القسم" }));
+    expect(screen.getByText("جار تحميل الترتيب…")).toBeVisible();
+    await waitFor(() => expect(rpc).toHaveBeenCalledWith("get_student_class_leaderboard", { target_student: "s" }));
+    expect(screen.getByText("أنت")).toBeVisible();
+    expect(screen.getByText("طالب 2")).toBeVisible();
+    expect(screen.getByText("طالب 3")).toBeVisible();
+    expect(screen.getAllByText("1")).toHaveLength(2);
+    fireEvent.click(screen.getByRole("button", { name: "إغلاق" }));
+    await waitFor(() => expect(screen.queryByText("القسم الأول")).not.toBeInTheDocument());
+  });
+
+  it("shows a clear ranking loading failure in French", async () => {
+    rpc.mockResolvedValueOnce({ error: new Error("network"), data: null });
+    render(<StudentLocaleProvider locale="fr"><StudentClassLeaderboard studentId="s" /></StudentLocaleProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Classement" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Le classement est indisponible"));
+  });
 
   it("renders completed, current and one preview juz only", () => {
     const progress = Array.from({ length: 48 }, (_, index) => ({ surahNumber: 114 - index, status: "mastered" as const, percent: 100, stars: 4 }));

@@ -4,6 +4,7 @@ import { CalendarDays, CheckCircle2, Clock3, Star, UserRound, UsersRound } from 
 import { getAllSurahs, getSurah } from "@/features/quran/canonical";
 import { QuranCatalog } from "@/features/quran/quran-catalog";
 import type { StudentDashboardData } from "./models";
+import { StudentClassLeaderboard } from "./student-class-leaderboard";
 import { studentText, useStudentLocale } from "./student-locale";
 
 export function StudentDashboard({ data }: { data: StudentDashboardData }) {
@@ -29,7 +30,7 @@ export function StudentDashboard({ data }: { data: StudentDashboardData }) {
       <section className="student-progress" aria-label={t("تقدم الحفظ", "Progression de mémorisation")}>
         <div><span>{t("تقدّم الحفظ", "Progression")}</span><strong>{progressPercent}<small>% · {mastered}/114</small></strong></div>
         <div className="progress-band__track"><span style={{ width: `${progressPercent}%` }} /></div>
-        <div className="student-stars"><Star aria-hidden="true" fill="currentColor" /><strong>{stars}</strong></div>
+        <div className="student-stars"><Star aria-hidden="true" fill="currentColor" /><strong>{stars}</strong><StudentClassLeaderboard studentId={data.student?.id ?? null} /></div>
       </section>
       <section className="student-dashboard-path" aria-label="مسار السور"><QuranCatalog progress={data.progress} juzExams={data.juzExams} /></section>
     </div>

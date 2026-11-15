@@ -72,6 +72,8 @@ button, [role="button"], a { -webkit-user-select: none; user-select: none; }
 }
 
 .app-shell { min-height: 100svh; background: transparent; }
+.app-shell--student, .app-shell--teacher { background-color: #f8f6f2; background-image: url("/patterns/dar-zellige.svg"); background-repeat: repeat; background-size: 128px 128px; }
+:root[data-appearance="dark"] .app-shell--student, :root[data-appearance="dark"] .app-shell--teacher { background-color: #171719; background-image: url("/patterns/dar-zellige-night.svg"); }
 .app-rail {
   right: 0;
   left: auto;

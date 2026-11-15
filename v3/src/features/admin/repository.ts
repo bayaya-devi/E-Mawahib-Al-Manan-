@@ -735,15 +735,15 @@ export async function getAdminCommandData(): Promise<AdminCommandData> {
   }
 }
 
-export async function getAdminSettingsData(): Promise<{ schoolId: string | null; financeThreshold: number }> {
-  if (process.env.NEXT_PUBLIC_APP_ENV === "test") return { schoolId: null, financeThreshold: 0 };
+export async function getAdminSettingsData(): Promise<{ schoolId: string | null; financeThreshold: number; classRankingNamesVisible: boolean }> {
+  if (process.env.NEXT_PUBLIC_APP_ENV === "test") return { schoolId: null, financeThreshold: 0, classRankingNamesVisible: true };
   const client = await createClient();
   const { data: auth } = await client.auth.getUser();
-  if (!auth.user) return { schoolId: null, financeThreshold: 0 };
+  if (!auth.user) return { schoolId: null, financeThreshold: 0, classRankingNamesVisible: true };
   const membership = await client.from("school_memberships").select("school_id").eq("user_id", auth.user.id).eq("status", "active").limit(1).maybeSingle();
-  if (!membership.data?.school_id) return { schoolId: null, financeThreshold: 0 };
-  const settings = await client.from("admin_school_settings").select("finance_alert_threshold").eq("school_id", membership.data.school_id).maybeSingle();
-  return { schoolId: membership.data.school_id, financeThreshold: Number(settings.data?.finance_alert_threshold ?? 0) };
+  if (!membership.data?.school_id) return { schoolId: null, financeThreshold: 0, classRankingNamesVisible: true };
+  const settings = await client.from("admin_school_settings").select("finance_alert_threshold,show_student_class_ranking_names").eq("school_id", membership.data.school_id).maybeSingle();
+  return { schoolId: membership.data.school_id, financeThreshold: Number(settings.data?.finance_alert_threshold ?? 0), classRankingNamesVisible: settings.data?.show_student_class_ranking_names ?? true };
 }
 
 function countBy(values: readonly string[]): Map<string, number> {

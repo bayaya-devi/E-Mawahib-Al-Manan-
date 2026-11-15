@@ -905,6 +905,7 @@ type StudentPaymentRow = {
 type AdminSchoolSettingRow = {
   school_id: string;
   finance_alert_threshold: number;
+  show_student_class_ranking_names: boolean;
   updated_by: string;
   updated_at: string;
 };
@@ -1693,6 +1694,18 @@ export type Database = {
         Args: { target_student_id: string };
         Returns: boolean;
       };
+      get_student_class_leaderboard: {
+        Args: { target_student: string };
+        Returns: Array<{
+          class_id: string;
+          class_name: string;
+          names_visible: boolean;
+          student_id: string;
+          display_name: string | null;
+          total_stars: number;
+          class_rank: number;
+        }>;
+      };
       admin_set_student_sibling_link: {
         Args: { source_student: string; target_student: string; make_active: boolean };
         Returns: undefined;
@@ -1757,6 +1770,10 @@ export type Database = {
       };
       admin_set_finance_threshold: {
         Args: { target_school_id: string; target_amount: number };
+        Returns: undefined;
+      };
+      admin_set_student_class_ranking_names: {
+        Args: { target_school_id: string; target_names_visible: boolean };
         Returns: undefined;
       };
       admin_update_login_alias: {

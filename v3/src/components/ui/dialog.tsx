@@ -13,6 +13,7 @@ export function Dialog({
   children,
   open,
   onOpenChange,
+  closeLabel = "إغلاق",
 }: {
   trigger: ReactNode;
   title: string;
@@ -20,6 +21,7 @@ export function Dialog({
   children: ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  closeLabel?: string;
 }) {
   const rootProps = {
     ...(open === undefined ? {} : { open }),
@@ -39,7 +41,7 @@ export function Dialog({
             </DialogPrimitive.Description>
           ) : null}
           <div className="ui-dialog__body">{children}</div>
-          <DialogPrimitive.Close className="ui-dialog__close" aria-label="إغلاق">
+          <DialogPrimitive.Close className="ui-dialog__close" aria-label={closeLabel}>
             <X aria-hidden="true" size={20} />
           </DialogPrimitive.Close>
         </DialogPrimitive.Content>
